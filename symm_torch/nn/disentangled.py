@@ -4,7 +4,7 @@ from __future__ import annotations
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
-from symm_torch.utils.rep_theory_utils import isotypic_decomp_rep
+from symm_torch.utils.rep_theory import isotypic_decomp_rep
 
 
 class Change2DisentangledBasis(EquivariantModule):

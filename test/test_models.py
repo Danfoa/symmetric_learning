@@ -91,6 +91,6 @@ def test_residual_encoder_equivariance(group: Group):  # noqa: D103
     y = res_encoder(x)  # Forward pass
     x_rec = y.tensor[..., res_encoder.residual_dims]  # Decode
 
-    assert torch.allclose(x.tensor, x_rec, atol=1e-5, rtol=1e-5), (
-        f"Error in obtaining the input tensor from the encoded tensor. {x.tensor} != {x_rec}"
-    )
+    assert torch.allclose(
+        x.tensor, x_rec, atol=1e-5, rtol=1e-5
+    ), f"Error in obtaining the input tensor from the encoded tensor. {x.tensor} != {x_rec}"

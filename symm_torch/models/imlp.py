@@ -7,7 +7,7 @@ import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
 from symm_torch.models.emlp import EMLP
-from symm_torch.nn.pooling.irrep_pooling import IrrepSubspaceNormPooling
+from symm_torch.nn.irrep_pooling import IrrepSubspaceNormPooling
 
 
 class IMLP(EquivariantModule):

@@ -1,9 +1,10 @@
 name: Unit Tests
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
-  schedule:
-    - cron: "0 0 */3 * *"
 
 jobs:
   test:
@@ -12,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.11"]
+        python-version: ["3.11"]
 
     steps:
       - name: Checkout Repository
@@ -30,4 +31,5 @@ jobs:
         run: python -m pip install -e ".[dev]"
 
       - name: Run Tests
-        run: pytest -s tests
+        working-directory: ${{ github.workspace }}
+        run: pytest -s test/

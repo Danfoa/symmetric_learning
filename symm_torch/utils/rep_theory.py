@@ -23,6 +23,11 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
         escnn.group.Representation: Equivalent disentangled representation
     """
     symm_group = rep.group
+
+    if rep.name + "-Iso" in symm_group.representations:
+        print(f"Returning cached {rep.name}-Iso")
+        return symm_group.representations[rep.name + "-Iso"]
+
     potential_irreps = rep.group.irreps()
     isotypic_subspaces_indices = {irrep.id: [] for irrep in potential_irreps}
 

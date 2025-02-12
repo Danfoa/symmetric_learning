@@ -4,7 +4,7 @@ from __future__ import annotations
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
-from symm_torch.nn.disentangled import Change2IsotypicBasis
+from symm_torch.nn.disentangled import Change2DisentangledBasis
 
 
 class IrrepSubspaceNormPooling(EquivariantModule):
@@ -18,7 +18,7 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         super(IrrepSubspaceNormPooling, self).__init__()
         self.G = in_type.fibergroup
         self.in_type = in_type
-        self.in2iso = Change2IsotypicBasis(in_type)
+        self.in2iso = Change2DisentangledBasis(in_type)
         self.in_type_iso = self.in2iso.out_type
         # The number of features is equal to the number of irreducible representations
         n_inv_features = sum(len(rep.irreps) for rep in self.in_type_iso.representations)
@@ -53,9 +53,9 @@ class IrrepSubspaceNormPooling(EquivariantModule):
             inv_features_iso.append(inv_field_features)
 
         inv_features = torch.cat(inv_features_iso, dim=-1)
-        assert inv_features.shape[-1] == self.out_type.size, (
-            f"Expected {self.out_type.size} features, got {inv_features.shape[-1]}"
-        )
+        assert (
+            inv_features.shape[-1] == self.out_type.size
+        ), f"Expected {self.out_type.size} features, got {inv_features.shape[-1]}"
         return self.out_type(inv_features)
 
     def _orth_proj_isotypic_subspaces(self, z: GeometricTensor) -> [torch.Tensor]:
