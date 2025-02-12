@@ -1,0 +1,73 @@
+# Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
+from __future__ import annotations
+
+from math import ceil
+
+import torch
+from escnn.nn import EquivariantModule, FieldType, GeometricTensor
+
+from symm_torch.models.emlp import EMLP
+from symm_torch.nn.pooling.irrep_pooling import IrrepSubspaceNormPooling
+
+
+class IMLP(EquivariantModule):
+    """G-Invariant Multi-Layer Perceptron.
+
+    This module is a G-invariant MLP that extracts G-invariant features from the input tensor. The input tensor
+    is first processed by an EMLP module that extracts G-equivariant features. The output of the EMLP module is
+    then processed by an IrrepSubspaceNormPooling module that computes the norm of the features in each G-stable
+    subspace associated to individual irreducible representations. The output of the IrrepSubspaceNormPooling module
+    is a tensor with G-invariant features that can be processed with any NN architecture.
+    Default implementation is to add a single linear layer projecting the invariant features to the desired
+    output dimension.
+    """
+
+    def __init__(
+        self,
+        in_type: FieldType,
+        out_dim: int,  # Number of G-invariant features to extract.
+        hidden_layers: int = 1,
+        hidden_units: int = 128,
+        activation: str = "ReLU",
+        bias: bool = False,
+        hidden_irreps: list | tuple = None,
+    ):
+        super(IMLP, self).__init__()
+
+        self.G = in_type.fibergroup
+        self.in_type = in_type
+
+        equiv_out_type = FieldType(
+            gspace=in_type.gspace,
+            representations=[self.G.regular_representation] * max(1, ceil(hidden_units // self.G.order())),
+        )
+
+        self.equiv_feature_extractor = EMLP(
+            in_type=in_type,
+            out_type=equiv_out_type,
+            hidden_layers=hidden_layers - 1,  # Last layer will be an unconstrained linear layer.
+            hidden_units=hidden_units,
+            activation=activation,
+            bias=bias,
+            hidden_irreps=hidden_irreps,
+        )
+        self.inv_feature_extractor = IrrepSubspaceNormPooling(in_type=self.equiv_feature_extractor.out_type)
+        self.head = torch.nn.Linear(
+            in_features=self.inv_feature_extractor.out_type.size, out_features=out_dim, bias=bias
+        )
+        self.out_type = FieldType(gspace=in_type.gspace, representations=[self.G.trivial_representation] * out_dim)
+
+    def forward(self, x: GeometricTensor) -> GeometricTensor:
+        """Forward pass of the G-invariant MLP."""
+        z = self.equiv_feature_extractor(x)  # Compute the equivariant features using the EMLP module.
+        z_inv = self.inv_feature_extractor(z)  # Get G-invariant features
+        out = self.head(z_inv.tensor)  # Unconstrained head linear layer.
+        return self.out_type(out)
+
+    def evaluate_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, ...]:  # noqa: D102
+        return input_shape[:-1] + (len(self.out_type.size),)
+
+    def check_equivariance(self, atol: float = 1e-6, rtol: float = 1e-4) -> list[tuple[any, float]]:  # noqa: D102
+        self.equiv_feature_extractor.check_equivariance(atol=atol, rtol=rtol)
+        self.inv_feature_extractor.check_equivariance(atol=atol, rtol=rtol)
+        return super(IMLP, self).check_equivariance(atol=atol, rtol=rtol)
