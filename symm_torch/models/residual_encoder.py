@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 

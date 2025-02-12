@@ -1,15 +1,17 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
+from __future__ import annotations
+
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
 from symm_torch.utils.rep_theory_utils import isotypic_decomp_rep
 
 
-class Change2IsotypicBasis(EquivariantModule):
+class Change2DisentangledBasis(EquivariantModule):
     """Module that changes the basis of the input tensor to the isotypic basis of the input representation."""
 
     def __init__(self, in_type: FieldType):
-        super(Change2IsotypicBasis, self).__init__()
+        super(Change2DisentangledBasis, self).__init__()
         self.in_type = in_type
         # Compute the isotypic decomposition of the input representation
         in_rep_iso_basis = isotypic_decomp_rep(in_type.representation)

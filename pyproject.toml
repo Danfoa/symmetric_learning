@@ -4,15 +4,24 @@ version = "0.0.1"
 
 description = "Torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 
 authors = [
-
+  {name = "Daniel Ordoñez", email = "daniels.ordonez@gmail.com" },
 ]
 dependencies = [
   "torch",
   "escnn",
 ]
+
+# Optional dependencies ___________________________________________________________________________________________
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff"
+]
+
+# Develop dependencies
 
 # RUFF ___________________________________________________________________________________________________________
 [tool.ruff]

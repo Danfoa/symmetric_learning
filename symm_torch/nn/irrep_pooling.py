@@ -1,4 +1,6 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
+from __future__ import annotations
+
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
@@ -6,7 +8,11 @@ from symm_torch.nn.disentangled import Change2IsotypicBasis
 
 
 class IrrepSubspaceNormPooling(EquivariantModule):
-    """Module that outputs the norm of the features in each G-irreducible subspace of the input tensor."""
+    """Module that outputs the norm of the features in each G-irreducible subspace of the input tensor.
+
+    Args:
+        in_type: Input FieldType. The dimension of the output tensors will be equal to the number of irreps in this type
+    """
 
     def __init__(self, in_type: FieldType):
         super(IrrepSubspaceNormPooling, self).__init__()
@@ -21,7 +27,17 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         )
 
     def forward(self, x: GeometricTensor) -> GeometricTensor:
-        """Computes the norm of each G-irreducible subspace of the input GeometricTensor."""
+        """Computes the norm of each G-irreducible subspace of the input GeometricTensor.
+
+        The input_type representation in the spectral basis is composed of direct sum of N irreducible representations.
+        This function computes the norms of the vectors on each G-irreducible subspace associated with each irrep.
+
+        Args:
+            x: Input GeometricTensor.
+
+        Returns:
+            GeometricTensor: G-Invariant tensor of shape (..., N) where N is the number of irreps in the input type.
+        """
         x_ = self.in2iso(x)
         x_iso = self._orth_proj_isotypic_subspaces(x_)
 

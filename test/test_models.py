@@ -7,11 +7,11 @@ from escnn.nn import FieldType
 
 
 @pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
-@pytest.mark.parametrize("n_hidden_layers", [5])
+@pytest.mark.parametrize("n_hidden_layers", [5, 10])
 @pytest.mark.parametrize("hidden_units", [128])
 @pytest.mark.parametrize("activation", ["ReLU"])
 @pytest.mark.parametrize("bias", [True])
-def test_emlp_equivariance(group: Group, n_hidden_layers: int, hidden_units: int, activation: str, bias: bool):
+def test_emlp_equivariance(group: Group, n_hidden_layers: int, hidden_units: int, activation: str, bias: bool):  # noqa: D103
     x_rep = group.regular_representation  # ρ_Χ
     y_rep = directsum([group.regular_representation] * 2)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
 
@@ -41,7 +41,7 @@ def test_emlp_equivariance(group: Group, n_hidden_layers: int, hidden_units: int
 @pytest.mark.parametrize("hidden_units", [128])
 @pytest.mark.parametrize("activation", ["ReLU"])
 @pytest.mark.parametrize("bias", [True])
-def test_imlp_invariance(
+def test_imlp_invariance(  # noqa: D103
     group: Group, n_inv_features: int, n_hidden_layers: int, hidden_units: int, activation: str, bias: bool
 ):
     x_rep = group.regular_representation  # ρ_Χ
@@ -63,7 +63,7 @@ def test_imlp_invariance(
 
 
 @pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
-def test_residual_encoder_equivariance(group: Group):
+def test_residual_encoder_equivariance(group: Group):  # noqa: D103
     x_rep = group.regular_representation  # ρ_Χ
     y_rep = directsum([group.regular_representation] * 2)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
 
