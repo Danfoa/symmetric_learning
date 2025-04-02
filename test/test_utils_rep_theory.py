@@ -19,9 +19,9 @@ def test_rep_decomposition(group: Group):
     test_elements = [group.sample() for _ in range(min(10, group.order()))]
 
     for g in test_elements:
-        assert np.allclose(
-            rep(g), rep_iso(g), atol=1e-5, rtol=1e-5
-        ), f"Representations are not equivalent for element {g}"
+        assert np.allclose(rep(g), rep_iso(g), atol=1e-5, rtol=1e-5), (
+            f"Representations are not equivalent for element {g}"
+        )
 
     # Check that decomposing the representation twice returns the cached representation
     rep_iso2 = isotypic_decomp_rep(rep)

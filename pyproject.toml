@@ -22,7 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "ruff"
+    "ruff",
 ]
 
 # Develop dependencies
@@ -30,6 +30,9 @@ dev = [
 # RUFF ___________________________________________________________________________________________________________
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
 # Enable specific linting rules
@@ -44,6 +47,8 @@ select = [
   "ICN",  # Import conventions
   "SIM"   # flake8-simplify
 ]
+isort.split-on-trailing-comma=false
+
 
 # Ignore specific linting rules
 ignore = [

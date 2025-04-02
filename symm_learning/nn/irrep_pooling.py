@@ -53,9 +53,9 @@ class IrrepSubspaceNormPooling(EquivariantModule):
             inv_features_iso.append(inv_field_features)
 
         inv_features = torch.cat(inv_features_iso, dim=-1)
-        assert (
-            inv_features.shape[-1] == self.out_type.size
-        ), f"Expected {self.out_type.size} features, got {inv_features.shape[-1]}"
+        assert inv_features.shape[-1] == self.out_type.size, (
+            f"Expected {self.out_type.size} features, got {inv_features.shape[-1]}"
+        )
         return self.out_type(inv_features)
 
     def _orth_proj_isotypic_subspaces(self, z: GeometricTensor) -> [torch.Tensor]:

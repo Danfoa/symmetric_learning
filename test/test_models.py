@@ -75,12 +75,7 @@ def test_residual_encoder_equivariance(group: Group):  # noqa: D103
 
     from symm_learning.models.emlp import EMLP
 
-    emlp = EMLP(
-        in_type=type_X,
-        out_type=type_Y,
-        hidden_layers=3,
-        hidden_units=128,
-    )
+    emlp = EMLP(in_type=type_X, out_type=type_Y, hidden_layers=3, hidden_units=128)
 
     from symm_learning.models.residual_encoder import ResidualEncoder
 
@@ -91,6 +86,6 @@ def test_residual_encoder_equivariance(group: Group):  # noqa: D103
     y = res_encoder(x)  # Forward pass
     x_rec = y.tensor[..., res_encoder.residual_dims]  # Decode
 
-    assert torch.allclose(
-        x.tensor, x_rec, atol=1e-5, rtol=1e-5
-    ), f"Error in obtaining the input tensor from the encoded tensor. {x.tensor} != {x_rec}"
+    assert torch.allclose(x.tensor, x_rec, atol=1e-5, rtol=1e-5), (
+        f"Error in obtaining the input tensor from the encoded tensor. {x.tensor} != {x_rec}"
+    )
