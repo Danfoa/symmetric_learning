@@ -1,6 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "symm_torch"
-version = "0.0.1"
+name = "symm-learning"
+version = "0.1.0"
 
 description = "Torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"
@@ -61,3 +65,26 @@ exclude = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.hatch.build]
+include = [
+  "symm_learning/**",   # Only include necessary package files
+]
+exclude = [
+  ".github/**",        # Exclude GitHub workflows
+  "tests/**",          # Exclude test files
+  "docs/**",           # Exclude documentation files
+  "paper/**",          # Exclude paper scripts.
+  #    "*.md",             # Exclude markdown files (e.g., README.md, CONTRIBUTING.md)
+  #    "*.yml", "*.yaml",  # Exclude CI/CD configuration files
+  #    "*.json",           # Exclude JSON files
+  #    "*.csv",            # Exclude CSV files
+  "*.log",             # Exclude log files
+  "*.zip", "*.tar.gz", # Exclude compressed files
+  "*.h5",              # Exclude large data files
+  "*.mat",             # Exclude large data files
+  "*.pkl",             # Exclude pickle files
+  #    "*.mp4", "*.avi",   # Exclude video files
+  #    "*.png", "*.jpg",   # Exclude image files
+  "__pycache__/**",    # Exclude Python cache files
+]

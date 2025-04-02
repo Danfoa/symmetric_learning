@@ -21,7 +21,7 @@ def test_emlp_equivariance(group: Group, n_hidden_layers: int, hidden_units: int
     type_X = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[x_rep])
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
 
-    from symm_torch.models.emlp import EMLP
+    from symm_learning.models.emlp import EMLP
 
     emlp = EMLP(
         in_type=type_X,
@@ -48,7 +48,7 @@ def test_imlp_invariance(  # noqa: D103
     x_rep.name = "x_rep"
     type_X = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[x_rep] * 5)
 
-    from symm_torch.models.imlp import IMLP
+    from symm_learning.models.imlp import IMLP
 
     imlp = IMLP(
         in_type=type_X,
@@ -73,7 +73,7 @@ def test_residual_encoder_equivariance(group: Group):  # noqa: D103
     type_X = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[x_rep])
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
 
-    from symm_torch.models.emlp import EMLP
+    from symm_learning.models.emlp import EMLP
 
     emlp = EMLP(
         in_type=type_X,
@@ -82,7 +82,7 @@ def test_residual_encoder_equivariance(group: Group):  # noqa: D103
         hidden_units=128,
     )
 
-    from symm_torch.models.residual_encoder import ResidualEncoder
+    from symm_learning.models.residual_encoder import ResidualEncoder
 
     res_encoder = ResidualEncoder(encoder=emlp)
     res_encoder.check_equivariance(atol=1e-5, rtol=1e-5)
