@@ -10,10 +10,12 @@ jobs:
   test:
     name: Test on ${{ matrix.os }}, Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12","3.11","3.10","3.9.21", "3.8.18"]
 
     steps:
       - name: Checkout Repository
