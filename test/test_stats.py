@@ -6,8 +6,8 @@ import torch
 from escnn.group import Representation
 from torch import Tensor
 
+from symm_learning.representation_theory import isotypic_decomp_rep
 from symm_learning.stats import cov, invariant_orthogonal_projector, isotypic_covariance, var_mean
-from symm_learning.utils.rep_theory import isotypic_decomp_rep
 
 
 def test_symmetric_moments():  # noqa: D103
@@ -158,7 +158,7 @@ def test_isotypic_cross_cov():  # noqa: D103
             GY_iso.append(Y_g)
         GX_iso = torch.cat(GX_iso, dim=0)
 
-        Cx_iso, _ = isotypic_covariance(x=GX_iso, y=GX_iso, rep_X=x_rep_iso, rep_Y=x_rep_iso)
+        Cx_iso, _ = isotypic_covariance(x=GX_iso, y=GX_iso, rep_x=x_rep_iso, rep_y=x_rep_iso)
         Cx_iso = Cx_iso.numpy()
         # Compute the covariance in standard way doing data augmentation.
         Cx_iso_orbit = (GX_iso.T @ GX_iso / (GX_iso.shape[0])).numpy()

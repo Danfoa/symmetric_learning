@@ -1,7 +1,6 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
 import escnn
 import pytest
-import torch
 from escnn.group import CyclicGroup, DihedralGroup, Group, directsum
 from escnn.nn import FieldType
 

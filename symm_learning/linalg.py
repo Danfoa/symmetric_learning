@@ -78,7 +78,7 @@ def lstsq(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
         - Y: :math:`(N, D_y)`
         - Output: :math:`(D_y, D_x)`
     """
-    from symm_learning.utils.rep_theory import isotypic_decomp_rep
+    from symm_learning.representation_theory import isotypic_decomp_rep
 
     rep_X = isotypic_decomp_rep(rep_X)
     rep_Y = isotypic_decomp_rep(rep_Y)

@@ -6,12 +6,12 @@ import torch
 from escnn.group import CyclicGroup, DihedralGroup, Group, directsum
 from escnn.nn import FieldType
 
+from symm_learning.representation_theory import isotypic_decomp_rep
+
 
 @pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
 def test_rep_decomposition(group: Group):
     """Check that the disentangled representation is equivalent to the original representation."""
-    from symm_learning.utils.rep_theory import isotypic_decomp_rep
-
     rep = directsum([group.regular_representation] * 10)
     rep_iso = isotypic_decomp_rep(rep)
 
