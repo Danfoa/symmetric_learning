@@ -28,4 +28,4 @@ def test_rep_decomposition(group: Group):
     assert rep_iso == rep_iso2, "Cached representation is not returned"
 
     # Check that iso_decomposing twice returns the same representation
-    rep_iso3 = isotypic_decomp_rep(rep_iso)
+    # rep_iso3 = isotypic_decomp_rep(rep_iso)

@@ -8,14 +8,21 @@ from torch import Tensor
 def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
     r"""Given a random variable in an isotypic subspace, flatten the r.v. into G-irreducible subspaces.
 
-    Given a signal of shape :math:`(n, m_x \cdot d)` where :math:`n` is the number of samples, :math:`m_x` the multiplicity of the irrep in :math:`X`, and :math:`d` the dimension of the irrep.
-    :math:`X = [x_1, \ldots, x_n]` and :math:`x_i = [x_{i_{11}}, \ldots, x_{i_{1d}}, x_{i_{21}}, \ldots, x_{i_{2d}}, \ldots, x_{i_{m_x1}}, \ldots, x_{i_{m_xd}}]`
+    Given a signal of shape :math:`(n, m_x \cdot d)` where :math:`n` is the number of samples, :math:`m_x` the
+    multiplicity of the irrep in :math:`X`, and :math:`d` the dimension of the irrep.
 
-    This function returns the signal :math:`Z` of shape :math:`(n \cdot d, m_x)` where each column represents the flattened signal of a G-irreducible subspace.
-    :math:`Z[:, k] = [x_{1_{k1}}, \ldots, x_{1_{kd}}, x_{2_{k1}}, \ldots, x_{2_{kd}}, \ldots, x_{n_{k1}}, \ldots, x_{n_{kd}}]`
+    :math:`X = [x_1, \ldots, x_n]` and :math:`x_i = [x_{i_{11}}, \ldots, x_{i_{1d}}, x_{i_{21}}, \ldots, x_{i_{2d}},
+    \ldots, x_{i_{m_x1}}, \ldots, x_{i_{m_xd}}]`
+
+    This function returns the signal :math:`Z` of shape :math:`(n \cdot d, m_x)` where each column represents the
+    flattened signal of a G-irreducible subspace.
+
+    :math:`Z[:, k] = [x_{1_{k1}}, \ldots, x_{1_{kd}}, x_{2_{k1}}, \ldots, x_{2_{kd}}, \ldots, x_{n_{k1}}, \ldots,
+    x_{n_{kd}}]`
 
     Args:
-        x (Tensor): Shape :math:`(..., n, m_x \cdot d)` where :math:`n` is the number of samples and :math:`m_x` the multiplicity of the irrep in :math:`X`.
+        x (Tensor): Shape :math:`(..., n, m_x \cdot d)` where :math:`n` is the number of samples and :math:`m_x` the
+         multiplicity of the irrep in :math:`X`.
         rep_x (escnn.nn.Representation): Representation in the isotypic basis of a single type of irrep.
 
     Returns:
@@ -38,20 +45,22 @@ def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
 def lstsq(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
     r"""Computes a solution to the least squares problem of a system of linear equations with equivariance constraints.
 
-    The :math:`\mathbb{G}`-equivariant least squares problem to the linear system of equations :math:`\mathbf{Y} = \mathbf{A}\,\mathbf{X}`,
-    is defined as
+    The :math:`\mathbb{G}`-equivariant least squares problem to the linear system of equations
+    :math:`\mathbf{Y} = \mathbf{A}\,\mathbf{X}`, is defined as:
 
     .. math::
         \begin{align}
             &\| \mathbf{Y} - \mathbf{A}\,\mathbf{X} \|_F \\
-            & \text{s.t.} \quad \rho_{\mathcal{Y}}(g) \mathbf{A} = \mathbf{A}\rho_{\mathcal{X}}(g) \quad \forall g \in \mathbb{G},
+            & \text{s.t.} \quad \rho_{\mathcal{Y}}(g) \mathbf{A} = \mathbf{A}\rho_{\mathcal{X}}(g) \quad \forall g
+            \in \mathbb{G},
         \end{align}
 
-    where :math:`\rho_{\mathcal{Y}}` and :math:`\rho_{\mathcal{X}}` denote the group representations on :math:`\mathbf{X}` and :math:`\mathbf{Y}`.
+    where :math:`\rho_{\mathcal{Y}}` and :math:`\rho_{\mathcal{X}}` denote the group representations on
+    :math:`\mathbf{X}` and :math:`\mathbf{Y}`.
 
     Args:
-        X (Tensor):
-            Realizations of the random variable :math:`\mathbf{X}` with shape :math:`(N, D_x)`, where :math:`N` is the number of samples.
+        X (Tensor): Realizations of the random variable :math:`\mathbf{X}` with shape :math:`(N, D_x)`, where
+         :math:`N` is the number of samples.
         Y (Tensor):
             Realizations of the r andom variable :math:`\mathbf{Y}` with shape :math:`(N, D_y)`.
         rep_X (Representation):
@@ -92,7 +101,7 @@ def lstsq(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
         dimy += rep_Y_k.size
 
     A_iso = torch.zeros((rep_Y.size, rep_X.size), device=X.device, dtype=X.dtype)
-    for irrep_k_id in Y_iso_reps.keys():
+    for irrep_k_id in Y_iso_reps:
         if irrep_k_id not in X_iso_reps:
             continue
         d_k = rep_X.group.irrep(*irrep_k_id).size
@@ -115,5 +124,3 @@ def lstsq(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
     # Change back to the original input output basis sets
     A = Qy2iso.T @ A_iso @ Qx2iso
     return A
-
-

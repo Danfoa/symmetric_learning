@@ -18,10 +18,13 @@ def var_mean(x: Tensor, rep_X: Representation):
         rep_X: (escnn.group.Representation) representation of the symmetric random variable.
 
     Returns:
-        (Tensor, Tensor): Mean and variance of the symmetric random variable. The mean isrestricted to be in the trivial/G-invariant subspace of the symmetric vector space. The variance is constrained to be the same for all dimensions of each G-irreducible subspace (i.e., each subspace associated with an irrep).
+        (Tensor, Tensor): Mean and variance of the symmetric random variable. The mean is redistricted to be in the
+        trivial/G-invariant subspace of the symmetric vector space. The variance is constrained to be the same for all
+        dimensions of each G-irreducible subspace (i.e., each subspace associated with an irrep).
 
     Shape:
-        :code:`x`: :math:`(N, Dx)` where N is the number of samples and Dx is the dimension of the symmetric random variable.
+        :code:`x`: :math:`(N, Dx)` where N is the number of samples and Dx is the dimension of the symmetric random
+         variable.
 
         Output: :math:`(Dx, Dx)`
     """
@@ -48,28 +51,37 @@ def isotypic_covariance(x: Tensor, y: Tensor, rep_X: Representation, rep_Y: Repr
     .. math::
         \mathbf{C}_{xy} = \text{Cov}(X, Y) = \mathbf{Z}_{xy} \otimes \mathbf{I}_d,
 
-    where :math:`d = \text{dim(irrep)}` and :math:`\mathbf{Z}_{xy} \in \mathbb{R}^{m_x \times m_y}` and :math:`\mathbf{C}_{xy} \in \mathbb{R}^{(m_x \cdot d) \times (m_y \cdot d)}`.
+    where :math:`d = \text{dim(irrep)}` and :math:`\mathbf{Z}_{xy} \in \mathbb{R}^{m_x \times m_y}` and
+    :math:`\mathbf{C}_{xy} \in \mathbb{R}^{(m_x \cdot d) \times (m_y \cdot d)}`.
 
-    Being :math:`m_x` and :math:`m_y` the multiplicities of the irrep in X and Y respectively. This implies that the matrix :math:`\mathbf{Z}_{xy}`
-    represents the free parameters of the covariance we are required to estimate. To do so we reshape
-    the signals :math:`X \in \mathbb{R}^{N \times (m_x \cdot d)}` and :math:`Y \in \mathbb{R}^{N \times (m_y \cdot d)}` to :math:`X_{\text{sing}} \in \mathbb{R}^{(d \cdot N) \times m_x}` and :math:`Y_{\text{sing}} \in \mathbb{R}^{(d \cdot N) \times m_y}`
-    respectively. Ensuring all dimensions of the irreducible subspaces associated to each multiplicity of the irrep are
-    considered as a single dimension for estimating :math:`\mathbf{Z}_{xy} = \frac{1}{n \cdot d} X_{\text{sing}}^T Y_{\text{sing}}`.
+    Being :math:`m_x` and :math:`m_y` the multiplicities of the irrep in X and Y respectively. This implies that the
+    matrix :math:`\mathbf{Z}_{xy}` represents the free parameters of the covariance we are required to estimate.
+    To do so we reshape the signals :math:`X \in \mathbb{R}^{N \times (m_x \cdot d)}` and
+    :math:`Y \in \mathbb{R}^{N \times (m_y \cdot d)}` to :math:`X_{\text{sing}} \in \mathbb{R}^{(d \cdot N) \times m_x}`
+    and :math:`Y_{\text{sing}} \in \mathbb{R}^{(d \cdot N) \times m_y}` respectively. Ensuring all dimensions of the
+    irreducible subspaces associated to each multiplicity of the irrep are considered as a single dimension for
+    estimating :math:`\mathbf{Z}_{xy} = \frac{1}{n \cdot d} X_{\text{sing}}^T Y_{\text{sing}}`.
 
     Args:
         x (Tensor): Realizations of the random variable X.
         y (Tensor): Realizations of the random variable Y.
-        rep_X (escnn.nn.Representation): composed of :math:`m_x` copies of a single irrep: :math:`\rho_X = \otimes_i^{m_x} \rho_k`
-        rep_Y (escnn.nn.Representation): composed of :math:`m_y` copies of a single irrep: :math:`\rho_Y = \otimes_i^{m_y} \rho_k`
+        rep_X (escnn.nn.Representation): composed of :math:`m_x` copies of a single irrep:
+            :math:`\rho_X = \otimes_i^{m_x} \rho_k`
+        rep_Y (escnn.nn.Representation): composed of :math:`m_y` copies of a single irrep:
+            :math:`\rho_Y = \otimes_i^{m_y} \rho_k`
         center (bool): whether to center the signals before computing the covariance.
 
     Returns:
-        (Tensor, Tensor): :math:`\mathbf{C}_{xy}`, (:math:`m_y \cdot d, m_x \cdot d`) the covariance matrix between the isotypic subspaces of :code:`x` and :code:`y`, and :math:`\mathbf{Z}_{xy}`, (:math:`m_y, m_x`) the free parameters of the covariance matrix in the isotypic basis.
+        (Tensor, Tensor): :math:`\mathbf{C}_{xy}`, (:math:`m_y \cdot d, m_x \cdot d`) the covariance matrix between the
+         isotypic subspaces of :code:`x` and :code:`y`, and :math:`\mathbf{Z}_{xy}`, (:math:`m_y, m_x`) the free
+         parameters of the covariance matrix in the isotypic basis.
 
     Shape:
-        :code:`x`: :math:`(..., N, m_x * d)` where N is the number of samples, :math:`d` is the dimension of the only irrep in :math:`rep_X` and :math:`m_x` is the multiplicity of the irrep in X.
+        :code:`x`: :math:`(..., N, m_x * d)` where N is the number of samples, :math:`d` is the dimension of the only
+        irrep in :math:`rep_X` and :math:`m_x` is the multiplicity of the irrep in X.
 
-        :code:`y`: :math:`(..., N, m_y * d)` where N is the number of samples, :math:`d` is the dimension of the only irrep in :math:`rep_Y` and :math:`m_y` is the multiplicity of the irrep in Y.
+        :code:`y`: :math:`(..., N, m_y * d)` where N is the number of samples, :math:`d` is the dimension of the only
+        irrep in :math:`rep_Y` and :math:`m_y` is the multiplicity of the irrep in Y.
 
         Output: :math:`(m_y * d, m_x * d)`.
     """
@@ -135,10 +147,7 @@ def isotypic_covariance(x: Tensor, y: Tensor, rep_X: Representation, rep_Y: Repr
         Cxy_iso = Dxy
 
     # Change back to original basis if needed _______________________
-    if not x_in_iso_basis:
-        Cxy = Qy @ Cxy_iso
-    else:
-        Cxy = Cxy_iso
+    Cxy = Qy @ Cxy_iso if not x_in_iso_basis else Cxy_iso
 
     if not y_in_iso_basis:
         Cxy = Cxy @ Qx_T
@@ -149,32 +158,33 @@ def isotypic_covariance(x: Tensor, y: Tensor, rep_X: Representation, rep_Y: Repr
 def cov(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
     r"""Compute the covariance between two symmetric random variables.
 
-    The covariance of r.v. can be computed from the orthogonal projections of the r.v. to each isotypic subspace. Hence in the disentangled/isotypic basis the covariance can be computed in
-    block-diagonal form:
+    The covariance of r.v. can be computed from the orthogonal projections of the r.v. to each isotypic subspace.
+    Hence, in the disentangled/isotypic basis the covariance can be computed in block-diagonal form:
 
     .. math::
         \begin{align}
             \mathbf{C}_{xy} &= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{C}_{xy}^{(k)} )\mathbf{Q}_x \\
             &= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{Z}_{xy}^{(k)}  \otimes \mathbf{I}_{d_k} )\mathbf{Q}_x \\
         \end{align}
-    Where :math:`\mathbf{Q}_x^T` and :math:`\mathbf{Q}_y^T` are the change of basis matrices to the isotypic basis of X and Y respectively,
-    :math:`\mathbf{C}_{xy}^{(k)}` is the covariance between the isotypic subspaces of type k, :math:`\mathbf{Z}_{xy}^{(k)}` is the free parameters of the covariance matrix in the isotypic basis,
+    Where :math:`\mathbf{Q}_x^T` and :math:`\mathbf{Q}_y^T` are the change of basis matrices to the isotypic basis of
+    X and Y respectively,
+    :math:`\mathbf{C}_{xy}^{(k)}` is the covariance between the isotypic subspaces of type k,
+    :math:`\mathbf{Z}_{xy}^{(k)}` is the free parameters of the covariance matrix in the isotypic basis,
     and :math:`d_k` is the dimension of the irrep associated with the isotypic subspace of type k.
 
     Args:
         X (Tensor): Realizations of a random variable x.
         Y (Tensor): Realizations of a random variable y.
-        rep_X (Representation): The representation for which the orthogonal projection to the invariant subspace is computed.
-        rep_Y (Representation): The representation for which the orthogonal projection to the invariant subspace is computed.
+        rep_X (Representation): The representation acting on the variables X.
+        rep_Y (Representation): The representation acting on the variables Y.
 
     Returns:
         Tensor: The covariance matrix between the two random variables, of shape :math:`(Dy, Dx)`.
 
     Shape:
         X: :math:`(N, Dx)` where :math:`Dx` is the dimension of the random variable X.
-        
         Y: :math:`(N, Dy)` where :math:`Dy` is the dimension of the random variable Y.
-        
+
         Output: :math:`(Dy, Dx)`
     """
     # assert X.shape[0] == Y.shape[0], "Expected equal number of samples in X and Y"
@@ -206,7 +216,7 @@ def cov(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
     X_iso = torch.einsum("ij,...j->...i", Qx.T, X)
     Y_iso = torch.einsum("ij,...j->...i", Qy.T, Y)
     Cxy_iso = torch.zeros((rep_Y.size, rep_X.size), dtype=X.dtype, device=X.device)
-    for iso_id in rep_Y_iso_subspaces.keys():
+    for iso_id in rep_Y_iso_subspaces:
         if iso_id not in rep_X_iso_subspaces:
             continue  # No covariance between the isotypic subspaces of different types.
         X_k = X_iso[..., iso_idx_X[iso_id]]
@@ -225,12 +235,15 @@ def cov(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
 def invariant_orthogonal_projector(rep_X: Representation) -> Tensor:
     r"""Computes the orthogonal projection to the invariant subspace.
 
-    The input representation :math:`\rho_{\mathcal{X}}: \mathbb{G} \mapsto \mathbb{G}\mathbb{L}(\mathcal{X})` is transformed to the spectral basis given by:
+    The input representation :math:`\rho_{\mathcal{X}}: \mathbb{G} \mapsto \mathbb{G}\mathbb{L}(\mathcal{X})` is
+    transformed to the spectral basis given by:
 
     .. math::
         \rho_\mathcal{X} = \mathbf{Q} \left( \bigoplus_{i\in[1,n]} \hat{\rho}_i \right) \mathbf{Q}^T
 
-    where :math:`\hat{\rho}_i` denotes an instance of one of the irreducible representations of the group, and :math:`\mathbf{Q}: \mathcal{X} \mapsto \mathcal{X}` is the orthogonal change of basis from the spectral basis to the original basis.
+    where :math:`\hat{\rho}_i` denotes an instance of one of the irreducible representations of the group, and
+    :math:`\mathbf{Q}: \mathcal{X} \mapsto \mathcal{X}` is the orthogonal change of basis from the spectral basis to
+    the original basis.
 
     The projection is performed by:
         1. Changing the basis to the representation spectral basis (exposing signals per irrep).
@@ -238,7 +251,8 @@ def invariant_orthogonal_projector(rep_X: Representation) -> Tensor:
         3. Mapping back to the original basis set.
 
     Args:
-        rep_X (Representation): The representation for which the orthogonal projection to the invariant subspace is computed.
+        rep_X (Representation): The representation for which the orthogonal projection to the invariant subspace is
+        computed.
 
     Returns:
         Tensor: The orthogonal projection matrix to the invariant subspace, :math:`\mathbf{Q} \mathbf{S} \mathbf{Q}^T`.
