@@ -42,7 +42,7 @@ def var_mean(x: Tensor, rep_x: Representation):
     return var, mean
 
 
-def isotypic_covariance(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation, center=True):
+def isotypic_cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation, center=True):
     r"""Cross covariance of signals between isotypic subspaces of the same type.
 
     This function exploits the fact that the covariance of signals between isotypic subspaces of the same type
@@ -224,7 +224,7 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
         rep_X_k = rep_X_iso_subspaces[iso_id]
         rep_Y_k = rep_Y_iso_subspaces[iso_id]
         # Cxy_k = Dxy_k ⊗ I_d [my * d x mx * d]
-        Cxy_k, _ = isotypic_covariance(X_k, Y_k, rep_X_k, rep_Y_k, center=True)
+        Cxy_k, _ = isotypic_cov(X_k, Y_k, rep_X_k, rep_Y_k, center=True)
         Cxy_iso[iso_idx_Y[iso_id], iso_idx_X[iso_id]] = Cxy_k
 
     # Change to the original basis
