@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "symm-learning"
-version = "0.1.4"
+version = "0.1.5"
 
 description = "Torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"

@@ -37,8 +37,22 @@ def var_mean(x: Tensor, rep_x: Representation):
     mean = torch.einsum("ij,...j->...i", P_inv, mean_empirical)
 
     # Symmetry constrained variance computation.
-    Cx = cov(x, x, rep_x, rep_x)
-    var = torch.diag(Cx)
+    # The variance is constraint to be a single constant per each irreducible subspace.
+    # Hence, we compute the empirical variance, and average within each irreducible subspace.
+    n_samples = x.shape[0]
+    Q_inv = torch.tensor(rep_x.change_of_basis_inv, device=x.device, dtype=x.dtype)
+    Q = torch.tensor(rep_x.change_of_basis, device=x.device, dtype=x.dtype)
+    x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv, x - mean)
+    var_spectral = torch.sum(x_c_irrep_spectral**2, dim=0) / (n_samples - 1)
+
+    d = 0
+    for irrep_id in rep_x.irreps:
+        irrep_dim = rep_x.group.irrep(*irrep_id).size
+        avg_irrep_var = torch.mean(var_spectral[d : d + irrep_dim])
+        var_spectral[d : d + irrep_dim] = avg_irrep_var
+        d += irrep_dim
+
+    var = torch.einsum("ij,...j->...i", Q.pow(2), var_spectral)
     return var, mean
 
 
