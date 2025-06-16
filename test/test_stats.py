@@ -8,7 +8,7 @@ from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Represen
 from torch import Tensor
 
 from symm_learning.representation_theory import isotypic_decomp_rep
-from symm_learning.stats import cov, isotypic_cov, var_mean
+from symm_learning.stats import _isotypic_cov, cov, invariant_orthogonal_projector, var_mean
 
 
 @pytest.mark.parametrize(
@@ -122,72 +122,65 @@ def test_cross_cov(group: Group):  # noqa: D103
     assert np.allclose(Cxy, 0), f"Expected Cxy = 0, got {Cxy}"
 
 
-# @pytest.mark.parametrize(
-#     "group",
-#     [
-#         pytest.param(CyclicGroup(5), id="cyclic5"),
-#         pytest.param(DihedralGroup(10), id="dihedral10"),
-#         pytest.param(Icosahedral(), id="icosahedral"),
-#     ],
-# )
-# def test_isotypic_cross_cov(group: Group):  # noqa: D103
-#     import escnn
-#     from escnn.group import IrreducibleRepresentation, change_basis, directsum
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 5])
+@pytest.mark.parametrize("my", [3, 5])
+def test_isotypic_cross_cov(group: Group, mx: int, my: int):  # noqa: D103
+    from escnn.group import IrreducibleRepresentation, directsum
 
-#     G = group
+    G = group
 
-#     for irrep in G.representations.values():
-#         if not isinstance(irrep, IrreducibleRepresentation):
-#             continue
-#         mx, my = 2, 3
-#         x_rep_iso = directsum([irrep] * mx)  # ρ_Χ
-#         y_rep_iso = directsum([irrep] * my)  # ρ_Y
+    for irrep in G.representations.values():
+        if not isinstance(irrep, IrreducibleRepresentation):
+            continue
+        x_rep_iso = directsum([irrep] * mx)  # ρ_Χ
+        y_rep_iso = directsum([irrep] * my)  # ρ_Y
 
-#         batch_size = 500
-#         #  Simulate symmetric random variables
-#         X_iso = torch.randn(batch_size, x_rep_iso.size)
-#         Y_iso = torch.randn(batch_size, y_rep_iso.size)
+        irrep_type = irrep.type
+        irrep_dim = irrep.size
+        print(f"Testing isotypic cross covariance for irrep {irrep.id} of type {irrep_type} with dimension {irrep_dim}")
 
-#         Cxy_iso, Dxy = isotypic_cov(X_iso, Y_iso, x_rep_iso, y_rep_iso)
-#         Cxy_iso = Cxy_iso.numpy()
+        batch_size = 1000
+        #  Simulate symmetric random variables
+        x_iso = torch.randn(batch_size, x_rep_iso.size) * 10
+        y_iso = torch.randn(batch_size, y_rep_iso.size) * 2
+        Px = invariant_orthogonal_projector(x_rep_iso)
+        Py = invariant_orthogonal_projector(y_rep_iso)
+        x_iso = x_iso - torch.einsum("ab,...a->...b", Px, x_iso.mean(dim=0))
+        y_iso = y_iso - torch.einsum("ab,...a->...b", Py, y_iso.mean(dim=0))
 
-#         assert Cxy_iso.shape == (my * irrep.size, mx * irrep.size), (
-#             f"Expected Cxy_iso to have shape ({my * irrep.size}, {mx * irrep.size}), got {Cxy_iso.shape}"
-#         )
+        G_x_iso, G_y_iso = [x_iso], [y_iso]
+        for g in G.elements[1:]:
+            G_x_iso.append(Tensor(np.einsum("...ij,...j->...i", x_rep_iso(g), x_iso.numpy())))
+            G_y_iso.append(Tensor(np.einsum("...ij,...j->...i", y_rep_iso(g), y_iso.numpy())))
+        G_x_iso = torch.cat(G_x_iso, dim=0)
+        G_y_iso = torch.cat(G_y_iso, dim=0)
 
-#         # Test change of basis is handled appropriately, using random change of basis.
-#         Qx, _ = np.linalg.qr(np.random.randn(x_rep_iso.size, x_rep_iso.size))
-#         Qy, _ = np.linalg.qr(np.random.randn(y_rep_iso.size, y_rep_iso.size))
-#         x_rep = change_basis(x_rep_iso, Qx, name=f"{x_rep_iso.name}_p")  # ρ_Χ_p = Q_Χ ρ_Χ Q_Χ^T
-#         y_rep = change_basis(y_rep_iso, Qy, name=f"{y_rep_iso.name}_p")  # ρ_Y_p = Q_Y ρ_Y Q_Y^T
-#         # Random variables NOT in irrep-spectral basis.
-#         X = Tensor(np.einsum("...ij,...j->...i", Qx, X_iso.numpy()))  # X_p = Q_x X
-#         Y = Tensor(np.einsum("...ij,...j->...i", Qy, Y_iso.numpy()))  # Y_p = Q_y Y
-#         Cxy_p, Dxy = isotypic_cov(X, Y, x_rep, y_rep)
-#         Cxy_p = Cxy_p.numpy()
+        # Compute the isotypic cross covariance
+        Cxy_iso, Dxy = _isotypic_cov(x=x_iso, y=y_iso, rep_x=x_rep_iso, rep_y=y_rep_iso)
+        Cxy_iso = Cxy_iso.numpy()
 
-#         assert np.allclose(Cxy_p, Qy @ Cxy_iso @ Qx.T, atol=1e-6, rtol=1e-4), (
-#             f"Expected Cxy_p - Q_y Cxy_iso Q_x^T = 0. Got \n {Cxy_p - Qy @ Cxy_iso @ Qx.T}"
-#         )
+        assert Cxy_iso.shape == (my * irrep.size, mx * irrep.size), (
+            f"Expected Cxy_iso to have shape ({my * irrep.size}, {mx * irrep.size}), got {Cxy_iso.shape}"
+        )
 
-#         # Test that computing Cxy_iso is equivalent to computing standard cross covariance using data augmentation.
-#         GX_iso, GY_iso = [X_iso], [Y_iso]
-#         for g in G.elements[1:]:
-#             X_g = Tensor(np.einsum("...ij,...j->...i", x_rep(g), X_iso.numpy()))
-#             Y_g = Tensor(np.einsum("...ij,...j->...i", y_rep(g), Y_iso.numpy()))
-#             GX_iso.append(X_g)
-#             GY_iso.append(Y_g)
-#         GX_iso = torch.cat(GX_iso, dim=0)
+        # Ground truth is given by using the group orbit and computing the covariance in the isotypic basis.
+        # Compute the covariance in standard way doing data augmentation.
+        # Cxy_iso_emp = torch.einsum("...i,...j->ij", y_iso, x_iso) / (x_iso.shape[0])
+        Cxy_iso_orbit = torch.einsum("...i,...j->ij", G_y_iso, G_x_iso) / (G_x_iso.shape[0])
+        # Project each empirical Cov to the subspace of G-equivariant linear maps, and average across orbit
+        Cxy_iso_orbit = np.mean(
+            [np.einsum("ij,jk,kl->il", y_rep_iso(g), Cxy_iso_orbit, x_rep_iso(~g)) for g in G.elements], axis=0
+        )
 
-#         Cx_iso, _ = isotypic_cov(x=GX_iso, y=GX_iso, rep_x=x_rep_iso, rep_y=x_rep_iso)
-#         Cx_iso = Cx_iso.numpy()
-#         # Compute the covariance in standard way doing data augmentation.
-#         Cx_iso_orbit = (GX_iso.T @ GX_iso / (GX_iso.shape[0])).numpy()
-#         # Project each empirical Cov to the subspace of G-equivariant linear maps, and average across orbit
-#         Cx_iso_orbit = np.mean(
-#             [np.einsum("ij,jk,kl->il", x_rep_iso(g), Cx_iso_orbit, x_rep_iso(~g)) for g in G.elements], axis=0
-#         )
-#         # Numerical error occurs for small sample sizes
-#         assert np.allclose(Cx_iso, Cx_iso_orbit, atol=1e-2, rtol=1e-2), (
-#             "isotypic_cross_cov is not equivalent to computing the covariance using data-augmentation"
-#         )
+        # Numerical error occurs for small sample sizes
+        assert np.allclose(Cxy_iso, Cxy_iso_orbit, atol=1e-3, rtol=1e-3), (
+            "isotypic_cross_cov is not equivalent to computing the covariance using data-augmentation"
+        )

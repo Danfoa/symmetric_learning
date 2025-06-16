@@ -56,117 +56,104 @@ def var_mean(x: Tensor, rep_x: Representation):
     return var, mean
 
 
-def isotypic_cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation, center=True):
-    r"""Cross covariance of signals between isotypic subspaces of the same type.
+def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Representation = None):
+    r"""Cross-covariance between two **isotypic sub-spaces that share the same irrep**.
 
-    This function exploits the fact that the covariance of signals between isotypic subspaces of the same type
-    is constrained to be of the block form:
+    If both signals live in
+    :math:`\rho_X=\bigoplus_{i=1}^{m_x}\rho_k` and
+    :math:`\rho_Y=\bigoplus_{i=1}^{m_y}\rho_k`
+    (with :math:`\rho_k` of dimension *d*), every
+    :math:`G`-equivariant linear map factorises as
 
     .. math::
-        \mathbf{C}_{xy} = \text{Cov}(X, Y) = \mathbf{Z}_{xy} \otimes \mathbf{I}_d,
+        \operatorname{Cov}(X,Y)
+        \;=\;\mathbf Z_{XY}\otimes \mathbf I_d,  \qquad
+        \mathbf Z_{XY}\in\mathbb R^{m_y\times m_x}.
 
-    where :math:`d = \text{dim(irrep)}` and :math:`\mathbf{Z}_{xy} \in \mathbb{R}^{m_x \times m_y}` and
-    :math:`\mathbf{C}_{xy} \in \mathbb{R}^{(m_x \cdot d) \times (m_y \cdot d)}`.
+    We estimate the free matrix :math:`\mathbf Z_{XY}` by
 
-    Being :math:`m_x` and :math:`m_y` the multiplicities of the irrep in X and Y respectively. This implies that the
-    matrix :math:`\mathbf{Z}_{xy}` represents the free parameters of the covariance we are required to estimate.
-    To do so we reshape the signals :math:`X \in \mathbb{R}^{N \times (m_x \cdot d)}` and
-    :math:`Y \in \mathbb{R}^{N \times (m_y \cdot d)}` to :math:`X_{\text{sing}} \in \mathbb{R}^{(d \cdot N) \times m_x}`
-    and :math:`Y_{\text{sing}} \in \mathbb{R}^{(d \cdot N) \times m_y}` respectively. Ensuring all dimensions of the
-    irreducible subspaces associated to each multiplicity of the irrep are considered as a single dimension for
-    estimating :math:`\mathbf{Z}_{xy} = \frac{1}{n \cdot d} X_{\text{sing}}^T Y_{\text{sing}}`.
+    1. **centering** (skipped if the irrep is trivial);
+    2. **reshaping** the data so that each copy of the irrep becomes one
+       “channel” of length *d·N*;
+    3. **projecting** every :math:`d\times d` block onto the orthogonal basis
+       of :math:`\mathrm{End}_G(\rho_k)` via Frobenius inner products
+       (see <https://arxiv.org/abs/2505.19809>`_);
+    4. rebuilding the block matrix that respects the constraint above.
+
+    When ``y is None`` the routine reduces to an **auto-covariance** and only
+    the symmetric (identity) basis element is kept.
+
 
     Args:
-        x (Tensor): Realizations of the random variable X.
-        y (Tensor): Realizations of the random variable Y.
-        rep_x (escnn.nn.Representation): composed of :math:`m_x` copies of a single irrep:
-            :math:`\rho_X = \otimes_i^{m_x} \rho_k`
-        rep_y (escnn.nn.Representation): composed of :math:`m_y` copies of a single irrep:
-            :math:`\rho_Y = \otimes_i^{m_y} \rho_k`
-        center (bool): whether to center the signals before computing the covariance.
+        x (Tensor): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.
+        rep_x (escnn.group.Representation): isotypic representation
+            containing exactly one irrep type.
+        y (Tensor, optional): shape :math:`(N,\; m_y d)` —
+            samples drawn from ``rep_y``.  If *None*, computes the
+            auto-covariance of *x*.
+        rep_y (escnn.group.Representation, optional): isotypic
+            representation matching the irrep of ``rep_x``; ignored when
+            *y* is *None*.
 
     Returns:
-        (Tensor, Tensor): :math:`\mathbf{C}_{xy}`, (:math:`m_y \cdot d, m_x \cdot d`) the covariance matrix between the
-         isotypic subspaces of :code:`x` and :code:`y`, and :math:`\mathbf{Z}_{xy}`, (:math:`m_y, m_x`) the free
-         parameters of the covariance matrix in the isotypic basis.
-
-    Shape:
-        :code:`x`: :math:`(..., N, m_x * d)` where N is the number of samples, :math:`d` is the dimension of the only
-        irrep in :math:`rep_X` and :math:`m_x` is the multiplicity of the irrep in X.
-
-        :code:`y`: :math:`(..., N, m_y * d)` where N is the number of samples, :math:`d` is the dimension of the only
-        irrep in :math:`rep_Y` and :math:`m_y` is the multiplicity of the irrep in Y.
-
-        Output: :math:`(m_y * d, m_x * d)`.
+        (Tensor, Tensor):
+            C_xy: math:`(m_y d,\; m_x d)` projected covariance.
+            Z_xy:math:`(m_y,\; m_x,\; B)`, free coefficients of each cross-covariance between irrep subspaces,
+              representing basis expansion coefficients in the basis of endomorphisms of the irrep subspaces.
+              Where :math:`B = 1, 2, 4` for real, complex, quaternionic irreps, respectively.
     """
-    assert len(rep_x._irreps_multiplicities) == len(rep_y._irreps_multiplicities) == 1, (
-        f"Expected group representation of an isotypic subspace.I.e., with only one type of irrep. \nFound: "
-        f"{list(rep_x._irreps_multiplicities.keys())} in rep_X, {list(rep_y._irreps_multiplicities.keys())} in rep_Y."
-    )
-    assert rep_x.group == rep_y.group, f"{rep_x.group} != {rep_y.group}"
     irrep_id = rep_x.irreps[0]  # Irrep id of the isotypic subspace
-    assert irrep_id == rep_y.irreps[0], (
-        f"Irreps {irrep_id} != {rep_y.irreps[0]}. Hence signals are orthogonal and Cxy=0."
-    )
     assert rep_x.size == x.shape[-1], f"Expected signal shape to be (..., {rep_x.size}) got {x.shape}"
-    assert rep_y.size == y.shape[-1], f"Expected signal shape to be (..., {rep_y.size}) got {y.shape}"
+    assert len(rep_x._irreps_multiplicities) == 1, f"Expected rep with a single irrep type, got {rep_x.irreps}"
+    x_in_iso_basis = np.allclose(rep_x.change_of_basis_inv, np.eye(rep_x.size), atol=1e-6, rtol=1e-4)
+    assert x_in_iso_basis, "Expected X to be in spectral/isotypic basis"
+    if y is not None:
+        assert len(rep_y._irreps_multiplicities) == 1, f"Expected rep with a single irrep type, got {rep_y.irreps}"
+        assert rep_x.group == rep_y.group, f"{rep_x.group} != {rep_y.group}"
+        assert irrep_id == rep_y.irreps[0], f"Irreps {irrep_id} != {rep_y.irreps[0]}. Hence Cxy=0"
+        assert rep_y.size == y.shape[-1], f"Expected signal shape to be (..., {rep_y.size}) got {y.shape}"
+        y_in_iso_basis = np.allclose(rep_y.change_of_basis_inv, np.eye(rep_y.size), atol=1e-6, rtol=1e-4)
+        assert y_in_iso_basis, "Expected Y to be in spectral/isotypic basis"
 
     # Get information about the irreducible representation present in the isotypic subspace
     irrep_dim = rep_x.group.irrep(*irrep_id).size
-    mk_X = rep_x._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in X
-    mk_Y = rep_y._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in Y
+    # irrep_end_basis := (dim(End(irrep)), dim(irrep), dim(irrep))
+    irrep_end_basis = torch.tensor(rep_x.group.irrep(*irrep_id).endomorphism_basis(), device=x.device, dtype=x.dtype)
 
-    # If required we must change bases to the isotypic bases.
-    Qx_T, Qx = rep_x.change_of_basis_inv, rep_x.change_of_basis
-    Qy_T, Qy = rep_y.change_of_basis_inv, rep_y.change_of_basis
-    x_in_iso_basis = np.allclose(Qx_T, np.eye(Qx_T.shape[0]), atol=1e-6, rtol=1e-4)
-    y_in_iso_basis = np.allclose(Qy_T, np.eye(Qy_T.shape[0]), atol=1e-6, rtol=1e-4)
-    if x_in_iso_basis:
-        x_iso = x
-    else:
-        Qx_T = Tensor(Qx_T).to(device=x.device, dtype=x.dtype)
-        Qx = Tensor(Qx).to(device=x.device, dtype=x.dtype)
-        x_iso = torch.einsum("...ij,...j->...i", Qx_T, x)  # x_iso = Q_x2iso @ x
-    if np.allclose(Qy_T, np.eye(Qy_T.shape[0]), atol=1e-6, rtol=1e-4):
-        y_iso = y
-    else:
-        Qy_T = Tensor(Qy_T).to(device=y.device, dtype=y.dtype)
-        Qy = Tensor(Qy).to(device=y.device, dtype=y.dtype)
-        y_iso = torch.einsum("...ij,...j->...i", Qy_T, y)  # y_iso = Q_y2iso @ y
+    # if y is None Cxy = Cx is symmetric matrix. Hence it has non-zero entries only in the diagonal.
+    if y is None:
+        irrep_end_basis = irrep_end_basis[[0]]
+        rep_y = rep_x  # Use the same representation for Y
+        y = x
 
-    if irrep_dim > 1:
-        # Since Cxy = Dxy ⊗ I_d  , d = dim(irrep) and D_χy ∈ R^{mχ x my}
-        # We compute the constrained covariance, by estimating the matrix D_χy
-        # This requires reshape X_iso ∈ R^{n x p} to X_sing ∈ R^{nd x mχ} and Y_iso ∈ R^{n x q} to Y_sing ∈ R^{nd x my}
-        # Ensuring all samples from dimensions of a single irrep are flattened into a row of X_sing and Y_sing
-        x_sing = x_iso.view(-1, mk_X, irrep_dim).permute(0, 2, 1).reshape(-1, mk_X)
-        y_sing = y_iso.view(-1, mk_Y, irrep_dim).permute(0, 2, 1).reshape(-1, mk_Y)
-    else:  # For one dimensional (real) irreps, this defaults to the standard covariance
-        x_sing, y_sing = x_iso, y_iso
+    m_x = rep_x._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in X
+    m_y = rep_y._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in Y
+
+    x_iso, y_iso = x, y
 
     is_inv_subspace = irrep_id == rep_x.group.trivial_representation.id
-    if center and is_inv_subspace:  # Non-trivial isotypic subspace are centered
-        x_sing = x_sing - torch.mean(x_sing, dim=0, keepdim=True)
-        y_sing = y_sing - torch.mean(y_sing, dim=0, keepdim=True)
+    if is_inv_subspace:  # Nothing to do, return empirical covariance.
+        x_iso = x - torch.mean(x, dim=0, keepdim=True)
+        y_iso = y - torch.mean(y, dim=0, keepdim=True)
+        Cxy_iso = torch.einsum("...y,...x->yx", y_iso, x_iso) / (x_iso.shape[0] - 1)
+        return Cxy_iso, Cxy_iso  # Invariant subspace covariance is the same as the covariance matrix.
 
-    N = x_sing.shape[0]
-    assert x.shape[0] * irrep_dim == N
+    # Compute empirical cross-covariance
+    Cxy_iso = torch.einsum("...y,...x->yx", y_iso, x_iso) / (x_iso.shape[0] - 1)
+    # Reshape from (my * d, mx * d) to (my, mx, d, d)
+    Cxy_irreps = Cxy_iso.view(m_y, irrep_dim, m_x, irrep_dim).permute(0, 2, 1, 3).contiguous()
+    # Compute basis expansion coefficients of each irrep cross-covariance in basis of End(irrep) ========
+    # Frobenius inner product  <C , Ψ_b>  =  Σ_{i,j} C_{ij} Ψ_b,ij
+    Cxy_irreps_basis_coeff = torch.einsum("mnij,bij->mnb", Cxy_irreps, irrep_end_basis)  # (m_y , m_x , B)
+    # squared norms ‖Ψ_b‖² (only once, very small)
+    basis_coeff_norms = torch.einsum("bij,bij->b", irrep_end_basis, irrep_end_basis)  # (B,)
+    Cxy_irreps_basis_coeff = Cxy_irreps_basis_coeff / basis_coeff_norms[None, None]
 
-    c = 1 if center and is_inv_subspace else 0
-    Dxy = torch.einsum("...y,...x->yx", y_sing, x_sing) / (N - c)
-    if irrep_dim > 1:  # Broadcast the estimates according to Cxy = Dxy ⊗ I_d.
-        I_d = torch.eye(irrep_dim, device=Dxy.device, dtype=Dxy.dtype)
-        Cxy_iso = torch.kron(Dxy, I_d)
-    else:
-        Cxy_iso = Dxy
+    Cxy_irreps = torch.einsum("...b,bij->...ij", Cxy_irreps_basis_coeff, irrep_end_basis)  # (m_y , m_x , d , d)
+    # Reshape to (my * d, mx * d)
+    Cxy_iso = Cxy_irreps.permute(0, 2, 1, 3).reshape(m_y * irrep_dim, m_x * irrep_dim)
 
-    # Change back to original basis if needed _______________________
-    Cxy = Qy @ Cxy_iso if not x_in_iso_basis else Cxy_iso
-
-    if not y_in_iso_basis:
-        Cxy = Cxy @ Qx_T
-
-    return Cxy, Dxy
+    return Cxy_iso, Cxy_irreps_basis_coeff
 
 
 def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
@@ -177,14 +164,20 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
 
     .. math::
         \begin{align}
-            \mathbf{C}_{xy} &= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{C}_{xy}^{(k)} )\mathbf{Q}_x \\
-            &= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{Z}_{xy}^{(k)}  \otimes \mathbf{I}_{d_k} )\mathbf{Q}_x \\
+            \mathbf{C}_{xy} &= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{C}_{xy}^{(k)} )\mathbf{Q}_x
+            \\
+            &= \mathbf{Q}_y^T (
+            \bigoplus_{k} \sum_{b\in \mathbb{B}_k} \mathbf{Z}_b^{(k)} \otimes \mathbf{b}
+            ) \mathbf{Q}_x
+            \\
         \end{align}
-    Where :math:`\mathbf{Q}_x^T` and :math:`\mathbf{Q}_y^T` are the change of basis matrices to the isotypic basis of
-    X and Y respectively,
-    :math:`\mathbf{C}_{xy}^{(k)}` is the covariance between the isotypic subspaces of type k,
-    :math:`\mathbf{Z}_{xy}^{(k)}` is the free parameters of the covariance matrix in the isotypic basis,
-    and :math:`d_k` is the dimension of the irrep associated with the isotypic subspace of type k.
+
+    Where :math:`\mathbf{Q}_x^{\mathsf T}` and :math:`\mathbf{Q}_y^{\mathsf T}`
+    are the change-of-basis matrices to the isotypic bases of *X* and *Y*,
+    respectively; :math:`\mathbf{C}_{xy}^{(k)}` is the covariance restricted to the
+    isotypic subspaces of type *k*; and :math:`\mathbf{Z}_b^{(k)}` are the free
+    parameters—i.e. the expansion coefficients in the endomorphism basis
+    :math:`\mathbb{B}_k` of the irreducible representation of type *k*.
 
     Args:
         x (Tensor): Realizations of a random variable x.
@@ -238,7 +231,7 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
         rep_X_k = rep_X_iso_subspaces[iso_id]
         rep_Y_k = rep_Y_iso_subspaces[iso_id]
         # Cxy_k = Dxy_k ⊗ I_d [my * d x mx * d]
-        Cxy_k, _ = isotypic_cov(X_k, Y_k, rep_X_k, rep_Y_k, center=True)
+        Cxy_k, _ = _isotypic_cov(x=X_k, y=Y_k, rep_x=rep_X_k, rep_y=rep_Y_k)
         Cxy_iso[iso_idx_Y[iso_id], iso_idx_X[iso_id]] = Cxy_k
 
     # Change to the original basis
