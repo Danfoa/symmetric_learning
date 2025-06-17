@@ -141,7 +141,7 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
 
     # Compute empirical cross-covariance
     Cxy_iso = torch.einsum("...y,...x->yx", y_iso, x_iso) / (x_iso.shape[0] - 1)
-    # Reshape from (my * d, mx * d) to (my, mx, d, d)
+    # ReshapCxy_isoe from (my * d, mx * d) to (my, mx, d, d)
     Cxy_irreps = Cxy_iso.view(m_y, irrep_dim, m_x, irrep_dim).permute(0, 2, 1, 3).contiguous()
     # Compute basis expansion coefficients of each irrep cross-covariance in basis of End(irrep) ========
     # Frobenius inner product  <C , Ψ_b>  =  Σ_{i,j} C_{ij} Ψ_b,ij

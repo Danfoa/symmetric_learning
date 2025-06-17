@@ -1,5 +1,6 @@
 """Linear algebra utilities for symmetric vector spaces with known group representations."""
 
+import numpy as np
 import torch
 from escnn.group import Representation
 from torch import Tensor
@@ -42,7 +43,7 @@ def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
     return Z
 
 
-def lstsq(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
+def lstsq(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
     r"""Computes a solution to the least squares problem of a system of linear equations with equivariance constraints.
 
     The :math:`\mathbb{G}`-equivariant least squares problem to the linear system of equations
@@ -59,13 +60,13 @@ def lstsq(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
     :math:`\mathbf{X}` and :math:`\mathbf{Y}`.
 
     Args:
-        X (Tensor): Realizations of the random variable :math:`\mathbf{X}` with shape :math:`(N, D_x)`, where
+        x (Tensor): Realizations of the random variable :math:`\mathbf{X}` with shape :math:`(N, D_x)`, where
          :math:`N` is the number of samples.
-        Y (Tensor):
-            Realizations of the r andom variable :math:`\mathbf{Y}` with shape :math:`(N, D_y)`.
-        rep_X (Representation):
+        y (Tensor):
+            Realizations of the random variable :math:`\mathbf{Y}` with shape :math:`(N, D_y)`.
+        rep_x (Representation):
             The finite-group representation under which :math:`\mathbf{X}` transforms.
-        rep_Y (Representation):
+        rep_y (Representation):
             The finite-group representation under which :math:`\mathbf{Y}` transforms.
 
     Returns:
@@ -80,49 +81,48 @@ def lstsq(X: Tensor, Y: Tensor, rep_X: Representation, rep_Y: Representation):
     """
     from symm_learning.representation_theory import isotypic_decomp_rep
 
-    rep_X = isotypic_decomp_rep(rep_X)
-    rep_Y = isotypic_decomp_rep(rep_Y)
-    X_iso_reps = rep_X.attributes["isotypic_reps"]
-    Y_iso_reps = rep_Y.attributes["isotypic_reps"]
-    Qx2iso = torch.tensor(rep_X.change_of_basis_inv, dtype=X.dtype, device=X.device)
-    Qy2iso = torch.tensor(rep_Y.change_of_basis_inv, dtype=Y.dtype, device=Y.device)
+    #   assert X.shape[0] == Y.shape[0], "Expected equal number of samples in X and Y"
+    assert x.shape[1] == rep_x.size, f"Expected X shape (N, {rep_x.size}), got {x.shape}"
+    assert y.shape[1] == rep_y.size, f"Expected Y shape (N, {rep_y.size}), got {y.shape}"
+    assert x.shape[-1] == rep_x.size, f"Expected X shape (..., {rep_x.size}), got {x.shape}"
+    assert y.shape[-1] == rep_y.size, f"Expected Y shape (..., {rep_y.size}), got {y.shape}"
 
-    x_iso = torch.einsum("ij,nj->ni", Qx2iso, X)
-    y_iso = torch.einsum("ij,nj->ni", Qy2iso, Y)
+    rep_X_iso = isotypic_decomp_rep(rep_x)
+    rep_Y_iso = isotypic_decomp_rep(rep_y)
+    # Changes of basis from the Disentangled/Isotypic-basis of X, and Y to the original basis.
+    Qx = torch.tensor(rep_X_iso.change_of_basis, device=x.device, dtype=x.dtype)
+    Qy = torch.tensor(rep_Y_iso.change_of_basis, device=y.device, dtype=y.dtype)
+    rep_X_iso_subspaces = rep_X_iso.attributes["isotypic_reps"]
+    rep_Y_iso_subspaces = rep_Y_iso.attributes["isotypic_reps"]
 
-    # Get orthogonal projection to isotypic subspaces.
-    dimx, dimy = 0, 0
-    X_iso_dims, Y_iso_dims = {}, {}
-    for irrep_k_id, rep_X_k in X_iso_reps.items():
-        X_iso_dims[irrep_k_id] = slice(dimx, dimx + rep_X_k.size)
-        dimx += rep_X_k.size
-    for irrep_k_id, rep_Y_k in Y_iso_reps.items():
-        Y_iso_dims[irrep_k_id] = slice(dimy, dimy + rep_Y_k.size)
-        dimy += rep_Y_k.size
+    # Get the dimensions of the isotypic subspaces of the same type in the input/output representations.
+    iso_idx_X, iso_idx_Y = {}, {}
+    x_dim = 0
+    for iso_id, rep_k in rep_X_iso_subspaces.items():
+        iso_idx_X[iso_id] = slice(x_dim, x_dim + rep_k.size)
+        x_dim += rep_k.size
+    y_dim = 0
+    for iso_id, rep_k in rep_Y_iso_subspaces.items():
+        iso_idx_Y[iso_id] = slice(y_dim, y_dim + rep_k.size)
+        y_dim += rep_k.size
 
-    A_iso = torch.zeros((rep_Y.size, rep_X.size), device=X.device, dtype=X.dtype)
-    for irrep_k_id in Y_iso_reps:
-        if irrep_k_id not in X_iso_reps:
-            continue
-        d_k = rep_X.group.irrep(*irrep_k_id).size
-        I_d_k = torch.eye(d_k, dtype=X.dtype, device=X.device)
-        rep_X_k, rep_Y_k = X_iso_reps[irrep_k_id], Y_iso_reps[irrep_k_id]
-        x_k, y_k = x_iso[..., X_iso_dims[irrep_k_id]], y_iso[..., Y_iso_dims[irrep_k_id]]
-
-        # A_k = (Zyx_k @ Zx_k^†) ⊗ I_d_k
-        # Cx_k, Zx_k = isotypic_covariance(x=x_k, y=x_k, rep_X=rep_X_k, rep_Y=rep_X_k)
-        # Cyx_k, Zyx_k = isotypic_covariance(x=x_k, y=y_k, rep_X=rep_X_k, rep_Y=rep_Y_k)
-        # A_k = torch.kron(Zyx_k @ torch.linalg.pinv(Zx_k), torch.eye(d_k, dtype=x.dtype, device=x.device))
-        x_sing = isotypic_signal2irreducible_subspaces(x_k, rep_X_k)
-        y_sing = isotypic_signal2irreducible_subspaces(y_k, rep_Y_k)
-        # (Zyx_k @ Zx_k^†)
-        out = torch.linalg.lstsq(x_sing, y_sing)
-        A_k = torch.kron(out.solution.T, I_d_k)
-
-        A_iso[Y_iso_dims[irrep_k_id], X_iso_dims[irrep_k_id]] = A_k
+    x_iso = torch.einsum("ij,...j->...i", Qx.T, x)
+    y_iso = torch.einsum("ij,...j->...i", Qy.T, y)
+    A_iso = torch.zeros((rep_y.size, rep_x.size), dtype=x.dtype, device=x.device)
+    for iso_id in rep_Y_iso_subspaces:
+        if iso_id not in rep_X_iso_subspaces:
+            continue  # No covariance between the isotypic subspaces of different types.
+        x_k = x_iso[..., iso_idx_X[iso_id]]
+        y_k = y_iso[..., iso_idx_Y[iso_id]]
+        rep_X_k = rep_X_iso_subspaces[iso_id]
+        rep_Y_k = rep_Y_iso_subspaces[iso_id]
+        # Compute empirical least-squares.
+        A_k_emp = torch.linalg.lstsq(x_k, y_k).solution.T
+        A_k = _project_to_irrep_endomorphism_basis(A_k_emp, rep_X_k, rep_Y_k)
+        A_iso[iso_idx_Y[iso_id], iso_idx_X[iso_id]] = A_k
 
     # Change back to the original input output basis sets
-    A = Qy2iso.T @ A_iso @ Qx2iso
+    A = Qy @ A_iso @ Qx.T
     return A
 
 
@@ -169,3 +169,52 @@ def invariant_orthogonal_projector(rep_x: Representation) -> Tensor:
 
     inv_projector = Qx @ S @ Qx_T
     return inv_projector
+
+
+def _project_to_irrep_endomorphism_basis(A: Tensor, rep_x: Representation, rep_y: Representation) -> Tensor:
+    r"""Projects a linear map A: X -> Y between two isotypic spaces to the space of equivariant linear maps.
+
+    Given a linear map :math:`A: X \to Y`, where :math:`X` and :math:`Y` are isotypic vector spaces of the same type,
+    that is, their representations are built from :math:`m_x` and :math:`m_y` copies of the same irrep, this
+    function projects the linear map to the space of equivariant linear maps between the two isotypic spaces.
+
+    Args:
+        A (Tensor): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`, where :math:`d` is the
+            dimension of the irreducible representation, and :math:`m_x` and :math:`m_y` are the multiplicities of the
+            irreducible representation in :math:`X` and :math:`Y`, respectively.
+        rep_x (Representation): The representation of the isotypic space :math:`X`.
+        rep_y (Representation): The representation of the isotypic space :math:`Y`.
+
+    Returns:
+        A_equiv (Tensor): A projected linear map of shape :math:`(m_y \cdot d, m_x \cdot d)` which commutes with the
+            action of the group on the isotypic spaces :math:`X` and :math:`Y`. That is:
+            :math:`A_{equiv} \circ \rho_X(g) = \rho_Y(g) \circ A_{equiv}` for all :math:`g \in \mathbb{G}`.
+    """
+    irrep_id = rep_x.irreps[0]
+    irrep = rep_x.group.irrep(*irrep_id)
+    assert A.shape == (rep_y.size, rep_x.size), "Expected A: X -> Y"
+    assert len(rep_x._irreps_multiplicities) == 1, f"Expected rep with a single irrep type, got {rep_x.irreps}"
+    assert len(rep_y._irreps_multiplicities) == 1, f"Expected rep with a single irrep type, got {rep_y.irreps}"
+    assert irrep_id == rep_y.irreps[0], f"Irreps {irrep_id} != {rep_y.irreps[0]}. Hence A=0"
+    x_in_iso_basis = np.allclose(rep_x.change_of_basis_inv, np.eye(rep_x.size), atol=1e-6, rtol=1e-4)
+    assert x_in_iso_basis, "Expected X to be in spectral/isotypic basis"
+    y_in_iso_basis = np.allclose(rep_y.change_of_basis_inv, np.eye(rep_y.size), atol=1e-6, rtol=1e-4)
+    assert y_in_iso_basis, "Expected Y to be in spectral/isotypic basis"
+
+    m_x = rep_x._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in X
+    m_y = rep_y._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in Y
+
+    # Get the basis of endomorphisms of the irrep (B, d, d)  B = 1 | 2 | 4
+    irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), device=A.device, dtype=A.dtype)
+    A_irreps = A.view(m_y, irrep.size, m_x, irrep.size).permute(0, 2, 1, 3).contiguous()
+    # Compute basis expansion coefficients of each irrep cross-covariance in basis of End(irrep) ========
+    # Frobenius inner product  <C , Ψ_b>  =  Σ_{i,j} C_{ij} Ψ_b,ij
+    A_irreps_basis_coeff = torch.einsum("mnij,bij->mnb", A_irreps, irrep_end_basis)  # (m_y , m_x , B)
+    # squared norms ‖Ψ_b‖² (only once, very small)
+    basis_coeff_norms = torch.einsum("bij,bij->b", irrep_end_basis, irrep_end_basis)  # (B,)
+    A_irreps_basis_coeff = A_irreps_basis_coeff / basis_coeff_norms[None, None]
+
+    A_irreps = torch.einsum("...b,bij->...ij", A_irreps_basis_coeff, irrep_end_basis)  # (m_y , m_x , d , d)
+    # Reshape to (my * d, mx * d)
+    A_equiv = A_irreps.permute(0, 2, 1, 3).reshape(m_y * irrep.size, m_x * irrep.size)
+    return A_equiv

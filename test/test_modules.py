@@ -7,7 +7,14 @@ from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsu
 from escnn.nn import FieldType
 
 
-@pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 def test_irrep_pooling_equivariance(group: Group):
     """Check the IrrepSubspaceNormPooling layer is G-invariant."""
     from symm_learning.nn.irrep_pooling import IrrepSubspaceNormPooling

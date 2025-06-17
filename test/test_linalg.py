@@ -1,44 +1,47 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
 import numpy as np
+import pytest
 import torch
+from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, IrreducibleRepresentation
 from escnn.nn import FieldType
 
-from symm_learning.linalg import lstsq
+from symm_learning.linalg import _project_to_irrep_endomorphism_basis, lstsq
 
 
-def test_lstsq():  # noqa: D103
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 5])
+@pytest.mark.parametrize("my", [3, 5])
+def test_lstsq(group: Group, mx: int, my: int):  # noqa: D103
     import escnn
     from escnn.group import directsum
 
     # Icosahedral group has irreps of dimensions [1, ... 5]. Good test case.
-    G = escnn.group.Icosahedral()
-    mx, my = 2, 1
-    # G = escnn.group.DihedralGroup(10)
-    # mx, my = 6, 5
+    G = group
     rep_x = directsum([G.regular_representation] * mx)
     rep_y = directsum([G.regular_representation] * my)
-
-    # Test in the isotypic basis
-    # rep_x = isotypic_decomp_rep(rep_x)
-    # rep_x = change_basis(rep_x, rep_x.change_of_basis_inv, f"{rep_x.name}-iso")
-    # rep_y = isotypic_decomp_rep(rep_y)
-    # rep_y = change_basis(rep_y, rep_y.change_of_basis_inv, f"{rep_y.name}-iso")
 
     x_field = FieldType(escnn.gspaces.no_base_space(G), representations=[rep_x])
     y_field = FieldType(escnn.gspaces.no_base_space(G), representations=[rep_y])
     lin_map = escnn.nn.Linear(x_field, y_field, bias=False)
     A_gt, _ = lin_map.expand_parameters()
-    A_gt = A_gt.detach().cpu().numpy()
+    A_gt = A_gt
 
-    batch_size = 512
+    batch_size = 1000
 
-    X = torch.randn(batch_size, rep_x.size)
-    GX = [torch.einsum("ij,nj->ni", torch.tensor(rep_x(g), dtype=X.dtype), X) for g in G.elements]
-    X = torch.cat(GX, dim=0)
+    # Generate random X and and compute Y = A_gt @ X
+    x = torch.randn(batch_size, rep_x.size)
+    y = torch.einsum("ij,nj->ni", A_gt, x)
+    # Use G-equivariant least-squares to recover A_gt
+    A = lstsq(x, y, rep_x, rep_y)
 
-    Y = torch.einsum("ij,nj->ni", torch.tensor(A_gt, dtype=X.dtype), X)
-    A = lstsq(X, Y, rep_x, rep_y).numpy()
-
-    assert np.allclose(A_gt, A, atol=1e-3, rtol=1e-3)
+    assert A.shape == (rep_y.size, rep_x.size), f"Expected A shape {(rep_y.size, rep_x.size)}, got {A.shape}"
+    assert torch.allclose(A_gt, A, atol=1e-3, rtol=1e-3)
 
     print("Symmetric Least Squares error test passed.")

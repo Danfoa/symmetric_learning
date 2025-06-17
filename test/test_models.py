@@ -2,11 +2,18 @@
 import escnn
 import pytest
 import torch
-from escnn.group import CyclicGroup, DihedralGroup, Group, directsum
+from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
 from escnn.nn import FieldType
 
 
-@pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        # pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 @pytest.mark.parametrize("n_hidden_layers", [5, 10])
 @pytest.mark.parametrize("hidden_units", [128])
 @pytest.mark.parametrize("activation", ["ReLU"])
