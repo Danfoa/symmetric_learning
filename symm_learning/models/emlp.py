@@ -70,6 +70,10 @@ class EMLP(EquivariantModule):
     def extra_repr(self) -> str:  # noqa: D102
         return f"{self.G}-equivariant MLP: in={self.in_type}, out={self.out_type}"
 
+    def export(self):
+        """Exports the model to a torch.nn.Sequential instance."""
+        return self.net.export()
+
 
 class FourierBlock(EquivariantModule):
     """Module applying a linear layer followed by a escnn.nn.FourierPointwise activation."""
@@ -128,3 +132,7 @@ class FourierBlock(EquivariantModule):
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"{self.G}-FourierBlock {self._activation}: in={self.in_type.size}, out={self.out_type.size}"
+
+    def export(self):
+        """Exports the module to a torch.nn.Sequential instance."""
+        return escnn.nn.SequentialModule(self.linear, self.act).export()

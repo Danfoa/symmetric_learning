@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from math import ceil
 
+import escnn
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
@@ -71,3 +72,11 @@ class IMLP(EquivariantModule):
         self.equiv_feature_extractor.check_equivariance(atol=atol, rtol=rtol)
         self.inv_feature_extractor.check_equivariance(atol=atol, rtol=rtol)
         return super(IMLP, self).check_equivariance(atol=atol, rtol=rtol)
+
+    def export(self):
+        """Exports the model to a torch.nn.Sequential instance."""
+        return escnn.nn.SequentialModule(
+            self.equiv_feature_extractor,
+            self.inv_feature_extractor,
+            self.head,
+        ).export()

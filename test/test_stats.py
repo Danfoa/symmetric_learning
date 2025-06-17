@@ -7,8 +7,9 @@ import torch
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation
 from torch import Tensor
 
+from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import isotypic_decomp_rep
-from symm_learning.stats import _isotypic_cov, cov, invariant_orthogonal_projector, var_mean
+from symm_learning.stats import _isotypic_cov, cov, var_mean
 
 
 @pytest.mark.parametrize(

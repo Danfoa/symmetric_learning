@@ -7,6 +7,7 @@ import torch
 from escnn.group import Representation
 from torch import Tensor
 
+from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import isotypic_decomp_rep
 
 
@@ -237,48 +238,3 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
     # Change to the original basis
     Cxy = Qy.T @ Cxy_iso @ Qx
     return Cxy
-
-
-def invariant_orthogonal_projector(rep_x: Representation) -> Tensor:
-    r"""Computes the orthogonal projection to the invariant subspace.
-
-    The input representation :math:`\rho_{\mathcal{X}}: \mathbb{G} \mapsto \mathbb{G}\mathbb{L}(\mathcal{X})` is
-    transformed to the spectral basis given by:
-
-    .. math::
-        \rho_\mathcal{X} = \mathbf{Q} \left( \bigoplus_{i\in[1,n]} \hat{\rho}_i \right) \mathbf{Q}^T
-
-    where :math:`\hat{\rho}_i` denotes an instance of one of the irreducible representations of the group, and
-    :math:`\mathbf{Q}: \mathcal{X} \mapsto \mathcal{X}` is the orthogonal change of basis from the spectral basis to
-    the original basis.
-
-    The projection is performed by:
-        1. Changing the basis to the representation spectral basis (exposing signals per irrep).
-        2. Zeroing out all signals on irreps that are not trivial.
-        3. Mapping back to the original basis set.
-
-    Args:
-        rep_x (Representation): The representation for which the orthogonal projection to the invariant subspace is
-        computed.
-
-    Returns:
-        Tensor: The orthogonal projection matrix to the invariant subspace, :math:`\mathbf{Q} \mathbf{S} \mathbf{Q}^T`.
-    """
-    Qx_T, Qx = Tensor(rep_x.change_of_basis_inv), Tensor(rep_x.change_of_basis)
-
-    # S is an indicator of which dimension (in the irrep-spectral basis) is associated with a trivial irrep
-    S = torch.zeros((rep_x.size, rep_x.size))
-    irreps_dimension = []
-    cum_dim = 0
-    for irrep_id in rep_x.irreps:
-        irrep = rep_x.group.irrep(*irrep_id)
-        # Get dimensions of the irrep in the original basis
-        irrep_dims = range(cum_dim, cum_dim + irrep.size)
-        irreps_dimension.append(irrep_dims)
-        if irrep_id == rep_x.group.trivial_representation.id:
-            # this dimension is associated with a trivial irrep
-            S[irrep_dims, irrep_dims] = 1
-        cum_dim += irrep.size
-
-    inv_projector = Qx @ S @ Qx_T
-    return inv_projector
