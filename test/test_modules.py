@@ -23,3 +23,32 @@ def test_irrep_pooling_equivariance(group: Group):
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
     pooling_layer = IrrepSubspaceNormPooling(in_type=type_Y)
     pooling_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 5])
+@pytest.mark.parametrize("my", [3, 5])
+def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
+    """Check the EquivMultivariateNormal layer is G-invariant."""
+    import torch
+
+    from symm_learning.models.emlp import EMLP
+    from symm_learning.nn.equiv_normal_distribution import EquivMultivariateNormal
+
+    G = group
+    x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * mx)
+    y_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * my)
+
+    rep_x = x_type.representation
+    G = rep_x.group
+
+    e_normal = EquivMultivariateNormal(y_type, diagonal=True)
+
+    e_normal.check_equivariance(atol=1e-6, rtol=1e-6)

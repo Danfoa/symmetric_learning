@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "symm-learning"
-version = "0.1.9"
+version = "0.2.0"
 
 description = "Torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"
@@ -68,7 +68,7 @@ pydocstyle.convention = "google"
 select = [
   "F",    # pyflakes: general code quality checks
   "E",    # pycodestyle: PEP8 error checks
-  "W",    # pycodestyle: PEP8 warning checks
+#  "W",    # pycodestyle: PEP8 warning checks
   "I",    # isort: import sorting checks
   "D",    # pydocstyle: docstring style checks,
   "FA",   # Future annotations
@@ -81,6 +81,7 @@ select = [
 ignore = [
   "D401", # Allow any docstring to start with a capital letter, not just "This"
   "D405", # Allow non-imperative mood in docstring section names
+  "D415", # Allow docstrings to end without a period
   "E701", # Allow multiple statements on one line (colon)
   "D100",  # Ignore missing docstring in public module
   "F401", # Don't remove unused imports
