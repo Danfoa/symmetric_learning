@@ -40,7 +40,7 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     import torch
 
     from symm_learning.models.emlp import EMLP
-    from symm_learning.nn.equiv_normal_distribution import EquivMultivariateNormal
+    from symm_learning.nn.equiv_multivariate_normal import EquivMultivariateNormal
 
     G = group
     x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * mx)
