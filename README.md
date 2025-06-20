@@ -73,8 +73,7 @@ $$
 P(y \mid x) = P(\rho_Y(g) y \mid \rho_X(g) x) \quad \forall g \in \mathbb{G}.
 $$
 
-Here, $x$ is a `(batch_size, dim_y + n_dof_cov)` input tensor with the first `dim_y` entries defining the mean of the distribution $\mu(x)$ and the next `n_dof_cov` entries define the free degrees of freedom from the symmetry constrained covariance matrix. See below
-
+This means that if you want to parameterize a $\mathbb{G}$-equivariant stochastic function $y = f(x)$ using neural networks, you can use any backbone architecture whose output are the input parameters of a `EquivMultivariateNormal` distribution, as shown below:
 ```python
 from escnn.group import CyclicGroup
 from escnn.nn import FieldType
@@ -90,6 +89,8 @@ e_normal = EquivMultivariateNormal(y_type, diagonal=True)
 nn = EMLP(in_type=x_type, out_type=e_normal.in_type)
 # Sample from the distribution
 x = x_type(torch.randn(10, x_type.size))
-dist = e_normal.get_distribution(nn(x)) # instance of  torch.distributions.MultivariateNormal
+z = nn(x) # (B, dim_y + n_dof_cov)
+dist = e_normal.get_distribution(z) # instance of  torch.distributions.MultivariateNormal
 y = dist.sample()  # (B, n)
 ```
+Here, $z$ is a `(batch_size, dim_y + n_dof_cov)` input tensor with the first `dim_y` entries defining the mean of the distribution $\mu(x)$ and the next `n_dof_cov` entries define the free degrees of freedom from the symmetry constrained covariance matrix. See below

@@ -1,8 +1,24 @@
+from __future__ import annotations
+
 import escnn
 import torch
 import torch.nn.functional as F
 from escnn.group import directsum
 from escnn.nn import EquivariantModule, FieldType
+
+
+def _equiv_mean_var_from_input(
+    input: torch.Tensor,
+    idx: torch.Tensor,
+    Q2_T: torch.Tensor,
+    dim_y: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Extract mean and variance from the input tensor."""
+    mu = input[..., :dim_y]  # (B, n)
+    log_eigvals = input[..., dim_y:]  # (B, n_irreps)
+    var_irrep_spectral_basis = torch.exp(log_eigvals[..., idx]) + 1e-6  # (B, n)
+    var = var_irrep_spectral_basis @ Q2_T  # (B, n)
+    return mu, var
 
 
 class EquivMultivariateNormal(EquivariantModule):
@@ -62,6 +78,7 @@ class EquivMultivariateNormal(EquivariantModule):
         # index vector that broadcasts irrep-scalars to component level
         idx = [i for i, d in enumerate(self.irrep_dims) for _ in range(d)]
         self.register_buffer("idx", torch.tensor(idx, dtype=torch.long))
+        self.n_cov_params = len(rep_y.irreps)  # Number of params for the covariance matrix
         # ----- change-of-basis (irrep_spectral → user) -----------------------------
         Q = torch.tensor(rep_y.change_of_basis, dtype=torch.get_default_dtype())
         self.register_buffer("Q2_T", (Q.pow(2)).t())  # (n, n) transposed
@@ -86,11 +103,10 @@ class EquivMultivariateNormal(EquivariantModule):
         assert input.type == self.in_type, "Input type does not match the expected input type."
 
         # Extract the mean and covariance from the input
-        mu = input.tensor[..., : self.y_type.size]  # (B, n)
-        log_eigvals = input.tensor[..., self.y_type.size :]  # (B, n_irreps)
-        # (A) broadcast to each component in its irrep.
-        var_irrep_spectral_basis = torch.exp(log_eigvals[..., self.idx]) + 1e-6
-        var = var_irrep_spectral_basis @ self.Q2_T  # (B, n)
+        if self.diagonal:
+            mu, var = _equiv_mean_var_from_input(input.tensor, self.idx, self.Q2_T, self.y_type.size)
+        else:
+            raise NotImplementedError("Full covariance matrices are not implemented yet.")
 
         return mu, var
 
@@ -107,20 +123,82 @@ class EquivMultivariateNormal(EquivariantModule):
         """Check equivariance of the module."""
         B = 50
         # Generate random input
-        z = torch.randn(B, self.in_type.size)
+        input = torch.randn(B, self.in_type.size)
         y = torch.randn(B, self.y_type.size)
         prob_Gy = []
         for g in self.y_type.fibergroup.elements:
             # Transform the input
-            gz = self.in_type.transform_fibers(z, g)
+            g_input = self.in_type.transform_fibers(input, g)
             gy = self.y_type.transform_fibers(y, g)
 
-            normal = self.get_distribution(self.in_type(gz))
+            normal = self.get_distribution(self.in_type(g_input))
             prob_Gy.append(normal.log_prob(gy))
 
         prob_Gy = torch.stack(prob_Gy, dim=1)
         # Check that all probabilities are equal on group orbits
-        assert torch.allclose(prob_Gy, prob_Gy.mean(dim=1, keepdim=True), atol=1e-5, rtol=1e-5), (
+        assert torch.allclose(prob_Gy, prob_Gy.mean(dim=1, keepdim=True), atol=atol, rtol=rtol), (
+            "Probabilities are not invariant on group orbits"
+        )
+
+    def export(self):
+        r"""Export recursively each submodule to a normal PyTorch module and set to "eval" mode."""
+        torch_e_normal = tEquivMultivariateNormal(
+            idx=self.idx,
+            Q2_T=self.Q2_T,
+            dim_y=self.y_type.size,
+            diagonal=self.diagonal,
+        )
+        torch_e_normal.eval()  # Set to eval mode
+        return torch_e_normal
+
+
+class tEquivMultivariateNormal(torch.nn.Module):
+    """Utility class to export `EquivMultivariateNormal` to a standard PyTorch module."""
+
+    def __init__(
+        self,
+        idx: torch.Tensor,  # shape (n,)   –  broadcast map irrep→component
+        Q2_T: torch.Tensor,  # shape (n, n) –  (Q ** 2).T from escnn
+        dim_y: int,  # dim of the output space (= y_type.size)
+        diagonal: bool = True,  # only diagonal covariance matrices are implemented
+    ):
+        super().__init__()
+        self.register_buffer("idx", idx.clone())
+        self.register_buffer("Q2_T", Q2_T.clone())
+        self.dim_y = dim_y
+        self.diagonal = diagonal
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compute the mean and variance of a multivariate normal distribution."""
+        if self.diagonal:
+            mu, var = _equiv_mean_var_from_input(x, self.idx, self.Q2_T, self.dim_y)
+        else:
+            raise NotImplementedError("Full covariance matrices are not implemented yet.")
+        return mu, var
+
+    def get_distribution(self, x: torch.Tensor) -> torch.distributions.MultivariateNormal:
+        """Returns the MultivariateNormal distribution."""
+        mu, var = self(x)
+        return torch.distributions.MultivariateNormal(mu, torch.diag_embed(var))
+
+    def check_equivariance(self, in_type, y_type, atol=1e-5, rtol=1e-5):
+        """Check equivariance of the module."""
+        B = 50
+        # Generate random input
+        input = torch.randn(B, in_type.size)
+        y = torch.randn(B, y_type.size)
+        prob_Gy = []
+        for g in y_type.fibergroup.elements:
+            # Transform the input
+            g_input = in_type.transform_fibers(input, g)
+            gy = y_type.transform_fibers(y, g)
+
+            normal = self.get_distribution(g_input)
+            prob_Gy.append(normal.log_prob(gy))
+
+        prob_Gy = torch.stack(prob_Gy, dim=1)
+        # Check that all probabilities are equal on group orbits
+        assert torch.allclose(prob_Gy, prob_Gy.mean(dim=1, keepdim=True), atol=atol, rtol=rtol), (
             "Probabilities are not invariant on group orbits"
         )
 
@@ -163,3 +241,6 @@ if __name__ == "__main__":
     assert torch.allclose(prob_Gx, prob_Gx.mean(dim=1, keepdim=True)), "Probabilities are not equal on group orbits"
 
     e_normal.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    torch_e_normal: tEquivMultivariateNormal = e_normal.export()
+    torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-5, rtol=1e-5)
