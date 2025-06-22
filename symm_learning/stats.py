@@ -33,7 +33,11 @@ def var_mean(x: Tensor, rep_x: Representation):
     # Compute the mean of the observation.
     mean_empirical = torch.mean(x, dim=0)
     # Project to the inv-subspace and map back to the original basis
-    P_inv = invariant_orthogonal_projector(rep_x)
+    if "invariant_orthogonal_projector" not in rep_x.attributes:
+        P_inv = invariant_orthogonal_projector(rep_x)
+        rep_x.attributes["invariant_orthogonal_projector"] = P_inv
+    else:
+        P_inv = rep_x.attributes["invariant_orthogonal_projector"]
     # print(P_inv.dtype, x.dtype)
     mean = torch.einsum("ij,...j->...i", P_inv, mean_empirical)
 
@@ -41,9 +45,19 @@ def var_mean(x: Tensor, rep_x: Representation):
     # The variance is constraint to be a single constant per each irreducible subspace.
     # Hence, we compute the empirical variance, and average within each irreducible subspace.
     n_samples = x.shape[0]
-    Q_inv = torch.tensor(rep_x.change_of_basis_inv, device=x.device, dtype=x.dtype)
-    Q = torch.tensor(rep_x.change_of_basis, device=x.device, dtype=x.dtype)
-    x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv, x - mean)
+    if "Q_inv" not in rep_x.attributes:  # Use cache Tensor if available.
+        Q_inv = torch.tensor(rep_x.change_of_basis_inv, device=x.device, dtype=x.dtype)
+        rep_x.attributes["Q_inv"] = Q_inv
+    else:
+        Q_inv = rep_x.attributes["Q_inv"]
+
+    if "Q" not in rep_x.attributes:  # Use cache Tensor if available.
+        Q = torch.tensor(rep_x.change_of_basis, device=x.device, dtype=x.dtype)
+        rep_x.attributes["Q"] = Q
+    else:
+        Q = rep_x.attributes["Q"]
+
+    x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv.to(device=x.device), x - mean)
     var_spectral = torch.sum(x_c_irrep_spectral**2, dim=0) / (n_samples - 1)
 
     d = 0
@@ -53,7 +67,7 @@ def var_mean(x: Tensor, rep_x: Representation):
         var_spectral[d : d + irrep_dim] = avg_irrep_var
         d += irrep_dim
 
-    var = torch.einsum("ij,...j->...i", Q.pow(2), var_spectral)
+    var = torch.einsum("ij,...j->...i", Q.pow(2).to(device=x.device), var_spectral)
     return var, mean
 
 
