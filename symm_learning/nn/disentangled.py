@@ -14,6 +14,7 @@ class Change2DisentangledBasis(EquivariantModule):
     def __init__(self, in_type: FieldType, learnable: bool = False):
         super(Change2DisentangledBasis, self).__init__()
         self.in_type = in_type
+
         # Compute the isotypic decomposition of the input representation
         in_rep_iso_basis = isotypic_decomp_rep(in_type.representation)
         # Get the representation per isotypic subspace
@@ -28,7 +29,7 @@ class Change2DisentangledBasis(EquivariantModule):
         if self._learnable:
             self.Qin2iso = escnn.nn.Linear(in_type=in_type, out_type=self.out_type, bias=False)
         else:
-            self.Qin2iso = Qin2iso
+            self.register_buffer("Qin2iso", Qin2iso)
 
     def forward(self, x: GeometricTensor):  # noqa: D102
         assert x.type == self.in_type, f"Expected input tensor of type {self.in_type}, got {x.type}"
@@ -49,3 +50,17 @@ class Change2DisentangledBasis(EquivariantModule):
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"Change of basis: {not self._is_in_iso_basis}"
+
+    def export(self):  # noqa: D102
+        if self._learnable:
+            raise NotImplementedError("Exporting a learnable Change2DisentangledBasis is not implemented.")
+
+        if self._is_in_iso_basis:
+            return torch.nn.Identity()
+        else:
+            # Return a linear layer with the change of basis matrix
+            a = torch.nn.Linear(in_features=self.in_type.size, out_features=self.out_type.size, bias=False)
+            a.weight.data = self.Qin2iso
+            a.weight.requires_grad = False
+            a.eval()
+            return a

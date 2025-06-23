@@ -4,7 +4,7 @@ from __future__ import annotations
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
-from symm_learning.nn.disentangled import Change2DisentangledBasis
+from symm_learning.nn import Change2DisentangledBasis
 
 
 class IrrepSubspaceNormPooling(EquivariantModule):
