@@ -17,12 +17,24 @@ from escnn.nn import FieldType
 )
 def test_irrep_pooling_equivariance(group: Group):
     """Check the IrrepSubspaceNormPooling layer is G-invariant."""
-    from symm_learning.nn.irrep_pooling import IrrepSubspaceNormPooling
+    import torch
+
+    from symm_learning.nn import IrrepSubspaceNormPooling
 
     y_rep = directsum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
     pooling_layer = IrrepSubspaceNormPooling(in_type=type_Y)
     pooling_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    t_pooling_layer = pooling_layer.export()
+    batch_size = 10
+    y = type_Y(torch.randn(batch_size, type_Y.size, dtype=torch.float32))
+    y_iso = pooling_layer(y).tensor
+    y_iso_torch = t_pooling_layer(y.tensor)
+
+    assert torch.allclose(y_iso, y_iso_torch, atol=1e-5, rtol=1e-5), (
+        f"Max error: {torch.max(torch.abs(y_iso - y_iso_torch)):.5f}"
+    )
 
 
 @pytest.mark.parametrize(
