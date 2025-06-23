@@ -87,7 +87,6 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     """Check the EquivMultivariateNormal layer is G-invariant."""
     import torch
 
-    from symm_learning.models.emlp import EMLP
     from symm_learning.nn import EquivMultivariateNormal, tEquivMultivariateNormal
 
     G = group
