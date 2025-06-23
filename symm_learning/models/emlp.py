@@ -31,7 +31,6 @@ class EMLP(EquivariantModule):
         self,
         in_type: FieldType,
         out_type: FieldType,
-        hidden_layers: int = 1,
         hidden_units: int = 128,
         activation: str | list[str] = "ReLU",
         pointwise_activation: bool = True,
@@ -43,8 +42,7 @@ class EMLP(EquivariantModule):
         Args:
             in_type: Input field type.
             out_type: Output field type.
-            hidden_layers: Number of hidden layers.
-            hidden_units: Number of units in the hidden layers.
+            hidden_units: (list[int]) List of number of units in each hidden layer.
             activation: Name of the class of activation function.
             bias: Whether to include a bias term in the linear layers.
             hidden_rep: Representation used (up to multiplicity) to construct the hidden layer `FieldType`. If None,
@@ -55,7 +53,11 @@ class EMLP(EquivariantModule):
                 basis.
         """
         super(EMLP, self).__init__()
-        assert hidden_layers > 0, "A MLP with 0 hidden layers is equivalent to a linear layer"
+        assert hasattr(hidden_units, "__iter__") and hasattr(hidden_units, "__len__"), (
+            "hidden_units must be a list of integers"
+        )
+        assert len(hidden_units) > 0, "A MLP with 0 hidden layers is equivalent to a linear layer"
+
         self.G = in_type.fibergroup
         self.in_type, self.out_type = in_type, out_type
         self.pointwise_activation = pointwise_activation
@@ -63,15 +65,10 @@ class EMLP(EquivariantModule):
         hidden_rep = hidden_rep or self.G.regular_representation
         self._check_for_shur_blocking(hidden_rep)
 
-        if isinstance(hidden_units, int):
-            hidden_units = [hidden_units] * hidden_layers
-        elif hasattr(hidden_units, "__len__"):
-            assert len(hidden_units) == hidden_layers, "Number of hidden units must match the number of hidden layers"
-
         if isinstance(activation, str):
-            activations = [activation] * hidden_layers
+            activations = [activation] * len(hidden_units)
         else:
-            assert isinstance(activation, list) and len(activation) == hidden_layers, (
+            assert isinstance(activation, list) and len(activation) == len(hidden_units), (
                 "List of activation names must have the same length as the number of hidden layers"
             )
             activations = activation

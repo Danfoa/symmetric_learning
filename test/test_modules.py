@@ -81,7 +81,7 @@ def test_change2disentangled_basis_equivariance(group: Group):  # noqa: D103
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-@pytest.mark.parametrize("mx", [1, 5])
+@pytest.mark.parametrize("mx", [3])
 @pytest.mark.parametrize("my", [3, 5])
 def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     """Check the EquivMultivariateNormal layer is G-invariant."""

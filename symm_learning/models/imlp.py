@@ -28,26 +28,28 @@ class IMLP(EquivariantModule):
         self,
         in_type: FieldType,
         out_dim: int,  # Number of G-invariant features to extract.
-        hidden_layers: int = 1,
-        hidden_units: int = 128,
+        hidden_units: list[int] = [128, 128, 128],
         activation: str = "ReLU",
         bias: bool = False,
         hidden_rep: Representation = None,
     ):
         super(IMLP, self).__init__()
+        assert hasattr(hidden_units, "__iter__") and hasattr(hidden_units, "__len__"), (
+            "hidden_units must be a list of integers"
+        )
+        assert len(hidden_units) > 0, "At least one equivariant layer is required"
 
         self.G = in_type.fibergroup
         self.in_type = in_type
 
         equiv_out_type = FieldType(
             gspace=in_type.gspace,
-            representations=[self.G.regular_representation] * max(1, ceil(hidden_units / self.G.order())),
+            representations=[self.G.regular_representation] * max(1, ceil(hidden_units[-1] / self.G.order())),
         )
 
         self.equiv_feature_extractor = EMLP(
             in_type=in_type,
             out_type=equiv_out_type,
-            hidden_layers=hidden_layers - 1,  # Last layer will be an unconstrained linear layer.
             hidden_units=hidden_units,
             activation=activation,
             bias=bias,
@@ -80,8 +82,8 @@ class IMLP(EquivariantModule):
             self.equiv_feature_extractor,
             self.inv_feature_extractor,
         ).export()
-
-        imlp.add_module(self.head)
+        print(self.head)
+        imlp.add_module("head", self.head)
         imlp.eval()
 
         return imlp
