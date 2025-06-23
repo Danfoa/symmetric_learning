@@ -4,7 +4,7 @@ from __future__ import annotations
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
-from symm_learning.nn.disentangled import Change2DisentangledBasis
+from symm_learning.nn import Change2DisentangledBasis
 
 
 class IrrepSubspaceNormPooling(EquivariantModule):
@@ -25,6 +25,11 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         self.out_type = FieldType(
             gspace=in_type.gspace, representations=[self.G.trivial_representation] * n_inv_features
         )
+        # Store isotypic subspaces start/end indices for efficient slicing
+        self.register_buffer("iso_start_dims", torch.tensor(self.in2iso.out_type.fields_start, dtype=torch.int64))
+        self.register_buffer("iso_end_dims", torch.tensor(self.in2iso.out_type.fields_end, dtype=torch.int64))
+        irreps_ids = [rep.irreps[0] for rep in self.in2iso.out_type.representations]
+        self.register_buffer("irreps_dims", torch.tensor([self.G.irrep(*irreps_id).size for irreps_id in irreps_ids]))
 
     def forward(self, x: GeometricTensor) -> GeometricTensor:
         """Computes the norm of each G-irreducible subspace of the input GeometricTensor.
@@ -39,11 +44,12 @@ class IrrepSubspaceNormPooling(EquivariantModule):
             GeometricTensor: G-Invariant tensor of shape (..., N) where N is the number of irreps in the input type.
         """
         x_ = self.in2iso(x)
-        x_iso = self._orth_proj_isotypic_subspaces(x_)
+        # Decompose the input tensor into isotypic subspaces
+        x_iso = [x_.tensor[..., s:e] for s, e in zip(self.iso_start_dims, self.iso_end_dims)]
 
         inv_features_iso = []
-        for x_k, rep_k in zip(x_iso, self.in_type_iso.representations):
-            n_irrep_G_stable_spaces = len(rep_k.irreps)  # Number of G-invariant features = multiplicity of irrep
+        for x_k, s, e, irrep_dim in zip(x_iso, self.iso_start_dims, self.iso_end_dims, self.irreps_dims):
+            n_irrep_G_stable_spaces = int((e - s) / irrep_dim)  # Number of G-invariant features = multiplicity of irrep
             # This basis is useful because we can apply the norm in a vectorized way
             # Reshape features to [batch, n_irrep_G_stable_spaces, num_features_per_G_stable_space]
             x_field_p = torch.reshape(x_k, (x_k.shape[0], n_irrep_G_stable_spaces, -1))
@@ -58,14 +64,53 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         )
         return self.out_type(inv_features)
 
-    def _orth_proj_isotypic_subspaces(self, z: GeometricTensor) -> [torch.Tensor]:
-        """Compute the orthogonal projection of the input tensor into the isotypic subspaces."""
-        assert z.type == self.in_type_iso, f"Expected input tensor of type {self.in_type_iso}, got {z.type}"
-        z_iso = [z.tensor[..., s:e] for s, e in zip(z.type.fields_start, z.type.fields_end)]
-        return z_iso
-
     def evaluate_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, ...]:  # noqa: D102
         return input_shape[:-1] + (len(self.out_type.size),)
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"{self.G}-Irrep Norm Pooling: in={self.in_type} -> out={self.out_type}"
+
+    def export(self) -> torch.nn.Module:
+        """Exports the module to a standard PyTorch module."""
+        return tIrrepSubspaceNormPooling(
+            in2iso=self.in2iso.export(),
+            iso_start_dims=self.iso_start_dims,
+            iso_end_dims=self.iso_end_dims,
+            irreps_dims=self.irreps_dims,
+        )
+
+
+class tIrrepSubspaceNormPooling(torch.nn.Module):
+    """Torch module result of exporting the IrrepSubspaceNormPooling layer to a standard PyTorch module."""
+
+    def __init__(
+        self,
+        in2iso: torch.nn.Module,
+        iso_start_dims: torch.Tensor,
+        iso_end_dims: torch.Tensor,
+        irreps_dims: torch.Tensor,
+    ):
+        super(tIrrepSubspaceNormPooling, self).__init__()
+        self.in2iso = in2iso
+        self.iso_start_dims = iso_start_dims
+        self.iso_end_dims = iso_end_dims
+        self.irreps_dims = irreps_dims
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Computes the norm of each G-irreducible subspace of the input tensor."""
+        x_ = self.in2iso(x)
+        # Decompose the input tensor into isotypic subspaces
+        x_iso = [x_[..., s:e] for s, e in zip(self.iso_start_dims, self.iso_end_dims)]
+
+        inv_features_iso = []
+        for x_k, s, e, irrep_dim in zip(x_iso, self.iso_start_dims, self.iso_end_dims, self.irreps_dims):
+            n_irrep_G_stable_spaces = int((e - s) / irrep_dim)  # Number of G-invariant features = multiplicity of irrep
+            # This basis is useful because we can apply the norm in a vectorized way
+            # Reshape features to [batch, n_irrep_G_stable_spaces, num_features_per_G_stable_space]
+            x_field_p = torch.reshape(x_k, (x_k.shape[0], n_irrep_G_stable_spaces, -1))
+            # Compute G-invariant measures as the norm of the features in each G-stable space
+            inv_field_features = torch.norm(x_field_p, dim=-1)
+            # Append to the list of inv features
+            inv_features_iso.append(inv_field_features)
+        inv_features = torch.cat(inv_features_iso, dim=-1)
+        return inv_features
