@@ -21,7 +21,7 @@ class Change2DisentangledBasis(EquivariantModule):
         iso_subspaces_reps = in_rep_iso_basis.attributes["isotypic_reps"]
         self.out_type = FieldType(gspace=in_type.gspace, representations=list(iso_subspaces_reps.values()))
         # Change of basis required to move from input basis to isotypic basis
-        Qin2iso = torch.tensor(in_rep_iso_basis.change_of_basis_inv)
+        Qin2iso = torch.tensor(in_rep_iso_basis.change_of_basis_inv).clone()
         identity = torch.eye(Qin2iso.shape[-1]).to(device=Qin2iso.device, dtype=Qin2iso.dtype)
         self._is_in_iso_basis = torch.allclose(Qin2iso, identity, atol=1e-5, rtol=1e-5)
 
@@ -40,8 +40,7 @@ class Change2DisentangledBasis(EquivariantModule):
             if self._learnable:
                 x_iso = self.Qin2iso(x)
             else:
-                self.Qin2iso = self.Qin2iso.to(device=x.tensor.device, dtype=x.tensor.dtype)
-                x_iso = torch.einsum("ij,...j->...i", self.Qin2iso, x.tensor)
+                x_iso = torch.einsum("ij,...j->...i", self.Qin2iso.to(dtype=x.tensor.dtype), x.tensor)
                 x_iso = self.out_type(x_iso)
             return x_iso
 
@@ -62,5 +61,6 @@ class Change2DisentangledBasis(EquivariantModule):
             a = torch.nn.Linear(in_features=self.in_type.size, out_features=self.out_type.size, bias=False)
             a.weight.data = self.Qin2iso
             a.weight.requires_grad = False
+            a.to(dtype=torch.float32)
             a.eval()
             return a

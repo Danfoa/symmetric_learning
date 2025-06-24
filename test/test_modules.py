@@ -103,3 +103,40 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     # Test that the exported torch module is also equivariant
     torch_e_normal: tEquivMultivariateNormal = e_normal.export()
     torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-6, rtol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1])
+@pytest.mark.parametrize("my", [2])
+@pytest.mark.parametrize("kernel_size", [2, 10])
+@pytest.mark.parametrize("stride", [1])
+@pytest.mark.parametrize("padding", [0])
+def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, padding: int):
+    """Check the eConv1D layer is G-invariant."""
+    import torch
+
+    from symm_learning.nn import GSpace1D, eConv1D
+
+    G = group
+    gspace = GSpace1D(G)
+    in_type = FieldType(gspace, [G.regular_representation] * mx)
+    out_type = FieldType(gspace, [G.regular_representation] * my)
+
+    time = 100
+    batch_size = 30
+    x = torch.randn(batch_size, in_type.size, time)
+    x = in_type(x)
+
+    conv_layer = eConv1D(in_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding)
+    print(conv_layer)
+    print("Weights shape:", conv_layer.weights.shape)
+    print("Kernel shape:", conv_layer.kernel.shape)
+
+    conv_layer.check_equivariance(atol=1e-5, rtol=1e-5)

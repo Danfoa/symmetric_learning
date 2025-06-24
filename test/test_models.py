@@ -76,6 +76,15 @@ def test_emlp(  # noqa: D103
     except Exception as e:
         raise e
 
+    # --- Additional forward and backward pass ---
+    batch_dim = 50
+    # Ensure input tensor requires gradients
+    x_grad = type_X(torch.rand(batch_dim, type_X.size, requires_grad=True))
+    y_grad = emlp(x_grad)
+    # Use a dummy loss (sum of squares of the output tensor)
+    dummy_loss = (y_grad.tensor**2).sum()
+    dummy_loss.backward()
+
 
 @pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
 @pytest.mark.parametrize("n_inv_features", [10])
@@ -109,3 +118,11 @@ def test_imlp(  # noqa: D103
     y_t = timlp(x.tensor)
 
     assert torch.allclose(y, y_t, atol=1e-5, rtol=1e-5)
+
+    # --- Additional forward and backward pass ---
+    # Make sure the input tensor requires gradients for the backward pass.
+    x_grad = type_X(torch.rand(batch_dim, type_X.size, requires_grad=True))
+    y_grad = imlp(x_grad)
+    # Create a dummy loss and backpropagate.
+    dummy_loss = (y_grad.tensor**2).sum()
+    dummy_loss.backward()
