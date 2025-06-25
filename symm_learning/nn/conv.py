@@ -284,7 +284,7 @@ class eConv1D(EquivariantModule):
             f"in_type={self.in_type}, in_shape=(B, {self.in_type.size}, H) \n"
             f"out_type={self.out_type}, out_shape=(B, {self.out_type.size}, H - {diff:d}) \n"
             f"kernel_size={self.kernel_size} stride={self.stride}, padding={self.padding}, "
-            f"dilation={self.dilation}, bias={self.bias}, "
+            f"dilation={self.dilation}, bias={self.bias}"
         )
 
     def export(self) -> torch.nn.Conv1d:
@@ -323,8 +323,6 @@ class eConvTranspose1D(eConv1D):
             out_type=out_type,
             **conv1d_kwargs,
         )
-        self.in_type = in_type
-        self.out_type = out_type
         self.output_padding = output_padding
 
     def forward(self, input: GeometricTensor) -> GeometricTensor:
@@ -337,9 +335,9 @@ class eConvTranspose1D(eConv1D):
         kernel = kernel.permute(1, 0, 2)  # Transpose to (in_channels, out_channels, kernel_size)
         bias = self.expand_bias() if self.bias else None
 
-        x = input.tensor
-        y = F.conv_transpose1d(
-            input=x,
+        y = input.tensor
+        x = F.conv_transpose1d(
+            input=y,
             weight=kernel,
             bias=bias,
             output_padding=self.output_padding,
@@ -348,7 +346,7 @@ class eConvTranspose1D(eConv1D):
             dilation=self.dilation,
             groups=1,  # No groups supported.
         )
-        return self.out_type(y)
+        return self.out_type(x)
 
     def dim_after_conv(self, input_dim: tuple[int, ...]) -> tuple[int, ...]:
         """Calculate the output dimension after the transposed convolution."""
@@ -364,6 +362,7 @@ class eConvTranspose1D(eConv1D):
     def extra_repr(self):  # noqa: D102
         msg = super().extra_repr()
         msg.replace("Conv1D", "ConvTranspose1D")
+        msg += f", output_padding={self.output_padding}"
         return msg
 
     def export(self) -> torch.nn.ConvTranspose1d:
@@ -389,7 +388,19 @@ class eConvTranspose1D(eConv1D):
 
 
 class GSpace1D(escnn.gspaces.GSpace):
-    """Hacky solution to use GeometricTensor with time as a homogenous space."""
+    """Hacky solution to use GeometricTensor with time as a homogenous space.
+
+    Note in ESCNN the group is thought to act on points in the space and on the "fibers" (e.g. the channels).
+    Here the fibergroup is assumed to be any finite symmetry group and hence we do not consider the action on points of
+    the gspace, since for a 1D space the only well-defined left orthogonal action is the trivial and reflection actions.
+
+    Hence in general consider the use of the modules using this GSpace instance as having two symmetry groups:
+    1. The group acting on the fibers (e.g. channels) of the input
+    2. The group acting on the time dimension, which is trivial in this case or reflection (not implemented yet).
+
+    ::warning:: This is a hacky solution and should be used with care. Do not rely on escnn standard functionality.
+
+    """
 
     def __init__(self, fibergroup: escnn.group.Group, name: str = "GSpace1D"):
         super().__init__(fibergroup=fibergroup, name=name, dimensionality=1)
