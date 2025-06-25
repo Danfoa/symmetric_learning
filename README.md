@@ -54,7 +54,7 @@ Module for changing the basis of a tensor to a disentangled / isotypic basis.
 Module for extracting invariant features from a geometric tensor, giving one feature per irreducible subspace/representation.%
 
 #### [eConv1D](/symm_learning/nn/conv.py)
-Equivariant 1D convolutional layer for processing an array of multiple symmetric signals (e.g., a time series of a symmetric random variable). Given the feature spaces $\mathcal{X}$ and $\mathcal{Y}$, this layer takes an array of symmetric signals $x \in \mathcal{X}$ of shape $(\text{batch size}, |\mathcal{X}|, \text{H})$ and outputs an array of symmetric signals $y \in \mathcal{Y}$ of shape $(\text{batch size}, |\mathcal{Y}|, \text{H}_{\text{out}})$, where $\text{H}$ is the 1D/time-dimension of the input signals and $\text{H}_{\text{out}}$ is the resulting 1D dimension after the convolution operation (see [torch.nn.Conv1D](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html) for details).
+Equivariant 1D convolutional layer for processing an array of multiple symmetric signals (e.g., a time series of a symmetric random variable). Given the feature spaces $\mathcal{X}$ and $\mathcal{Y}$, this layer takes an array of symmetric signals $x \in \mathcal{X}$ of shape $(\text{batch size}, |\mathcal{X}|, \text{H})$ and outputs an array of symmetric signals $y \in \mathcal{Y}$ of shape $(\text{batch size}, |\mathcal{Y}|, \text{H}_ {\text{out}})$, where $\text{H}$ is the 1D/time-dimension of the input signals and $\text{H}_ {\text{out}}$ is the resulting 1D dimension after the convolution operation (see [torch.nn.Conv1D](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html) for details).
 
 To use it follow the example below:
 
