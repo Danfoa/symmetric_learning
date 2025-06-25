@@ -5,10 +5,11 @@ from math import ceil
 
 import escnn
 import torch
+from escnn.group import Representation
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
 from symm_learning.models.emlp import EMLP
-from symm_learning.nn.irrep_pooling import IrrepSubspaceNormPooling
+from symm_learning.nn import IrrepSubspaceNormPooling
 
 
 class IMLP(EquivariantModule):
@@ -27,30 +28,32 @@ class IMLP(EquivariantModule):
         self,
         in_type: FieldType,
         out_dim: int,  # Number of G-invariant features to extract.
-        hidden_layers: int = 1,
-        hidden_units: int = 128,
+        hidden_units: list[int] = [128, 128, 128],
         activation: str = "ReLU",
         bias: bool = False,
-        hidden_irreps: list | tuple = None,
+        hidden_rep: Representation = None,
     ):
         super(IMLP, self).__init__()
+        assert hasattr(hidden_units, "__iter__") and hasattr(hidden_units, "__len__"), (
+            "hidden_units must be a list of integers"
+        )
+        assert len(hidden_units) > 0, "At least one equivariant layer is required"
 
         self.G = in_type.fibergroup
         self.in_type = in_type
 
         equiv_out_type = FieldType(
             gspace=in_type.gspace,
-            representations=[self.G.regular_representation] * max(1, ceil(hidden_units // self.G.order())),
+            representations=[self.G.regular_representation] * max(1, ceil(hidden_units[-1] / self.G.order())),
         )
 
         self.equiv_feature_extractor = EMLP(
             in_type=in_type,
             out_type=equiv_out_type,
-            hidden_layers=hidden_layers - 1,  # Last layer will be an unconstrained linear layer.
             hidden_units=hidden_units,
             activation=activation,
             bias=bias,
-            hidden_irreps=hidden_irreps,
+            hidden_rep=hidden_rep,
         )
         self.inv_feature_extractor = IrrepSubspaceNormPooling(in_type=self.equiv_feature_extractor.out_type)
         self.head = torch.nn.Linear(
@@ -75,8 +78,12 @@ class IMLP(EquivariantModule):
 
     def export(self):
         """Exports the model to a torch.nn.Sequential instance."""
-        return escnn.nn.SequentialModule(
+        imlp: torch.nn.Sequential = escnn.nn.SequentialModule(
             self.equiv_feature_extractor,
             self.inv_feature_extractor,
-            self.head,
         ).export()
+        print(self.head)
+        imlp.add_module("head", self.head)
+        imlp.eval()
+
+        return imlp

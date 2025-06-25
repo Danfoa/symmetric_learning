@@ -12,6 +12,7 @@ class IrrepSubspaceNormPooling(EquivariantModule):
 
     Args:
         in_type: Input FieldType. The dimension of the output tensors will be equal to the number of irreps in this type
+
     """
 
     def __init__(self, in_type: FieldType):
@@ -65,7 +66,7 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         return self.out_type(inv_features)
 
     def evaluate_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, ...]:  # noqa: D102
-        return input_shape[:-1] + (len(self.out_type.size),)
+        return input_shape[:-1] + (self.out_type.size,)
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"{self.G}-Irrep Norm Pooling: in={self.in_type} -> out={self.out_type}"
