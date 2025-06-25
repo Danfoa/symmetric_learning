@@ -123,7 +123,7 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     """Check the eConv1D layer is G-invariant."""
     import torch
 
-    from symm_learning.nn import GSpace1D, eConv1D
+    from symm_learning.nn import GSpace1D, eConv1D, eConvTranspose1D
 
     G = group
     gspace = GSpace1D(G)
@@ -146,3 +146,53 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     y_torch = conv_layer.export()(x.tensor)
 
     assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5)
+
+    conv_transpose_layer = eConvTranspose1D(
+        in_type=out_type,
+        out_type=in_type,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        bias=bias,
+    )
+
+    conv_transpose_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    x_trans = conv_transpose_layer(out_type(y)).tensor
+    x_torch_trans = conv_transpose_layer.export()(y)
+    assert torch.allclose(x_trans, x_torch_trans, atol=1e-5, rtol=1e-5)
+
+    assert x_trans.shape == x.shape
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+def test_activations(group: Group):
+    """Test custom activation functions for equivariance."""
+    import torch
+    from escnn.gspaces import no_base_space
+
+    from symm_learning.nn import Mish
+
+    gspace = no_base_space(group)
+    in_type = FieldType(gspace, [group.regular_representation] * 3)
+
+    mish_layer = Mish(in_type)
+    mish_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    t_mish_layer = mish_layer.export()
+
+    batch_size = 10
+    x = torch.randn(batch_size, in_type.size, dtype=torch.float32)
+    y_mish = mish_layer(in_type(x)).tensor
+    y_mish_torch = t_mish_layer(x)
+
+    assert torch.allclose(y_mish, y_mish_torch, atol=1e-5, rtol=1e-5), (
+        f"Max error: {torch.max(torch.abs(y_mish - y_mish_torch)):.5f}"
+    )

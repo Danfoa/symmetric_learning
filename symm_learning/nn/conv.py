@@ -232,8 +232,8 @@ class eConv1D(EquivariantModule):
 
     def evaluate_output_shape(self, input_shape) -> tuple[int, ...]:
         """Calculate the output shape of the convolution layer."""
-        b, _, t = input_shape
-        return (b, self.out_type.size, self.dim_after_conv(t))
+        b, _, H = input_shape
+        return (b, self.out_type.size, self.dim_after_conv(H))
 
     def dim_after_conv(self, input_dim: int) -> int:
         """Calculate the output dimension after the convolution."""
@@ -308,6 +308,86 @@ class eConv1D(EquivariantModule):
         return conv1D
 
 
+class eConvTranspose1D(eConv1D):
+    r"""One-dimensional **G-equivariant** transposed convolution."""
+
+    def __init__(
+        self,
+        in_type: FieldType,
+        out_type: FieldType,
+        output_padding: int = 0,
+        **conv1d_kwargs,
+    ):
+        super().__init__(
+            in_type=in_type,
+            out_type=out_type,
+            **conv1d_kwargs,
+        )
+        self.in_type = in_type
+        self.out_type = out_type
+        self.output_padding = output_padding
+
+    def forward(self, input: GeometricTensor) -> GeometricTensor:
+        """Forward pass of the transposed 1D convolution layer."""
+        assert input.type == self.in_type, "Input type does not match the layer's input type"
+        assert len(input.shape) == 3, "Input tensor must be 3D (batch, channels, time)"
+
+        # Shape: (out_channels, in_channels, kernel_size)
+        kernel = self.expand_kernel()
+        kernel = kernel.permute(1, 0, 2)  # Transpose to (in_channels, out_channels, kernel_size)
+        bias = self.expand_bias() if self.bias else None
+
+        x = input.tensor
+        y = F.conv_transpose1d(
+            input=x,
+            weight=kernel,
+            bias=bias,
+            output_padding=self.output_padding,
+            stride=self.stride,
+            padding=self.padding,
+            dilation=self.dilation,
+            groups=1,  # No groups supported.
+        )
+        return self.out_type(y)
+
+    def dim_after_conv(self, input_dim: tuple[int, ...]) -> tuple[int, ...]:
+        """Calculate the output dimension after the transposed convolution."""
+        H_out = (
+            (input_dim - 1) * self.stride
+            - 2 * self.padding
+            + self.dilation * (self.kernel_size - 1)
+            + self.output_padding
+            + 1
+        )
+        return H_out
+
+    def extra_repr(self):  # noqa: D102
+        msg = super().extra_repr()
+        msg.replace("Conv1D", "ConvTranspose1D")
+        return msg
+
+    def export(self) -> torch.nn.ConvTranspose1d:
+        """Exports the module to a standard PyTorch module"""
+        conv_transpose1D = torch.nn.ConvTranspose1d(
+            in_channels=self.in_type.size,
+            out_channels=self.out_type.size,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
+            dilation=self.dilation,
+            output_padding=self.output_padding,
+            bias=self.bias,
+            padding_mode=self.padding_mode,
+        ).to(device=self.device, dtype=self.dtype)
+
+        conv_transpose1D.weight.data = self.expand_kernel().data.permute(1, 0, 2)
+        if self.bias:
+            conv_transpose1D.bias.data = self.expand_bias()
+        conv_transpose1D.eval()
+
+        return conv_transpose1D
+
+
 class GSpace1D(escnn.gspaces.GSpace):
     """Hacky solution to use GeometricTensor with time as a homogenous space."""
 
@@ -345,4 +425,27 @@ if __name__ == "__main__":
     print("Weights shape:", conv_layer.weights.shape)
     print("Kernel shape:", conv_layer.kernel.shape)
 
+    y = conv_layer(x)  # (B, out_type.size, H_out)
+    assert y.shape == conv_layer.evaluate_output_shape(x.shape)
+    print("Input shape:", x.shape)
+    print("Output shape:", y.shape)
+
+    loss = torch.nn.functional.mse_loss(y.tensor, torch.randn_like(y.tensor))
+    loss.backward()
+
     conv_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    conv_transpose_layer = eConvTranspose1D(in_type=out_type, out_type=in_type, kernel_size=kernel_size, bias=False)
+
+    conv_transpose_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    y = out_type(torch.randn(batch_size, out_type.size, time))
+    x = conv_transpose_layer(y).tensor
+    x_torch = conv_transpose_layer.export()(y.tensor)
+    assert torch.allclose(x, x_torch, atol=1e-5, rtol=1e-5)
+
+    y = out_type(torch.randn(batch_size, out_type.size, time))
+    x = conv_transpose_layer(y)
+    assert x.shape == conv_transpose_layer.evaluate_output_shape(y.shape)
+    print("Transposed input shape:", y.shape)
+    print("Transposed output shape:", x.shape)
