@@ -15,7 +15,7 @@ def var_mean(x: Tensor, rep_x: Representation):
     """Compute the mean and variance of a symmetric random variable.
 
     Args:
-        x: (Tensor) of shape :math:`(N, Dx)` containing the observations of the symmetric random variable
+        x: (Tensor) of shape :math:`(N, D_x)` containing the observations of the symmetric random variable
         rep_x: (escnn.group.Representation) representation of the symmetric random variable.
 
     Returns:
@@ -201,13 +201,13 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
         rep_y (Representation): The representation acting on the variables Y.
 
     Returns:
-        Tensor: The covariance matrix between the two random variables, of shape :math:`(Dy, Dx)`.
+        Tensor: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.
 
     Shape:
-        X: :math:`(N, Dx)` where :math:`Dx` is the dimension of the random variable X.
-        Y: :math:`(N, Dy)` where :math:`Dy` is the dimension of the random variable Y.
+        X: :math:`(N, D_x)` where :math:`D_x` is the dimension of the random variable X.
+        Y: :math:`(N, D_y)` where :math:`D_y` is the dimension of the random variable Y.
 
-        Output: :math:`(Dy, Dx)`
+        Output: :math:`(D_y, D_x)`
     """
     # assert X.shape[0] == Y.shape[0], "Expected equal number of samples in X and Y"
     assert x.shape[1] == rep_x.size, f"Expected X shape (N, {rep_x.size}), got {x.shape}"
@@ -245,7 +245,7 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
         Y_k = Y_iso[..., iso_idx_Y[iso_id]]
         rep_X_k = rep_X_iso_subspaces[iso_id]
         rep_Y_k = rep_Y_iso_subspaces[iso_id]
-        # Cxy_k = Dxy_k ⊗ I_d [my * d x mx * d]
+        # Cxy_k = D_xy_k ⊗ I_d [my * d x mx * d]
         Cxy_k, _ = _isotypic_cov(x=X_k, y=Y_k, rep_x=rep_X_k, rep_y=rep_Y_k)
         Cxy_iso[iso_idx_Y[iso_id], iso_idx_X[iso_id]] = Cxy_k
 

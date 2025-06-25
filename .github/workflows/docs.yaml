@@ -1,0 +1,23 @@
+name: Shinx Documentation Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Build and Deploy Docs
+        id: deployment
+        uses: sphinx-notes/pages@v3
