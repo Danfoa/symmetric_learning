@@ -53,6 +53,32 @@ Module for changing the basis of a tensor to a disentangled / isotypic basis.
 
 Module for extracting invariant features from a geometric tensor, giving one feature per irreducible subspace/representation.%
 
+#### [eConv1D](/symm_learning/nn/conv.py)
+Equivariant 1D convolutional layer for processing an array of multiple symmetric signals (e.g., a time series of a symmetric random variable). Given the feature spaces $\mathcal{X}$ and $\mathcal{Y}$, this layer takes an array of symmetric signals $x \in \mathcal{X}$ of shape $(\text{batch size}, |\mathcal{X}|, \text{H})$ and outputs an array of symmetric signals $y \in \mathcal{Y}$ of shape $(\text{batch size}, |\mathcal{Y}|, \text{H}_{\text{out}})$, where $\text{H}$ is the 1D/time-dimension of the input signals and $\text{H}_{\text{out}}$ is the resulting 1D dimension after the convolution operation (see [torch.nn.Conv1D](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html) for details).
+
+To use it follow the example below:
+
+```python
+>>>    from escnn.group import DihedralGroup
+>>>    from escnn.nn import FieldType
+>>>    from symm_learning.nn import eConv1D, GSpace1D
+>>>    G = DihedralGroup(10)
+>>>    # Custom (hacky) 1D G-space needed to use `GeometricTensor`
+>>>    gspace = GSpace1D(G) # Note G does not act on points in the 1D space.
+>>>    in_type = FieldType(gspace, [G.regular_representation])
+>>>    out_type = FieldType(gspace, [G.regular_representation] * 2)
+>>>
+>>>    H, kernel_size, batch_size = 10, 3, 5
+>>>    # Inputs to Conv1D/eConv1D are of shape (B, in_type.size, T) where B is the batch size, C is the number of channels and T is the time dimension.
+>>>    x = in_type(torch.randn(batch_size, in_type.size, H))
+>>>    # Instance of eConv1D
+>>>    conv_layer = eConv1D(in_type, out_type, kernel_size=3, stride=1, padding=0, bias=True)
+>>>    # Forward pass
+>>>    y = conv_layer(x)  # (B, out_type.size, H_out)
+>>>    # After training you can export this `EquivariantModule` to a `torch.nn.Module` by:
+>>>    conv1D = conv_layer.export()
+```
+
 #### [EquivMultivariateNormal](/symm_learning/nn/equiv_multivariate_normal.py)
 
 Utility layer to parameterize a G-equivariant multivariate Gaussian/Normal distribution:
@@ -77,8 +103,8 @@ This means that if you want to parameterize a $\mathbb{G}$-equivariant stochasti
 ```python
 from escnn.group import CyclicGroup
 from escnn.nn import FieldType
-from symm_learning.models.emlp import EMLP
-from symm_learning.nn.equiv_multivariate_gaussian import EquivMultivariateNormal
+from symm_learning.models import EMLP
+from symm_learning.nn import EquivMultivariateNormal
 
 G = CyclicGroup(3)
 x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation])

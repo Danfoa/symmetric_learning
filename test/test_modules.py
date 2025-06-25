@@ -131,7 +131,7 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     out_type = FieldType(gspace, [G.regular_representation] * my)
 
     time = 100
-    batch_size = 30
+    batch_size = 50
     x = torch.randn(batch_size, in_type.size, time)
     x = in_type(x)
 
@@ -141,3 +141,8 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     print("Kernel shape:", conv_layer.kernel.shape)
 
     conv_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    y = conv_layer(x).tensor
+    y_torch = conv_layer.export()(x.tensor)
+
+    assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5)

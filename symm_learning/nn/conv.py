@@ -18,7 +18,81 @@ log = logging.getLogger(__name__)
 
 
 class eConv1D(EquivariantModule):
-    """1D Equivariant convolution layer."""
+    r"""One-dimensional **G-equivariant** convolution.
+
+    This layer applies a standard 1D convolution (see
+    [torch.nn.Conv1d](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html))
+    to geometric tensors by ensuring the convolution kernl $K$ of shape
+    `(out_type.size, in_type.size, kernel_size)` is constrained to be constructed
+    from interwiners between the input and output representations, such that
+    :math:`K[:, :, i] \in \text{Hom}_{\mathbb{G}}(\mathcal{V}_{\text{in}}), \mathcal{V}_{\text{out}})`
+
+    For the usual convolution hyper-parameters (stride, padding,
+    dilation, etc.) this class follows exactly the semantics of
+    :class:`torch.nn.Conv1d`; please refer to the PyTorch docs for
+    details.
+
+    Parameters
+    ----------
+    in_type : :class:`escnn.nn.FieldType`
+        Field type of the input tensor. Must have :class:`GSpace1D` as its `gspace`.
+        Input tensors should be of shape `(batch_dim, in_type.size, H)`, where `H`
+        is the 1D/time dimension.
+    out_type : :class:`escnn.nn.FieldType`
+        Field type of the output tensor. Must have the same `gspace` as `in_type`.
+        Output tensors will be of shape `(batch_dim, out_type.size, H_out)`,
+    kernel_size : int, default=3
+        Temporal receptive field :math:`h`.
+    stride : int, default=1
+    padding : int, default=0
+    dilation : int, default=1
+    bias : bool, default=True
+    padding_mode : str, default="zeros"
+        Passed through to :func:`torch.nn.functional.conv1d`.
+    basisexpansion : Literal["blocks"], default="blocks"
+        Basis-construction strategy. Currently only ``"blocks"`` (ESCNN's
+        block-matrix algorithm) is implemented.
+    recompute : bool, default=False
+        Whether to rebuild the kernel basis at every forward pass
+        (useful for debugging; slow).
+    initialize : bool, default=True
+        If *True*, the free parameters are initialised with the
+        generalised He scheme implemented in ``escnn.nn.init``.
+    device : torch.device, optional
+    dtype : torch.dtype, optional
+
+    Shape
+    -----
+    * **Input:** ``(B, in_type.size, H)``
+    * **Output:** ``(B, out_type.size, H_out)``, where `H_out` is computed as in
+        [torch.nn.Conv1d](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html).
+
+    Examples:
+    --------
+    >>> from escnn.group import DihedralGroup
+    >>> from escnn.nn import FieldType
+    >>> from symm_learning.nn import eConv1D, GSpace1D
+    >>> G = DihedralGroup(10)
+    >>> # Custom (hacky) 1D G-space needed to use `GeometricTensor`
+    >>> gspace = GSpace1D(G)  # Note G does not act on points in the 1D space.
+    >>> in_type = FieldType(gspace, [G.regular_representation])
+    >>> out_type = FieldType(gspace, [G.regular_representation] * 2)
+    >>> H, kernel_size, batch_size = 10, 3, 5
+    >>> # Inputs to Conv1D/eConv1D are of shape (B, in_type.size, T) where B is the batch size, C is the number of channels and T is the time dimension.
+    >>> x = in_type(torch.randn(batch_size, in_type.size, H))
+    >>> # Instance of eConv1D
+    >>> conv_layer = eConv1D(in_type, out_type, kernel_size=3, stride=1, padding=0, bias=True)
+    >>> # Forward pass
+    >>> y = conv_layer(x)  # (B, out_type.size, H_out)
+    >>> # After training you can export this `EquivariantModule` to a `torch.nn.Module` by:
+    >>> conv1D = conv_layer.export()
+    torch.Size([8, 2*G.order(), 100])
+
+    See Also:
+    --------
+    * :class:`torch.nn.Conv1d` - reference implementation for ordinary
+      convolutions (definitions of *stride*, *padding*, *dilation*, …).
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -56,6 +130,11 @@ class eConv1D(EquivariantModule):
         self.bias = bias
         self.basisexpansion_type = basisexpansion
         self.device, self.dtype = device, dtype
+
+        # Compute the basis of equivariant kernels. Given that the convolution kernel if of shape:
+        # K: (out_channels, in_channels, kernel_size), we exploit the fact that each K[:, :, i] is
+        # constrained to be a group homophorphism between the input and output representations.
+        # Hence we use escnn to compute the basis of homomorphisms and use this for each i.
         if self.basisexpansion_type == "blocks":  # Inefficient but easy implementation as reuses ESCNN code
             space = no_base_space(in_type.fibergroup)
             self._basisexpansion = BlocksBasisExpansion(
@@ -208,7 +287,7 @@ class eConv1D(EquivariantModule):
             f"dilation={self.dilation}, bias={self.bias}, "
         )
 
-    def export(self) -> torch.nn.Module:
+    def export(self) -> torch.nn.Conv1d:
         """Exports the module to a standard PyTorch module."""
         conv1D = torch.nn.Conv1d(
             in_channels=self.in_type.size,
@@ -221,10 +300,12 @@ class eConv1D(EquivariantModule):
             padding_mode=self.padding_mode,
         ).to(device=self.device, dtype=self.dtype)
 
-        conv1D.weight.data = self.kernel.data
-
+        conv1D.weight.data = self.expand_kernel().data
         if self.bias:
-            raise NotImplementedError("Bias export not implemented yet")
+            conv1D.bias.data = self.expand_bias()
+        conv1D.eval()
+
+        return conv1D
 
 
 class GSpace1D(escnn.gspaces.GSpace):
