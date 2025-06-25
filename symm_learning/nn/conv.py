@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Literal
 
 import escnn
@@ -12,6 +13,8 @@ from escnn.nn import EquivariantModule, FieldType, GeometricTensor, Linear
 from escnn.nn.modules.basismanager import BasisManager, BlocksBasisExpansion
 
 from symm_learning.representation_theory import isotypic_decomp_rep
+
+log = logging.getLogger(__name__)
 
 
 class eConv1D(EquivariantModule):
@@ -90,7 +93,22 @@ class eConv1D(EquivariantModule):
             has_trivial_irrep = G.trivial_representation.id in rep_out.attributes["isotypic_reps"]
 
             if not has_trivial_irrep:
-                self.bias = False
+                self.bias = False  # Bias only lives in the Invariant isotypic subspace.
+                log.info(
+                    f"Conv1D layer {self} initiated with bias=True, but the output type {self.out_type} is centered"
+                    "by construction. Setting bias=False."
+                )
+            else:
+                inv_subspace_rep = rep_out.attributes["isotypic_reps"][G.trivial_representation.id]
+                # Free DoF of the bias vector.
+                self.bias_weights = torch.nn.Parameter(
+                    torch.zeros(inv_subspace_rep.size, dtype=torch.float32), requires_grad=True
+                )
+                inv_subspace_dims = rep_out.attributes["isotypic_subspace_dims"][G.trivial_representation.id]
+                # Compute the map from the free DoF of the bias vector to the full bias vector.
+                Q_invariant = torch.tensor(rep_out.change_of_basis[:, inv_subspace_dims], dtype=torch.float32)
+                assert Q_invariant.shape == (self.out_type.size, inv_subspace_rep.size)
+                self.register_buffer("Q_invariant", Q_invariant)
 
     def forward(self, input: GeometricTensor) -> GeometricTensor:
         """Forward pass of the 1D convolution layer."""
@@ -99,12 +117,13 @@ class eConv1D(EquivariantModule):
 
         # Shape: (out_channels, in_channels, kernel_size)
         kernel = self.expand_kernel()
+        bias = self.expand_bias() if self.bias else None
 
         x = input.tensor
         y = F.conv1d(
             input=x,
             weight=kernel,
-            bias=None,
+            bias=bias,
             stride=self.stride,
             padding=self.padding,
             dilation=self.dilation,
@@ -124,6 +143,13 @@ class eConv1D(EquivariantModule):
             )
         self.kernel.data = torch.cat(kernel, dim=-1)
         return self.kernel
+
+    def expand_bias(self) -> torch.Tensor:
+        """Expand the bias vector to the full bias vector."""
+        if not self.bias:
+            raise ValueError("Bias is not enabled for this layer.")
+        # Shape: (out_channels,)
+        return self.Q_invariant @ self.bias_weights
 
     def evaluate_output_shape(self, input_shape) -> tuple[int, ...]:
         """Calculate the output shape of the convolution layer."""
@@ -170,6 +196,18 @@ class eConv1D(EquivariantModule):
         """Dimension of the fiber intertwiner basis."""
         return self._basisexpansion.dimension()
 
+    def extra_repr(self):  # noqa: D102
+        H = 100
+        _, _, H_out = self.evaluate_output_shape((1, self.in_type.size, H))
+        diff = H - H_out
+        return (
+            f"{self.in_type.fibergroup}-equivariant Conv1D layer\n"
+            f"in_type={self.in_type}, in_shape=(B, {self.in_type.size}, H) \n"
+            f"out_type={self.out_type}, out_shape=(B, {self.out_type.size}, H - {diff:d}) \n"
+            f"kernel_size={self.kernel_size} stride={self.stride}, padding={self.padding}, "
+            f"dilation={self.dilation}, bias={self.bias}, "
+        )
+
     def export(self) -> torch.nn.Module:
         """Exports the module to a standard PyTorch module."""
         conv1D = torch.nn.Conv1d(
@@ -192,7 +230,7 @@ class eConv1D(EquivariantModule):
 class GSpace1D(escnn.gspaces.GSpace):
     """Hacky solution to use GeometricTensor with time as a homogenous space."""
 
-    def __init__(self, fibergroup: escnn.group.Group, name: str = "Time"):
+    def __init__(self, fibergroup: escnn.group.Group, name: str = "GSpace1D"):
         super().__init__(fibergroup=fibergroup, name=name, dimensionality=1)
 
     def _basis_generator(self, in_repr, out_repr, **kwargs):

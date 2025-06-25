@@ -82,9 +82,17 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     Q_iso = rep.change_of_basis @ P_in2iso.T
     rep_iso_basis = directsum(list(ordered_isotypic_reps.values()), name=rep.name + "-Iso", change_of_basis=Q_iso)
 
+    # Get variable of indices of isotypic subspaces in the disentangled representation.
+    d = 0
+    iso_subspace_dims = {}
+    for irrep_id, iso_rep in ordered_isotypic_reps.items():
+        iso_subspace_dims[irrep_id] = slice(d, d + iso_rep.size)
+        d += iso_rep.size
+
     iso_supported_nonlinearities = [iso_rep.supported_nonlinearities for iso_rep in ordered_isotypic_reps.values()]
     rep_iso_basis.supported_nonlinearities = functools.reduce(set.intersection, iso_supported_nonlinearities)
     rep_iso_basis.attributes["isotypic_reps"] = ordered_isotypic_reps
+    rep_iso_basis.attributes["isotypic_subspace_dims"] = iso_subspace_dims
 
     return rep_iso_basis
 

@@ -116,9 +116,10 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
 @pytest.mark.parametrize("mx", [1])
 @pytest.mark.parametrize("my", [2])
 @pytest.mark.parametrize("kernel_size", [2, 10])
+@pytest.mark.parametrize("bias", [True, False])
 @pytest.mark.parametrize("stride", [1])
 @pytest.mark.parametrize("padding", [0])
-def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, padding: int):
+def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, padding: int, bias: bool):
     """Check the eConv1D layer is G-invariant."""
     import torch
 
@@ -134,7 +135,7 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     x = torch.randn(batch_size, in_type.size, time)
     x = in_type(x)
 
-    conv_layer = eConv1D(in_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding)
+    conv_layer = eConv1D(in_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
     print(conv_layer)
     print("Weights shape:", conv_layer.weights.shape)
     print("Kernel shape:", conv_layer.kernel.shape)
