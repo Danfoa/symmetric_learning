@@ -72,7 +72,7 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         return f"{self.G}-Irrep Norm Pooling: in={self.in_type} -> out={self.out_type}"
 
     def export(self) -> torch.nn.Module:
-        """Exports the module to a standard PyTorch module."""
+        """Exporting to a torch.nn.Module"""
         return tIrrepSubspaceNormPooling(
             in2iso=self.in2iso.export(),
             iso_start_dims=self.iso_start_dims,

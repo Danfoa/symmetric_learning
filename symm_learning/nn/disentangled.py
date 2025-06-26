@@ -50,7 +50,8 @@ class Change2DisentangledBasis(EquivariantModule):
     def extra_repr(self) -> str:  # noqa: D102
         return f"Change of basis: {not self._is_in_iso_basis}"
 
-    def export(self):  # noqa: D102
+    def export(self):
+        """Exporting to a torch.nn.Module"""
         if self._learnable:
             raise NotImplementedError("Exporting a learnable Change2DisentangledBasis is not implemented.")
 

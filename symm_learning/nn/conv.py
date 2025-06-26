@@ -21,9 +21,9 @@ class eConv1D(EquivariantModule):
     r"""One-dimensional **G-equivariant** convolution.
 
     This layer applies a standard 1D convolution (see
-    [torch.nn.Conv1d](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html))
+    `torch.nn.Conv1d <https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>`_)
     to geometric tensors by ensuring the convolution kernl $K$ of shape
-    `(out_type.size, in_type.size, kernel_size)` is constrained to be constructed
+    ``(out_type.size, in_type.size, kernel_size)`` is constrained to be constructed
     from interwiners between the input and output representations, such that
     :math:`K[:, :, i] \in \text{Hom}_{\mathbb{G}}(\mathcal{V}_{\text{in}}), \mathcal{V}_{\text{out}})`
 
@@ -63,9 +63,9 @@ class eConv1D(EquivariantModule):
 
     Shape
     -----
-    * **Input:** ``(B, in_type.size, H)``
-    * **Output:** ``(B, out_type.size, H_out)``, where `H_out` is computed as in
-        [torch.nn.Conv1d](https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html).
+    - **Input:** ``(B, in_type.size, H)``
+    - **Output:** ``(B, out_type.size, H_out)``, where `H_out` is computed as in
+      `torch.nn.Conv1d <https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>`_.
 
     Examples:
     --------
@@ -86,11 +86,10 @@ class eConv1D(EquivariantModule):
     >>> y = conv_layer(x)  # (B, out_type.size, H_out)
     >>> # After training you can export this `EquivariantModule` to a `torch.nn.Module` by:
     >>> conv1D = conv_layer.export()
-    torch.Size([8, 2*G.order(), 100])
 
     See Also:
     --------
-    * :class:`torch.nn.Conv1d` - reference implementation for ordinary
+    - :class:`torch.nn.Conv1d` - reference implementation for ordinary
       convolutions (definitions of *stride*, *padding*, *dilation*, …).
     """  # noqa: E501
 
@@ -288,7 +287,7 @@ class eConv1D(EquivariantModule):
         )
 
     def export(self) -> torch.nn.Conv1d:
-        """Exports the module to a standard PyTorch module."""
+        """Exporting to a torch.nn.Conv1d"""
         conv1D = torch.nn.Conv1d(
             in_channels=self.in_type.size,
             out_channels=self.out_type.size,
@@ -366,7 +365,7 @@ class eConvTranspose1D(eConv1D):
         return msg
 
     def export(self) -> torch.nn.ConvTranspose1d:
-        """Exports the module to a standard PyTorch module"""
+        """Exporting to a torch.nn.ConvTranspose1d"""
         conv_transpose1D = torch.nn.ConvTranspose1d(
             in_channels=self.in_type.size,
             out_channels=self.out_type.size,

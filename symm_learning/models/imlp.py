@@ -77,7 +77,7 @@ class IMLP(EquivariantModule):
         return super(IMLP, self).check_equivariance(atol=atol, rtol=rtol)
 
     def export(self):
-        """Exports the model to a torch.nn.Sequential instance."""
+        """Exporting to a torch.nn.Sequential"""
         imlp: torch.nn.Sequential = escnn.nn.SequentialModule(
             self.equiv_feature_extractor,
             self.inv_feature_extractor,
