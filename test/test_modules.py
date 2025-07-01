@@ -87,7 +87,7 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     """Check the EquivMultivariateNormal layer is G-invariant."""
     import torch
 
-    from symm_learning.nn import EquivMultivariateNormal, tEquivMultivariateNormal
+    from symm_learning.nn import EquivMultivariateNormal, _EquivMultivariateNormal
 
     G = group
     x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * mx)
@@ -101,7 +101,7 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     e_normal.check_equivariance(atol=1e-6, rtol=1e-6)
 
     # Test that the exported torch module is also equivariant
-    torch_e_normal: tEquivMultivariateNormal = e_normal.export()
+    torch_e_normal: _EquivMultivariateNormal = e_normal.export()
     torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-6, rtol=1e-6)
 
 
