@@ -19,9 +19,9 @@ def var_mean(x: Tensor, rep_x: Representation):
         rep_x: (escnn.group.Representation) representation of the symmetric random variable.
 
     Returns:
-        (Tensor, Tensor): Mean and variance of the symmetric random variable. The mean is redistricted to be in the
-        trivial/G-invariant subspace of the symmetric vector space. The variance is constrained to be the same for all
-        dimensions of each G-irreducible subspace (i.e., each subspace associated with an irrep).
+        (Tensor, Tensor): Mean and variance of the symmetric random variable. The mean is restricted to be in the
+        trivial/G-invariant subspace of the symmetric vector space. The variance is constrained to be the same for
+        all dimensions of each G-irreducible subspace (i.e., each subspace associated with an irrep).
 
     Shape:
         :code:`x`: :math:`(N, Dx)` where N is the number of samples and Dx is the dimension of the symmetric random
@@ -91,8 +91,8 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
     2. **reshaping** the data so that each copy of the irrep becomes one
        “channel” of length *d·N*;
     3. **projecting** every :math:`d\times d` block onto the orthogonal basis
-       of :math:`\mathrm{End}_G(\rho_k)` via Frobenius inner products
-       (see <https://arxiv.org/abs/2505.19809>`_);
+       of :math:`\mathrm{End}_G(\rho_k)` via Frobenius inner products (see
+       `arXiv:2505.19809 <https://arxiv.org/abs/2505.19809>`_);
     4. rebuilding the block matrix that respects the constraint above.
 
     When ``y is None`` the routine reduces to an **auto-covariance** and only
@@ -112,8 +112,8 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
 
     Returns:
         (Tensor, Tensor):
-            C_xy: math:`(m_y d,\; m_x d)` projected covariance.
-            Z_xy:math:`(m_y,\; m_x,\; B)`, free coefficients of each cross-covariance between irrep subspaces,
+            - C_xy: :math:`(m_y d,\; m_x d)` projected covariance.
+            - Z_xy: :math:`(m_y,\; m_x,\; B)`, free coefficients of each cross-covariance between irrep subspaces,
               representing basis expansion coefficients in the basis of endomorphisms of the irrep subspaces.
               Where :math:`B = 1, 2, 4` for real, complex, quaternionic irreps, respectively.
     """

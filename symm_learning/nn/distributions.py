@@ -52,8 +52,16 @@ class EquivMultivariateNormal(EquivariantModule):
     hence this layer is meant to be instantiated before the `EquivaraintModule` that will be used to
     parameterize the multivariate normal distribution. See the example below.
 
+    Parameters
+    ----------
+    y_type : FieldType
+        Field/feature type of *X* (the mean).
+    diagonal : bool, default ``True``
+        Only diagonal covariance matrices are implemented. Note these are not necessarily constant multiples of the
+        identity.
+
     Example:
-    -------
+    ---------
     >>> from escnn.group import CyclicGroup
     >>> from symm_learning.models.emlp import EMLP
     >>> G = CyclicGroup(3)
@@ -66,13 +74,6 @@ class EquivMultivariateNormal(EquivariantModule):
     >>> # Sample from the distribution
     >>> y = dist.sample()
 
-    Parameters
-    ----------
-    y_type : FieldType
-        Field/feature type of *X* (the mean).
-    diagonal : bool, default ``True``
-        Only diagonal covariance matrices are implemented. Note these are not necessarily constant multiples of the
-        identity.
     """
 
     def __init__(self, y_type: FieldType, diagonal=True):
@@ -155,7 +156,7 @@ class EquivMultivariateNormal(EquivariantModule):
 
     def export(self):
         """Exporting to a torch.nn.Module"""
-        torch_e_normal = tEquivMultivariateNormal(
+        torch_e_normal = _EquivMultivariateNormal(
             idx=self.idx,
             Q2_T=self.Q2_T,
             dim_y=self.y_type.size,
@@ -165,7 +166,7 @@ class EquivMultivariateNormal(EquivariantModule):
         return torch_e_normal
 
 
-class tEquivMultivariateNormal(torch.nn.Module):
+class _EquivMultivariateNormal(torch.nn.Module):
     """Utility class to export `EquivMultivariateNormal` to a standard PyTorch module."""
 
     def __init__(
@@ -255,5 +256,5 @@ if __name__ == "__main__":
 
     e_normal.check_equivariance(atol=1e-5, rtol=1e-5)
 
-    torch_e_normal: tEquivMultivariateNormal = e_normal.export()
+    torch_e_normal: _EquivMultivariateNormal = e_normal.export()
     torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-5, rtol=1e-5)

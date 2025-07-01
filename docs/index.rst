@@ -6,9 +6,11 @@
 Symmetric Learning documentation
 ================================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+Lightweight python package for doing geometric deep learning using ESCNN. This package simply holds:
+
+- Generic equivariant torch models and modules that are not present in ESCNN.
+- Linear algebra utilities when working with symmetric vector spaces.
+- Statistics utilities for symmetric random variables.
 
 
 .. toctree::
@@ -19,4 +21,5 @@ documentation for details.
    nn
    models
    stats
+   representation_theory
 

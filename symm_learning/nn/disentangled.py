@@ -9,9 +9,23 @@ from symm_learning.representation_theory import isotypic_decomp_rep
 
 
 class Change2DisentangledBasis(EquivariantModule):
-    """Module that changes the basis of the input tensor to the isotypic basis of the input representation."""
+    """Changes the basis of a geometric tensor to a disentangled one.
+
+    This module applies a linear change of basis of the input :class:`escnn.nn.GeometricTensor`
+    to a disentangled/isotypic basis. In this basis the group representation
+
+
+    Args:
+        in_type (FieldType): The type of the input `GeometricTensor`, specifying
+            the representation space.
+        learnable (bool, optional): If ``True``, the change of basis matrix is a
+            learnable parameter. If ``False``, it is a fixed, pre-computed matrix.
+            Defaults to ``False``.
+
+    """
 
     def __init__(self, in_type: FieldType, learnable: bool = False):
+        """Initializes the Change2DisentangledBasis module."""
         super(Change2DisentangledBasis, self).__init__()
         self.in_type = in_type
 

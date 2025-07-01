@@ -18,57 +18,50 @@ log = logging.getLogger(__name__)
 
 
 class eConv1D(EquivariantModule):
-    r"""One-dimensional **G-equivariant** convolution.
+    r"""One-dimensional :math:`\mathbb{G}`-equivariant convolution.
 
     This layer applies a standard 1D convolution (see
     `torch.nn.Conv1d <https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>`_)
-    to geometric tensors by ensuring the convolution kernl $K$ of shape
+    to geometric tensors by ensuring the convolution kernel :math:`K` of shape
     ``(out_type.size, in_type.size, kernel_size)`` is constrained to be constructed
     from interwiners between the input and output representations, such that
-    :math:`K[:, :, i] \in \text{Hom}_{\mathbb{G}}(\mathcal{V}_{\text{in}}), \mathcal{V}_{\text{out}})`
+    :math:`K[:, :, i] \in \mathrm{Hom}_{\mathbb{G}}(\mathcal{V}_{\text{in}}, \mathcal{V}_{\text{out}})`
 
     For the usual convolution hyper-parameters (stride, padding,
     dilation, etc.) this class follows exactly the semantics of
     :class:`torch.nn.Conv1d`; please refer to the PyTorch docs for
     details.
 
-    Parameters
-    ----------
-    in_type : :class:`escnn.nn.FieldType`
-        Field type of the input tensor. Must have :class:`GSpace1D` as its `gspace`.
-        Input tensors should be of shape `(batch_dim, in_type.size, H)`, where `H`
-        is the 1D/time dimension.
-    out_type : :class:`escnn.nn.FieldType`
-        Field type of the output tensor. Must have the same `gspace` as `in_type`.
-        Output tensors will be of shape `(batch_dim, out_type.size, H_out)`,
-    kernel_size : int, default=3
-        Temporal receptive field :math:`h`.
-    stride : int, default=1
-    padding : int, default=0
-    dilation : int, default=1
-    bias : bool, default=True
-    padding_mode : str, default="zeros"
-        Passed through to :func:`torch.nn.functional.conv1d`.
-    basisexpansion : Literal["blocks"], default="blocks"
-        Basis-construction strategy. Currently only ``"blocks"`` (ESCNN's
-        block-matrix algorithm) is implemented.
-    recompute : bool, default=False
-        Whether to rebuild the kernel basis at every forward pass
-        (useful for debugging; slow).
-    initialize : bool, default=True
-        If *True*, the free parameters are initialised with the
-        generalised He scheme implemented in ``escnn.nn.init``.
-    device : torch.device, optional
-    dtype : torch.dtype, optional
+    Args:
+        in_type (:class:`escnn.nn.FieldType`)
+            Field type of the input tensor. Must have :class:`GSpace1D` as its ``gspace``.
+            Input tensors should be of shape ``(batch_dim, in_type.size, H)``, where ``H``
+            is the 1D/time dimension.
+        out_type : :class:`escnn.nn.FieldType`
+            Field type of the output tensor. Must have the same ``gspace`` as ``in_type``.
+            Output tensors will be of shape ``(batch_dim, out_type.size, H_out)``.
+        kernel_size : ``int``, default=3
+            Temporal receptive field :math:`h`.
+        stride : ``int``, default=1
+        padding : ``int``, default=0
+        dilation : ``int``, default=1
+        bias : ``bool``, default=True
+        padding_mode : ``str``, default="zeros"
+            Passed through to :func:`torch.nn.functional.conv1d`.
+        basisexpansion : ``Literal["blocks"]``, default="blocks"
+            Basis-construction strategy. Currently only ``"blocks"`` (ESCNN's
+            block-matrix algorithm) is implemented.
+        recompute : ``bool``, default=False
+            Whether to rebuild the kernel basis at every forward pass
+            (useful for debugging; slow).
+        initialize : ``bool``, default=True
+            If ``True``, the free parameters are initialised with the
+            generalised He scheme implemented in ``escnn.nn.init``.
+        device : ``torch.device``, optional
+        dtype : ``torch.dtype``, optional
 
-    Shape
-    -----
-    - **Input:** ``(B, in_type.size, H)``
-    - **Output:** ``(B, out_type.size, H_out)``, where `H_out` is computed as in
-      `torch.nn.Conv1d <https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>`_.
-
-    Examples:
-    --------
+    Example:
+    ---------
     >>> from escnn.group import DihedralGroup
     >>> from escnn.nn import FieldType
     >>> from symm_learning.nn import eConv1D, GSpace1D
@@ -87,10 +80,11 @@ class eConv1D(EquivariantModule):
     >>> # After training you can export this `EquivariantModule` to a `torch.nn.Module` by:
     >>> conv1D = conv_layer.export()
 
-    See Also:
-    --------
-    - :class:`torch.nn.Conv1d` - reference implementation for ordinary
-      convolutions (definitions of *stride*, *padding*, *dilation*, …).
+    Shape
+    ------
+    - Input: ``(B, in_type.size, H)``
+    - Output: ``(B, out_type.size, H_out)``, where ``H_out`` is computed as in
+      `torch.nn.Conv1d <https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>`_.
     """  # noqa: E501
 
     def __init__(
@@ -397,7 +391,8 @@ class GSpace1D(escnn.gspaces.GSpace):
     1. The group acting on the fibers (e.g. channels) of the input
     2. The group acting on the time dimension, which is trivial in this case or reflection (not implemented yet).
 
-    ::warning:: This is a hacky solution and should be used with care. Do not rely on escnn standard functionality.
+    .. warning::
+        This is a hacky solution and should be used with care. Do not rely on escnn standard functionality.
 
     """
 

@@ -1,4 +1,4 @@
-Linalg
+linalg
 ======
 
 .. automodule:: symm_learning.linalg

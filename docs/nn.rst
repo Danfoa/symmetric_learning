@@ -1,8 +1,5 @@
-NN
+nn
 ==
-
-.. automodule:: symm_learning.nn
-   :members:
 
 .. toctree::
    :maxdepth: 1
@@ -10,5 +7,5 @@ NN
    nn/activations
    nn/conv
    nn/disentangled
-   nn/equiv_multivariate_normal
+   nn/distributions
    nn/pooling

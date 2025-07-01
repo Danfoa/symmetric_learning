@@ -35,3 +35,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "renku"
 html_static_path = ["_static"]
+
+
+# Intersphinx configuration
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
+    "escnn": ("https://quva-lab.github.io/escnn/", None),
+}

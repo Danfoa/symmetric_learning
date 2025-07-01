@@ -14,20 +14,36 @@ from symm_learning.utils import CallableDict
 
 
 def isotypic_decomp_rep(rep: Representation) -> Representation:
-    """Returns an equivalent representation that is disentangled into isotypic subspaces.
+    r"""Return an equivalent representation disentangled into isotypic subspaces.
 
-    From the input :class:`~escnn.group.Representation`, we update the change of basis (and its inverse) as well as the
-    order of irreducible representations, such that the returned (equivalent) representation is disentangled into
-    isotypic subspaces.
+    Given an input :class:`~escnn.group.Representation`, this function computes an
+    equivalent representation by updating the change of basis (and its inverse)
+    and reordering the irreducible representations. The returned representation
+    is guaranteed to be disentangled into its isotypic subspaces.
 
-    A representation is termed disentangled if in the spectral basis the irreps are clustered by type. That is, all
-    irreps of the same type are consecutive. In simple terms this
+    A representation is considered disentangled if, in its spectral basis, the
+    irreducible representations (irreps) are clustered by type, i.e., all
+    irreps of the same type are consecutive:
+
+    .. math::
+        \rho_{\mathcal{X}} = \mathbf{Q} \left( \bigoplus_{k\in[1,n_{\text{iso}}]} (\mathbf{I}_{m_{k}} \otimes
+        \hat{\rho}_k) \right) \mathbf{Q}^T
+
+    where :math:`\hat{\rho}_k` is the irreducible representation of type :math:`k`,
+    and :math:`m_{k}` is its multiplicity.
+
+    The change of basis of the representation returned by this function can be
+    used to decompose the representation space :math:`\mathcal{X}` into its
+    orthogonal isotypic subspaces:
+
+    .. math::
+        \mathcal{X} = \bigoplus_{k\in[1,n]} \mathcal{X}^{(k)}
 
     Args:
-        rep (escnn.group.Representation): Input representation
+        rep (escnn.group.Representation): The input representation.
 
     Returns:
-        escnn.group.Representation: Equivalent disentangled representation
+        escnn.group.Representation: An equivalent, disentangled representation.
     """
     symm_group = rep.group
 
@@ -128,26 +144,26 @@ def irreps_stats(irreps_ids):
 
 def escnn_representation_form_mapping(
     group: Group,
-    representation: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]],
+    rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]],
     name: str = "reconstructed",
 ):
     """Get a ESCNN representation instance from a mapping from group elements to unitary matrices.
 
     Args:
-        group (Group): Symmetry group of the representation.
-        representation (Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]): Mapping from
-            group elements to unitary matrices.
+        group (:class:`escnn.group.Group`): Symmetry group of the representation.
+        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):
+            Mapping from group elements to unitary matrices.
         name (str, optional): Name of the representation. Defaults to 'reconstructed'.
 
     Returns:
-        representation (Representation): ESCNN representation instance.
+        representation (escnn.group.Representation): ESCNN representation instance.
     """
-    if isinstance(representation, dict):
+    if isinstance(rep, dict):
         from symm_learning.utils import CallableDict
 
-        rep = CallableDict(representation)
+        rep = CallableDict(rep)
     else:
-        rep = representation
+        rep = rep
 
     # Find Q such that `iso_cplx(g) = Q @ rep(g) @ Q^-1` is block diagonal with blocks being complex irreps.
     cplx_irreps, Q = cplx_isotypic_decomposition(group, rep)
@@ -227,7 +243,7 @@ def escnn_representation_form_mapping(
 
 
 def is_complex_irreducible(
-    group: Group, representation: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]
+    group: Group, rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]
 ):
     """Check if a representation is complex irreducible.
 
@@ -235,13 +251,19 @@ def is_complex_irreducible(
     identity ) Hermitian matrix `H` exists, such that `H` commutes with all group elements' representation.
     If rho is irreducible, this function returns (True, H=I)  where I is the identity matrix.
     Otherwise, returns (False, H) where H is a non-scalar matrix that commutes with all elements' representation.
+
+    Args:
+        group (:class:`escnn.group.Group`): Symmetry group of the representation.
+        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):
+            Mapping from group elements to their representation matrices.
+
     """
-    if isinstance(representation, dict):
+    if isinstance(rep, dict):
 
         def rep(g):
-            return representation[g]
+            return rep[g]
     else:
-        rep = representation
+        rep = rep
 
     # Compute the dimension of the representation
     n = rep(group.sample()).shape[0]
@@ -271,22 +293,28 @@ def is_complex_irreducible(
 
 
 def decompose_representation(
-    G: Group, representation: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]
+    G: Group, rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]
 ):
     """Find the Hermitian matrix `Q` that block-diagonalizes the representation `rep` of group `G`.
 
     Such that `Q @ rep[g] @ Q^H = block_diag(rep_1[g], ..., rep_m[g])` for all `g` in `G`.
+
+    Args:
+        G (:class:`escnn.group.Group`): The symmetry group.
+        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):
+            The representation to decompose.
+
     """
     import networkx as nx
     from networkx import Graph
 
     eps = 1e-12
-    if isinstance(representation, dict):
+    if isinstance(rep, dict):
 
         def rep(g):
-            return representation[g]
+            return rep[g]
     else:
-        rep = representation
+        rep = rep
     # Compute the dimension of the representation
     n = rep(G.sample()).shape[0]
 
@@ -367,7 +395,14 @@ def decompose_representation(
 
 
 def compute_character_table(G: Group, reps: List[Union[Dict[GroupElement, np.ndarray], Representation]]):
-    """Computes the character table of a group for a given set of representations."""
+    """Computes the character table of a group for a given set of representations.
+
+    Args:
+        G (:class:`escnn.group.Group`): The symmetry group.
+        reps (List[Union[Dict[escnn.group.GroupElement, np.ndarray], escnn.group.Representation]]): The representations
+          to compute the character table for.
+
+    """
     n_reps = len(reps)
     table = np.zeros((n_reps, G.order()), dtype=complex)
     for i, rep in enumerate(reps):
@@ -389,26 +424,27 @@ def map_character_tables(in_table: np.ndarray, reference_table: np.ndarray):
     return multiplicities, out_ids
 
 
-def cplx_isotypic_decomposition(G: Group, representation: Callable[[GroupElement], np.ndarray]):
+def cplx_isotypic_decomposition(G: Group, rep: Callable[[GroupElement], np.ndarray]):
     """Perform the isotypic decomposition of unitary representation, decomposing the rep into complex irreps.
 
     Args:
-        G (Group): Symmetry group of the representation.
-        representation (Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]): dict/mapping from
-        group elements to matrices, or a function that takes a group element and returns a matrix.
+        G (:class:`escnn.group.Group`): Symmetry group of the representation.
+        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement, np.ndarray]]]):
+            dict/mapping from group elements to matrices, or a function that takes a group element and returns a matrix.
 
     Returns:
-        sorted_irreps (List[Dict[GroupElement, np.ndarray]]): List of complex irreducible representations, sorted in
-        ascending order of dimension.
-        Q (ndarray): Hermitian matrix such that Q @ rep[g] @ Q^-1 is block diagonal, with blocks `sorted_irreps`.:
+        sorted_irreps (List[Dict[escnn.group.GroupElement, np.ndarray]]): List of complex irreducible representations,
+        sorted in ascending order of dimension.
+        Q (:class:`numpy.ndarray`): Hermitian matrix such that Q @ rep[g] @ Q^-1 is block diagonal, with blocks
+        `sorted_irreps`.
 
     """
-    if isinstance(representation, dict):
+    if isinstance(rep, dict):
 
         def rep(g):
-            return representation[g]
+            return rep[g]
     else:
-        rep = representation
+        rep = rep
 
     n = rep(G.sample()).shape[0]
     subreps, Q_internal = decompose_representation(G, rep)
@@ -451,12 +487,14 @@ def sorted_jordan_canonical_form(group: Group, reps: List[Callable[[GroupElement
     """Sorts a list of representations in ascending order of dimension, and returns a permutation matrix P such that.
 
     Args:
-        group (Group): Symmetry group of the representation.
-        reps: List of representations to sort by dimension.
+        group (:class:`escnn.group.Group`): Symmetry group of the representation.
+        reps (List[Union[Callable[[escnn.group.GroupElement], np.ndarray], escnn.group.Representation]]):
+            List of representations to sort by dimension.
 
     Returns:
-        P (ndarray): Permutation matrix sorting the input reps.
-        reps (List[Union[Dict[GroupElement, np.ndarray], Representation]]): Sorted list of representations.
+        P (:class:`numpy.ndarray`): Permutation matrix sorting the input reps.
+        reps (List[Callable[:class:`escnn.group.GroupElement`, :class:`numpy.ndarray`]]): Sorted list of
+        representations.
     """
     reps_idx = range(len(reps))
     reps_size = [rep(group.sample()).shape[0] for rep in reps]
