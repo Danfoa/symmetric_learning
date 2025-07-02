@@ -87,7 +87,7 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     """Check the EquivMultivariateNormal layer is G-invariant."""
     import torch
 
-    from symm_learning.nn import EquivMultivariateNormal, tEquivMultivariateNormal
+    from symm_learning.nn import EquivMultivariateNormal, _EquivMultivariateNormal
 
     G = group
     x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * mx)
@@ -101,7 +101,7 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     e_normal.check_equivariance(atol=1e-6, rtol=1e-6)
 
     # Test that the exported torch module is also equivariant
-    torch_e_normal: tEquivMultivariateNormal = e_normal.export()
+    torch_e_normal: _EquivMultivariateNormal = e_normal.export()
     torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-6, rtol=1e-6)
 
 
@@ -196,3 +196,69 @@ def test_activations(group: Group):
     assert torch.allclose(y_mish, y_mish_torch, atol=1e-5, rtol=1e-5), (
         f"Max error: {torch.max(torch.abs(y_mish - y_mish_torch)):.5f}"
     )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [4])
+@pytest.mark.parametrize("affine", [True, False])
+@pytest.mark.parametrize("running_stats", [True, False])
+def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
+    """Check the eBatchNorm1d layer is G-invariant."""
+    import torch
+
+    from symm_learning.nn import GSpace1D, eBatchNorm1d
+
+    G = group
+    gspace = GSpace1D(G)
+
+    in_type = FieldType(gspace, [G.regular_representation] * mx)
+
+    time = 1
+    batch_size = 100
+    x = torch.randn(batch_size, in_type.size, time)
+    x = in_type(x)
+
+    batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
+    print(batchnorm_layer)
+
+    batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    # y = batchnorm_layer(x).tensor
+    # y_torch = batchnorm_layer.export()(x.tensor)
+
+    # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 10])
+@pytest.mark.parametrize("bias", [True, False])
+def test_affine(group: Group, mx: int, bias: bool):
+    """Check the eBatchNorm1d layer is G-invariant."""
+    import torch
+    from escnn.gspaces import no_base_space
+
+    from symm_learning.nn import eAffine
+
+    G = group
+    in_type = FieldType(no_base_space(G), [G.regular_representation] * mx)
+
+    batch_size = 100
+    x = torch.randn(batch_size, in_type.size)
+    x = in_type(x)
+
+    affine = eAffine(in_type, bias=bias)
+    print(affine)
+
+    affine.check_equivariance(atol=1e-5, rtol=1e-5)

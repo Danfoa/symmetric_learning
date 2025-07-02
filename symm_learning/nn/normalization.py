@@ -82,11 +82,14 @@ class eBatchNorm1d(EquivariantModule):
 
         y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    The mean and standard-deviation are calculated **using symmetry-aware estimates** (see
-    :func:`~symm_learning.stats.var_mean`) over the mini-batches and :math:`\gamma` and :math:`\beta` are
-    the scale and bias vectors of a :class:`eAffine`, which ensures that the affine transformation is
-    symmetry-preserving. By default, the elements of :math:`\gamma` are initialized to 1 and the elements
-    of :math:`\beta` are set to 0.
+    The mean and standard-deviation are calculated **using symmetry-aware estimates** per-dimension over
+    the mini-batches and :math:`\gamma` and :math:`\beta` are learnable parameter vectors
+    of size `C` (where `C` is the number of features or channels of the input). By default, the
+    elements of :math:`\gamma` are set to 1 and the elements of :math:`\beta` are set to 0.
+    At train time in the forward pass, the variance is calculated via the biased estimator,
+    equivalent to ``torch.var(input, unbiased=False)``. However, the value stored in the
+    moving average of the variance is calculated via the unbiased  estimator, equivalent to
+    ``torch.var(input, unbiased=True)``.
 
     Also by default, during training this layer keeps running estimates of its
     computed mean and variance, which are then used for normalization during

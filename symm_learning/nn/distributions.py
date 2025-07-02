@@ -24,42 +24,56 @@ def _equiv_mean_var_from_input(
 class EquivMultivariateNormal(EquivariantModule):
     r"""G-equivariant multivariate normal.
 
-    Utility layer to parameterize a G-equivariant multivariate gaussian/normal distribution
+    Utility layer to parameterize a G-equivariant multivariate gaussian/normal distribution.
+
     .. math::
-        y \sim \mathcalN \bigl( \mu(x), \Sigma(x) \bigr),
+
+        y \sim \mathcal{N} \bigl( \mu(x), \Sigma(x) \bigr),
+
     Where x is the input to the layer parameterizing the mean and (free) degrees of freedom
     of the covariance matrix, constrained to satisfy:
+
     .. math::
+
         \rho_Y(g) \mu(x) = \mu(\rho_X(g) \cdot x)
+
         \rho_Y(g) \Sigma(x) \rho_Y(g)^{\top}= \Sigma(\rho_X(g) x)
-        \\quad \forall g \in G.
+        \quad \forall g \in G.
+
     Such that:
+
     .. math::
+
         P(y \mid x) = P(\rho_Y(g) y \mid \rho_X(g) x) \quad \forall g \in G.
+
     The input of the layer is composed of the desired mean of the distribution and the
     log-variances of each irreducible subspace of the representation :math:`\rho_Y` of the output.
     The number of log-variances varies with the number of irreducible subspaces of the representation,
     hence this layer is meant to be instantiated before the `EquivaraintModule` that will be used to
     parameterize the multivariate normal distribution. See the example below.
-    ------------------------------------------------------------------
-    Example - how to use
-    ------------------------------------------------------------------
-    >>> G = CyclicGroup(3)
-    >>> x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation])
-    >>> y_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * 1)
-    >>> e_normal = EquivMultivariateNormal(y_type, diagonal=True)
-    >>> nn = EMLP(in_type=x_type, out_type=e_normal.in_type)
-    >>> dist = e_normal.get_distribution(nn(x))
-    >>> # Sample from the distribution
-    >>> y = dist.sample()  # (B, n)
-    ------------------------------------------------------------------
+
     Parameters
-    ------------------------------------------------------------------
+    ----------
     y_type : FieldType
         Field/feature type of *X* (the mean).
     diagonal : bool, default ``True``
         Only diagonal covariance matrices are implemented. Note these are not necessarily constant multiples of the
         identity.
+
+    Example:
+    ---------
+    >>> from escnn.group import CyclicGroup
+    >>> from symm_learning.models.emlp import EMLP
+    >>> G = CyclicGroup(3)
+    >>> x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation])
+    >>> y_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * 1)
+    >>> e_normal = EquivMultivariateNormal(y_type, diagonal=True)
+    >>> nn = EMLP(in_type=x_type, out_type=e_normal.in_type)
+    >>> x = torch.randn(1, x_type.size)
+    >>> dist = e_normal.get_distribution(nn(x_type(x)))
+    >>> # Sample from the distribution
+    >>> y = dist.sample()
+
     """
 
     def __init__(self, y_type: FieldType, diagonal=True):
@@ -141,8 +155,8 @@ class EquivMultivariateNormal(EquivariantModule):
         )
 
     def export(self):
-        r"""Export recursively each submodule to a normal PyTorch module and set to "eval" mode."""
-        torch_e_normal = tEquivMultivariateNormal(
+        """Exporting to a torch.nn.Module"""
+        torch_e_normal = _EquivMultivariateNormal(
             idx=self.idx,
             Q2_T=self.Q2_T,
             dim_y=self.y_type.size,
@@ -152,7 +166,7 @@ class EquivMultivariateNormal(EquivariantModule):
         return torch_e_normal
 
 
-class tEquivMultivariateNormal(torch.nn.Module):
+class _EquivMultivariateNormal(torch.nn.Module):
     """Utility class to export `EquivMultivariateNormal` to a standard PyTorch module."""
 
     def __init__(
@@ -242,5 +256,5 @@ if __name__ == "__main__":
 
     e_normal.check_equivariance(atol=1e-5, rtol=1e-5)
 
-    torch_e_normal: tEquivMultivariateNormal = e_normal.export()
+    torch_e_normal: _EquivMultivariateNormal = e_normal.export()
     torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-5, rtol=1e-5)

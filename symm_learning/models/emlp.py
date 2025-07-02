@@ -96,7 +96,7 @@ class EMLP(EquivariantModule):
         return f"{self.G}-equivariant MLP: in={self.in_type}, out={self.out_type}"
 
     def export(self):
-        """Exports the model to a torch.nn.Sequential instance."""
+        """Exporting to a torch.nn.Sequential"""
         if not self.pointwise_activation:
             raise RuntimeError(
                 "`FourierPointwise` activation has no `export` method. Only EMLP with `pointwise_activation=True` "

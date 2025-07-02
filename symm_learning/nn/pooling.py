@@ -1,6 +1,7 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
 from __future__ import annotations
 
+import numpy as np
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
@@ -27,8 +28,12 @@ class IrrepSubspaceNormPooling(EquivariantModule):
             gspace=in_type.gspace, representations=[self.G.trivial_representation] * n_inv_features
         )
         # Store isotypic subspaces start/end indices for efficient slicing
-        self.register_buffer("iso_start_dims", torch.tensor(self.in2iso.out_type.fields_start, dtype=torch.int64))
-        self.register_buffer("iso_end_dims", torch.tensor(self.in2iso.out_type.fields_end, dtype=torch.int64))
+        self.register_buffer(
+            "iso_start_dims", torch.tensor(self.in2iso.out_type.fields_start.astype(np.int64), dtype=torch.int64)
+        )
+        self.register_buffer(
+            "iso_end_dims", torch.tensor(self.in2iso.out_type.fields_end.astype(np.int64), dtype=torch.int64)
+        )
         irreps_ids = [rep.irreps[0] for rep in self.in2iso.out_type.representations]
         self.register_buffer("irreps_dims", torch.tensor([self.G.irrep(*irreps_id).size for irreps_id in irreps_ids]))
 
@@ -72,8 +77,8 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         return f"{self.G}-Irrep Norm Pooling: in={self.in_type} -> out={self.out_type}"
 
     def export(self) -> torch.nn.Module:
-        """Exports the module to a standard PyTorch module."""
-        return tIrrepSubspaceNormPooling(
+        """Exporting to a torch.nn.Module"""
+        return _IrrepSubspaceNormPooling(
             in2iso=self.in2iso.export(),
             iso_start_dims=self.iso_start_dims,
             iso_end_dims=self.iso_end_dims,
@@ -81,7 +86,7 @@ class IrrepSubspaceNormPooling(EquivariantModule):
         )
 
 
-class tIrrepSubspaceNormPooling(torch.nn.Module):
+class _IrrepSubspaceNormPooling(torch.nn.Module):
     """Torch module result of exporting the IrrepSubspaceNormPooling layer to a standard PyTorch module."""
 
     def __init__(
@@ -91,7 +96,7 @@ class tIrrepSubspaceNormPooling(torch.nn.Module):
         iso_end_dims: torch.Tensor,
         irreps_dims: torch.Tensor,
     ):
-        super(tIrrepSubspaceNormPooling, self).__init__()
+        super(_IrrepSubspaceNormPooling, self).__init__()
         self.in2iso = in2iso
         self.iso_start_dims = iso_start_dims
         self.iso_end_dims = iso_end_dims

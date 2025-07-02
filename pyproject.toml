@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "symm-learning"
-version = "0.2.7"
+version = "0.2.8"
 
 description = "Torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"
@@ -24,6 +24,8 @@ dev = [
     "pytest",
     "ruff",
     "pre-commit",
+    "sphinx-autobuild",
+    "renku-sphinx-theme",
 ]
 
 docs = [
@@ -97,7 +99,8 @@ exclude = [
   ".git",  # Git version control directory
   ".idea", # PyCharm project settings directory
   ".venv",  # Virtual environment directory
-  ".vscode"
+  ".vscode",
+  "docs/**", # Documentation directory
 ]
 
 [tool.ruff.format] # ===============================================================================

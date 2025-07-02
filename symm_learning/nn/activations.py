@@ -19,8 +19,8 @@ class Mish(EquivariantModule):
     def forward(self, x):  # noqa: D102
         return self.out_type(F.mish(x.tensor))
 
-    def export(self) -> torch.nn.Mish:  # noqa: D102
-        """Export the layer to a PyTorch module."""
+    def export(self) -> torch.nn.Mish:
+        """Exporting to a torch.nn.Mish"""
         return torch.nn.Mish()
 
     def evaluate_output_shape(self, input_shape):  # noqa: D102
