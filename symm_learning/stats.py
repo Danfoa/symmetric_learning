@@ -15,13 +15,15 @@ def var_mean(x: Tensor, rep_x: Representation):
     """Compute the mean and variance of a symmetric random variable.
 
     Args:
-        x: (Tensor) of shape :math:`(N, D_x)` containing the observations of the symmetric random variable
-        rep_x: (escnn.group.Representation) representation of the symmetric random variable.
+        x: (:class:`torch.Tensor`) of shape :math:`(N, D_x)` containing the observations of the symmetric random
+        variable
+        rep_x: (:class:`~escnn.group.Representation`) representation of the symmetric random variable.
 
     Returns:
-        (Tensor, Tensor): Mean and variance of the symmetric random variable. The mean is restricted to be in the
-        trivial/G-invariant subspace of the symmetric vector space. The variance is constrained to be the same for
-        all dimensions of each G-irreducible subspace (i.e., each subspace associated with an irrep).
+        (:class:`torch.Tensor`, :class:`torch.Tensor`): Mean and variance of the symmetric random variable.
+        The mean is restricted to be in the trivial/G-invariant subspace of the symmetric vector space.
+        The variance is constrained such that in the irrep-spectral basis, each G-irreducible subspace
+        (i.e., each subspace associated with an irrep) has the same variance in all dimensions of that subspace.
 
     Shape:
         - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
@@ -62,12 +64,32 @@ def var_mean(x: Tensor, rep_x: Representation):
     x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv.to(device=x_flat.device), x_flat - mean)
     var_spectral = torch.sum(x_c_irrep_spectral**2, dim=0) / (n_samples - 1)
 
-    d = 0
-    for irrep_id in rep_x.irreps:
-        irrep_dim = rep_x.group.irrep(*irrep_id).size
-        avg_irrep_var = torch.mean(var_spectral[d : d + irrep_dim])
-        var_spectral[d : d + irrep_dim] = avg_irrep_var
-        d += irrep_dim
+    # Vectorized averaging over irreducible subspace dimensions
+    if "irrep_dims" not in rep_x.attributes:
+        irrep_dims = torch.tensor([rep_x.group.irrep(*irrep_id).size for irrep_id in rep_x.irreps], device=x.device)
+        rep_x.attributes["irrep_dims"] = irrep_dims
+    else:
+        irrep_dims = rep_x.attributes["irrep_dims"].to(device=x.device)
+
+    if "irrep_indices" not in rep_x.attributes:
+        # Create indices for each irrep subspace: [0,0,0,1,1,2,2,2,2,...] for irrep dims [3,2,4,...]
+        irrep_indices = torch.repeat_interleave(torch.arange(len(irrep_dims)), irrep_dims)
+        rep_x.attributes["irrep_indices"] = irrep_indices
+    else:
+        irrep_indices = rep_x.attributes["irrep_indices"].to(device=x.device)
+
+    # Compute average variance for each irrep subspace using scatter operations
+    avg_vars = torch.zeros(len(irrep_dims), device=x.device, dtype=var_spectral.dtype)
+
+    # Sum variances within each irrep subspace using scatter_add_:
+    # For irrep_indices = [0,0,0,1,1,2,2,2,2] and var_spectral = [v0,v1,v2,v3,v4,v5,v6,v7,v8]
+    # This computes: avg_vars[0] = v0+v1+v2, avg_vars[1] = v3+v4, avg_vars[2] = v5+v6+v7+v8
+    avg_vars.scatter_add_(0, irrep_indices, var_spectral)
+    # Divide by irrep dimensions to get the average variance per irrep subspace
+    avg_vars = avg_vars / irrep_dims
+
+    # Broadcast back to full spectral dimensions
+    var_spectral = avg_vars[irrep_indices]
 
     var = torch.einsum("ij,...j->...i", Q.pow(2).to(device=x.device), var_spectral)
     return var, mean
