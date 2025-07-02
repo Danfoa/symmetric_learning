@@ -1,6 +1,7 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
 from __future__ import annotations
 
+import numpy as np
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
@@ -27,8 +28,12 @@ class IrrepSubspaceNormPooling(EquivariantModule):
             gspace=in_type.gspace, representations=[self.G.trivial_representation] * n_inv_features
         )
         # Store isotypic subspaces start/end indices for efficient slicing
-        self.register_buffer("iso_start_dims", torch.tensor(self.in2iso.out_type.fields_start, dtype=torch.int64))
-        self.register_buffer("iso_end_dims", torch.tensor(self.in2iso.out_type.fields_end, dtype=torch.int64))
+        self.register_buffer(
+            "iso_start_dims", torch.tensor(self.in2iso.out_type.fields_start.astype(np.int64), dtype=torch.int64)
+        )
+        self.register_buffer(
+            "iso_end_dims", torch.tensor(self.in2iso.out_type.fields_end.astype(np.int64), dtype=torch.int64)
+        )
         irreps_ids = [rep.irreps[0] for rep in self.in2iso.out_type.representations]
         self.register_buffer("irreps_dims", torch.tensor([self.G.irrep(*irreps_id).size for irreps_id in irreps_ids]))
 

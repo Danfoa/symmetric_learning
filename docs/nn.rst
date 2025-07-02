@@ -9,3 +9,4 @@ nn
    nn/disentangled
    nn/distributions
    nn/pooling
+   nn/normalization

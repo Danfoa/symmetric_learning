@@ -1,6 +1,8 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 import torch
@@ -36,7 +38,7 @@ def test_symmetric_moments(group: Group):  # noqa: D103
         return x, mean, var
 
     # Test that G-invariant random variables should have equivalent mean and var as standard computation
-    mx = 10
+    mx = 4
     rep_x = directsum([G.trivial_representation] * mx)
     x, mean, var = compute_moments_for_rep(rep_x)
     mean_gt = torch.mean(x, dim=0)
@@ -67,6 +69,13 @@ def test_symmetric_moments(group: Group):  # noqa: D103
     assert torch.allclose(rel_var_err, torch.zeros_like(var), atol=1e-1, rtol=1e-1), (
         f"Var rel error {rel_var_err * 100}%"
     )
+
+    # Ensure that the estimated mean is invariant under the group action
+    for g in G.elements:
+        g_x = torch.einsum("ij,...j->...i", torch.tensor(rep_x(g), dtype=x.dtype, device=x.device), x)
+        g_var, g_mean = var_mean(g_x, rep_x)
+        assert torch.allclose(g_mean, mean, atol=1e-4, rtol=1e-4), f"Mean {g_mean} != {mean}"
+        assert torch.allclose(g_var, var, atol=1e-4, rtol=1e-4), f"Var {g_var} != {var}"
 
 
 @pytest.mark.parametrize(

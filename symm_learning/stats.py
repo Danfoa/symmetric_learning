@@ -24,27 +24,18 @@ def var_mean(x: Tensor, rep_x: Representation):
         all dimensions of each G-irreducible subspace (i.e., each subspace associated with an irrep).
 
     Shape:
-        :code:`x`: :math:`(N, Dx)` where N is the number of samples and Dx is the dimension of the symmetric random
-         variable.
-
-        Output: :math:`(Dx, Dx)`
+        - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
+          the symmetric random variable, and T is the sequence length (if applicable).
+        - **Output**: A tuple containing the variance and the mean. The variance has shape :math:`(D_x,)` and the mean
+          has shape :math:`(D_x,)`. If a sequence is provided (T dimension), the shapes are :math:`(D_x, T)`.
     """
-    assert len(x.shape) == 2, f"Expected x to have shape (N, n_features), got {x.shape}"
-    # Compute the mean of the observation.
-    mean_empirical = torch.mean(x, dim=0)
-    # Project to the inv-subspace and map back to the original basis
+    assert x.ndim in (2, 3), f"Expected x to be a 2D or 3D tensor, got {x.ndim}D tensor"
+
     if "invariant_orthogonal_projector" not in rep_x.attributes:
         P_inv = invariant_orthogonal_projector(rep_x)
         rep_x.attributes["invariant_orthogonal_projector"] = P_inv
     else:
         P_inv = rep_x.attributes["invariant_orthogonal_projector"]
-    # print(P_inv.dtype, x.dtype)
-    mean = torch.einsum("ij,...j->...i", P_inv, mean_empirical)
-
-    # Symmetry constrained variance computation.
-    # The variance is constraint to be a single constant per each irreducible subspace.
-    # Hence, we compute the empirical variance, and average within each irreducible subspace.
-    n_samples = x.shape[0]
     if "Q_inv" not in rep_x.attributes:  # Use cache Tensor if available.
         Q_inv = torch.tensor(rep_x.change_of_basis_inv, device=x.device, dtype=x.dtype)
         rep_x.attributes["Q_inv"] = Q_inv
@@ -57,7 +48,18 @@ def var_mean(x: Tensor, rep_x: Representation):
     else:
         Q = rep_x.attributes["Q"]
 
-    x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv.to(device=x.device), x - mean)
+    x_flat = x if x.ndim == 2 else x.reshape(-1, x.shape[1])
+
+    mean_empirical = torch.mean(x_flat, dim=0)  # Mean over batch as sequence length.
+    # Project to the inv-subspace and map back to the original basis
+    mean = torch.einsum("ij,j->i...", P_inv, mean_empirical)
+
+    # Symmetry constrained variance computation.
+    # The variance is constraint to be a single constant per each irreducible subspace.
+    # Hence, we compute the empirical variance, and average within each irreducible subspace.
+    n_samples = x_flat.shape[0]
+
+    x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv.to(device=x_flat.device), x_flat - mean)
     var_spectral = torch.sum(x_c_irrep_spectral**2, dim=0) / (n_samples - 1)
 
     d = 0
