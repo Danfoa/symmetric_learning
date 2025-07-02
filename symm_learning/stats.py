@@ -212,17 +212,17 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
         \end{align}
 
     Where :math:`\mathbf{Q}_x^{\mathsf T}` and :math:`\mathbf{Q}_y^{\mathsf T}`
-    are the change-of-basis matrices to the isotypic bases of *X* and *Y*,
+    are the change-of-basis matrices to the isotypic bases of :math:`\mathcal{X}` and :math:`\mathcal{Y}`,
     respectively; :math:`\mathbf{C}_{xy}^{(k)}` is the covariance restricted to the
     isotypic subspaces of type *k*; and :math:`\mathbf{Z}_b^{(k)}` are the free
     parameters—i.e. the expansion coefficients in the endomorphism basis
     :math:`\mathbb{B}_k` of the irreducible representation of type *k*.
 
     Args:
-        x (Tensor): Realizations of a random variable x.
-        y (Tensor): Realizations of a random variable y.
-        rep_x (Representation): The representation acting on the variables X.
-        rep_y (Representation): The representation acting on the variables Y.
+        x (Tensor): Realizations of a random variable :math:`X`.
+        y (Tensor): Realizations of a random variable :math:`Y`.
+        rep_x (Representation): The representation acting on the symmetric vector spaces :math:`\mathcal{X}`.
+        rep_y (Representation): The representation acting on the symmetric vector spaces :math:`\mathcal{Y}`.
 
     Returns:
         Tensor: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.

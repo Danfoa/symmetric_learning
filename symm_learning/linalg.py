@@ -145,11 +145,12 @@ def invariant_orthogonal_projector(rep_x: Representation) -> Tensor:
         3. Mapping back to the original basis set.
 
     Args:
-        rep_x (Representation): The representation for which the orthogonal projection to the invariant subspace is
-        computed.
+        rep_x (:class:`escnn.group.Representation`): The representation for which the orthogonal projection to the
+        invariant subspace is computed.
 
     Returns:
-        Tensor: The orthogonal projection matrix to the invariant subspace, :math:`\mathbf{Q} \mathbf{S} \mathbf{Q}^T`.
+        :class:`torch.Tensor`: The orthogonal projection matrix to the invariant subspace,
+        :math:`\mathbf{Q} \mathbf{S} \mathbf{Q}^T`.
     """
     Qx_T, Qx = Tensor(rep_x.change_of_basis_inv), Tensor(rep_x.change_of_basis)
 
@@ -179,11 +180,11 @@ def _project_to_irrep_endomorphism_basis(A: Tensor, rep_x: Representation, rep_y
     function projects the linear map to the space of equivariant linear maps between the two isotypic spaces.
 
     Args:
-        A (Tensor): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`, where :math:`d` is the
-            dimension of the irreducible representation, and :math:`m_x` and :math:`m_y` are the multiplicities of the
-            irreducible representation in :math:`X` and :math:`Y`, respectively.
-        rep_x (Representation): The representation of the isotypic space :math:`X`.
-        rep_y (Representation): The representation of the isotypic space :math:`Y`.
+        A (:class:`torch.Tensor`): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`,
+            where :math:`d` is the dimension of the irreducible representation, and :math:`m_x` and :math:`m_y`
+            are the multiplicities of the irreducible representation in :math:`X` and :math:`Y`, respectively.
+        rep_x (:class:`escnn.group.Representation`): The representation of the isotypic space :math:`X`.
+        rep_y (:class:`escnn.group.Representation`): The representation of the isotypic space :math:`Y`.
 
     Returns:
         A_equiv (Tensor): A projected linear map of shape :math:`(m_y \cdot d, m_x \cdot d)` which commutes with the
