@@ -11,12 +11,41 @@ class eAffine(EquivariantModule):
     The affine transformation for a given input :math:`x \in \mathcal{X} \subseteq \mathbb{R}^{D_x}` is defined as:
 
     .. math::
-        y = x \cdot \alpha + \beta
+        \mathbf{y} = \mathbf{x} \cdot \alpha + \beta
+
+    such that
+
+    .. math::
+        \rho_{\mathcal{X}}(g) \mathbf{y} = (\rho_{\mathcal{X}}(g) \mathbf{x}) \cdot \alpha + \beta \quad \forall g \in G
 
     Where :math:`\mathcal{X}` is a symmetric vector space with group representation
-    :math:`\rho_{\mathcal{X}}: G \to \mathbb{GL}(D_x)`, :math:`\alpha \in \mathbb{R}^{D_x}` is a learnable
-    scale vector that scales uniformly the irreducible subspaces of the feature space, and
-    :math:`\beta \in \mathbb{R}^{D_x}` is a bias vector living in the invariant subspace of :math:`\mathcal{X}`.
+    :math:`\rho_{\mathcal{X}}: G \to \mathbb{GL}(D_x)`, and :math:`\alpha \in \mathbb{R}^{D_x}`,
+    :math:`\beta \in \mathbb{R}^{D_x}` are symmetry constrained learnable vectors.
+
+    Given the input representation:
+
+    .. math::
+        \rho_{\mathcal{X}} = \mathbf{Q} \left(
+        \bigoplus_{k=1}^{n_{\text{iso}}} \mathbf{I}_{m_k} \otimes \hat{\rho}_k
+        \right) \mathbf{Q}^T
+
+    Where :math:`\hat{\rho}_k` is the irreducible representation of type :math:`k` and :math:`m_k` is
+    its multiplicity in the input representation. The module will have :math:`m = \sum_{k=1}^{n_{\text{iso}}} m_k`
+    scale learnable parameters defining the uniform scaling of each irreducible subspace, and :math:`m_{\text{inv}}`
+    bias learnable parameters, where :math:`m_{\text{inv}}` is the dimension of the invariant subspace of the
+    input representation.
+
+
+    Args:
+        in_type: the :class:`escnn.nn.FieldType` of the input geometric tensor.
+            The output type is the same as the input type.
+        bias: a boolean value that when set to ``True``, this module has a learnable bias vector
+            in the invariant subspace of the input type. Default: ``True``
+
+    Shape:
+        - Input: :math:`(N, D_x)` or :math:`(N, D_x, L)`, where :math:`N` is the batch size,
+          :math:`D_x` is the dimension of the input type, and :math:`L` is the sequence length.
+        - Output: :math:`(N, D_x)` or :math:`(N, D_x, L)` (same shape as input)
     """
 
     def __init__(self, in_type: FieldType, bias: bool = True):
@@ -41,27 +70,39 @@ class eAffine(EquivariantModule):
         self.register_parameter("scale_dof", torch.nn.Parameter(torch.ones(n_scale_params)))
         irrep_dims = [G.irrep(*irrep_id).size for irrep_id in self._rep_in.irreps]
         self.register_buffer("_irrep_dims", torch.tensor(irrep_dims, dtype=torch.long))
+        # Change of basis from irrep spectral DoF to input basis
+        Q = torch.tensor(self._rep_in.change_of_basis)
+        Q_squared = Q.pow(2)
+        self.register_buffer("Q_squared", Q_squared.to(dtype=torch.get_default_dtype()))
 
     def forward(self, x: GeometricTensor):
         """Applies the affine transformation to the input geometric tensor."""
         assert x.type == self.in_type, "Input type does not match the expected input type."
 
-        scale, bias = self.expand_scale(), self.expand_bias() if self.bias else 0
-        if x.tensor.ndim == 2:
-            scale, bias = scale[None, ...], (bias[None, ...] if self.bias else 0)
-        elif x.tensor.ndim == 3:
-            scale, bias = scale[None, ..., None], (bias[None, ..., None] if self.bias else 0)
+        scale = self.expand_scale()
+        bias = self.expand_bias() if self.bias else 0
+
+        # Reshape for broadcasting: (D,) -> (1, D, 1, 1, ...) to match input dimensions
+        shape = [1] * x.tensor.ndim
+        shape[1] = -1  # Keep feature dimension unchanged
+
+        scale = scale.view(shape)
+        if self.bias:
+            bias = bias.view(shape)
+
         y = x.tensor * scale + bias
         return self.out_type(y)
 
     def expand_scale(self):
         """Returns the scale parameter which uniformly scales each irreducible subspace."""
-        return torch.repeat_interleave(self.scale_dof, self._irrep_dims, dim=0)
+        scale_spectral = torch.repeat_interleave(self.scale_dof, self._irrep_dims, dim=-1)
+        scale = torch.einsum("ij,...j->...i", self.Q_squared, scale_spectral)
+        return scale
 
     def expand_bias(self):
         """Returns the bias vector in the invariant subspace of the input type."""
         if self.bias:
-            return torch.einsum("ij,j->i", self.inv_projector, self.bias_dof)
+            return torch.einsum("ij,...j->...i", self.inv_projector, self.bias_dof)
         return 0
 
     def evaluate_output_shape(self, input_shape):  # noqa: D102
@@ -69,6 +110,14 @@ class eAffine(EquivariantModule):
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"in type: {self.in_type}, bias: {self.bias}"
+
+    def check_equivariance(self, atol=1e-5, rtol=1e-5):  # noqa: D102
+        # Randomize scale and bias DoFs
+        self.scale_dof.data.uniform_(-1, 1)
+        if self.bias:
+            self.bias_dof.data.uniform_(-1, 1)
+        self.eval()
+        return super().check_equivariance(atol, rtol)
 
 
 class eBatchNorm1d(EquivariantModule):
@@ -157,8 +206,6 @@ class eBatchNorm1d(EquivariantModule):
         assert x.type == self.in_type, "Input type does not match the expected input type."
 
         var_batch, mean_batch = var_mean(x.tensor, rep_x=self._rep_x)
-        print("mean", mean_batch)
-        print("var", var_batch)
 
         if self.track_running_stats:
             if self.training:
@@ -255,3 +302,37 @@ class eBatchNorm1d(EquivariantModule):
         bn.train(False)
         bn.eval()
         return bn
+
+
+if __name__ == "__main__":
+    import escnn
+    import numpy as np
+    import torch
+    from escnn.group import directsum
+    from escnn.gspaces import no_base_space
+
+    from symm_learning.nn import GSpace1D, eAffine
+
+    mx = 2
+    bias = True
+    G = escnn.group.CyclicGroup(2)
+    rep = directsum([G.regular_representation] * mx)
+    # Random orthogonal matrix for change of basis, using QR decomposition
+    Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
+    rep = escnn.group.change_basis(rep, Q, name="test_rep")
+
+    in_type = FieldType(no_base_space(G), representations=[rep])
+
+    batch_size = 100
+    x = torch.randn(batch_size, in_type.size)
+    x = in_type(x)
+
+    affine = eAffine(in_type, bias=bias)
+    affine.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    in_type = FieldType(GSpace1D(G), [rep])
+    time = 40
+    x = torch.randn(batch_size, in_type.size, time)
+    x = in_type(x)
+    affine = eAffine(in_type, bias=bias)
+    affine.check_equivariance(atol=1e-5, rtol=1e-5)
