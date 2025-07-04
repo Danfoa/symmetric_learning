@@ -1,7 +1,6 @@
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
-from symm_learning.representation_theory import isotypic_decomp_rep
 from symm_learning.stats import var_mean
 
 
@@ -22,20 +21,6 @@ class eAffine(EquivariantModule):
     :math:`\rho_{\mathcal{X}}: G \to \mathbb{GL}(D_x)`, and :math:`\alpha \in \mathbb{R}^{D_x}`,
     :math:`\beta \in \mathbb{R}^{D_x}` are symmetry constrained learnable vectors.
 
-    Given the input representation:
-
-    .. math::
-        \rho_{\mathcal{X}} = \mathbf{Q} \left(
-        \bigoplus_{k=1}^{n_{\text{iso}}} \mathbf{I}_{m_k} \otimes \hat{\rho}_k
-        \right) \mathbf{Q}^T
-
-    Where :math:`\hat{\rho}_k` is the irreducible representation of type :math:`k` and :math:`m_k` is
-    its multiplicity in the input representation. The module will have :math:`m = \sum_{k=1}^{n_{\text{iso}}} m_k`
-    scale learnable parameters defining the uniform scaling of each irreducible subspace, and :math:`m_{\text{inv}}`
-    bias learnable parameters, where :math:`m_{\text{inv}}` is the dimension of the invariant subspace of the
-    input representation.
-
-
     Args:
         in_type: the :class:`escnn.nn.FieldType` of the input geometric tensor.
             The output type is the same as the input type.
@@ -50,74 +35,54 @@ class eAffine(EquivariantModule):
 
     def __init__(self, in_type: FieldType, bias: bool = True):
         super().__init__()
-        self.in_type = in_type
-        self.out_type = in_type
-        self._rep_in = isotypic_decomp_rep(in_type.representation)
-        G = self._rep_in.group
+        self.in_type, self.out_type = in_type, in_type
 
-        has_invariant_subspace = G.trivial_representation.id in self._rep_in.attributes["isotypic_reps"]
-        self.bias = bias and has_invariant_subspace
-        if self.bias:
-            inv_subspace_dims: slice = self._rep_in.attributes["isotypic_subspace_dims"][G.trivial_representation.id]
-            n_bias_params = inv_subspace_dims.stop - inv_subspace_dims.start
-            self.register_parameter("bias_dof", torch.nn.Parameter(torch.zeros(n_bias_params)))
-            inv_projector = torch.tensor(self._rep_in.change_of_basis[:, inv_subspace_dims]).to(self.bias_dof.dtype)
-            self.register_buffer("inv_projector", inv_projector)
+        self.rep_x = in_type.representation
+        G = self.rep_x.group
+        self.register_buffer("Q", torch.tensor(self.rep_x.change_of_basis, dtype=torch.get_default_dtype()))
+        self.register_buffer("Q_inv", torch.tensor(self.rep_x.change_of_basis.T, dtype=torch.get_default_dtype()))
 
         # Symmetry-preserving scaling implies scaling each irreducible subspace uniformly.
-        # Hence we have only num_irreps free learnable parameters.
-        n_scale_params = len(self._rep_in.irreps)
+        n_scale_params = len(self.rep_x.irreps)
         self.register_parameter("scale_dof", torch.nn.Parameter(torch.ones(n_scale_params)))
-        irrep_dims = [G.irrep(*irrep_id).size for irrep_id in self._rep_in.irreps]
-        self.register_buffer("_irrep_dims", torch.tensor(irrep_dims, dtype=torch.long))
-        # Change of basis from irrep spectral DoF to input basis
-        Q = torch.tensor(self._rep_in.change_of_basis)
-        Q_squared = Q.pow(2)
-        self.register_buffer("Q_squared", Q_squared.to(dtype=torch.get_default_dtype()))
+        irrep_dims = torch.tensor([G.irrep(*irrep_id).size for irrep_id in self.rep_x.irreps])
+        self.register_buffer("irrep_indices", torch.repeat_interleave(torch.arange(len(irrep_dims)), irrep_dims))
+
+        has_invariant_subspace = G.trivial_representation.id in self.rep_x.irreps
+        self.bias = bias and has_invariant_subspace
+        if self.bias:
+            is_trivial_irrep = torch.tensor([irrep_id == G.trivial_representation.id for irrep_id in self.rep_x.irreps])
+            self.register_buffer("inv_dims", torch.repeat_interleave(is_trivial_irrep, irrep_dims))
+            n_bias_params = is_trivial_irrep.sum()
+            self.register_parameter("bias_dof", torch.nn.Parameter(torch.zeros(n_bias_params)))
 
     def forward(self, x: GeometricTensor):
         """Applies the affine transformation to the input geometric tensor."""
         assert x.type == self.in_type, "Input type does not match the expected input type."
 
-        scale = self.expand_scale()
-        bias = self.expand_bias() if self.bias else 0
+        # Handle x: (in_type.size,)
+        if x.tensor.ndim == 1:
+            x.tensor = x.tensor.unsqueeze(0)  # Add batch dimension
 
-        # Reshape for broadcasting: (D,) -> (1, D, 1, 1, ...) to match input dimensions
-        shape = [1] * x.tensor.ndim
-        shape[1] = -1  # Keep feature dimension unchanged
+        x_spectral = torch.einsum("ij,bj...->bi...", self.Q_inv, x.tensor)
+        scale_spectral = self.scale_dof[self.irrep_indices]
+        # Reshape for broadcasting
+        scale_spectral = scale_spectral.view(1, -1, *([1] * (x_spectral.ndim - 2)))
 
-        scale = scale.view(shape)
+        x_spectral = x_spectral * scale_spectral
         if self.bias:
-            bias = bias.view(shape)
+            bias_spectral = self.bias_dof.view(1, -1, *([1] * (x_spectral.ndim - 2)))
+            x_spectral[:, self.inv_dims, ...] = x_spectral[:, self.inv_dims, ...] + bias_spectral
 
-        y = x.tensor * scale + bias
-        return self.out_type(y)
+        y = self.out_type(torch.einsum("ij,bj...->bi...", self.Q, x_spectral))
 
-    def expand_scale(self):
-        """Returns the scale parameter which uniformly scales each irreducible subspace."""
-        scale_spectral = torch.repeat_interleave(self.scale_dof, self._irrep_dims, dim=-1)
-        scale = torch.einsum("ij,...j->...i", self.Q_squared, scale_spectral)
-        return scale
-
-    def expand_bias(self):
-        """Returns the bias vector in the invariant subspace of the input type."""
-        if self.bias:
-            return torch.einsum("ij,...j->...i", self.inv_projector, self.bias_dof)
-        return 0
+        return y
 
     def evaluate_output_shape(self, input_shape):  # noqa: D102
         return input_shape
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"in type: {self.in_type}, bias: {self.bias}"
-
-    def check_equivariance(self, atol=1e-5, rtol=1e-5):  # noqa: D102
-        # Randomize scale and bias DoFs
-        self.scale_dof.data.uniform_(-1, 1)
-        if self.bias:
-            self.bias_dof.data.uniform_(-1, 1)
-        self.eval()
-        return super().check_equivariance(atol, rtol)
 
 
 class eBatchNorm1d(EquivariantModule):
@@ -233,8 +198,6 @@ class eBatchNorm1d(EquivariantModule):
 
     def check_equivariance(self, atol=1e-5, rtol=1e-5):
         """Check the equivariance of the convolution layer."""
-        import numpy as np
-
         was_training = self.training
         time = 1
         batch_size = 50
@@ -302,37 +265,3 @@ class eBatchNorm1d(EquivariantModule):
         bn.train(False)
         bn.eval()
         return bn
-
-
-if __name__ == "__main__":
-    import escnn
-    import numpy as np
-    import torch
-    from escnn.group import directsum
-    from escnn.gspaces import no_base_space
-
-    from symm_learning.nn import GSpace1D, eAffine
-
-    mx = 2
-    bias = True
-    G = escnn.group.CyclicGroup(2)
-    rep = directsum([G.regular_representation] * mx)
-    # Random orthogonal matrix for change of basis, using QR decomposition
-    Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
-    rep = escnn.group.change_basis(rep, Q, name="test_rep")
-
-    in_type = FieldType(no_base_space(G), representations=[rep])
-
-    batch_size = 100
-    x = torch.randn(batch_size, in_type.size)
-    x = in_type(x)
-
-    affine = eAffine(in_type, bias=bias)
-    affine.check_equivariance(atol=1e-5, rtol=1e-5)
-
-    in_type = FieldType(GSpace1D(G), [rep])
-    time = 40
-    x = torch.randn(batch_size, in_type.size, time)
-    x = in_type(x)
-    affine = eAffine(in_type, bias=bias)
-    affine.check_equivariance(atol=1e-5, rtol=1e-5)

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "symm-learning"
-version = "0.2.8"
+version = "0.2.9"
 
 description = "Torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"
@@ -65,6 +65,12 @@ exclude = [
   "node_modules",
   "site-packages",
   "venv",
+  # Exclude external libraries and conda environments
+  "**/anaconda3/**",
+  "**/miniconda3/**",
+  "**/site-packages/**",
+  "**/lib/python*/**",
+  "**/envs/**",
 ]
 
 [tool.ruff.lint] # ===============================================================================
@@ -94,13 +100,19 @@ ignore = [
   "D107", # Document __init__ arguments inside class docstring
 ]
 
-# Exclude specific directories from linting
+# Exclude specific directories from linting (in addition to global exclude)
 exclude = [
   ".git",  # Git version control directory
   ".idea", # PyCharm project settings directory
   ".venv",  # Virtual environment directory
   ".vscode",
   "docs/**", # Documentation directory
+  # Additional exclusions for external libraries
+  "**/anaconda3/**",
+  "**/miniconda3/**", 
+  "**/site-packages/**",
+  "**/lib/python*/**",
+  "**/envs/**",
 ]
 
 [tool.ruff.format] # ===============================================================================

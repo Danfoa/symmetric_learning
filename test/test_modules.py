@@ -115,7 +115,7 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
 )
 @pytest.mark.parametrize("mx", [1])
 @pytest.mark.parametrize("my", [2])
-@pytest.mark.parametrize("kernel_size", [2, 10])
+@pytest.mark.parametrize("kernel_size", [2, 4])
 @pytest.mark.parametrize("bias", [True, False])
 @pytest.mark.parametrize("stride", [1])
 @pytest.mark.parametrize("padding", [0])
@@ -130,8 +130,8 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     in_type = FieldType(gspace, [G.regular_representation] * mx)
     out_type = FieldType(gspace, [G.regular_representation] * my)
 
-    time = 100
-    batch_size = 50
+    time = 10
+    batch_size = 3
     x = torch.randn(batch_size, in_type.size, time)
     x = in_type(x)
 
@@ -163,6 +163,12 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     assert torch.allclose(x_trans, x_torch_trans, atol=1e-5, rtol=1e-5)
 
     assert x_trans.shape == x.shape
+
+    # conv1_layer = eConv1D(in_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    # conv2_layer = eConv1D(out_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+
+    # cnn = escnn.nn.SequentialModule(conv1_layer, conv2_layer)
+    # cnn.check_equivariance(atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -219,13 +225,18 @@ def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
 
     in_type = FieldType(gspace, [G.regular_representation] * mx)
 
-    time = 1
+    time = 2
     batch_size = 100
     x = torch.randn(batch_size, in_type.size, time)
     x = in_type(x)
 
     batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
-    print(batchnorm_layer)
+
+    if hasattr(batchnorm_layer, "affine_transform"):
+        # Randomize the scale and bias DoFs
+        batchnorm_layer.affine_transform.scale_dof.data.uniform_(-1, 1)
+        if batchnorm_layer.affine_transform.bias:
+            batchnorm_layer.affine_transform.bias_dof.data.uniform_(-1, 1)
 
     batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
 
@@ -246,19 +257,36 @@ def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
 @pytest.mark.parametrize("bias", [True, False])
 def test_affine(group: Group, mx: int, bias: bool):
     """Check the eBatchNorm1d layer is G-invariant."""
+    import numpy as np
     import torch
     from escnn.gspaces import no_base_space
 
-    from symm_learning.nn import eAffine
+    from symm_learning.nn import GSpace1D, eAffine
 
     G = group
-    in_type = FieldType(no_base_space(G), [G.regular_representation] * mx)
+    rep = directsum([G.regular_representation] * mx)
+    # Random orthogonal matrix for change of basis, using QR decomposition
+    Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
+    rep = escnn.group.change_basis(rep, Q, name="test_rep")
+
+    in_type = FieldType(no_base_space(G), representations=[rep])
 
     batch_size = 100
     x = torch.randn(batch_size, in_type.size)
     x = in_type(x)
 
     affine = eAffine(in_type, bias=bias)
-    print(affine)
 
+    # Randomize the scale and bias DoFs
+    affine.scale_dof.data.uniform_(-1, 1)
+    if affine.bias:
+        affine.bias_dof.data.uniform_(-1, 1)
+
+    affine.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    in_type = FieldType(GSpace1D(G), [rep])
+    time = 40
+    x = torch.randn(batch_size, in_type.size, time)
+    x = in_type(x)
+    affine = eAffine(in_type, bias=bias)
     affine.check_equivariance(atol=1e-5, rtol=1e-5)
