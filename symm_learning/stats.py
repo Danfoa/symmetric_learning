@@ -44,11 +44,12 @@ def var_mean(x: Tensor, rep_x: Representation):
     else:
         Q_inv = rep_x.attributes["Q_inv"]
 
-    if "Q" not in rep_x.attributes:  # Use cache Tensor if available.
+    if "Q_squared" not in rep_x.attributes:  # Use cache Tensor if available.
         Q = torch.tensor(rep_x.change_of_basis, device=x.device, dtype=x.dtype)
-        rep_x.attributes["Q"] = Q
+        Q_squared = Q.pow(2)
+        rep_x.attributes["Q_squared"] = Q_squared
     else:
-        Q = rep_x.attributes["Q"]
+        Q_squared = rep_x.attributes["Q_squared"]
 
     x_flat = x if x.ndim == 2 else x.reshape(-1, x.shape[1])
 
@@ -85,13 +86,12 @@ def var_mean(x: Tensor, rep_x: Representation):
     # For irrep_indices = [0,0,0,1,1,2,2,2,2] and var_spectral = [v0,v1,v2,v3,v4,v5,v6,v7,v8]
     # This computes: avg_vars[0] = v0+v1+v2, avg_vars[1] = v3+v4, avg_vars[2] = v5+v6+v7+v8
     avg_vars.scatter_add_(0, irrep_indices, var_spectral)
-    # Divide by irrep dimensions to get the average variance per irrep subspace
     avg_vars = avg_vars / irrep_dims
 
     # Broadcast back to full spectral dimensions
     var_spectral = avg_vars[irrep_indices]
 
-    var = torch.einsum("ij,...j->...i", Q.pow(2).to(device=x.device), var_spectral)
+    var = torch.einsum("ij,...j->...i", Q_squared.to(device=x.device), var_spectral)
     return var, mean
 
 
