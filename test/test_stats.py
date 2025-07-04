@@ -22,7 +22,7 @@ from symm_learning.stats import _isotypic_cov, cov, var_mean
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-def test_symmetric_moments(group: Group):  # noqa: D103
+def test_var_mean(group: Group):  # noqa: D103
     import escnn
     from escnn.group import directsum
 
@@ -38,7 +38,7 @@ def test_symmetric_moments(group: Group):  # noqa: D103
         return x, mean, var
 
     # Test that G-invariant random variables should have equivalent mean and var as standard computation
-    mx = 4
+    mx = 10
     rep_x = directsum([G.trivial_representation] * mx)
     x, mean, var = compute_moments_for_rep(rep_x)
     mean_gt = torch.mean(x, dim=0)

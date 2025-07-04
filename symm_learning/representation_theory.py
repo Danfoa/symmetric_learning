@@ -147,7 +147,7 @@ def escnn_representation_form_mapping(
     rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]],
     name: str = "reconstructed",
 ):
-    """Get a ESCNN representation instance from a mapping from group elements to unitary matrices.
+    r"""Get a ESCNN representation instance from a mapping from group elements to unitary matrices.
 
     Args:
         group (:class:`escnn.group.Group`): Symmetry group of the representation.
@@ -295,14 +295,23 @@ def is_complex_irreducible(
 def decompose_representation(
     G: Group, rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]
 ):
-    """Find the Hermitian matrix `Q` that block-diagonalizes the representation `rep` of group `G`.
+    r"""Find the Hermitian matrix `Q` that block-diagonalizes the representation `rep` of group `G`.
 
-    Such that `Q @ rep[g] @ Q^H = block_diag(rep_1[g], ..., rep_m[g])` for all `g` in `G`.
+    Such that
+
+    .. math::
+        \mathbf{Q} \rho(g) \mathbf{Q}^\top = \operatorname{block\_ diag}(\rho_1(g), ..., \rho_m(g))
+        \quad \forall g \in G
 
     Args:
         G (:class:`escnn.group.Group`): The symmetry group.
         rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):
             The representation to decompose.
+
+    Returns:
+        tuple: A tuple containing:
+            - subreps (List[CallableDict]): A list of irreducible representations.
+            - Q (np.ndarray): The change of basis matrix.
 
     """
     import networkx as nx
