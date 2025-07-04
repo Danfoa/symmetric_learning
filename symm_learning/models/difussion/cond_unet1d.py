@@ -297,7 +297,7 @@ class Downsample1d(nn.Module):
 
     def __init__(self, dim):
         super().__init__()
-        self.conv = nn.Conv1d(dim, dim, 3, 2, 1)
+        self.conv = nn.Conv1d(in_channels=dim, out_channels=dim, kernel_size=3, stride=2, padding=1)
 
     def forward(self, x):  # noqa: D102
         return self.conv(x)

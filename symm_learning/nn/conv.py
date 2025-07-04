@@ -138,7 +138,7 @@ class eConv1D(EquivariantModule):
                 recompute=recompute,
             )
             # Free parameters are `kernel_size` * `dim(End_G(in_space, out_space))`
-            print("Intertwiner basis dimension:", self._basisexpansion.dimension())
+            # print("Intertwiner basis dimension:", self._basisexpansion.dimension())
             self.weights = torch.nn.Parameter(
                 torch.zeros(self._basisexpansion.dimension() * kernel_size), requires_grad=True
             ).to(
