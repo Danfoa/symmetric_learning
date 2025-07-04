@@ -115,6 +115,10 @@ class EMLP(EquivariantModule):
                 act = escnn.nn.ReLU(in_type=in_type)
             elif activation.lower() == "leakyrelu":
                 act = escnn.nn.LeakyReLU(in_type=in_type)
+            elif activation.lower() == "mish":
+                import symm_learning.nn
+
+                act = symm_learning.nn.Mish(in_type=in_type)
             else:
                 act = escnn.nn.PointwiseNonLinearity(in_type=in_type, function=f"p_{activation.lower()}")
         else:
