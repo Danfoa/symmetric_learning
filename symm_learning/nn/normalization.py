@@ -40,7 +40,7 @@ class eAffine(EquivariantModule):
         self.rep_x = in_type.representation
         G = self.rep_x.group
         self.register_buffer("Q", torch.tensor(self.rep_x.change_of_basis, dtype=torch.get_default_dtype()))
-        self.register_buffer("Q_inv", torch.tensor(self.rep_x.change_of_basis.T, dtype=torch.get_default_dtype()))
+        self.register_buffer("Q_inv", torch.tensor(self.rep_x.change_of_basis_inv, dtype=torch.get_default_dtype()))
 
         # Symmetry-preserving scaling implies scaling each irreducible subspace uniformly.
         n_scale_params = len(self.rep_x.irreps)
@@ -68,9 +68,10 @@ class eAffine(EquivariantModule):
         scale_spectral = self.scale_dof[self.irrep_indices]
         # Reshape for broadcasting
         scale_spectral = scale_spectral.view(1, -1, *([1] * (x_spectral.ndim - 2)))
-
+        # Apply the scale to the spectral components
         x_spectral = x_spectral * scale_spectral
-        if self.bias:
+
+        if self.bias:  # Ensure bias is constrained to the invariant subspace
             bias_spectral = self.bias_dof.view(1, -1, *([1] * (x_spectral.ndim - 2)))
             x_spectral[:, self.inv_dims, ...] = x_spectral[:, self.inv_dims, ...] + bias_spectral
 
