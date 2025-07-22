@@ -197,27 +197,106 @@ class eBatchNorm1d(EquivariantModule):
 class DataNorm(torch.nn.Module):
     r"""Applies data normalization to a 2D or 3D tensor.
 
-    Standardizes the data to have zero mean and optionally unit variance.
+    This module standardizes input data by centering (subtracting the mean) and optionally
+    scaling (dividing by the standard deviation). The module supports multiple modes of
+    operation controlled by its configuration parameters.
+
+    **Mathematical Formulation:**
+
+    The normalization is applied element-wise as:
 
     .. math::
-        y = \\frac{x - \\mu}{\\sqrt{\\sigma^2 + \\epsilon}}  \text{ or }  y = x - \\mu
+        y = \begin{cases}
+            x - \mu & \text{if } \texttt{only centering} = \text{True} \\
+            \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} & \text{otherwise}
+        \end{cases}
+
+    where :math:`\mu` is the mean, :math:`\sigma^2` is the variance, and :math:`\epsilon`
+    is a small constant for numerical stability.
+
+    **Modes of Operation:**
+
+    1. **Running Statistics** (``running_stats=True``, default):
+       During training: Updates running estimates of mean and standard deviation using
+       exponential moving averages or cumulative averaging.
+       During evaluation: Uses stored running statistics for normalization.
+       Statistics are updated only in training mode.
+        a. **Exponential Moving Average** (``momentum=float``):
+              Uses a decay factor to update statistics:
+              :math:`\text{running stat} = (1-\alpha) \cdot \text{running stat} + \alpha \cdot \text{batch stat}`
+        b. **Cumulative Average** (``momentum=None``):
+            Simple cumulative average over all seen batches:
+            :math:`\text{running stat} = \frac{1}{n} \sum_{i=1}^{n} \text{batch stat}_i`.
+            Initial mean/std values (if provided) are used as starting points for running stats. This can be used as
+            an input layer to a model for which the dataset is too large to compute statistics over the entire dataset.
+
+    2. **Fixed Statistics** (``running_stats=False``):
+       Uses the user-provided mean and standard deviation values as fixed statistics. 
+       Equivalent to a standardization layer with pre-computed statistics.
 
     Args:
-        num_features (int): The number of features in the input tensor.
-        mean (torch.Tensor, optional): Fixed mean. If provided with running_stats=True,
-            used as initial value. Defaults to None.
-        std (torch.Tensor, optional): Fixed std. If provided with running_stats=True,
-            used as initial value. Defaults to None.
-        eps (float, optional): A value added to the denominator for numerical
-            stability. Defaults to 1e-6.
-        only_centering (bool, optional): If True, only center data (don't scale).
-            Defaults to False.
-        compute_cov (bool, optional): Whether to compute covariance matrix.
-            Defaults to False.
-        running_stats (bool, optional): Whether to use running statistics.
-            Defaults to True.
-        momentum (float, optional): Momentum for exponential moving average.
-            If None, uses cumulative averaging. Defaults to None.
+        num_features (int): Number of features or channels in the input tensor.
+        mean (torch.Tensor, optional): Initial mean values. If provided with
+            ``running_stats=True``, used as initialization for running mean.
+            If ``running_stats=False``, used as fixed mean values. Shape: ``(num_features,)``.
+            Defaults to zeros.
+        std (torch.Tensor, optional): Initial standard deviation values. If provided with
+            ``running_stats=True``, used as initialization for running std.
+            If ``running_stats=False``, used as fixed std values. Shape: ``(num_features,)``.
+            Defaults to ones.
+        eps (float, optional): Small constant added to the denominator for numerical
+            stability. Only used when ``only_centering=False``. Default: ``1e-6``.
+        only_centering (bool, optional): If ``True``, only centers the data (subtracts mean)
+            without scaling by standard deviation. Default: ``False``.
+        compute_cov (bool, optional): If ``True``, computes and tracks the full covariance
+            matrix in addition to mean and variance. Accessible via the ``cov`` property.
+            Default: ``False``.
+        running_stats (bool, optional): If ``True``, maintains running estimates of statistics
+            that are updated during training and used during evaluation. If ``False``, uses
+            batch statistics for normalization in all modes. Default: ``True``.
+        momentum (float, optional): Momentum factor for exponential moving average of
+            running statistics. If ``None``, uses cumulative averaging instead.
+            Only relevant when ``running_stats=True``. Default: ``None``.
+
+    Shape:
+        - Input: :math:`(N, C)` or :math:`(N, C, L)` where:
+          - :math:`N` is the batch size
+          - :math:`C` is the number of features (must equal ``num_features``)
+          - :math:`L` is the sequence length (optional, for 3D inputs)
+        - Output: Same shape as input
+
+    Attributes:
+        running_mean (torch.Tensor): Running average of input means. Shape: ``(num_features,)``.
+            Only available when ``running_stats=True``.
+        running_std (torch.Tensor): Running average of input standard deviations. 
+            Shape: ``(num_features,)``. Only available when ``running_stats=True``.
+        running_cov (torch.Tensor): Running average of input covariance matrix.
+            Shape: ``(num_features, num_features)``. Only available when ``running_stats=True``
+            and ``compute_cov=True``.
+        num_batches_tracked (torch.Tensor): Number of batches processed during training.
+            Used for cumulative averaging when ``momentum=None``.
+
+    Examples:
+        >>> # Basic usage with running statistics
+        >>> norm = DataNorm(num_features=128)
+        >>> x = torch.randn(32, 128)  # batch_size=32, features=128
+        >>> y = norm(x)  # Normalized output
+        
+        >>> # Centering-only mode
+        >>> norm = DataNorm(num_features=64, only_centering=True)
+        >>> x = torch.randn(16, 64, 100)  # 3D input with sequence length
+        >>> y = norm(x)  # Only mean-centered
+        
+        >>> # Fixed statistics mode with covariance
+        >>> norm = DataNorm(num_features=32, running_stats=False, compute_cov=True)
+        >>> x = torch.randn(8, 32)
+        >>> y = norm(x)
+        >>> cov_matrix = norm.cov  # Access covariance matrix
+
+    Note:
+        When using 3D inputs :math:`(N, C, L)`, statistics are computed over both the batch
+        dimension :math:`N` and sequence dimension :math:`L`, treating each feature channel
+        independently.
     """
 
     def __init__(
@@ -355,27 +434,108 @@ class DataNorm(torch.nn.Module):
 
 
 class eDataNorm(DataNorm, EquivariantModule):
-    r"""Equivariant version of DataNorm using symmetry-aware statistics.
+    r"""Equivariant version of DataNorm using group-theoretic symmetry-aware statistics.
 
-    Applies data normalization to a 2D or 3D equivariant tensor using the same
-    API as DataNorm but with equivariant statistics from symm_learning.stats.
+    This module extends :class:`DataNorm` to work with equivariant data by computing
+    statistics that respect the symmetry structure defined by a group representation.
+    It maintains the same API and modes of operation as ``DataNorm`` while using
+    symmetry-aware mean, variance, and covariance computations from
+    :mod:`symm_learning.stats`.
+
+    **Mathematical Formulation:**
+
+    The equivariant normalization follows the same mathematical form as ``DataNorm``:
+
+    .. math::
+        y = \begin{cases}
+            x - \mu_{\text{equiv}} & \text{if } \texttt{only\_centering} = \text{True} \\
+            \frac{x - \mu_{\text{equiv}}}{\sqrt{\sigma^2_{\text{equiv}} + \epsilon}} & \text{otherwise}
+        \end{cases}
+
+    However, the statistics :math:`\mu_{\text{equiv}}` and :math:`\sigma^2_{\text{equiv}}`
+    are computed using symmetry-aware estimators:
+
+    - **Mean**: Projected onto the :math:`G`-invariant subspace
+    - **Variance**: Constrained to be constant within each irreducible subspace
+    - **Covariance**: Respects the block-diagonal structure imposed by the representation
+
+    **Symmetry Properties:**
+
+    The computed statistics satisfy equivariance and invariance properties:
+
+    - :math:`\mathbb{E}[g \cdot x] = g \cdot \mathbb{E}[x]` (mean equivariance)
+    - :math:`\text{Var}[g \cdot x] = \text{Var}[x]` (variance invariance)
+    - :math:`\text{Cov}[g \cdot x, g \cdot y] = g \cdot \text{Cov}[x, y] \cdot g^T` (covariance equivariance)
+
+    **Input/Output Types:**
+
+    Unlike ``DataNorm`` which operates on raw tensors, ``eDataNorm`` processes
+    :class:`escnn.nn.GeometricTensor` objects that encode the group representation
+    information along with the tensor data.
 
     Args:
-        in_type (FieldType): The input field type.
-        mean (torch.Tensor, optional): Fixed mean. If provided with running_stats=True,
-            used as initial value. Defaults to None.
-        std (torch.Tensor, optional): Fixed std. If provided with running_stats=True,
-            used as initial value. Defaults to None.
-        eps (float, optional): A value added to the denominator for numerical
-            stability. Defaults to 1e-6.
-        only_centering (bool, optional): If True, only center data (don't scale).
-            Defaults to False.
-        compute_cov (bool, optional): Whether to compute covariance matrix.
-            Defaults to False.
-        running_stats (bool, optional): Whether to use running statistics.
-            Defaults to True.
-        momentum (float, optional): Momentum for exponential moving average.
-            If None, uses cumulative averaging. Defaults to None.
+        in_type (escnn.nn.FieldType): The field type defining the input's group
+            representation structure. The output type will be the same as the input type.
+        mean (torch.Tensor, optional): Initial mean values. If provided with
+            ``running_stats=True``, used as initialization for running mean.
+            Shape: ``(in_type.size,)``. Defaults to zeros.
+        std (torch.Tensor, optional): Initial standard deviation values. If provided with
+            ``running_stats=True``, used as initialization for running std.
+            Shape: ``(in_type.size,)``. Defaults to ones.
+        eps (float, optional): Small constant added to the denominator for numerical
+            stability. Default: ``1e-6``.
+        only_centering (bool, optional): If ``True``, only centers the data using
+            equivariant mean without scaling. Default: ``False``.
+        compute_cov (bool, optional): If ``True``, computes and tracks the equivariant
+            covariance matrix. Default: ``False``.
+        running_stats (bool, optional): If ``True``, maintains running estimates of
+            equivariant statistics. Default: ``True``.
+        momentum (float, optional): Momentum factor for running statistics updates.
+            If ``None``, uses cumulative averaging. Default: ``None``.
+
+    Shape:
+        - Input: :class:`escnn.nn.GeometricTensor` with tensor shape :math:`(N, D)` or :math:`(N, D, L)` where:
+          - :math:`N` is the batch size
+          - :math:`D` is ``in_type.size`` (total representation dimension)
+          - :math:`L` is the sequence length (optional, for 3D inputs)
+        - Output: :class:`escnn.nn.GeometricTensor` with the same type and shape as input
+
+    Methods:
+        export() -> DataNorm: Exports the current state to a standard ``DataNorm`` layer
+            that can operate on raw tensors, transferring all learned statistics.
+
+    Examples:
+        >>> from escnn import gspaces, nn as escnn_nn
+        >>> from escnn.group import CyclicGroup
+        >>> 
+        >>> # Define group and representation
+        >>> G = CyclicGroup(4)
+        >>> gspace = gspaces.no_base_space(G)
+        >>> in_type = escnn_nn.FieldType(gspace, [G.regular_representation] * 2)
+        >>> 
+        >>> # Create equivariant normalization layer
+        >>> norm = eDataNorm(in_type=in_type, compute_cov=True)
+        >>> 
+        >>> # Process equivariant data
+        >>> x_tensor = torch.randn(16, in_type.size)  # Raw tensor data
+        >>> x_geom = in_type(x_tensor)  # Wrap in GeometricTensor
+        >>> y_geom = norm(x_geom)  # Normalized GeometricTensor
+        >>> 
+        >>> # Export to standard DataNorm
+        >>> standard_norm = norm.export()
+        >>> y_tensor = standard_norm(x_tensor)  # Same result on raw tensor
+
+    Note:
+        This layer inherits all modes of operation from :class:`DataNorm` (running statistics,
+        fixed statistics, centering-only, covariance computation) while computing all
+        statistics using group-theoretic constraints. The statistics respect the irreducible
+        decomposition of the input representation, ensuring that symmetries are preserved
+        throughout the normalization process.
+
+    See Also:
+        :class:`DataNorm`: The base normalization layer for standard (non-equivariant) data.
+        :func:`symm_learning.stats.var_mean`: Equivariant mean and variance computation.
+        :func:`symm_learning.stats.cov`: Equivariant covariance computation.
     """
 
     def __init__(
