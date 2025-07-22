@@ -290,3 +290,131 @@ def test_affine(group: Group, mx: int, bias: bool):
     x = in_type(x)
     affine = eAffine(in_type, bias=bias)
     affine.check_equivariance(atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("num_features", [10, 50])
+@pytest.mark.parametrize("momentum", [None, 0.1, 0.9])
+@pytest.mark.parametrize("ndim", [2, 3])
+def test_data_norm(num_features: int, momentum: float, ndim: int):
+    """Test DataNorm layer for basic functionality and running statistics."""
+    import torch
+
+    from symm_learning.nn import DataNorm
+
+    # Test with online statistics (no mean/std provided)
+    data_norm = DataNorm(num_features=num_features, momentum=momentum)
+
+    # Create test data
+    batch_size = 20
+    if ndim == 2:
+        x = torch.randn(batch_size, num_features)
+    else:  # ndim == 3
+        time_steps = 15
+        x = torch.randn(batch_size, num_features, time_steps)
+
+    # Test training mode - should update running stats
+    data_norm.train()
+
+    # First forward pass should initialize running stats
+    y1 = data_norm(x)
+    assert y1.shape == x.shape, "Output shape should match input shape"
+    assert data_norm.num_batches_tracked == 1, "Should track one batch"
+
+    # Second forward pass should update running stats
+    y2 = data_norm(x)
+    assert data_norm.num_batches_tracked == 2, "Should track two batches"
+
+    # Test eval mode - should use running stats
+    data_norm.eval()
+    y3 = data_norm(x)
+    assert data_norm.num_batches_tracked == 2, "Should not update in eval mode"
+
+    # Test with pre-computed stats
+    dims = [0] if ndim == 2 else [0, 2]
+    mean = x.mean(dim=dims)
+    std = torch.sqrt(x.var(dim=dims, unbiased=False) + 1e-5)
+
+    data_norm_fixed = DataNorm(num_features=num_features, mean=mean, std=std)
+    y_fixed = data_norm_fixed(x)
+    assert y_fixed.shape == x.shape, "Output shape should match input shape"
+    assert not hasattr(data_norm_fixed, "num_batches_tracked"), "Should not track stats with fixed mean/std"
+
+    # Test normalization properties (approximately zero mean, unit std)
+    y_mean = y_fixed.mean(dim=dims)
+    y_std = y_fixed.std(dim=dims, unbiased=False)
+    assert torch.allclose(y_mean, torch.zeros_like(y_mean), atol=1e-4), "Mean should be close to zero"
+    assert torch.allclose(y_std, torch.ones_like(y_std), atol=1e-3), "Std should be close to one"
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+    ],
+)
+@pytest.mark.parametrize("mx", [2, 4])
+@pytest.mark.parametrize("momentum", [None, 0.1])
+@pytest.mark.parametrize("ndim", [2, 3])
+def test_edata_norm(group: Group, mx: int, momentum: float, ndim: int):
+    """Test eDataNorm layer for equivariance and basic functionality."""
+    import torch
+    from escnn.gspaces import no_base_space
+
+    from symm_learning.nn import GSpace1D, eDataNorm
+
+    G = group
+    if ndim == 2:
+        gspace = no_base_space(G)
+    else:  # ndim == 3
+        gspace = GSpace1D(G)
+
+    in_type = FieldType(gspace, [G.regular_representation] * mx)
+
+    # Test with online statistics (no mean/std provided)
+    edata_norm = eDataNorm(in_type=in_type, momentum=momentum)
+
+    # Create test data
+    batch_size = 20
+    if ndim == 2:
+        x = torch.randn(batch_size, in_type.size)
+    else:  # ndim == 3
+        time_steps = 15
+        x = torch.randn(batch_size, in_type.size, time_steps)
+    x = in_type(x)
+
+    # Test training mode - should update running stats
+    edata_norm.train()
+
+    # First forward pass should initialize running stats
+    y1 = edata_norm(x)
+    assert y1.shape == x.shape, "Output shape should match input shape"
+    assert y1.type == in_type, "Output type should match input type"
+    assert edata_norm.num_batches_tracked == 1, "Should track one batch"
+
+    # Second forward pass should update running stats
+    y2 = edata_norm(x)
+    assert edata_norm.num_batches_tracked == 2, "Should track two batches"
+
+    # Test eval mode - should use running stats
+    edata_norm.eval()
+    y3 = edata_norm(x)
+    assert edata_norm.num_batches_tracked == 2, "Should not update in eval mode"
+
+    # Test equivariance
+    edata_norm.check_equivariance(atol=1e-4, rtol=1e-4)
+
+    # Test with pre-computed stats using symmetry-aware computation
+    from symm_learning.stats import var_mean
+
+    var_batch, mean_batch = var_mean(x.tensor, rep_x=in_type.representation)
+    std_batch = torch.sqrt(var_batch + 1e-5)
+
+    edata_norm_fixed = eDataNorm(in_type=in_type, mean=mean_batch, std=std_batch)
+    y_fixed = edata_norm_fixed(x)
+    assert y_fixed.shape == x.shape, "Output shape should match input shape"
+    assert y_fixed.type == in_type, "Output type should match input type"
+    assert not hasattr(edata_norm_fixed, "num_batches_tracked"), "Should not track stats with fixed mean/std"
+
+    # Test that fixed stats version is also equivariant
+    edata_norm_fixed.check_equivariance(atol=1e-4, rtol=1e-4)

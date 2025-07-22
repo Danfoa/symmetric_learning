@@ -91,6 +91,8 @@ class eBatchNorm1d(EquivariantModule):
         assert x.type == self.in_type, "Input type does not match the expected input type."
 
         var_batch, mean_batch = var_mean(x.tensor, rep_x=self._rep_x)
+        print("mean", mean_batch)
+        print("var", var_batch)
 
         if self.track_running_stats:
             if self.training:
@@ -118,6 +120,8 @@ class eBatchNorm1d(EquivariantModule):
 
     def check_equivariance(self, atol=1e-5, rtol=1e-5):
         """Check the equivariance of the convolution layer."""
+        import numpy as np
+
         was_training = self.training
         time = 1
         batch_size = 50
@@ -185,3 +189,206 @@ class eBatchNorm1d(EquivariantModule):
         bn.train(False)
         bn.eval()
         return bn
+
+
+class DataNorm(torch.nn.Module):
+    r"""Applies data normalization to a 2D or 3D tensor.
+
+    Standardizes the data to have zero mean and unit variance.
+
+    .. math::
+        y = \\frac{x - \\mu}{\\sqrt{\\sigma^2 + \\epsilon}}
+
+    The mean and standard-deviation are either provided during initialization or
+    computed online using a moving average if not provided. When computed
+    online, the running statistics are initialized with the first batch and then
+    updated. If momentum is None (default), a cumulative moving average is used
+    with equal weighting for all batches. If momentum is provided, an exponential
+    moving average is used.
+
+    Args:
+        num_features (int): The number of features in the input tensor.
+        mean (torch.Tensor, optional): The mean to use for normalization.
+            If None, will be computed online. Defaults to None.
+        std (torch.Tensor, optional): The standard deviation to use for
+            normalization. If None, will be computed online. Defaults to None.
+        eps (float, optional): A value added to the denominator for numerical
+            stability. Defaults to 1e-5.
+        momentum (float, optional): The momentum for the running average. If None,
+            uses cumulative moving average. Defaults to None.
+    """
+
+    def __init__(
+        self,
+        num_features: int,
+        mean: torch.Tensor = None,
+        std: torch.Tensor = None,
+        eps: float = 1e-5,
+        momentum: float = None,
+    ):
+        super().__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+
+        if mean is None or std is None:
+            # If no stats are provided, we will track them online using moving average
+            self.register_buffer("running_mean", torch.zeros(num_features))
+            self.register_buffer("running_std", torch.ones(num_features))
+            self.register_buffer("num_batches_tracked", torch.tensor(0, dtype=torch.long))
+        else:
+            # Use pre-computed stats
+            self.register_buffer("mean", mean)
+            self.register_buffer("std", std)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the normalization to the input tensor."""
+        if x.shape[1] != self.num_features:
+            raise ValueError(f"Expected input with (batch_size, {self.num_features}, ...) features, but got {x.shape}")
+
+        # Check if we are tracking stats online
+        online_stats = hasattr(self, "num_batches_tracked")
+
+        if online_stats and self.training:
+            # Update running stats using cumulative moving average
+            dims = [0]
+            if x.ndim > 2:
+                dims.append(2)
+            batch_mean = x.mean(dim=dims)
+            batch_std = torch.sqrt(x.var(dim=dims, unbiased=False) + self.eps)
+
+            if self.num_batches_tracked == 0:
+                # Initialize with first batch
+                self.running_mean.copy_(batch_mean)
+                self.running_std.copy_(batch_std)
+            else:
+                # Use cumulative moving average if momentum is None, otherwise use provided momentum
+                momentum = self.momentum if self.momentum is not None else 1.0 / (self.num_batches_tracked.item() + 1)
+                self.running_mean.copy_((1 - momentum) * self.running_mean + momentum * batch_mean)
+                self.running_std.copy_((1 - momentum) * self.running_std + momentum * batch_std)
+
+            self.num_batches_tracked += 1
+
+        # Use appropriate statistics
+        if online_stats:
+            mean = self.running_mean
+            std = self.running_std
+        else:
+            mean = self.mean
+            std = self.std
+
+        # Reshape for broadcasting
+        if x.ndim == 3:
+            mean = mean.view(1, self.num_features, 1)
+            std = std.view(1, self.num_features, 1)
+        else:  # ndim == 2
+            mean = mean.view(1, self.num_features)
+            std = std.view(1, self.num_features)
+
+        return (x - mean) / std
+
+    def extra_repr(self) -> str:  # noqa: D102
+        return f"{self.num_features}, eps={self.eps}"
+
+
+class eDataNorm(EquivariantModule):
+    r"""Applies data normalization to a 2D or 3D equivariant tensor.
+
+    Standardizes the data to have zero mean and unit variance using equivariant statistics.
+
+    .. math::
+        y = \\frac{x - \\mathrm{E}[x]}{\\sqrt{\\mathrm{Var}[x] + \\epsilon}}
+
+    The mean and standard-deviation are either provided during initialization or
+    computed online using a moving average if not provided. When computed
+    online, the running statistics are initialized with the first batch and then
+    updated. If momentum is None (default), a cumulative moving average is used
+    with equal weighting for all batches. If momentum is provided, an exponential
+    moving average is used. The statistics are computed using symmetry-aware
+    estimates (see :func:`~symm_learning.stats.var_mean`).
+
+    Args:
+        in_type (FieldType): The type of the input field.
+        mean (torch.Tensor, optional): The equivariant mean to use for
+            normalization. If None, will be computed online. Defaults to None.
+        std (torch.Tensor, optional): The equivariant standard deviation to use
+            for normalization. If None, will be computed online. Defaults to None.
+        eps (float, optional): A value added to the denominator for numerical
+            stability. Defaults to 1e-5.
+        momentum (float, optional): The momentum for the running average. If None,
+            uses cumulative moving average. Defaults to None.
+    """
+
+    def __init__(
+        self,
+        in_type: FieldType,
+        mean: torch.Tensor = None,
+        std: torch.Tensor = None,
+        eps: float = 1e-5,
+        momentum: float = None,
+    ):
+        super().__init__()
+        self.in_type = in_type
+        self.out_type = in_type
+        self.eps = eps
+        self.momentum = momentum
+        self._rep_x = in_type.representation
+
+        if mean is None or std is None:
+            # If no stats are provided, we will track them online using moving average
+            self.register_buffer("running_mean", torch.zeros(in_type.size))
+            self.register_buffer("running_std", torch.ones(in_type.size))
+            self.register_buffer("num_batches_tracked", torch.tensor(0, dtype=torch.long))
+        else:
+            # Use pre-computed stats
+            self.register_buffer("mean", mean)
+            self.register_buffer("std", std)
+
+    def forward(self, x: GeometricTensor) -> GeometricTensor:
+        """Apply the normalization to the input tensor."""
+        assert x.type == self.in_type, "Input type does not match the expected input type."
+
+        # Check if we are tracking stats online
+        online_stats = hasattr(self, "num_batches_tracked")
+
+        if online_stats and self.training:
+            # Update running stats using cumulative moving average
+            var_batch, mean_batch = var_mean(x.tensor, rep_x=self._rep_x)
+            std_batch = torch.sqrt(var_batch + self.eps)
+
+            if self.num_batches_tracked == 0:
+                # Initialize with first batch
+                self.running_mean.copy_(mean_batch)
+                self.running_std.copy_(std_batch)
+            else:
+                # Use cumulative moving average if momentum is None, otherwise use provided momentum
+                momentum = self.momentum if self.momentum is not None else 1.0 / (self.num_batches_tracked.item() + 1)
+                self.running_mean.copy_((1 - momentum) * self.running_mean + momentum * mean_batch)
+                self.running_std.copy_((1 - momentum) * self.running_std + momentum * std_batch)
+
+            self.num_batches_tracked += 1
+
+        # Use appropriate statistics
+        if online_stats:
+            mean = self.running_mean
+            std = self.running_std
+        else:
+            mean = self.mean
+            std = self.std
+
+        # Reshape for broadcasting
+        if x.tensor.ndim == 3:
+            mean = mean.view(1, self.in_type.size, 1)
+            std = std.view(1, self.in_type.size, 1)
+        else:  # ndim == 2
+            mean = mean.view(1, self.in_type.size)
+            std = std.view(1, self.in_type.size)
+
+        y = (x.tensor - mean) / std
+        return self.out_type(y)
+
+    def evaluate_output_shape(self, input_shape):  # noqa: D102
+        return input_shape
+
+    def extra_repr(self) -> str:  # noqa: D102
+        return f"in_type={self.in_type}, eps={self.eps}"

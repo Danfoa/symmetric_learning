@@ -107,6 +107,7 @@ exclude = [
   ".venv",  # Virtual environment directory
   ".vscode",
   "docs/**", # Documentation directory
+  "test/**", # Test files
   # Additional exclusions for external libraries
   "**/anaconda3/**",
   "**/miniconda3/**", 
