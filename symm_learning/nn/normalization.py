@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
+import symm_learning
+import symm_learning.stats
 from symm_learning.nn import eAffine
-from symm_learning.stats import var_mean
 
 
 class eBatchNorm1d(EquivariantModule):
@@ -90,7 +93,7 @@ class eBatchNorm1d(EquivariantModule):
     def forward(self, x: GeometricTensor):  # noqa: D102
         assert x.type == self.in_type, "Input type does not match the expected input type."
 
-        var_batch, mean_batch = var_mean(x.tensor, rep_x=self._rep_x)
+        var_batch, mean_batch = symm_learning.stats.var_mean(x.tensor, rep_x=self._rep_x)
         print("mean", mean_batch)
         print("var", var_batch)
 
@@ -145,8 +148,8 @@ class eBatchNorm1d(EquivariantModule):
                 continue
             gx_batch = x_batch.transform(g)
 
-            var, mean = var_mean(x_batch.tensor, rep_x=self.in_type.representation)
-            g_var, g_mean = var_mean(gx_batch.tensor, rep_x=self.in_type.representation)
+            var, mean = symm_learning.stats.var_mean(x_batch.tensor, rep_x=self.in_type.representation)
+            g_var, g_mean = symm_learning.stats.var_mean(gx_batch.tensor, rep_x=self.in_type.representation)
 
             assert torch.allclose(mean, g_mean, atol=1e-4, rtol=1e-4), f"Mean {mean} != {g_mean}"
             assert torch.allclose(var, g_var, atol=1e-4, rtol=1e-4), f"Var {var} != {g_var}"
@@ -194,28 +197,27 @@ class eBatchNorm1d(EquivariantModule):
 class DataNorm(torch.nn.Module):
     r"""Applies data normalization to a 2D or 3D tensor.
 
-    Standardizes the data to have zero mean and unit variance.
+    Standardizes the data to have zero mean and optionally unit variance.
 
     .. math::
-        y = \\frac{x - \\mu}{\\sqrt{\\sigma^2 + \\epsilon}}
-
-    The mean and standard-deviation are either provided during initialization or
-    computed online using a moving average if not provided. When computed
-    online, the running statistics are initialized with the first batch and then
-    updated. If momentum is None (default), a cumulative moving average is used
-    with equal weighting for all batches. If momentum is provided, an exponential
-    moving average is used.
+        y = \\frac{x - \\mu}{\\sqrt{\\sigma^2 + \\epsilon}}  \text{ or }  y = x - \\mu
 
     Args:
         num_features (int): The number of features in the input tensor.
-        mean (torch.Tensor, optional): The mean to use for normalization.
-            If None, will be computed online. Defaults to None.
-        std (torch.Tensor, optional): The standard deviation to use for
-            normalization. If None, will be computed online. Defaults to None.
+        mean (torch.Tensor, optional): Fixed mean. If provided with running_stats=True,
+            used as initial value. Defaults to None.
+        std (torch.Tensor, optional): Fixed std. If provided with running_stats=True,
+            used as initial value. Defaults to None.
         eps (float, optional): A value added to the denominator for numerical
-            stability. Defaults to 1e-5.
-        momentum (float, optional): The momentum for the running average. If None,
-            uses cumulative moving average. Defaults to None.
+            stability. Defaults to 1e-6.
+        only_centering (bool, optional): If True, only center data (don't scale).
+            Defaults to False.
+        compute_cov (bool, optional): Whether to compute covariance matrix.
+            Defaults to False.
+        running_stats (bool, optional): Whether to use running statistics.
+            Defaults to True.
+        momentum (float, optional): Momentum for exponential moving average.
+            If None, uses cumulative averaging. Defaults to None.
     """
 
     def __init__(
@@ -223,100 +225,157 @@ class DataNorm(torch.nn.Module):
         num_features: int,
         mean: torch.Tensor = None,
         std: torch.Tensor = None,
-        eps: float = 1e-5,
+        eps: float = 1e-6,
+        only_centering: bool = False,
+        compute_cov: bool = False,
+        running_stats: bool = True,
         momentum: float = None,
     ):
         super().__init__()
         self.num_features = num_features
         self.eps = eps
+        self.only_centering = only_centering
+        self.compute_cov = compute_cov
+        self.running_stats = running_stats
         self.momentum = momentum
 
-        if mean is None or std is None:
-            # If no stats are provided, we will track them online using moving average
-            self.register_buffer("running_mean", torch.zeros(num_features))
-            self.register_buffer("running_std", torch.ones(num_features))
+        # Initialize statistics
+        init_mean = mean if mean is not None else torch.zeros(num_features)
+        init_std = std if std is not None else torch.ones(num_features)
+
+        if running_stats:
             self.register_buffer("num_batches_tracked", torch.tensor(0, dtype=torch.long))
+            self.register_buffer("running_mean", init_mean.clone())
+            self.register_buffer("running_std", init_std.clone())
+            if compute_cov:
+                self.register_buffer("running_cov", torch.eye(num_features))
         else:
-            # Use pre-computed stats
-            self.register_buffer("mean", mean)
-            self.register_buffer("std", std)
+            # Fixed stats mode - these act as our "fixed" values
+            self.register_buffer("_mean", init_mean)
+            self.register_buffer("_std", init_std)  # For batch covariance tracking
+        self._last_cov = None
+
+    def _compute_batch_stats(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compute batch statistics (mean and std). Can be overridden for equivariant versions."""
+        dims = [0] + ([2] if x.ndim > 2 else [])
+        batch_mean = x.mean(dim=dims)
+        batch_var = x.var(dim=dims, unbiased=False)
+        batch_std = torch.sqrt(batch_var)
+        return batch_mean, batch_std
+
+    def _compute_batch_cov(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute batch covariance. Can be overridden for equivariant versions."""
+        x_flat = x.permute(0, 2, 1).reshape(-1, self.num_features) if x.ndim == 3 else x
+        x_centered = x_flat - x_flat.mean(dim=0, keepdim=True)
+        batch_cov = torch.mm(x_centered.T, x_centered) / (x_centered.shape[0] - 1)
+        return batch_cov
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply the normalization to the input tensor."""
-        if x.shape[1] != self.num_features:
-            raise ValueError(f"Expected input with (batch_size, {self.num_features}, ...) features, but got {x.shape}")
+        assert x.shape[1] == self.num_features
 
-        # Check if we are tracking stats online
-        online_stats = hasattr(self, "num_batches_tracked")
+        # Update running statistics if needed
+        if self.running_stats and self.training:
+            # Compute batch statistics
+            batch_mean, batch_std = self._compute_batch_stats(x)
 
-        if online_stats and self.training:
-            # Update running stats using cumulative moving average
-            dims = [0]
-            if x.ndim > 2:
-                dims.append(2)
-            batch_mean = x.mean(dim=dims)
-            batch_std = torch.sqrt(x.var(dim=dims, unbiased=False) + self.eps)
-
-            if self.num_batches_tracked == 0:
-                # Initialize with first batch
+            # Update running statistics
+            if self.num_batches_tracked == 0 and self.momentum is None:
                 self.running_mean.copy_(batch_mean)
                 self.running_std.copy_(batch_std)
             else:
-                # Use cumulative moving average if momentum is None, otherwise use provided momentum
                 momentum = self.momentum if self.momentum is not None else 1.0 / (self.num_batches_tracked.item() + 1)
-                self.running_mean.copy_((1 - momentum) * self.running_mean + momentum * batch_mean)
-                self.running_std.copy_((1 - momentum) * self.running_std + momentum * batch_std)
+                self.running_mean.mul_(1 - momentum).add_(batch_mean, alpha=momentum)
+                self.running_std.mul_(1 - momentum).add_(batch_std, alpha=momentum)
 
             self.num_batches_tracked += 1
 
-        # Use appropriate statistics
-        if online_stats:
-            mean = self.running_mean
-            std = self.running_std
-        else:
-            mean = self.mean
-            std = self.std
+        # Compute covariance if needed
+        if self.compute_cov:
+            batch_cov = self._compute_batch_cov(x)
+            self._last_cov = batch_cov
+
+            if self.running_stats and hasattr(self, "running_cov") and self.training:
+                if self.num_batches_tracked == 1 and self.momentum is None:
+                    self.running_cov.copy_(batch_cov)
+                else:
+                    momentum = self.momentum if self.momentum is not None else 1.0 / self.num_batches_tracked.item()
+                    self.running_cov.mul_(1 - momentum).add_(batch_cov, alpha=momentum)
+
+        # Get current statistics
+        mean = self.mean
+        std = self.std if not self.only_centering else torch.ones_like(self.mean)
 
         # Reshape for broadcasting
         if x.ndim == 3:
             mean = mean.view(1, self.num_features, 1)
             std = std.view(1, self.num_features, 1)
-        else:  # ndim == 2
+        else:
             mean = mean.view(1, self.num_features)
             std = std.view(1, self.num_features)
 
-        return (x - mean) / std
+        # Apply normalization
+        return x - mean if self.only_centering else (x - mean) / (std + self.eps)
+
+    @property
+    def mean(self) -> torch.Tensor:
+        """Return the current mean estimate."""
+        if self.running_stats:
+            return self.running_mean
+        else:
+            return self._mean
+
+    @property
+    def std(self) -> torch.Tensor:
+        """Return the current std estimate."""
+        if self.running_stats:
+            return self.running_std
+        else:
+            return self._std
+
+    @property
+    def cov(self) -> torch.Tensor:
+        """Return the current covariance matrix estimate."""
+        if not self.compute_cov:
+            raise RuntimeError("Covariance computation is disabled. Set compute_cov=True to enable.")
+
+        if self.running_stats and hasattr(self, "running_cov"):
+            return self.running_cov
+        elif self._last_cov is not None:
+            return self._last_cov
+        else:
+            raise RuntimeError("No covariance available. Ensure at least one forward pass has been completed.")
 
     def extra_repr(self) -> str:  # noqa: D102
-        return f"{self.num_features}, eps={self.eps}"
+        return (
+            f"{self.num_features}, eps={self.eps}, only_centering={self.only_centering}, "
+            f"compute_cov={self.compute_cov}, running_stats={self.running_stats}, "
+            f"momentum={self.momentum}"
+        )
 
 
-class eDataNorm(EquivariantModule):
-    r"""Applies data normalization to a 2D or 3D equivariant tensor.
+class eDataNorm(DataNorm, EquivariantModule):
+    r"""Equivariant version of DataNorm using symmetry-aware statistics.
 
-    Standardizes the data to have zero mean and unit variance using equivariant statistics.
-
-    .. math::
-        y = \\frac{x - \\mathrm{E}[x]}{\\sqrt{\\mathrm{Var}[x] + \\epsilon}}
-
-    The mean and standard-deviation are either provided during initialization or
-    computed online using a moving average if not provided. When computed
-    online, the running statistics are initialized with the first batch and then
-    updated. If momentum is None (default), a cumulative moving average is used
-    with equal weighting for all batches. If momentum is provided, an exponential
-    moving average is used. The statistics are computed using symmetry-aware
-    estimates (see :func:`~symm_learning.stats.var_mean`).
+    Applies data normalization to a 2D or 3D equivariant tensor using the same
+    API as DataNorm but with equivariant statistics from symm_learning.stats.
 
     Args:
-        in_type (FieldType): The type of the input field.
-        mean (torch.Tensor, optional): The equivariant mean to use for
-            normalization. If None, will be computed online. Defaults to None.
-        std (torch.Tensor, optional): The equivariant standard deviation to use
-            for normalization. If None, will be computed online. Defaults to None.
+        in_type (FieldType): The input field type.
+        mean (torch.Tensor, optional): Fixed mean. If provided with running_stats=True,
+            used as initial value. Defaults to None.
+        std (torch.Tensor, optional): Fixed std. If provided with running_stats=True,
+            used as initial value. Defaults to None.
         eps (float, optional): A value added to the denominator for numerical
-            stability. Defaults to 1e-5.
-        momentum (float, optional): The momentum for the running average. If None,
-            uses cumulative moving average. Defaults to None.
+            stability. Defaults to 1e-6.
+        only_centering (bool, optional): If True, only center data (don't scale).
+            Defaults to False.
+        compute_cov (bool, optional): Whether to compute covariance matrix.
+            Defaults to False.
+        running_stats (bool, optional): Whether to use running statistics.
+            Defaults to True.
+        momentum (float, optional): Momentum for exponential moving average.
+            If None, uses cumulative averaging. Defaults to None.
     """
 
     def __init__(
@@ -324,71 +383,114 @@ class eDataNorm(EquivariantModule):
         in_type: FieldType,
         mean: torch.Tensor = None,
         std: torch.Tensor = None,
-        eps: float = 1e-5,
+        eps: float = 1e-6,
+        only_centering: bool = False,
+        compute_cov: bool = False,
+        running_stats: bool = True,
         momentum: float = None,
     ):
-        super().__init__()
+        # Initialize DataNorm with the field type size
+        super().__init__(
+            num_features=in_type.size,
+            mean=mean,
+            std=std,
+            eps=eps,
+            only_centering=only_centering,
+            compute_cov=compute_cov,
+            running_stats=running_stats,
+            momentum=momentum,
+        )
+
+        # Store EquivariantModule-specific attributes first
         self.in_type = in_type
         self.out_type = in_type
-        self.eps = eps
-        self.momentum = momentum
         self._rep_x = in_type.representation
 
-        if mean is None or std is None:
-            # If no stats are provided, we will track them online using moving average
-            self.register_buffer("running_mean", torch.zeros(in_type.size))
-            self.register_buffer("running_std", torch.ones(in_type.size))
-            self.register_buffer("num_batches_tracked", torch.tensor(0, dtype=torch.long))
-        else:
-            # Use pre-computed stats
-            self.register_buffer("mean", mean)
-            self.register_buffer("std", std)
+    def _compute_batch_stats(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compute equivariant batch statistics using symm_learning.stats."""
+        batch_var, batch_mean = symm_learning.stats.var_mean(x, rep_x=self._rep_x)
+        batch_std = torch.sqrt(batch_var)
+        return batch_mean, batch_std
+
+    def _compute_batch_cov(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute equivariant batch covariance using symm_learning.stats."""
+        return symm_learning.stats.cov(x=x, y=x, rep_x=self._rep_x, rep_y=self._rep_x)
 
     def forward(self, x: GeometricTensor) -> GeometricTensor:
-        """Apply the normalization to the input tensor."""
-        assert x.type == self.in_type, "Input type does not match the expected input type."
+        """Apply equivariant normalization to the input GeometricTensor."""
+        assert x.type == self.in_type, f"Input type {x.type} does not match expected type {self.in_type}."
 
-        # Check if we are tracking stats online
-        online_stats = hasattr(self, "num_batches_tracked")
+        # Apply DataNorm forward to the tensor data
+        normalized_tensor = super().forward(x.tensor)
 
-        if online_stats and self.training:
-            # Update running stats using cumulative moving average
-            var_batch, mean_batch = var_mean(x.tensor, rep_x=self._rep_x)
-            std_batch = torch.sqrt(var_batch + self.eps)
+        # Return as GeometricTensor
+        return self.out_type(normalized_tensor)
 
-            if self.num_batches_tracked == 0:
-                # Initialize with first batch
-                self.running_mean.copy_(mean_batch)
-                self.running_std.copy_(std_batch)
-            else:
-                # Use cumulative moving average if momentum is None, otherwise use provided momentum
-                momentum = self.momentum if self.momentum is not None else 1.0 / (self.num_batches_tracked.item() + 1)
-                self.running_mean.copy_((1 - momentum) * self.running_mean + momentum * mean_batch)
-                self.running_std.copy_((1 - momentum) * self.running_std + momentum * std_batch)
-
-            self.num_batches_tracked += 1
-
-        # Use appropriate statistics
-        if online_stats:
-            mean = self.running_mean
-            std = self.running_std
-        else:
-            mean = self.mean
-            std = self.std
-
-        # Reshape for broadcasting
-        if x.tensor.ndim == 3:
-            mean = mean.view(1, self.in_type.size, 1)
-            std = std.view(1, self.in_type.size, 1)
-        else:  # ndim == 2
-            mean = mean.view(1, self.in_type.size)
-            std = std.view(1, self.in_type.size)
-
-        y = (x.tensor - mean) / std
-        return self.out_type(y)
-
-    def evaluate_output_shape(self, input_shape):  # noqa: D102
+    def evaluate_output_shape(self, input_shape):
+        """Return the same shape as input for EquivariantModule compatibility."""
         return input_shape
 
-    def extra_repr(self) -> str:  # noqa: D102
-        return f"in_type={self.in_type}, eps={self.eps}"
+    def check_equivariance(self, atol=1e-5, rtol=1e-5):
+        """Check the equivariance of the normalization layer."""
+        was_training = self.training
+        batch_size = 50
+
+        self.train()
+
+        # Process a few batches to get some running statistics
+        for _ in range(3):
+            x = torch.randn(batch_size, self.in_type.size)
+            x_geom = self.in_type(x)
+            _ = self(x_geom)
+
+        self.eval()
+
+        # Test equivariance
+        x = torch.randn(batch_size, self.in_type.size)
+        x_geom = self.in_type(x)
+
+        for _ in range(5):
+            g = self.in_type.representation.group.sample()
+            if g == self.in_type.representation.group.identity:
+                continue
+
+            gx_geom = x_geom.transform(g)
+
+            y = self(x_geom)
+            gy = self(gx_geom)
+            gy_expected = y.transform(g)
+
+            assert torch.allclose(gy.tensor, gy_expected.tensor, atol=atol, rtol=rtol), (
+                f"Equivariance check failed for group element {g}"
+            )
+
+        self.train(was_training)
+
+    def export(self) -> DataNorm:
+        """Export to a standard DataNorm layer."""
+        exported = DataNorm(
+            num_features=self.num_features,
+            eps=self.eps,
+            only_centering=self.only_centering,
+            compute_cov=self.compute_cov,
+            running_stats=self.running_stats,
+            momentum=self.momentum,
+        )
+
+        # Transfer state
+        if self.running_stats:
+            exported.running_mean.data = self.running_mean.clone()
+            exported.running_std.data = self.running_std.clone()
+            exported.num_batches_tracked.data = self.num_batches_tracked.clone()
+            if self.compute_cov and hasattr(self, "running_cov"):
+                exported.running_cov.data = self.running_cov.clone()
+        else:
+            exported._mean.data = self._mean.clone()
+            exported._std.data = self._std.clone()
+
+        exported._last_cov = self._last_cov
+
+        # Set to same training mode as original
+        exported.train(self.training)
+
+        return exported

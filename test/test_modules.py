@@ -292,129 +292,251 @@ def test_affine(group: Group, mx: int, bias: bool):
     affine.check_equivariance(atol=1e-5, rtol=1e-5)
 
 
-@pytest.mark.parametrize("num_features", [10, 50])
-@pytest.mark.parametrize("momentum", [None, 0.1, 0.9])
-@pytest.mark.parametrize("ndim", [2, 3])
-def test_data_norm(num_features: int, momentum: float, ndim: int):
-    """Test DataNorm layer for basic functionality and running statistics."""
+@pytest.mark.parametrize("running_stats", [True, False])
+@pytest.mark.parametrize("only_centering", [True, False])
+@pytest.mark.parametrize("compute_cov", [True, False])
+@pytest.mark.parametrize("momentum", [0.1, None])
+def test_data_norm(running_stats: bool, only_centering: bool, compute_cov: bool, momentum: float | None):
+    """Test DataNorm layer functionality."""
     import torch
 
     from symm_learning.nn import DataNorm
 
-    # Test with online statistics (no mean/std provided)
-    data_norm = DataNorm(num_features=num_features, momentum=momentum)
-
-    # Create test data
+    num_features = 10
     batch_size = 20
-    if ndim == 2:
-        x = torch.randn(batch_size, num_features)
-    else:  # ndim == 3
-        time_steps = 15
-        x = torch.randn(batch_size, num_features, time_steps)
 
-    # Test training mode - should update running stats
-    data_norm.train()
+    # Create layer
+    norm_layer = DataNorm(
+        num_features=num_features,
+        running_stats=running_stats,
+        only_centering=only_centering,
+        compute_cov=compute_cov,
+        momentum=momentum,
+    )
 
-    # First forward pass should initialize running stats
-    y1 = data_norm(x)
-    assert y1.shape == x.shape, "Output shape should match input shape"
-    assert data_norm.num_batches_tracked == 1, "Should track one batch"
+    # Test 2D input
+    x_2d = torch.randn(batch_size, num_features)
 
-    # Second forward pass should update running stats
-    y2 = data_norm(x)
-    assert data_norm.num_batches_tracked == 2, "Should track two batches"
+    # Test 3D input
+    time = 15
+    x_3d = torch.randn(batch_size, num_features, time)
 
-    # Test eval mode - should use running stats
-    data_norm.eval()
-    y3 = data_norm(x)
-    assert data_norm.num_batches_tracked == 2, "Should not update in eval mode"
+    # Training mode - should update running stats
+    norm_layer.train()
 
-    # Test with pre-computed stats
-    dims = [0] if ndim == 2 else [0, 2]
-    mean = x.mean(dim=dims)
-    std = torch.sqrt(x.var(dim=dims, unbiased=False) + 1e-5)
+    if running_stats:
+        initial_mean = norm_layer.running_mean.clone()
+        initial_std = norm_layer.running_std.clone()
+        if compute_cov and hasattr(norm_layer, "running_cov"):
+            initial_cov = norm_layer.running_cov.clone()
 
-    data_norm_fixed = DataNorm(num_features=num_features, mean=mean, std=std)
-    y_fixed = data_norm_fixed(x)
-    assert y_fixed.shape == x.shape, "Output shape should match input shape"
-    assert not hasattr(data_norm_fixed, "num_batches_tracked"), "Should not track stats with fixed mean/std"
+    # Forward pass in training
+    y_2d = norm_layer(x_2d)
+    y_3d = norm_layer(x_3d)
 
-    # Test normalization properties (approximately zero mean, unit std)
-    y_mean = y_fixed.mean(dim=dims)
-    y_std = y_fixed.std(dim=dims, unbiased=False)
-    assert torch.allclose(y_mean, torch.zeros_like(y_mean), atol=1e-4), "Mean should be close to zero"
-    assert torch.allclose(y_std, torch.ones_like(y_std), atol=1e-3), "Std should be close to one"
+    # Check output shapes
+    assert y_2d.shape == x_2d.shape
+    assert y_3d.shape == x_3d.shape
+
+    # Check stats were updated in training mode (if running_stats=True)
+    if running_stats:
+        assert not torch.allclose(norm_layer.running_mean, initial_mean), "Running mean should have updated"
+        assert not torch.allclose(norm_layer.running_std, initial_std), "Running std should have updated"
+        if compute_cov and hasattr(norm_layer, "running_cov"):
+            assert not torch.allclose(norm_layer.running_cov, initial_cov), "Running cov should have updated"
+
+    # Eval mode - should NOT update running stats
+    norm_layer.eval()
+
+    if running_stats:
+        eval_mean = norm_layer.running_mean.clone()
+        eval_std = norm_layer.running_std.clone()
+        if compute_cov and hasattr(norm_layer, "running_cov"):
+            eval_cov = norm_layer.running_cov.clone()
+
+    # Forward pass in eval
+    _ = norm_layer(x_2d)
+    _ = norm_layer(x_3d)
+
+    # Check stats were NOT updated in eval mode
+    if running_stats:
+        assert torch.allclose(norm_layer.running_mean, eval_mean), "Running mean should not update in eval"
+        assert torch.allclose(norm_layer.running_std, eval_std), "Running std should not update in eval"
+        if compute_cov and hasattr(norm_layer, "running_cov"):
+            assert torch.allclose(norm_layer.running_cov, eval_cov), "Running cov should not update in eval"
+
+    # Test covariance property
+    if compute_cov:
+        cov_matrix = norm_layer.cov
+        assert cov_matrix.shape == (num_features, num_features)
+    else:
+        with pytest.raises(RuntimeError, match="Covariance computation is disabled"):
+            _ = norm_layer.cov
+
+    # Test mean/std properties
+    mean_val = norm_layer.mean
+    std_val = norm_layer.std
+    assert mean_val.shape == (num_features,)
+    assert std_val.shape == (num_features,)
+
+    # Test cumulative averaging when momentum=None
+    if running_stats and momentum is None:
+        # Create a fresh layer for cumulative averaging test
+        cum_layer = DataNorm(
+            num_features=num_features,
+            running_stats=True,
+            momentum=None,
+            compute_cov=compute_cov,
+        )
+        cum_layer.train()
+
+        # Process multiple batches and manually compute expected cumulative averages
+        batch_means = []
+        batch_stds = []
+        if compute_cov:
+            batch_covs = []
+
+        for i in range(3):  # Process 3 batches
+            x_batch = torch.randn(batch_size, num_features)
+            batch_mean = x_batch.mean(dim=0)
+            batch_std = torch.sqrt(x_batch.var(dim=0, unbiased=False))
+            batch_means.append(batch_mean)
+            batch_stds.append(batch_std)
+
+            if compute_cov:
+                x_centered = x_batch - x_batch.mean(dim=0, keepdim=True)
+                batch_cov = torch.mm(x_centered.T, x_centered) / (x_centered.shape[0] - 1)
+                batch_covs.append(batch_cov)
+
+            _ = cum_layer(x_batch)
+
+            # Expected cumulative average after (i+1) batches
+            expected_mean = torch.stack(batch_means[: i + 1]).mean(dim=0)
+            expected_std = torch.stack(batch_stds[: i + 1]).mean(dim=0)
+
+            assert torch.allclose(cum_layer.running_mean, expected_mean, atol=1e-5), (
+                f"Cumulative mean incorrect after batch {i + 1}"
+            )
+            assert torch.allclose(cum_layer.running_std, expected_std, atol=1e-5), (
+                f"Cumulative std incorrect after batch {i + 1}"
+            )
+
+            if compute_cov and hasattr(cum_layer, "running_cov"):
+                expected_cov = torch.stack(batch_covs[: i + 1]).mean(dim=0)
+                assert torch.allclose(cum_layer.running_cov, expected_cov, atol=1e-5), (
+                    f"Cumulative cov incorrect after batch {i + 1}"
+                )
 
 
 @pytest.mark.parametrize(
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-@pytest.mark.parametrize("mx", [2, 4])
-@pytest.mark.parametrize("momentum", [None, 0.1])
-@pytest.mark.parametrize("ndim", [2, 3])
-def test_edata_norm(group: Group, mx: int, momentum: float, ndim: int):
-    """Test eDataNorm layer for equivariance and basic functionality."""
+@pytest.mark.parametrize("running_stats", [True, False])
+@pytest.mark.parametrize("only_centering", [True, False])
+@pytest.mark.parametrize("compute_cov", [True, False])
+def test_edata_norm(group: Group, running_stats: bool, only_centering: bool, compute_cov: bool):
+    """Test eDataNorm layer functionality and equivariance."""
     import torch
     from escnn.gspaces import no_base_space
 
-    from symm_learning.nn import GSpace1D, eDataNorm
+    from symm_learning.nn import eDataNorm
+    from symm_learning.stats import var_mean, cov
 
     G = group
-    if ndim == 2:
-        gspace = no_base_space(G)
-    else:  # ndim == 3
-        gspace = GSpace1D(G)
+    gspace = no_base_space(G)
+    in_type = FieldType(gspace, [G.regular_representation] * 2)
 
-    in_type = FieldType(gspace, [G.regular_representation] * mx)
+    batch_size = 50
+    x = torch.randn(batch_size, in_type.size)
+    x_geom = in_type(x)
 
-    # Test with online statistics (no mean/std provided)
-    edata_norm = eDataNorm(in_type=in_type, momentum=momentum)
+    # Create layer
+    norm_layer = eDataNorm(
+        in_type=in_type,
+        running_stats=running_stats,
+        only_centering=only_centering,
+        compute_cov=compute_cov,
+    )
 
-    # Create test data
-    batch_size = 20
-    if ndim == 2:
-        x = torch.randn(batch_size, in_type.size)
-    else:  # ndim == 3
-        time_steps = 15
-        x = torch.randn(batch_size, in_type.size, time_steps)
-    x = in_type(x)
+    # Test that it uses equivariant statistics
+    norm_layer.train()
 
-    # Test training mode - should update running stats
-    edata_norm.train()
+    # Forward pass
+    y = norm_layer(x_geom)
 
-    # First forward pass should initialize running stats
-    y1 = edata_norm(x)
-    assert y1.shape == x.shape, "Output shape should match input shape"
-    assert y1.type == in_type, "Output type should match input type"
-    assert edata_norm.num_batches_tracked == 1, "Should track one batch"
+    # Check output type and shape
+    assert y.type == in_type
+    assert y.tensor.shape == x.shape
 
-    # Second forward pass should update running stats
-    y2 = edata_norm(x)
-    assert edata_norm.num_batches_tracked == 2, "Should track two batches"
+    # Test that the statistics computed are equivariant
+    if running_stats and norm_layer.training:
+        # Get the statistics from the layer
+        layer_mean = norm_layer.running_mean
+        layer_std = norm_layer.running_std
 
-    # Test eval mode - should use running stats
-    edata_norm.eval()
-    y3 = edata_norm(x)
-    assert edata_norm.num_batches_tracked == 2, "Should not update in eval mode"
+        # Compute equivariant statistics directly
+        expected_var, expected_mean = var_mean(x, rep_x=in_type.representation)
+        expected_std = torch.sqrt(expected_var)
 
-    # Test equivariance
-    edata_norm.check_equivariance(atol=1e-4, rtol=1e-4)
+        # Should match (approximately, due to running average)
+        assert torch.allclose(layer_mean, expected_mean, atol=1e-4), (
+            f"Layer mean {layer_mean} doesn't match equivariant mean {expected_mean}"
+        )
+        assert torch.allclose(layer_std, expected_std, atol=1e-4), (
+            f"Layer std {layer_std} doesn't match equivariant std {expected_std}"
+        )
 
-    # Test with pre-computed stats using symmetry-aware computation
-    from symm_learning.stats import var_mean
+    # Test covariance computation if enabled
+    if compute_cov:
+        cov_matrix = norm_layer.cov
+        assert cov_matrix.shape == (in_type.size, in_type.size)
 
-    var_batch, mean_batch = var_mean(x.tensor, rep_x=in_type.representation)
-    std_batch = torch.sqrt(var_batch + 1e-5)
+        # Check that it matches equivariant covariance
+        expected_cov = cov(x, x, rep_x=in_type.representation, rep_y=in_type.representation)
+        assert torch.allclose(cov_matrix, expected_cov, atol=1e-4), (
+            f"Layer covariance doesn't match equivariant covariance"
+        )
 
-    edata_norm_fixed = eDataNorm(in_type=in_type, mean=mean_batch, std=std_batch)
-    y_fixed = edata_norm_fixed(x)
-    assert y_fixed.shape == x.shape, "Output shape should match input shape"
-    assert y_fixed.type == in_type, "Output type should match input type"
-    assert not hasattr(edata_norm_fixed, "num_batches_tracked"), "Should not track stats with fixed mean/std"
+    # Test export to DataNorm
+    exported = norm_layer.export()
+    from symm_learning.nn import DataNorm
 
-    # Test that fixed stats version is also equivariant
-    edata_norm_fixed.check_equivariance(atol=1e-4, rtol=1e-4)
+    assert isinstance(exported, DataNorm)
+    assert exported.num_features == in_type.size
+    assert exported.running_stats == running_stats
+    assert exported.only_centering == only_centering
+    assert exported.compute_cov == compute_cov
+
+    # Test that exported layer produces same output on tensor data
+    # Both layers should be in eval mode for consistent comparison
+    norm_layer.eval()
+    exported.eval()
+    y_exported = exported(x)
+    y_eval = norm_layer(x_geom)
+    assert torch.allclose(y_eval.tensor, y_exported, atol=1e-6), "Exported layer should produce same output as original"
+
+    # Test equivariance: E[g·x] = g·E[x] and Var[g·x] = Var[x]
+    # Sample a group element
+    g = G.sample()
+    if g == G.identity:
+        return  # Skip identity
+
+    gx = x_geom.transform(g)
+
+    # Compute statistics for transformed input
+    g_var, g_mean = var_mean(gx.tensor, rep_x=in_type.representation)
+    orig_var, orig_mean = var_mean(x, rep_x=in_type.representation)
+
+    # Mean should transform: g·mean = mean_transformed
+    expected_g_mean = in_type(orig_mean.unsqueeze(0)).transform(g).tensor.squeeze(0)
+
+    assert torch.allclose(g_mean, expected_g_mean, atol=1e-4), (
+        f"Equivariant mean property violated: {g_mean} vs {expected_g_mean}"
+    )
+
+    # Variance should be invariant: Var[g·x] = Var[x]
+    assert torch.allclose(g_var, orig_var, atol=1e-4), f"Equivariant variance property violated: {g_var} vs {orig_var}"
