@@ -142,7 +142,29 @@ def test_cross_cov(group: Group):  # noqa: D103
 )
 @pytest.mark.parametrize("mx", [1, 5])
 @pytest.mark.parametrize("my", [3, 5])
-def test_isotypic_cross_cov(group: Group, mx: int, my: int):  # noqa: D103
+def test_isotypic_cross_cov(group: Group, mx: int, my: int):
+    """Test the isotypic cross-covariance computation function.
+
+    This test verifies that the isotypic cross-covariance computation using the
+    `_isotypic_cov` function is equivalent to computing the covariance using
+    data augmentation across the group orbit.
+
+    For each irreducible representation of the group, this test:
+    1. Creates isotypic representations for x and y variables
+    2. Simulates symmetric random variables
+    3. Computes the isotypic cross-covariance using the function under test
+    4. Computes a ground truth by explicitly performing data augmentation with the group action
+    5. Verifies that both methods produce equivalent results
+
+    Parameters
+    ----------
+    group : Group
+        The symmetry group to test with
+    mx : int
+        Multiplicity of the irreducible representation for x variables
+    my : int
+        Multiplicity of the irreducible representation for y variables
+    """
     from escnn.group import IrreducibleRepresentation, directsum
 
     G = group
@@ -150,8 +172,11 @@ def test_isotypic_cross_cov(group: Group, mx: int, my: int):  # noqa: D103
     for irrep in G.representations.values():
         if not isinstance(irrep, IrreducibleRepresentation):
             continue
-        x_rep_iso = directsum([irrep] * mx)  # ρ_Χ
-        y_rep_iso = directsum([irrep] * my)  # ρ_Y
+        x_rep = isotypic_decomp_rep(directsum([irrep] * mx))  # ρ_Χ
+        y_rep = isotypic_decomp_rep(directsum([irrep] * my))  # ρ_Y
+
+        x_rep_iso = x_rep.attributes["isotypic_reps"][irrep.id]
+        y_rep_iso = y_rep.attributes["isotypic_reps"][irrep.id]
 
         irrep_type = irrep.type
         irrep_dim = irrep.size
@@ -192,5 +217,23 @@ def test_isotypic_cross_cov(group: Group, mx: int, my: int):  # noqa: D103
 
         # Numerical error occurs for small sample sizes
         assert np.allclose(Cxy_iso, Cxy_iso_orbit, atol=1e-3, rtol=1e-3), (
+            "isotypic_cross_cov is not equivalent to computing the covariance using data-augmentation"
+        )
+
+        # Test the scenario of Covariance computation where y is not provided.
+        Cxx_iso, _ = _isotypic_cov(x=x_iso, y=None, rep_x=x_rep_iso, rep_y=None)
+        Cxx_iso = Cxx_iso.numpy()
+
+        assert Cxx_iso.shape == (mx * irrep.size, mx * irrep.size), (
+            f"Expected Cxx_iso to have shape ({mx * irrep.size}, {mx * irrep.size}), got {Cxx_iso.shape}"
+        )
+
+        # Ground truth
+        Cxx_iso_orbit = torch.einsum("...i,...j->ij", G_x_iso, G_x_iso) / (G_x_iso.shape[0])
+        # Project each empirical Cov to the subspace of G-equivariant linear maps, and average across orbit
+        Cxx_iso_orbit = np.mean(
+            [np.einsum("ij,jk,kl->il", x_rep_iso(g), Cxx_iso_orbit, x_rep_iso(~g)) for g in G.elements], axis=0
+        )
+        assert np.allclose(Cxx_iso, Cxx_iso_orbit, atol=1e-3, rtol=1e-3), (
             "isotypic_cross_cov is not equivalent to computing the covariance using data-augmentation"
         )

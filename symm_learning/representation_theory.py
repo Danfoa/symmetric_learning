@@ -6,6 +6,7 @@ from collections import OrderedDict
 from typing import Callable, Dict, List, Union
 
 import numpy as np
+import torch
 from escnn.group import Group, GroupElement, Representation, directsum
 from escnn.nn import FieldType
 from scipy.linalg import block_diag
@@ -45,6 +46,10 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     Returns:
         escnn.group.Representation: An equivalent, disentangled representation.
     """
+    # If group representation is already disentangled (in isotypic basis), return it without changes.
+    if rep.attributes.get("in_isotypic_basis", False):
+        return rep
+
     symm_group = rep.group
 
     if rep.name + "-Iso" in symm_group.representations:
@@ -79,6 +84,11 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
             change_of_basis=np.identity(irrep.size * multiplicities),
             supported_nonlinearities=irrep.supported_nonlinearities,
         )
+        # Store attributes used in stats/linalg operations.
+        active_isotypic_reps[irrep_id].attributes["is_isotypic_rep"] = True
+        active_isotypic_reps[irrep_id].attributes["irrep_multiplicity"] = multiplicities
+        active_isotypic_reps[irrep_id].attributes["irrep_dim"] = irrep.size
+        active_isotypic_reps[irrep_id].attributes["irrep_endomorphism_basis"] = torch.tensor(irrep.endomorphism_basis())
 
     # Impose canonical order on the Isotypic Subspaces.
     # If the trivial representation is active it will be the first Isotypic Subspace.
@@ -109,6 +119,7 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     rep_iso_basis.supported_nonlinearities = functools.reduce(set.intersection, iso_supported_nonlinearities)
     rep_iso_basis.attributes["isotypic_reps"] = ordered_isotypic_reps
     rep_iso_basis.attributes["isotypic_subspace_dims"] = iso_subspace_dims
+    rep_iso_basis.attributes["in_isotypic_basis"] = True  # Boolean flag useful
 
     return rep_iso_basis
 
