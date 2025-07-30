@@ -300,7 +300,7 @@ class DataNorm(torch.nn.Module):
         """Compute batch statistics (mean and var). Can be overridden for equivariant versions."""
         dims = [0] + ([2] if x.ndim > 2 else [])
         batch_mean = x.mean(dim=dims)
-        batch_var = x.var(dim=dims, unbiased=False)
+        batch_var = torch.ones_like(batch_mean) if self.only_centering else x.var(dim=dims, unbiased=False)
         return batch_mean, batch_var
 
     def _compute_batch_cov(self, x: torch.Tensor) -> torch.Tensor:
@@ -425,22 +425,15 @@ class eDataNorm(DataNorm, EquivariantModule):
     Args:
         in_type (escnn.nn.FieldType): The field type defining the input's group
             representation structure. The output type will be the same as the input type.
-        mean (torch.Tensor, optional): Initial mean values. If provided with
-            ``running_stats=True``, used as initialization for running mean.
-            Shape: ``(in_type.size,)``. Defaults to zeros.
-        std (torch.Tensor, optional): Initial standard deviation values. If provided with
-            ``running_stats=True``, used as initialization for running std.
-            Shape: ``(in_type.size,)``. Defaults to ones.
         eps (float, optional): Small constant added to the denominator for numerical
-            stability. Default: ``1e-6``.
+            stability. Only used when ``only_centering=False``. Default: ``1e-6``.
         only_centering (bool, optional): If ``True``, only centers the data using
             equivariant mean without scaling. Default: ``False``.
         compute_cov (bool, optional): If ``True``, computes and tracks the equivariant
             covariance matrix. Default: ``False``.
-        running_stats (bool, optional): If ``True``, maintains running estimates of
-            equivariant statistics. Default: ``True``.
-        momentum (float, optional): Momentum factor for running statistics updates.
-            If ``None``, uses cumulative averaging. Default: ``None``.
+        momentum (float, optional): Momentum factor for exponential moving average of
+            running statistics. Must be greater than 0. Setting to ``1.0`` effectively 
+            uses only batch statistics. Default: ``1.0``.
 
     Shape:
         - Input: :class:`escnn.nn.GeometricTensor` with tensor shape :math:`(N, D)` or :math:`(N, D, L)` where:
@@ -490,23 +483,17 @@ class eDataNorm(DataNorm, EquivariantModule):
     def __init__(
         self,
         in_type: FieldType,
-        mean: torch.Tensor = None,
-        std: torch.Tensor = None,
         eps: float = 1e-6,
         only_centering: bool = False,
         compute_cov: bool = False,
-        running_stats: bool = True,
-        momentum: float = None,
+        momentum: float = 1.0,
     ):
         # Initialize DataNorm with the field type size
         super().__init__(
             num_features=in_type.size,
-            mean=mean,
-            std=std,
             eps=eps,
             only_centering=only_centering,
             compute_cov=compute_cov,
-            running_stats=running_stats,
             momentum=momentum,
         )
 
@@ -518,8 +505,9 @@ class eDataNorm(DataNorm, EquivariantModule):
     def _compute_batch_stats(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute equivariant batch statistics using symm_learning.stats."""
         batch_var, batch_mean = symm_learning.stats.var_mean(x, rep_x=self._rep_x)
-        batch_std = torch.sqrt(batch_var)
-        return batch_mean, batch_std
+        if self.only_centering:
+            batch_var = torch.ones_like(batch_mean)
+        return batch_mean, batch_var
 
     def _compute_batch_cov(self, x: torch.Tensor) -> torch.Tensor:
         """Compute equivariant batch covariance using symm_learning.stats."""
@@ -582,24 +570,18 @@ class eDataNorm(DataNorm, EquivariantModule):
             eps=self.eps,
             only_centering=self.only_centering,
             compute_cov=self.compute_cov,
-            running_stats=self.running_stats,
             momentum=self.momentum,
         )
 
         # Transfer state
-        if self.running_stats:
-            exported.running_mean.data = self.running_mean.clone()
-            exported.running_std.data = self.running_std.clone()
-            exported.num_batches_tracked.data = self.num_batches_tracked.clone()
-            if self.compute_cov and hasattr(self, "running_cov"):
-                exported.running_cov.data = self.running_cov.clone()
-        else:
-            exported._mean.data = self._mean.clone()
-            exported._std.data = self._std.clone()
+        exported.running_mean.data = self.running_mean.clone()
+        exported.running_var.data = self.running_var.clone()
+        exported.num_batches_tracked.data = self.num_batches_tracked.clone()
+        if self.compute_cov and hasattr(self, "running_cov"):
+            exported.running_cov.data = self.running_cov.clone()
 
         exported._last_cov = self._last_cov
 
-        # Set to same training mode as original
-        exported.train(self.training)
+        exported.eval()
 
         return exported

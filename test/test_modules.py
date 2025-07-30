@@ -6,6 +6,8 @@ import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
 from escnn.nn import FieldType
 
+from symm_learning.nn.normalization import DataNorm
+
 
 @pytest.mark.parametrize(
     "group",
@@ -240,10 +242,10 @@ def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
 
     batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
 
-    # y = batchnorm_layer(x).tensor
-    # y_torch = batchnorm_layer.export()(x.tensor)
+    y = batchnorm_layer(x).tensor
+    y_torch = batchnorm_layer.export()(x.tensor)
 
-    # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5)
+    assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -290,3 +292,170 @@ def test_affine(group: Group, mx: int, bias: bool):
     x = in_type(x)
     affine = eAffine(in_type, bias=bias)
     affine.check_equivariance(atol=1e-5, rtol=1e-5)
+
+
+import torch
+import symm_learning
+
+
+def _test_datanorm_layer(datanorm: DataNorm):
+    # Test training mode
+    datanorm.train()
+
+    def input_type(x):
+        if hasattr(datanorm, "in_type"):
+            return datanorm.in_type(x)
+        return x
+
+    num_features = datanorm.num_features
+    only_centering = datanorm.only_centering
+    compute_cov = datanorm.compute_cov
+
+    batch_size = 50
+
+    # Store initial running stats
+    initial_mean = datanorm.running_mean.clone()
+    initial_var = datanorm.running_var.clone()
+    initial_batches_tracked = datanorm.num_batches_tracked.clone()
+
+    # Forward pass in training mode
+    for _ in range(5):  # Process several batches to stabilize running stats
+        x = torch.randn(batch_size, num_features)
+        y = datanorm(input_type(x))
+
+    # Check that running stats were updated
+    assert not torch.allclose(datanorm.running_mean, initial_mean), "Running mean should be updated during training"
+    if not only_centering:
+        assert not torch.allclose(datanorm.running_var, initial_var), "Running var should be updated during training"
+    assert datanorm.num_batches_tracked > initial_batches_tracked, "Batch counter should be incremented"
+
+    # Test evaluation mode - stats should not update
+    datanorm.eval()
+    prev_mean = datanorm.running_mean.clone()
+    prev_var = datanorm.running_var.clone()
+    prev_batches_tracked = datanorm.num_batches_tracked.clone()
+
+    x_eval = torch.randn(batch_size, num_features)
+    y_eval = datanorm(input_type(x_eval))
+
+    # Check that running stats were NOT updated in eval mode
+    assert torch.allclose(datanorm.running_mean, prev_mean), "Running mean should not be updated during evaluation"
+    assert torch.allclose(datanorm.running_var, prev_var), "Running var should not be updated during evaluation"
+    assert torch.equal(datanorm.num_batches_tracked, prev_batches_tracked), (
+        "Batch counter should not change during evaluation"
+    )
+
+    # Test only_centering behavior
+    if only_centering:
+        # When only_centering=True, the layer should track running_var as all ones
+        datanorm.train()
+        # Process several batches to verify variance stays as ones
+        for _ in range(5):
+            x_batch = torch.randn(batch_size, num_features)
+            y_batch = datanorm(input_type(x_batch))
+
+        # Variance should remain all ones (since batch_var is set to ones)
+        assert torch.allclose(datanorm.running_var, torch.ones_like(datanorm.running_var)), (
+            "When only_centering=True, running_var should remain all ones"
+        )
+    else:
+        # When only_centering=False, output should be normalized and running_var should be tracked
+        datanorm.train()
+        # Process several batches to get stable running stats
+        for _ in range(10):
+            x_batch = torch.randn(batch_size, num_features)
+            _ = datanorm(input_type(x_batch))
+
+        # Check that running_var is NOT all ones (it should be tracking actual variance)
+        assert not torch.allclose(datanorm.running_var, torch.ones_like(datanorm.running_var)), (
+            "When only_centering=False, running_var should track actual variance, not remain all ones"
+        )
+
+    # Test covariance computation
+    if compute_cov:
+        assert hasattr(datanorm, "running_cov"), "Should have running_cov attribute when compute_cov=True"
+        assert datanorm.running_cov.shape == (num_features, num_features), "Covariance should be square matrix"
+        cov = datanorm.cov  # Test property access
+        assert cov.shape == (num_features, num_features), "Covariance property should return correct shape"
+    else:
+        with pytest.raises(RuntimeError, match="Covariance computation is disabled"):
+            _ = datanorm.cov  # Should raise error when compute_cov=False
+
+
+@pytest.mark.parametrize("num_features", [1, 10, 50])
+@pytest.mark.parametrize("only_centering", [True, False])
+@pytest.mark.parametrize("compute_cov", [True, False])
+@pytest.mark.parametrize("momentum", [0.1, 1.0])
+def test_datanorm(num_features: int, only_centering: bool, compute_cov: bool, momentum: float):
+    """Test DataNorm layer functionality."""
+    import torch
+
+    from symm_learning.nn import DataNorm
+
+    batch_size = 50
+    eps = 1e-6
+
+    # Test 2D input
+    datanorm = DataNorm(
+        num_features=num_features,
+        eps=eps,
+        only_centering=only_centering,
+        compute_cov=compute_cov,
+        momentum=momentum,
+    )
+
+    _test_datanorm_layer(datanorm)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [4])
+@pytest.mark.parametrize("only_centering", [True, False])
+@pytest.mark.parametrize("compute_cov", [True, False])
+@pytest.mark.parametrize("momentum", [0.1, 1.0])
+def test_edatanorm(group: Group, mx: int, only_centering: bool, compute_cov: bool, momentum: float):
+    """Test eDataNorm layer functionality and equivariance."""
+    import torch
+
+    from symm_learning.nn import eDataNorm
+
+    G = group
+    gspace = escnn.gspaces.no_base_space(G)
+    in_type = FieldType(gspace, [G.regular_representation] * mx)
+
+    eps = 1e-6
+
+    # Create eDataNorm layer
+    edatanorm = eDataNorm(
+        in_type=in_type,
+        eps=eps,
+        only_centering=only_centering,
+        compute_cov=compute_cov,
+        momentum=momentum,
+    )
+
+    _test_datanorm_layer(edatanorm)
+
+    # Test export functionality
+    edatanorm.eval()
+    datanorm = edatanorm.export()
+    datanorm.eval()
+
+    # Test on 2D input
+    x_test_2d = torch.randn(100, in_type.size)
+    x_test_2d_geom = in_type(x_test_2d)
+
+    # Get outputs from both layers
+    y_edatanorm = edatanorm(x_test_2d_geom).tensor
+    y_exported = datanorm(x_test_2d)
+
+    # They should be exactly the same
+    assert torch.allclose(y_edatanorm, y_exported, atol=1e-6, rtol=1e-6), (
+        f"eDataNorm and exported DataNorm should produce identical results for 2D input. "
+        f"Max diff: {torch.max(torch.abs(y_edatanorm - y_exported)):.6f}"
+    )
