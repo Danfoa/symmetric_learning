@@ -55,7 +55,7 @@ def var_mean(x: Tensor, rep_x: Representation):
 
     mean_empirical = torch.mean(x_flat, dim=0)  # Mean over batch as sequence length.
     # Project to the inv-subspace and map back to the original basis
-    mean = torch.einsum("ij,j->i...", P_inv, mean_empirical)
+    mean = torch.einsum("ij,j->i...", P_inv.to(device=x_flat.device), mean_empirical)
 
     # Symmetry constrained variance computation.
     # The variance is constraint to be a single constant per each irreducible subspace.
@@ -74,7 +74,8 @@ def var_mean(x: Tensor, rep_x: Representation):
 
     if "irrep_indices" not in rep_x.attributes:
         # Create indices for each irrep subspace: [0,0,0,1,1,2,2,2,2,...] for irrep dims [3,2,4,...]
-        irrep_indices = torch.repeat_interleave(torch.arange(len(irrep_dims)), irrep_dims)
+        indices = torch.arange(len(irrep_dims)).to(device=irrep_dims.device)
+        irrep_indices = torch.repeat_interleave(indices, irrep_dims)
         rep_x.attributes["irrep_indices"] = irrep_indices
     else:
         irrep_indices = rep_x.attributes["irrep_indices"].to(device=x.device)

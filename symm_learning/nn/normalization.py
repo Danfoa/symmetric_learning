@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
+from torch import batch_norm
 
 import symm_learning
 import symm_learning.stats
@@ -214,36 +215,30 @@ class DataNorm(torch.nn.Module):
     where :math:`\mu` is the mean, :math:`\sigma^2` is the variance, and :math:`\epsilon`
     is a small constant for numerical stability.
 
-    **Modes of Operation:**
+    **Mode of Operation:**
 
-    1. **Running Statistics** (``running_stats=True``, default):
-       During training: Updates running estimates of mean and standard deviation using
-       exponential moving averages or cumulative averaging.
-       During evaluation: Uses stored running statistics for normalization.
-       Statistics are updated only in training mode.
-        a. **Exponential Moving Average** (``momentum=float``):
-              Uses a decay factor to update statistics:
-              :math:`\text{running stat} = (1-\alpha) \cdot \text{running stat} + \alpha \cdot \text{batch stat}`
-        b. **Cumulative Average** (``momentum=None``):
-            Simple cumulative average over all seen batches:
-            :math:`\text{running stat} = \frac{1}{n} \sum_{i=1}^{n} \text{batch stat}_i`.
-            Initial mean/std values (if provided) are used as starting points for running stats. This can be used as
-            an input layer to a model for which the dataset is too large to compute statistics over the entire dataset.
+    This layer features a non-standard behavior during training. Unlike typical
+    normalization layers (e.g., ``torch.nn.BatchNorm1d``) that normalize using
+    batch statistics, this layer normalizes the data using the running statistics
+    that have been updated with the current batch's information.
 
-    2. **Fixed Statistics** (``running_stats=False``):
-       Uses the user-provided mean and standard deviation values as fixed statistics. 
-       Equivalent to a standardization layer with pre-computed statistics.
+    - **During training**:
+      1. Batch statistics (:math:`\mu_{\text{batch}}`, :math:`\sigma^2_{\text{batch}}`) are computed from the input.
+      2. Running statistics (:math:`\mu_{\text{run}}`, :math:`\sigma^2_{\text{run}}`) are updated using exponential
+        moving average:
+         :math:`\text{running stat} = (1-\alpha) \cdot \text{running stat} + \alpha \cdot \text{batch stat}`
+      3. The input data is then normalized using these newly updated running statistics.
+      This allows the loss to be dependent on the running statistics, with gradients flowing
+      back through the batch statistics component of the update, but not into the historical
+      state of the running statistics from previous steps.
+
+    - **During evaluation**: Uses the final stored running statistics for normalization.
+
+    **Special case**: When ``momentum=1.0``, the layer effectively uses batch statistics for 
+    normalization, becoming equivalent to a `torch.nn.BatchNorm1d` layer with `track_running_stats=False`.
 
     Args:
         num_features (int): Number of features or channels in the input tensor.
-        mean (torch.Tensor, optional): Initial mean values. If provided with
-            ``running_stats=True``, used as initialization for running mean.
-            If ``running_stats=False``, used as fixed mean values. Shape: ``(num_features,)``.
-            Defaults to zeros.
-        std (torch.Tensor, optional): Initial standard deviation values. If provided with
-            ``running_stats=True``, used as initialization for running std.
-            If ``running_stats=False``, used as fixed std values. Shape: ``(num_features,)``.
-            Defaults to ones.
         eps (float, optional): Small constant added to the denominator for numerical
             stability. Only used when ``only_centering=False``. Default: ``1e-6``.
         only_centering (bool, optional): If ``True``, only centers the data (subtracts mean)
@@ -251,12 +246,9 @@ class DataNorm(torch.nn.Module):
         compute_cov (bool, optional): If ``True``, computes and tracks the full covariance
             matrix in addition to mean and variance. Accessible via the ``cov`` property.
             Default: ``False``.
-        running_stats (bool, optional): If ``True``, maintains running estimates of statistics
-            that are updated during training and used during evaluation. If ``False``, uses
-            batch statistics for normalization in all modes. Default: ``True``.
         momentum (float, optional): Momentum factor for exponential moving average of
-            running statistics. If ``None``, uses cumulative averaging instead.
-            Only relevant when ``running_stats=True``. Default: ``None``.
+            running statistics. Must be greater than 0. Setting to ``1.0`` effectively 
+            uses only batch statistics. Default: ``1.0``.
 
     Shape:
         - Input: :math:`(N, C)` or :math:`(N, C, L)` where:
@@ -267,31 +259,10 @@ class DataNorm(torch.nn.Module):
 
     Attributes:
         running_mean (torch.Tensor): Running average of input means. Shape: ``(num_features,)``.
-            Only available when ``running_stats=True``.
-        running_std (torch.Tensor): Running average of input standard deviations. 
-            Shape: ``(num_features,)``. Only available when ``running_stats=True``.
+        running_var (torch.Tensor): Running average of input variances. Shape: ``(num_features,)``.
         running_cov (torch.Tensor): Running average of input covariance matrix.
-            Shape: ``(num_features, num_features)``. Only available when ``running_stats=True``
-            and ``compute_cov=True``.
+            Shape: ``(num_features, num_features)``. Only available when ``compute_cov=True``.
         num_batches_tracked (torch.Tensor): Number of batches processed during training.
-            Used for cumulative averaging when ``momentum=None``.
-
-    Examples:
-        >>> # Basic usage with running statistics
-        >>> norm = DataNorm(num_features=128)
-        >>> x = torch.randn(32, 128)  # batch_size=32, features=128
-        >>> y = norm(x)  # Normalized output
-        
-        >>> # Centering-only mode
-        >>> norm = DataNorm(num_features=64, only_centering=True)
-        >>> x = torch.randn(16, 64, 100)  # 3D input with sequence length
-        >>> y = norm(x)  # Only mean-centered
-        
-        >>> # Fixed statistics mode with covariance
-        >>> norm = DataNorm(num_features=32, running_stats=False, compute_cov=True)
-        >>> x = torch.randn(8, 32)
-        >>> y = norm(x)
-        >>> cov_matrix = norm.cov  # Access covariance matrix
 
     Note:
         When using 3D inputs :math:`(N, C, L)`, statistics are computed over both the batch
@@ -302,45 +273,35 @@ class DataNorm(torch.nn.Module):
     def __init__(
         self,
         num_features: int,
-        mean: torch.Tensor = None,
-        std: torch.Tensor = None,
         eps: float = 1e-6,
         only_centering: bool = False,
         compute_cov: bool = False,
-        running_stats: bool = True,
-        momentum: float = None,
+        momentum: float = 1.0,
     ):
         super().__init__()
         self.num_features = num_features
         self.eps = eps
         self.only_centering = only_centering
         self.compute_cov = compute_cov
-        self.running_stats = running_stats
+
+        if momentum <= 0.0:
+            raise ValueError(f"momentum must be greater than 0, got {momentum}")
         self.momentum = momentum
 
-        # Initialize statistics
-        init_mean = mean if mean is not None else torch.zeros(num_features)
-        init_std = std if std is not None else torch.ones(num_features)
-
-        if running_stats:
-            self.register_buffer("num_batches_tracked", torch.tensor(0, dtype=torch.long))
-            self.register_buffer("running_mean", init_mean.clone())
-            self.register_buffer("running_std", init_std.clone())
-            if compute_cov:
-                self.register_buffer("running_cov", torch.eye(num_features))
-        else:
-            # Fixed stats mode - these act as our "fixed" values
-            self.register_buffer("_mean", init_mean)
-            self.register_buffer("_std", init_std)  # For batch covariance tracking
+        # Initialize running statistics buffers
+        self.register_buffer("num_batches_tracked", torch.tensor(0, dtype=torch.long))
+        self.register_buffer("running_mean", torch.zeros(num_features))
+        self.register_buffer("running_var", torch.ones(num_features))
+        if compute_cov:
+            self.register_buffer("running_cov", torch.eye(num_features))
         self._last_cov = None
 
     def _compute_batch_stats(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute batch statistics (mean and std). Can be overridden for equivariant versions."""
+        """Compute batch statistics (mean and var). Can be overridden for equivariant versions."""
         dims = [0] + ([2] if x.ndim > 2 else [])
         batch_mean = x.mean(dim=dims)
         batch_var = x.var(dim=dims, unbiased=False)
-        batch_std = torch.sqrt(batch_var)
-        return batch_mean, batch_std
+        return batch_mean, batch_var
 
     def _compute_batch_cov(self, x: torch.Tensor) -> torch.Tensor:
         """Compute batch covariance. Can be overridden for equivariant versions."""
@@ -353,37 +314,34 @@ class DataNorm(torch.nn.Module):
         """Apply the normalization to the input tensor."""
         assert x.shape[1] == self.num_features
 
-        # Update running statistics if needed
-        if self.running_stats and self.training:
-            # Compute batch statistics
-            batch_mean, batch_std = self._compute_batch_stats(x)
-
-            # Update running statistics
-            if self.num_batches_tracked == 0 and self.momentum is None:
-                self.running_mean.copy_(batch_mean)
-                self.running_std.copy_(batch_std)
+        # --- Determine statistics for normalization ---
+        if self.training:
+            # Training mode: Use running stats for normalization, but in a way
+            # that gradients flow back through the current batch's statistics.
+            batch_mean, batch_var = self._compute_batch_stats(x)
+            # 2. Calculate the new running statistics for the CURRENT step.
+            if self.num_batches_tracked == 0:
+                # For the very first batch, initialize running stats with batch stats
+                self.running_mean = batch_mean
+                self.running_var = batch_var
             else:
-                momentum = self.momentum if self.momentum is not None else 1.0 / (self.num_batches_tracked.item() + 1)
-                self.running_mean.mul_(1 - momentum).add_(batch_mean, alpha=momentum)
-                self.running_std.mul_(1 - momentum).add_(batch_std, alpha=momentum)
-
+                # Detach prev running stats to prevent gradients from flowing into the previous iteration's state.
+                self.running_mean = (1 - self.momentum) * self.running_mean.detach() + self.momentum * batch_mean
+                self.running_var = (1 - self.momentum) * self.running_var.detach() + self.momentum * batch_var
             self.num_batches_tracked += 1
 
-        # Compute covariance if needed
+        # --- Covariance Computation (if enabled) ---
         if self.compute_cov:
             batch_cov = self._compute_batch_cov(x)
-            self._last_cov = batch_cov
-
-            if self.running_stats and hasattr(self, "running_cov") and self.training:
-                if self.num_batches_tracked == 1 and self.momentum is None:
-                    self.running_cov.copy_(batch_cov)
+            if self.training:
+                if self.num_batches_tracked == 0:
+                    self.running_cov = batch_cov
                 else:
-                    momentum = self.momentum if self.momentum is not None else 1.0 / self.num_batches_tracked.item()
-                    self.running_cov.mul_(1 - momentum).add_(batch_cov, alpha=momentum)
+                    self.running_cov = (1 - self.momentum) * self.running_cov.detach() + self.momentum * batch_cov
 
-        # Get current statistics
-        mean = self.mean
-        std = self.std if not self.only_centering else torch.ones_like(self.mean)
+        # --- Apply Normalization ---
+        mean = self.running_mean
+        std = torch.sqrt(self.running_var + self.eps) if not self.only_centering else torch.ones_like(self.running_mean)
 
         # Reshape for broadcasting
         if x.ndim == 3:
@@ -393,43 +351,34 @@ class DataNorm(torch.nn.Module):
             mean = mean.view(1, self.num_features)
             std = std.view(1, self.num_features)
 
-        # Apply normalization
-        return x - mean if self.only_centering else (x - mean) / (std + self.eps)
+        return (x - mean) / std
 
     @property
     def mean(self) -> torch.Tensor:
         """Return the current mean estimate."""
-        if self.running_stats:
-            return self.running_mean
-        else:
-            return self._mean
+        return self.running_mean
+
+    @property
+    def var(self) -> torch.Tensor:
+        """Return the current variance estimate."""
+        return self.running_var
 
     @property
     def std(self) -> torch.Tensor:
-        """Return the current std estimate."""
-        if self.running_stats:
-            return self.running_std
-        else:
-            return self._std
+        """Return the current std estimate (computed from variance)."""
+        return torch.sqrt(self.running_var)
 
     @property
     def cov(self) -> torch.Tensor:
         """Return the current covariance matrix estimate."""
         if not self.compute_cov:
             raise RuntimeError("Covariance computation is disabled. Set compute_cov=True to enable.")
-
-        if self.running_stats and hasattr(self, "running_cov"):
-            return self.running_cov
-        elif self._last_cov is not None:
-            return self._last_cov
-        else:
-            raise RuntimeError("No covariance available. Ensure at least one forward pass has been completed.")
+        return self.running_cov
 
     def extra_repr(self) -> str:  # noqa: D102
         return (
             f"{self.num_features}, eps={self.eps}, only_centering={self.only_centering}, "
-            f"compute_cov={self.compute_cov}, running_stats={self.running_stats}, "
-            f"momentum={self.momentum}"
+            f"compute_cov={self.compute_cov}, momentum={self.momentum}"
         )
 
 
