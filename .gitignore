@@ -173,5 +173,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-symm_learning/nn/normalization.py
+
+# CUSTOM SHIT _______________________________________________________________________________
+
 .github/chatmodes/
+.rsyncignore

@@ -1,7 +1,8 @@
-from .emlp import EMLP  # noqa: D104
+from .emlp import EMLP, MLP  # noqa: D104
 from .imlp import IMLP
 
 __all__ = [
     "EMLP",
+    "MLP",
     "IMLP",
 ]
