@@ -81,6 +81,7 @@ class EMLP(EquivariantModule):
 
         layers = []
         layer_in_type = in_type
+
         for units, act_name in zip(hidden_units, activations):
             act = self._get_activation(act_name, hidden_rep, units)
             linear = escnn.nn.Linear(in_type=layer_in_type, out_type=act.in_type, bias=bias)
