@@ -463,3 +463,213 @@ def test_edatanorm(group: Group, mx: int, only_centering: bool, compute_cov: boo
         f"eDataNorm and exported DataNorm should produce identical results for 2D input. "
         f"Max diff: {torch.max(torch.abs(y_edatanorm - y_exported)):.6f}"
     )
+
+
+def test_ema_stats_basic():
+    """Test basic EMAStats functionality."""
+    from symm_learning.nn.running_stats import EMAStats
+
+    # Create EMAStats instance
+    stats = EMAStats(num_features_x=4, num_features_y=3, momentum=0.1)
+
+    # Test initial state
+    assert stats.num_batches_tracked == 0
+    assert stats.mean_x.shape == (4,)
+    assert stats.mean_y.shape == (3,)
+    assert stats.cov_xx.shape == (4, 4)
+    assert stats.cov_yy.shape == (3, 3)
+    assert stats.cov_xy.shape == (4, 3)
+
+    # Test training mode - statistics should update
+    stats.train()
+    x = torch.randn(16, 4)
+    y = torch.randn(16, 3)
+
+    initial_mean_x = stats.mean_x.clone()
+    x_out, y_out = stats(x, y)
+
+    # Check outputs are unchanged
+    assert torch.equal(x_out, x)
+    assert torch.equal(y_out, y)
+
+    # Check statistics were updated
+    assert stats.num_batches_tracked == 1
+    assert not torch.equal(stats.mean_x, initial_mean_x)
+
+
+def test_ema_stats_eval_mode():
+    """Test EMAStats in evaluation mode."""
+    from symm_learning.nn.running_stats import EMAStats
+
+    stats = EMAStats(num_features_x=3, num_features_y=2, momentum=0.1)
+
+    # Train on one batch to initialize stats
+    stats.train()
+    x1 = torch.randn(10, 3)
+    y1 = torch.randn(10, 2)
+    stats(x1, y1)
+
+    # Switch to eval mode
+    stats.eval()
+    stored_mean_x = stats.mean_x.clone()
+    stored_batches = stats.num_batches_tracked.clone()
+
+    # Process another batch - stats should not update
+    x2 = torch.randn(10, 3)
+    y2 = torch.randn(10, 2)
+    x_out, y_out = stats(x2, y2)
+
+    # Check outputs are unchanged and stats didn't update
+    assert torch.equal(x_out, x2)
+    assert torch.equal(y_out, y2)
+    assert torch.equal(stats.mean_x, stored_mean_x)
+    assert torch.equal(stats.num_batches_tracked, stored_batches)
+
+
+def test_ema_stats_center_with_running_mean():
+    """Test center_with_running_mean parameter."""
+    from symm_learning.nn.running_stats import EMAStats
+
+    # Test with center_with_running_mean=True (default)
+    stats_true = EMAStats(num_features_x=2, num_features_y=2, momentum=0.5, center_with_running_mean=True)
+
+    # Test with center_with_running_mean=False
+    stats_false = EMAStats(num_features_x=2, num_features_y=2, momentum=0.5, center_with_running_mean=False)
+
+    # Same data for both
+    torch.manual_seed(42)
+    x1 = torch.ones(5, 2) * 2.0
+    y1 = torch.ones(5, 2) * 3.0
+    x2 = torch.zeros(5, 2)
+    y2 = torch.zeros(5, 2)
+
+    # Process two batches
+    stats_true.train()
+    stats_false.train()
+
+    stats_true(x1, y1)
+    stats_false(x1, y1)
+
+    stats_true(x2, y2)
+    stats_false(x2, y2)
+
+    # Results should be different due to different centering strategies
+    assert not torch.allclose(stats_true.cov_xx, stats_false.cov_xx, atol=1e-5)
+
+
+def test_eema_stats_basic():
+    """Test basic eEMAStats functionality."""
+    from symm_learning.nn.running_stats import eEMAStats
+
+    # Create group and field types
+    G = CyclicGroup(4)
+    gspace = escnn.gspaces.no_base_space(G)
+    in_type_x = FieldType(gspace, [G.regular_representation] * 2)  # Size: 8
+    in_type_y = FieldType(gspace, [G.regular_representation] * 1)  # Size: 4
+
+    # Create eEMAStats instance
+    stats = eEMAStats(in_type_x=in_type_x, in_type_y=in_type_y, momentum=0.1)
+
+    # Test initial state
+    assert stats.num_batches_tracked == 0
+    assert stats.mean_x.shape == (8,)
+    assert stats.mean_y.shape == (4,)
+    assert stats.cov_xx.shape == (8, 8)
+    assert stats.cov_yy.shape == (4, 4)
+    assert stats.cov_xy.shape == (8, 4)
+
+    # Test training mode
+    stats.train()
+    x_tensor = torch.randn(16, 8)
+    y_tensor = torch.randn(16, 4)
+    x_geom = in_type_x(x_tensor)
+    y_geom = in_type_y(y_tensor)
+
+    x_out, y_out = stats(x_geom, y_geom)
+
+    # Check outputs are unchanged GeometricTensors
+    assert torch.equal(x_out.tensor, x_tensor)
+    assert torch.equal(y_out.tensor, y_tensor)
+    assert x_out.type == in_type_x
+    assert y_out.type == in_type_y
+
+    # Check statistics were updated
+    assert stats.num_batches_tracked == 1
+
+
+def test_eema_stats_export():
+    """Test eEMAStats export functionality."""
+    from symm_learning.nn.running_stats import eEMAStats
+
+    # Create group and field types
+    G = CyclicGroup(3)
+    gspace = escnn.gspaces.no_base_space(G)
+    in_type_x = FieldType(gspace, [G.regular_representation])  # Size: 3
+    in_type_y = FieldType(gspace, [G.regular_representation])  # Size: 3
+
+    # Create and train eEMAStats
+    stats = eEMAStats(in_type_x=in_type_x, in_type_y=in_type_y, momentum=0.2)
+    stats.train()
+
+    # Process a batch
+    x_tensor = torch.randn(20, 3)
+    y_tensor = torch.randn(20, 3)
+    x_geom = in_type_x(x_tensor)
+    y_geom = in_type_y(y_tensor)
+    stats(x_geom, y_geom)
+
+    # Export to standard EMAStats
+    stats.eval()
+    exported_stats = stats.export()
+    exported_stats.eval()
+
+    # Test on same data
+    x_test = torch.randn(10, 3)
+    y_test = torch.randn(10, 3)
+    x_geom_test = in_type_x(x_test)
+    y_geom_test = in_type_y(y_test)
+
+    x_ema, y_ema = stats(x_geom_test, y_geom_test)
+    x_exp, y_exp = exported_stats(x_test, y_test)
+
+    # Outputs should be identical
+    assert torch.equal(x_ema.tensor, x_test)
+    assert torch.equal(y_ema.tensor, y_test)
+    assert torch.equal(x_exp, x_test)
+    assert torch.equal(y_exp, y_test)
+
+    # Check that statistics are preserved
+    assert torch.allclose(stats.mean_x, exported_stats.mean_x)
+    assert torch.allclose(stats.mean_y, exported_stats.mean_y)
+    assert torch.allclose(stats.cov_xx, exported_stats.cov_xx)
+    assert torch.allclose(stats.cov_yy, exported_stats.cov_yy)
+    assert torch.allclose(stats.cov_xy, exported_stats.cov_xy)
+
+
+@pytest.mark.parametrize("momentum", [0.1, 0.5, 1.0])
+def test_ema_momentum_values(momentum):
+    """Test different momentum values."""
+    from symm_learning.nn.running_stats import EMAStats
+
+    stats = EMAStats(num_features_x=2, num_features_y=2, momentum=momentum)
+
+    # Process multiple batches
+    stats.train()
+    for i in range(3):
+        x = torch.randn(10, 2)
+        y = torch.randn(10, 2)
+        stats(x, y)
+
+    # Just verify it runs without errors and updates stats
+    assert stats.num_batches_tracked == 3
+
+
+def test_invalid_momentum():
+    """Test that invalid momentum values raise errors."""
+    from symm_learning.nn.running_stats import EMAStats
+
+    with pytest.raises(ValueError, match="momentum must be in"):
+        EMAStats(num_features_x=2, num_features_y=2, momentum=0.0)
+
+    with pytest.raises(ValueError, match="momentum must be in"):
+        EMAStats(num_features_x=2, num_features_y=2, momentum=1.5)
