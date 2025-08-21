@@ -11,8 +11,8 @@ from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import isotypic_decomp_rep
 
 
-def var_mean(x: Tensor, rep_x: Representation):
-    """Compute the mean and variance of a symmetric random variable.
+def mean(x: Tensor, rep_x: Representation) -> Tensor:
+    """Compute the mean of a symmetric random variable.
 
     Args:
         x: (:class:`torch.Tensor`) of shape :math:`(N, D_x)` containing the observations of the symmetric random
@@ -20,16 +20,14 @@ def var_mean(x: Tensor, rep_x: Representation):
         rep_x: (:class:`~escnn.group.Representation`) representation of the symmetric random variable.
 
     Returns:
-        (:class:`torch.Tensor`, :class:`torch.Tensor`): Mean and variance of the symmetric random variable.
+        (:class:`torch.Tensor`): Mean of the symmetric random variable.
         The mean is restricted to be in the trivial/G-invariant subspace of the symmetric vector space.
-        The variance is constrained such that in the irrep-spectral basis, each G-irreducible subspace
-        (i.e., each subspace associated with an irrep) has the same variance in all dimensions of that subspace.
 
     Shape:
         - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
           the symmetric random variable, and T is the sequence length (if applicable).
-        - **Output**: A tuple containing the variance and the mean. The variance has shape :math:`(D_x,)` and the mean
-          has shape :math:`(D_x,)`. If a sequence is provided (T dimension), the shapes are :math:`(D_x, T)`.
+        - **Output**: The mean has shape :math:`(D_x,)`. If a sequence is provided (T dimension),
+          the shape is :math:`(D_x, T)`.
     """
     assert x.ndim in (2, 3), f"Expected x to be a 2D or 3D tensor, got {x.ndim}D tensor"
 
@@ -38,6 +36,38 @@ def var_mean(x: Tensor, rep_x: Representation):
         rep_x.attributes["invariant_orthogonal_projector"] = P_inv
     else:
         P_inv = rep_x.attributes["invariant_orthogonal_projector"]
+
+    x_flat = x if x.ndim == 2 else x.reshape(-1, x.shape[1])
+
+    mean_empirical = torch.mean(x_flat, dim=0)  # Mean over batch as sequence length.
+    # Project to the inv-subspace and map back to the original basis
+    mean_result = torch.einsum("ij,j->i...", P_inv.to(device=x_flat.device), mean_empirical)
+    return mean_result
+
+
+def var(x: Tensor, rep_x: Representation, center: Tensor = None) -> Tensor:
+    """Compute the variance of a symmetric random variable.
+
+    Args:
+        x: (:class:`torch.Tensor`) of shape :math:`(N, D_x)` containing the observations of the symmetric random
+        variable
+        rep_x: (:class:`~escnn.group.Representation`) representation of the symmetric random variable.
+        center: (:class:`torch.Tensor`, optional) Center for variance computation. If None, computes the mean.
+
+    Returns:
+        (:class:`torch.Tensor`): Variance of the symmetric random variable.
+        The variance is constrained such that in the irrep-spectral basis, each G-irreducible subspace
+        (i.e., each subspace associated with an irrep) has the same variance in all dimensions of that subspace.
+
+    Shape:
+        - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
+          the symmetric random variable, and T is the sequence length (if applicable).
+        - **center**: :math:`(D_x,)` or :math:`(D_x, T)` if provided.
+        - **Output**: The variance has shape :math:`(D_x,)`. If a sequence is provided (T dimension),
+          the shape is :math:`(D_x, T)`.
+    """
+    assert x.ndim in (2, 3), f"Expected x to be a 2D or 3D tensor, got {x.ndim}D tensor"
+
     if "Q_inv" not in rep_x.attributes:  # Use cache Tensor if available.
         Q_inv = torch.tensor(rep_x.change_of_basis_inv, device=x.device, dtype=x.dtype)
         rep_x.attributes["Q_inv"] = Q_inv
@@ -53,16 +83,16 @@ def var_mean(x: Tensor, rep_x: Representation):
 
     x_flat = x if x.ndim == 2 else x.reshape(-1, x.shape[1])
 
-    mean_empirical = torch.mean(x_flat, dim=0)  # Mean over batch as sequence length.
-    # Project to the inv-subspace and map back to the original basis
-    mean = torch.einsum("ij,j->i...", P_inv.to(device=x_flat.device), mean_empirical)
+    # Use provided center or compute mean
+    if center is None:
+        center = mean(x, rep_x)
 
     # Symmetry constrained variance computation.
     # The variance is constraint to be a single constant per each irreducible subspace.
     # Hence, we compute the empirical variance, and average within each irreducible subspace.
     n_samples = x_flat.shape[0]
 
-    x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv.to(device=x_flat.device), x_flat - mean)
+    x_c_irrep_spectral = torch.einsum("ij,...j->...i", Q_inv.to(device=x_flat.device), x_flat - center)
     var_spectral = torch.sum(x_c_irrep_spectral**2, dim=0) / (n_samples - 1)
 
     # Vectorized averaging over irreducible subspace dimensions
@@ -92,8 +122,35 @@ def var_mean(x: Tensor, rep_x: Representation):
     # Broadcast back to full spectral dimensions
     var_spectral = avg_vars[irrep_indices]
 
-    var = torch.einsum("ij,...j->...i", Q_squared.to(device=x.device), var_spectral)
-    return var, mean
+    var_result = torch.einsum("ij,...j->...i", Q_squared.to(device=x.device), var_spectral)
+    return var_result
+
+
+def var_mean(x: Tensor, rep_x: Representation):
+    """Compute the mean and variance of a symmetric random variable.
+
+    Args:
+        x: (:class:`torch.Tensor`) of shape :math:`(N, D_x)` containing the observations of the symmetric random
+        variable
+        rep_x: (:class:`~escnn.group.Representation`) representation of the symmetric random variable.
+
+    Returns:
+        (:class:`torch.Tensor`, :class:`torch.Tensor`): Mean and variance of the symmetric random variable.
+        The mean is restricted to be in the trivial/G-invariant subspace of the symmetric vector space.
+        The variance is constrained such that in the irrep-spectral basis, each G-irreducible subspace
+        (i.e., each subspace associated with an irrep) has the same variance in all dimensions of that subspace.
+
+    Shape:
+        - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
+          the symmetric random variable, and T is the sequence length (if applicable).
+        - **Output**: A tuple containing the variance and the mean. The variance has shape :math:`(D_x,)` and the mean
+          has shape :math:`(D_x,)`. If a sequence is provided (T dimension), the shapes are :math:`(D_x, T)`.
+    """
+    # Compute mean first
+    mean_result = mean(x, rep_x)
+    # Compute variance using the computed mean
+    var_result = var(x, rep_x, center=mean_result)
+    return var_result, mean_result
 
 
 def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Representation = None):
