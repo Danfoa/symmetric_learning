@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import logging
 from math import ceil
 
 import escnn
+import torch
 from escnn.group import Representation, directsum
 from escnn.nn import EquivariantModule, FieldType, FourierPointwise, GeometricTensor, PointwiseNonLinearity
 
+import symm_learning
 
-def _get_group_kwargs(group: escnn.group.Group):
+
+def _get_group_kwargs(group: escnn.group.Group) -> dict:
     """Configuration for sampling elements of the group to achieve equivariance."""
     grid_type = "regular" if not group.continuous else "rand"
     N = group.order() if not group.continuous else 10
@@ -31,20 +35,22 @@ class EMLP(EquivariantModule):
         self,
         in_type: FieldType,
         out_type: FieldType,
-        hidden_units: int = 128,
+        hidden_units: list[int],
         activation: str | list[str] = "ReLU",
+        batch_norm: bool = False,
         pointwise_activation: bool = True,
         bias: bool = True,
-        hidden_rep: Representation = None,
+        hidden_rep: Representation | None = None,
     ):
         """EMLP constructor.
 
         Args:
             in_type: Input field type.
             out_type: Output field type.
-            hidden_units: (list[int]) List of number of units in each hidden layer.
-            activation: Name of the class of activation function.
+            hidden_units: List of number of units in each hidden layer.
+            activation: Name of the class of activation function or list of activation names.
             bias: Whether to include a bias term in the linear layers.
+            batch_norm: Whether to include equivariant batch normalization before activations.
             hidden_rep: Representation used (up to multiplicity) to construct the hidden layer `FieldType`. If None,
                 it defaults to the regular representation.
             pointwise_activation: Whether to use a pointwise activation function (e.g., ReLU, ELU, LeakyReLU). This
@@ -75,9 +81,12 @@ class EMLP(EquivariantModule):
 
         layers = []
         layer_in_type = in_type
+
         for units, act_name in zip(hidden_units, activations):
             act = self._get_activation(act_name, hidden_rep, units)
             linear = escnn.nn.Linear(in_type=layer_in_type, out_type=act.in_type, bias=bias)
+            if batch_norm:
+                layers.append(symm_learning.nn.eBatchNorm1d(in_type=act.in_type))
             layer_in_type = act.out_type
             layers.extend([linear, act])
 
@@ -85,8 +94,10 @@ class EMLP(EquivariantModule):
         layers.append(escnn.nn.Linear(in_type=layer_in_type, out_type=out_type, bias=bias))
         self.net = escnn.nn.SequentialModule(*layers)
 
-    def forward(self, x: GeometricTensor) -> GeometricTensor:
+    def forward(self, x: GeometricTensor | torch.Tensor) -> GeometricTensor:
         """Forward pass of the EMLP."""
+        if not isinstance(x, GeometricTensor):
+            x = self.in_type(x)
         return self.net(x)
 
     def evaluate_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, ...]:  # noqa: D102
@@ -95,7 +106,7 @@ class EMLP(EquivariantModule):
     def extra_repr(self) -> str:  # noqa: D102
         return f"{self.G}-equivariant MLP: in={self.in_type}, out={self.out_type}"
 
-    def export(self):
+    def export(self) -> torch.nn.Sequential:
         """Exporting to a torch.nn.Sequential"""
         if not self.pointwise_activation:
             raise RuntimeError(
@@ -115,6 +126,10 @@ class EMLP(EquivariantModule):
                 act = escnn.nn.ReLU(in_type=in_type)
             elif activation.lower() == "leakyrelu":
                 act = escnn.nn.LeakyReLU(in_type=in_type)
+            elif activation.lower() == "mish":
+                import symm_learning.nn
+
+                act = symm_learning.nn.Mish(in_type=in_type)
             else:
                 act = escnn.nn.PointwiseNonLinearity(in_type=in_type, function=f"p_{activation.lower()}")
         else:
@@ -129,7 +144,7 @@ class EMLP(EquivariantModule):
             )
         return act
 
-    def _check_for_shur_blocking(self, hidden_rep: Representation):
+    def _check_for_shur_blocking(self, hidden_rep: Representation) -> None:
         """Check if large portions of the network will be zeroed due to Shur's orthogonality relations."""
         if self.pointwise_activation:
             out_irreps = set(self.out_type.representation.irreps)
@@ -156,47 +171,61 @@ class EMLP(EquivariantModule):
             return
 
 
-# class FourierBlock(EquivariantModule):
-#     """Module applying a linear layer followed by a escnn.nn.FourierPointwise activation."""
+class MLP(torch.nn.Module):
+    """Standard baseline MLP. Symmetry-related parameters are ignored."""
 
-#     def __init__(
-#         self,
-#         in_type: FieldType,
-#         irreps: tuple | list,
-#         channels: int,
-#         activation: str,
-#         bias: bool = True,
-#         grid_kwargs: dict = None,
-#     ):
-#         super(FourierBlock, self).__init__()
-#         self.G = in_type.fibergroup
-#         self._activation = activation
-#         gspace = in_type.gspace
-#         grid_kwargs = grid_kwargs or _get_group_kwargs(self.G)
+    def __init__(
+        self,
+        in_dim: int,
+        out_dim: int,
+        hidden_units: list[int],
+        activation: torch.nn.Module | list[torch.nn.Module] = torch.nn.ReLU(),
+        batch_norm: bool = False,
+        bias: bool = True,
+    ):
+        """Constructor of a Multi-Layer Perceptron (MLP) model.
 
-#         self.act = FourierPointwise(
-#             gspace,
-#             channels=channels,
-#             irreps=list(irreps),
-#             function=f"p_{activation.lower()}",
-#             inplace=True,
-#             **grid_kwargs,
-#         )
+        Args:
+            in_dim: Dimension of the input space.
+            out_dim: Dimension of the output space.
+            hidden_units: List of number of units in each hidden layer.
+            activation: Activation module or list of activation modules.
+            batch_norm: Whether to include batch normalization.
+            bias: Whether to include a bias term in the linear layers.
+        """
+        super().__init__()
+        logging.info("Instantiating MLP (PyTorch)")
+        self.in_dim, self.out_dim = in_dim, out_dim
 
-#         self.in_type = in_type
-#         self.out_type = self.act.in_type
-#         self.linear = escnn.nn.Linear(in_type=in_type, out_type=self.act.in_type, bias=bias)
+        assert hasattr(hidden_units, "__iter__") and hasattr(hidden_units, "__len__"), (
+            "hidden_units must be a list of integers"
+        )
+        assert len(hidden_units) > 0, "A MLP with 0 hidden layers is equivalent to a linear layer"
 
-#     def forward(self, *input):
-#         """Forward pass of linear layer followed by activation function."""
-#         return self.act(self.linear(*input))
+        # Handle activation modules
+        if isinstance(activation, list):
+            assert len(activation) == len(hidden_units), (
+                "List of activation modules must have the same length as the number of hidden layers"
+            )
+            activations = activation
+        else:
+            activations = [activation] * len(hidden_units)
 
-#     def evaluate_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, ...]:  # noqa: D102
-#         return self.linear.evaluate_output_shape(input_shape)
+        layers = []
+        dim_in = in_dim
 
-#     def extra_repr(self) -> str:  # noqa: D102
-#         return f"{self.G}-FourierBlock {self._activation}: in={self.in_type.size}, out={self.out_type.size}"
+        for units, act_module in zip(hidden_units, activations):
+            layers.append(torch.nn.Linear(dim_in, units, bias=bias))
+            if batch_norm:
+                layers.append(torch.nn.BatchNorm1d(units))
+            layers.append(act_module)
+            dim_in = units
 
-#     def export(self):
-#         """Exports the module to a torch.nn.Sequential instance."""
-#         return escnn.nn.SequentialModule(self.linear, self.act).export()
+        # Head layer (output layer)
+        layers.append(torch.nn.Linear(dim_in, out_dim, bias=bias))
+        self.net = torch.nn.Sequential(*layers)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the MLP model."""
+        output = self.net(input)
+        return output

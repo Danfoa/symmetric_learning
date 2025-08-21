@@ -126,3 +126,30 @@ def test_imlp(  # noqa: D103
     # Create a dummy loss and backpropagate.
     dummy_loss = (y_grad.tensor**2).sum()
     dummy_loss.backward()
+
+
+# @pytest.mark.parametrize(
+#     "group",
+#     [
+#         pytest.param(CyclicGroup(5), id="cyclic5"),
+#         pytest.param(DihedralGroup(10), id="dihedral10"),
+#         pytest.param(Icosahedral(), id="icosahedral"),
+#     ],
+# )
+# @pytest.mark.parametrize("cond_predict_scale", [False, True])
+# def test_cond_res_conv_block(group: Group, cond_predict_scale: bool):  # noqa: D103
+#     from symm_learning.models.difussion.cond_eunet1d import eConditionalResidualBlock1D
+#     from symm_learning.nn import GSpace1D
+
+#     G = group
+#     gspace = GSpace1D(G)
+#     mx, my, mc = 2, 3, 5
+#     in_type = FieldType(gspace, [G.regular_representation] * mx)
+#     out_type = FieldType(gspace, [G.regular_representation] * my)
+#     cond_type = FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * mc)
+
+#     block = eConditionalResidualBlock1D(
+#         in_type, out_type, cond_type, kernel_size=3, cond_predict_scale=cond_predict_scale
+#     )
+#     print(block)
+#     block.check_equivariance()

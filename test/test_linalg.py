@@ -44,4 +44,4 @@ def test_lstsq(group: Group, mx: int, my: int):  # noqa: D103
     assert A.shape == (rep_y.size, rep_x.size), f"Expected A shape {(rep_y.size, rep_x.size)}, got {A.shape}"
     assert torch.allclose(A_gt, A, atol=1e-3, rtol=1e-3)
 
-    print("Symmetric Least Squares error test passed.")
+    # print("Symmetric Least Squares error test passed.")

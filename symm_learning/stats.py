@@ -55,7 +55,7 @@ def var_mean(x: Tensor, rep_x: Representation):
 
     mean_empirical = torch.mean(x_flat, dim=0)  # Mean over batch as sequence length.
     # Project to the inv-subspace and map back to the original basis
-    mean = torch.einsum("ij,j->i...", P_inv, mean_empirical)
+    mean = torch.einsum("ij,j->i...", P_inv.to(device=x_flat.device), mean_empirical)
 
     # Symmetry constrained variance computation.
     # The variance is constraint to be a single constant per each irreducible subspace.
@@ -74,7 +74,8 @@ def var_mean(x: Tensor, rep_x: Representation):
 
     if "irrep_indices" not in rep_x.attributes:
         # Create indices for each irrep subspace: [0,0,0,1,1,2,2,2,2,...] for irrep dims [3,2,4,...]
-        irrep_indices = torch.repeat_interleave(torch.arange(len(irrep_dims)), irrep_dims)
+        indices = torch.arange(len(irrep_dims)).to(device=irrep_dims.device)
+        irrep_indices = torch.repeat_interleave(indices, irrep_dims)
         rep_x.attributes["irrep_indices"] = irrep_indices
     else:
         irrep_indices = rep_x.attributes["irrep_indices"].to(device=x.device)
@@ -143,30 +144,23 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
     """
     irrep_id = rep_x.irreps[0]  # Irrep id of the isotypic subspace
     assert rep_x.size == x.shape[-1], f"Expected signal shape to be (..., {rep_x.size}) got {x.shape}"
-    assert len(rep_x._irreps_multiplicities) == 1, f"Expected rep with a single irrep type, got {rep_x.irreps}"
-    x_in_iso_basis = np.allclose(rep_x.change_of_basis_inv, np.eye(rep_x.size), atol=1e-6, rtol=1e-4)
-    assert x_in_iso_basis, "Expected X to be in spectral/isotypic basis"
+    assert rep_x.attributes.get("is_isotypic_rep", False), f"Expected rep of a single type, got {rep_x.irreps}"
+
     if y is not None:
-        assert len(rep_y._irreps_multiplicities) == 1, f"Expected rep with a single irrep type, got {rep_y.irreps}"
-        assert rep_x.group == rep_y.group, f"{rep_x.group} != {rep_y.group}"
-        assert irrep_id == rep_y.irreps[0], f"Irreps {irrep_id} != {rep_y.irreps[0]}. Hence Cxy=0"
         assert rep_y.size == y.shape[-1], f"Expected signal shape to be (..., {rep_y.size}) got {y.shape}"
-        y_in_iso_basis = np.allclose(rep_y.change_of_basis_inv, np.eye(rep_y.size), atol=1e-6, rtol=1e-4)
-        assert y_in_iso_basis, "Expected Y to be in spectral/isotypic basis"
+        assert rep_y.attributes.get("is_isotypic_rep", False), f"Expected rep of a single type, got {rep_y.irreps}"
 
     # Get information about the irreducible representation present in the isotypic subspace
-    irrep_dim = rep_x.group.irrep(*irrep_id).size
+    irrep_dim = rep_x.attributes["irrep_dim"]
     # irrep_end_basis := (dim(End(irrep)), dim(irrep), dim(irrep))
-    irrep_end_basis = torch.tensor(rep_x.group.irrep(*irrep_id).endomorphism_basis(), device=x.device, dtype=x.dtype)
+    irrep_end_basis = rep_x.attributes["irrep_endomorphism_basis"].to(device=x.device, dtype=x.dtype)
 
-    # if y is None Cxy = Cx is symmetric matrix. Hence it has non-zero entries only in the diagonal.
     if y is None:
-        irrep_end_basis = irrep_end_basis[[0]]
         rep_y = rep_x  # Use the same representation for Y
         y = x
 
-    m_x = rep_x._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in X
-    m_y = rep_y._irreps_multiplicities[irrep_id]  # Multiplicity of the irrep in Y
+    m_x = rep_x.attributes["irrep_multiplicity"]  # Multiplicity of the irrep in X
+    m_y = rep_y.attributes["irrep_multiplicity"]  # Multiplicity of the irrep in Y
 
     x_iso, y_iso = x, y
 
@@ -179,12 +173,12 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
 
     # Compute empirical cross-covariance
     Cxy_iso = torch.einsum("...y,...x->yx", y_iso, x_iso) / (x_iso.shape[0] - 1)
-    # ReshapCxy_isoe from (my * d, mx * d) to (my, mx, d, d)
+    # Reshape from (my * d, mx * d) to (my, mx, d, d)
     Cxy_irreps = Cxy_iso.view(m_y, irrep_dim, m_x, irrep_dim).permute(0, 2, 1, 3).contiguous()
     # Compute basis expansion coefficients of each irrep cross-covariance in basis of End(irrep) ========
     # Frobenius inner product  <C , Ψ_b>  =  Σ_{i,j} C_{ij} Ψ_b,ij
     Cxy_irreps_basis_coeff = torch.einsum("mnij,bij->mnb", Cxy_irreps, irrep_end_basis)  # (m_y , m_x , B)
-    # squared norms ‖Ψ_b‖² (only once, very small)
+    # squared norms ‖Ψ_b‖²
     basis_coeff_norms = torch.einsum("bij,bij->b", irrep_end_basis, irrep_end_basis)  # (B,)
     Cxy_irreps_basis_coeff = Cxy_irreps_basis_coeff / basis_coeff_norms[None, None]
 
@@ -241,23 +235,14 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
 
     rep_X_iso = isotypic_decomp_rep(rep_x)
     rep_Y_iso = isotypic_decomp_rep(rep_y)
+    rep_X_iso_subspaces = rep_X_iso.attributes["isotypic_reps"]
+    rep_Y_iso_subspaces = rep_Y_iso.attributes["isotypic_reps"]
+    iso_idx_X = rep_X_iso.attributes["isotypic_subspace_dims"]
+    iso_idx_Y = rep_Y_iso.attributes["isotypic_subspace_dims"]
+
     # Changes of basis from the Disentangled/Isotypic-basis of X, and Y to the original basis.
     Qx = torch.tensor(rep_X_iso.change_of_basis, device=x.device, dtype=x.dtype)
     Qy = torch.tensor(rep_Y_iso.change_of_basis, device=y.device, dtype=y.dtype)
-
-    rep_X_iso_subspaces = rep_X_iso.attributes["isotypic_reps"]
-    rep_Y_iso_subspaces = rep_Y_iso.attributes["isotypic_reps"]
-
-    # Get the dimensions of the isotypic subspaces of the same type in the input/output representations.
-    iso_idx_X, iso_idx_Y = {}, {}
-    x_dim = 0
-    for iso_id, rep_k in rep_X_iso_subspaces.items():
-        iso_idx_X[iso_id] = slice(x_dim, x_dim + rep_k.size)
-        x_dim += rep_k.size
-    y_dim = 0
-    for iso_id, rep_k in rep_Y_iso_subspaces.items():
-        iso_idx_Y[iso_id] = slice(y_dim, y_dim + rep_k.size)
-        y_dim += rep_k.size
 
     X_iso = torch.einsum("ij,...j->...i", Qx.T, x)
     Y_iso = torch.einsum("ij,...j->...i", Qy.T, y)

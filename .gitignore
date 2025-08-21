@@ -173,3 +173,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# CUSTOM SHIT _______________________________________________________________________________
+
+.github/chatmodes/
+.rsyncignore
