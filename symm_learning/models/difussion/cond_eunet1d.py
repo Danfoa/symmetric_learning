@@ -427,6 +427,8 @@ class eConditionalUnet1D(EquivariantModule):
 
         if global_cond is not None:
             global_feature = torch.cat([global_feature_time, global_cond.tensor], axis=-1)
+        else:
+            global_feature = global_feature_time
 
         global_feature = self.cond_type(global_feature)
 
