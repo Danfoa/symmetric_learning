@@ -523,7 +523,7 @@ class eConditionalUnet1D(EquivariantModule):
         self.train(was_training)  # Restore the training mode if it was previously set
 
     def evaluate_output_shape(self, input_shape):  # noqa: D102
-        raise NotImplementedError("Fuck off")
+        raise NotImplementedError("Output shape evaluation not implemented for this module")
 
 
 if __name__ == "__main__":
