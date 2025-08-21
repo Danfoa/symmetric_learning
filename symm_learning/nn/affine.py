@@ -49,8 +49,8 @@ class eAffine(EquivariantModule):
         self.register_buffer("irrep_indices", torch.repeat_interleave(torch.arange(len(irrep_dims)), irrep_dims))
 
         has_invariant_subspace = G.trivial_representation.id in self.rep_x.irreps
-        self.bias = bias and has_invariant_subspace
-        if self.bias:
+        self.has_bias = bias and has_invariant_subspace
+        if self.has_bias:
             is_trivial_irrep = torch.tensor([irrep_id == G.trivial_representation.id for irrep_id in self.rep_x.irreps])
             self.register_buffer("inv_dims", torch.repeat_interleave(is_trivial_irrep, irrep_dims))
             n_bias_params = is_trivial_irrep.sum()
@@ -71,16 +71,28 @@ class eAffine(EquivariantModule):
         # Apply the scale to the spectral components
         x_spectral = x_spectral * scale_spectral
 
-        if self.bias:  # Ensure bias is constrained to the invariant subspace
-            bias_spectral = self.bias_dof.view(1, -1, *([1] * (x_spectral.ndim - 2)))
-            x_spectral[:, self.inv_dims, ...] = x_spectral[:, self.inv_dims, ...] + bias_spectral
+        y = torch.einsum("ij,bj...->bi...", self.Q, x_spectral)
 
-        y = self.out_type(torch.einsum("ij,bj...->bi...", self.Q, x_spectral))
+        y = y + self.bias.view(1, -1, *([1] * (x_spectral.ndim - 2)))
 
-        return y
+        return self.out_type(y)
+
+    @property
+    def scale(self) -> torch.Tensor:
+        """Affine scaling that independently uniformly scales each irreducible subspace."""
+        return self.scale_dof[self.irrep_indices]
+
+    @property
+    def bias(self) -> torch.Tensor:
+        """Bias constrained to the invariant subspace of the output type"""
+        if self.has_bias:
+            bias = torch.einsum("ij,j->i", self.Q[:, self.inv_dims], self.bias_dof)
+            return bias
+        else:
+            return torch.zeros(self.out_type.size, dtype=torch.get_default_dtype())
 
     def evaluate_output_shape(self, input_shape):  # noqa: D102
         return input_shape
 
     def extra_repr(self) -> str:  # noqa: D102
-        return f"in type: {self.in_type}, bias: {self.bias}"
+        return f"in type: {self.in_type}, bias: {self.has_bias}"

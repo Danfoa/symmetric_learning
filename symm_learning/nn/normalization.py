@@ -95,8 +95,6 @@ class eBatchNorm1d(EquivariantModule):
         assert x.type == self.in_type, "Input type does not match the expected input type."
 
         var_batch, mean_batch = symm_learning.stats.var_mean(x.tensor, rep_x=self._rep_x)
-        print("mean", mean_batch)
-        print("var", var_batch)
 
         if self.track_running_stats:
             if self.training:
@@ -178,14 +176,13 @@ class eBatchNorm1d(EquivariantModule):
         )
 
         if self.affine:
-            bn.weight.data = self.affine_transform.expand_scale().clone()
-            bn.bias.data = self.affine_transform.expand_bias().clone()
+            bn.weight.data = self.affine_transform.scale.clone()
+            bn.bias.data = self.affine_transform.bias.clone()
 
         if self.track_running_stats:
             bn.running_mean.data = self.running_mean.clone()
             bn.running_var.data = self.running_var.clone()
             bn.num_batches_tracked.data = self.num_batches_tracked.clone()
-
         else:
             bn.running_mean = None
             bn.running_var = None
