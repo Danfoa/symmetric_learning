@@ -243,22 +243,21 @@ class eConditionalUnet1D(EquivariantModule):
         # start_dim = down_dims[0]
         start_type = all_types[1]
 
-        dsed = diffusion_step_embed_dim
         diffusion_step_encoder = torch.nn.Sequential(
-            SinusoidalPosEmb(dsed),
-            torch.nn.Linear(dsed, dsed * 4),
+            SinusoidalPosEmb(diffusion_step_embed_dim),
+            torch.nn.Linear(diffusion_step_embed_dim, diffusion_step_embed_dim * 4),
             torch.nn.Mish(),
-            torch.nn.Linear(dsed * 4, dsed),
+            torch.nn.Linear(diffusion_step_embed_dim * 4, diffusion_step_embed_dim),
         )
         print(f"Diffusion encoder {sum(p.numel() for p in diffusion_step_encoder.parameters()) / 1000} [k] params")
-        self.dsed = dsed
 
-        cond_dim = dsed
-        if global_cond_type is not None:
-            cond_dim += global_cond_type.size
-        # Global conditioning is assumed to be invariant to group actions.
         gs_global = escnn.gspaces.no_base_space(input_type.fibergroup)
-        self.cond_type = FieldType(gs_global, representations=[trivial_rep] * cond_dim)
+        if global_cond_type is not None:
+            self.cond_type = FieldType(
+                gs_global, representations=global_cond_type.representations + (trivial_rep,) * diffusion_step_embed_dim
+            )
+        else:
+            self.cond_type = FieldType(gs_global, representations=[trivial_rep] * diffusion_step_embed_dim)
 
         # all_dims = [64, 256, 512, 1024, 2048] -> in_out = [(64, 256), (256, 512), (512, 1024), (1024, 2048)]
         in_out = list(zip(all_dims[:-1], all_dims[1:]))
@@ -266,12 +265,8 @@ class eConditionalUnet1D(EquivariantModule):
 
         local_cond_encoder = None
         if local_cond_type is not None:
-            # _, dim_out = in_out[0]  # dim_out = 256 given comments up
             _, out_type = in_out_types[0]
-
-            # dim_in = local_cond_type.size
             in_type = local_cond_type
-
             local_cond_encoder = torch.nn.ModuleList(
                 [
                     # down encoder -> Local context added to the start of the U-Net
@@ -395,7 +390,7 @@ class eConditionalUnet1D(EquivariantModule):
         sample: GeometricTensor,
         timestep: torch.Tensor | float | int,
         local_cond: GeometricTensor = None,
-        global_cond: GeometricTensor = None,
+        film_cond: GeometricTensor = None,
     ):
         """Forward pass of the eConditionalUnet1D model.
 
@@ -404,7 +399,7 @@ class eConditionalUnet1D(EquivariantModule):
             timestep (Union[torch.Tensor, float, int]): The diffusion timestep.
             local_cond (GeometricTensor, optional): The local conditioning tensor.
                 Defaults to None.
-            global_cond (GeometricTensor, optional): The global conditioning tensor.
+            film_cond (GeometricTensor, optional): The global conditioning tensor.
                 Defaults to None.
 
         Returns:
@@ -423,43 +418,43 @@ class eConditionalUnet1D(EquivariantModule):
         # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
         timesteps = timesteps.expand(sample.shape[0])
 
-        global_feature_time = self.diffusion_step_encoder(timesteps)
+        film_diff_step_features = self.diffusion_step_encoder(timesteps)
 
-        if global_cond is not None:
-            global_feature = torch.cat([global_feature_time, global_cond.tensor], axis=-1)
+        if film_cond is not None:
+            film_feature = torch.cat([film_cond.tensor, film_diff_step_features], axis=-1)
         else:
-            global_feature = global_feature_time
+            film_feature = film_diff_step_features
 
-        global_feature = self.cond_type(global_feature)
+        film_feature = self.cond_type(film_feature)
 
         # encode local features
         h_local = list()
         if local_cond is not None:
             resnet, resnet2 = self.local_cond_encoder
-            x = resnet(local_cond, global_feature)
+            x = resnet(local_cond, film_feature)
             h_local.append(x)  # Local context added to the start of the U-Net
-            x = resnet2(local_cond, global_feature)
+            x = resnet2(local_cond, film_feature)
             h_local.append(x)  # Local context added to the end of the U-Net
 
         x = sample
         h = []  # Intermediate features for skip connections
         for idx, (resnet, resnet2, downsample) in enumerate(self.down_modules):
-            x = resnet(x, global_feature)
+            x = resnet(x, film_feature)
             if idx == 0 and len(h_local) > 0:
                 x = x + h_local[0]  # Local context added to the start of the U-Net
-            x = resnet2(x, global_feature)
+            x = resnet2(x, film_feature)
             h.append(x)
             x = downsample(x)
 
         for mid_module in self.mid_modules:
-            x = mid_module(x, global_feature)
+            x = mid_module(x, film_feature)
 
         for idx, (resnet, resnet2, upsample) in enumerate(self.up_modules):
             x = resnet.in_type(torch.cat((x.tensor, h.pop().tensor), dim=1))  # Concatenate skip connection features
-            x = resnet(x, global_feature)
+            x = resnet(x, film_feature)
             if idx == (len(self.up_modules) - 1) and len(h_local) > 0:
                 x = x + h_local[1]  # Local context added to the end of the U-Net
-            x = resnet2(x, global_feature)
+            x = resnet2(x, film_feature)
             x = upsample(x)
 
         x = self.final_conv(x)
@@ -491,26 +486,26 @@ class eConditionalUnet1D(EquivariantModule):
         x = torch.randn(B, self.in_type.size, *[T] * self.in_type.gspace.dimensionality)
         x = GeometricTensor(x, self.in_type)
 
+        local_cond, global_cond = None, None
         if self.local_cond_encoder is not None:
-            cond = torch.randn(B, self.cond_type.size)
-            cond = self.cond_type(cond)
-        else:
-            cond = None
+            local_cond = torch.randn(B, self.cond_type.size)
+            local_cond = self.cond_type(local_cond)
 
-        global_cond = torch.randn(B, self.global_cond_type.size)
-        global_cond = self.global_cond_type(global_cond)
+        if self.global_cond_type is not None:
+            global_cond = torch.randn(B, self.global_cond_type.size)
+            global_cond = self.global_cond_type(global_cond)
 
         t = torch.tensor(0, dtype=torch.long, device=x.tensor.device)  # Assuming a single timestep for testing
 
         for _ in range(20):
             g = self.in_type.gspace.fibergroup.sample()
 
-            g_cond = cond.transform(g) if self.local_cond_encoder is not None else None
-            g_local_cond = global_cond.transform(g)
+            g_cond = local_cond.transform(g) if self.local_cond_encoder is not None else None
+            g_global_cond = global_cond.transform(g) if self.global_cond_type is not None else None
             g_x = x.transform(g)
 
-            y = self(sample=x, timestep=t, local_cond=g_cond, global_cond=g_local_cond)
-            gy = self(sample=g_x, timestep=t, local_cond=g_cond, global_cond=g_local_cond).tensor
+            y = self(sample=x, timestep=t, local_cond=local_cond, film_cond=global_cond)
+            gy = self(sample=g_x, timestep=t, local_cond=g_cond, film_cond=g_global_cond).tensor
             gy_gt = y.transform(g).tensor
 
             errs = (gy_gt - gy).detach().numpy()
@@ -518,8 +513,9 @@ class eConditionalUnet1D(EquivariantModule):
 
             t = t + 1
             assert torch.allclose(gy_gt, gy, atol=atol, rtol=rtol), (
-                'The error found during equivariance check with element "{}" is too high: '
-                "max = {}, mean = {} var ={}".format(g, errs.max(), errs.mean(), errs.var())
+                'The error found during equivariance check with element "{}" is too high: max = {} '.format(
+                    g, errs.max()
+                )
             )
 
         self.train(was_training)  # Restore the training mode if it was previously set
@@ -538,20 +534,30 @@ if __name__ == "__main__":
 
     G = escnn.group.CyclicGroup(2)
     gspace = GSpace1D(G)
-    mx, my, mc = 1, 1, 1
+    mx, my, mc = 1, 2, 1
     in_type = FieldType(gspace, [G.regular_representation] * mx)
     out_type = FieldType(gspace, [G.regular_representation] * my)
-    cond_type = FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * mc)
-    global_cond_type = FieldType(
-        escnn.gspaces.no_base_space(G), [G.trivial_representation] * (mc + diffusion_step_embed_dim)
+    local_cond_type = None
+    global_cond_type = FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * 2)
+
+    print("Testing eConditionalResidualBlock1D ------------------------------------------")
+
+    res_block = eConditionalResidualBlock1D(
+        in_type=in_type,
+        out_type=out_type,
+        cond_type=global_cond_type,
+        kernel_size=3,
+        cond_predict_scale=True,
     )
+    res_block.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    print("\nTesting eConditionalUnet1D ----------------------------------------------------")
 
     model = eConditionalUnet1D(
         input_type=in_type,
-        # local_cond_type=out_type,
-        local_cond_type=None,
+        local_cond_type=local_cond_type,
         global_cond_type=global_cond_type,
-        diffusion_step_embed_dim=diffusion_step_embed_dim,
+        diffusion_step_embed_dim=16,
         down_dims=[64, 64],
         kernel_size=3,
         cond_predict_scale=True,

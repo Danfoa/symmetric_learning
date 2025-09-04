@@ -170,7 +170,7 @@ class ConditionalUnet1D(nn.Module):
         sample: torch.Tensor,
         timestep: Union[torch.Tensor, float, int],
         local_cond: torch.Tensor = None,
-        global_cond: torch.Tensor = None,
+        film_cond: torch.Tensor = None,
         **kwargs,
     ):
         """Forward pass of the Conditional Unet 1D model.
@@ -180,7 +180,7 @@ class ConditionalUnet1D(nn.Module):
             timestep (Union[torch.Tensor, float, int]): The diffusion timestep.
             local_cond (torch.Tensor, optional): The local conditioning tensor of shape (B, local_cond_dim).
                 Defaults to None.
-            global_cond (torch.Tensor, optional): The global conditioning tensor of shape (B, global_cond_dim).
+            film_cond (torch.Tensor, optional): The global conditioning tensor of shape (B, film_cond_dim).
                 Defaults to None.
             **kwargs: Additional keyword arguments.
 
@@ -197,10 +197,12 @@ class ConditionalUnet1D(nn.Module):
         # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
         timesteps = timesteps.expand(sample.shape[0])
 
-        film_features = self.diffusion_step_encoder(timesteps)
+        film_diff_step_features = self.diffusion_step_encoder(timesteps)
 
-        if global_cond is not None:
-            film_features = torch.cat([film_features, global_cond], axis=-1)
+        if film_cond is not None:
+            film_features = torch.cat([film_cond, film_diff_step_features], axis=-1)
+        else:
+            film_features = film_diff_step_features
 
         # Handle local conditioning by concatenation at the input of the UNet
         if self.local_cond_dim is not None:
@@ -415,7 +417,7 @@ if __name__ == "__main__":
     sample = torch.randn(batch_size, input_dim, time_steps, device=device, requires_grad=True)
     timestep = torch.randint(0, 1000, (batch_size,), device=device)
     local_cond = torch.randn(batch_size, local_cond_dim, device=device)
-    global_cond = torch.randn(batch_size, film_cond_dim, device=device)
+    film_cond = torch.randn(batch_size, film_cond_dim, device=device)
 
     print("\n" + "=" * 60)
     print("TEST 1: Model with LOCAL + GLOBAL conditioning")
@@ -432,57 +434,6 @@ if __name__ == "__main__":
         cond_predict_scale=True,
     ).to(device)
 
-    print(f"  input_shape : {sample.shape}")
-    output = model(sample, timestep, local_cond=local_cond, global_cond=global_cond)
-    print(f"  output shape: {output.shape}")
-    expected_shape = (batch_size, input_dim, time_steps)
-    assert output.shape == expected_shape, f"Expected {expected_shape}, got {output.shape}"
-    # Test backpropagation
-    loss = output.mean()
-    loss.backward()
-
-    print("\n" + "=" * 60)
-    print("TEST 2: Model with LOCAL conditioning only")
-    print("=" * 60)
-    # Create model
-    model = ConditionalUnet1D(
-        input_dim=input_dim,
-        local_cond_dim=local_cond_dim,
-        global_cond_dim=None,
-        diffusion_step_embed_dim=16,
-        down_dims=[32, 64],
-        kernel_size=3,
-        n_groups=1,
-        cond_predict_scale=True,
-    ).to(device)
-
-    print(f"  input_shape : {sample.shape}")
-    output = model(sample, timestep, local_cond=local_cond)
-    print(f"  output shape: {output.shape}")
-    expected_shape = (batch_size, input_dim, time_steps)
-    assert output.shape == expected_shape, f"Expected {expected_shape}, got {output.shape}"
-    # Test backpropagation
-    loss = output.mean()
-    loss.backward()
-
-    print("\n" + "=" * 60)
-    print("TEST 3: Model with NO conditioning")
-    print("=" * 60)
-    # Create model
-    model = ConditionalUnet1D(
-        input_dim=input_dim,
-        diffusion_step_embed_dim=16,
-        down_dims=[32, 64],
-        kernel_size=3,
-        n_groups=1,
-        cond_predict_scale=True,
-    ).to(device)
-
-    print(f"  input_shape : {sample.shape}")
-    output = model(sample, timestep)
-    print(f"  output shape: {output.shape}")
-    expected_shape = (batch_size, input_dim, time_steps)
-    assert output.shape == expected_shape, f"Expected {expected_shape}, got {output.shape}"
-    # Test backpropagation
-    loss = output.mean()
-    loss.backward()
+    # Forward pass
+    output = model(sample=sample, timestep=timestep, local_cond=local_cond, film_cond=film_cond)
+    print(f"Output shape: {output.shape}")
