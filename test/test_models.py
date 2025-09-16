@@ -1,3 +1,7 @@
+"""Model integration tests."""
+
+import io
+
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
 import escnn
 import pytest
@@ -60,6 +64,7 @@ def test_emlp(  # noqa: D103
     irreps.pop()
     hidden_rep = group.spectral_regular_representation(*irreps, name="Test hidden rep")
 
+    hidden_rep_used = False
     try:
         emlp = EMLP(
             in_type=type_X,
@@ -70,6 +75,7 @@ def test_emlp(  # noqa: D103
             pointwise_activation=pointwise_activation,
             hidden_rep=hidden_rep,
         )
+        hidden_rep_used = True
     except ValueError as e:
         print(e)
         # raise e
@@ -84,6 +90,28 @@ def test_emlp(  # noqa: D103
     # Use a dummy loss (sum of squares of the output tensor)
     dummy_loss = (y_grad.tensor**2).sum()
     dummy_loss.backward()
+
+    # Saving and loading preserves behaviour
+    buffer = io.BytesIO()
+    torch.save(emlp.state_dict(), buffer)
+    buffer.seek(0)
+    reloaded_emlp = EMLP(
+        in_type=type_X,
+        out_type=type_Y,
+        hidden_units=hidden_units,
+        activation=activation,
+        bias=bias,
+        pointwise_activation=pointwise_activation,
+        hidden_rep=hidden_rep if hidden_rep_used else None,
+    )
+    reloaded_emlp.load_state_dict(torch.load(buffer))
+    reloaded_emlp.eval()
+    emlp.eval()
+    with torch.no_grad():
+        test_raw = torch.rand(batch_dim, type_X.size)
+        original = emlp(type_X(test_raw.clone())).tensor
+        restored = reloaded_emlp(type_X(test_raw.clone())).tensor
+    assert torch.allclose(original, restored, atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
@@ -126,6 +154,26 @@ def test_imlp(  # noqa: D103
     # Create a dummy loss and backpropagate.
     dummy_loss = (y_grad.tensor**2).sum()
     dummy_loss.backward()
+
+    # Saving and loading preserves behaviour
+    buffer = io.BytesIO()
+    torch.save(imlp.state_dict(), buffer)
+    buffer.seek(0)
+    reloaded_imlp = IMLP(
+        in_type=type_X,
+        out_dim=n_inv_features,
+        hidden_units=hidden_units,
+        activation=activation,
+        bias=bias,
+    )
+    reloaded_imlp.load_state_dict(torch.load(buffer))
+    reloaded_imlp.eval()
+    imlp.eval()
+    with torch.no_grad():
+        test_raw = torch.rand(batch_dim, type_X.size)
+        original = imlp(type_X(test_raw.clone())).tensor
+        restored = reloaded_imlp(type_X(test_raw.clone())).tensor
+    assert torch.allclose(original, restored, atol=1e-5, rtol=1e-5)
 
 
 # @pytest.mark.parametrize(
