@@ -5,6 +5,7 @@ from .disentangled import Change2DisentangledBasis
 from .distributions import EquivMultivariateNormal, _EquivMultivariateNormal
 from .normalization import DataNorm, eBatchNorm1d, eDataNorm
 from .pooling import IrrepSubspaceNormPooling
+from .running_stats import EMAStats, eEMAStats
 
 __all__ = [
     "Change2DisentangledBasis",
@@ -19,4 +20,6 @@ __all__ = [
     "eAffine",
     "DataNorm",
     "eDataNorm",
+    "EMAStats",
+    "eEMAStats",
 ]

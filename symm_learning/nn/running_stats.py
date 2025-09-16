@@ -69,16 +69,16 @@ class EMAStats(torch.nn.Module):
 
     def __init__(
         self,
-        num_features_x: int,
-        num_features_y: int | None = None,
+        dim_x: int,
+        dim_y: int | None = None,
         momentum: float = 0.1,
         eps: float = 1e-6,
         center_with_running_mean: bool = True,
     ):
         super().__init__()
 
-        self.num_features_x = num_features_x
-        self.num_features_y = num_features_y if num_features_y is not None else num_features_x
+        self.num_features_x = dim_x
+        self.num_features_y = dim_y if dim_y is not None else dim_x
         self.eps = eps
         self.center_with_running_mean = center_with_running_mean
 
@@ -113,8 +113,9 @@ class EMAStats(torch.nn.Module):
         # For covariance computation, use running means if available and enabled, otherwise batch means
         if self.center_with_running_mean and self.num_batches_tracked > 0:
             # Use running means for centering to maintain consistency with EMA
-            center_x = self.running_mean_x
-            center_y = self.running_mean_y
+            # Detach to prevent gradients from flowing through previous iterations
+            center_x = self.running_mean_x.detach()
+            center_y = self.running_mean_y.detach()
         else:
             # First batch or when center_with_running_mean=False: use batch means
             center_x = mean_x
@@ -163,11 +164,11 @@ class EMAStats(torch.nn.Module):
             else:
                 # EMA update: detach previous running stats to prevent gradient flow into history
                 alpha = self.momentum
-                # self.running_mean_x.detach().mul_(1 - alpha).add_(batch_mean_x, alpha=alpha)
-                self.running_mean_y.detach().mul_(1 - alpha).add_(batch_mean_y, alpha=alpha)
-                self.running_cov_xx.detach().mul_(1 - alpha).add_(batch_cov_xx, alpha=alpha)
-                self.running_cov_yy.detach().mul_(1 - alpha).add_(batch_cov_yy, alpha=alpha)
-                self.running_cov_xy.detach().mul_(1 - alpha).add_(batch_cov_xy, alpha=alpha)
+                self.running_mean_x = self.running_mean_x.detach() * (1 - alpha) + batch_mean_x * alpha
+                self.running_mean_y = self.running_mean_y.detach() * (1 - alpha) + batch_mean_y * alpha
+                self.running_cov_xx = self.running_cov_xx.detach() * (1 - alpha) + batch_cov_xx * alpha
+                self.running_cov_yy = self.running_cov_yy.detach() * (1 - alpha) + batch_cov_yy * alpha
+                self.running_cov_xy = self.running_cov_xy.detach() * (1 - alpha) + batch_cov_xy * alpha
 
             self.num_batches_tracked += 1
 
@@ -236,29 +237,27 @@ class eEMAStats(EMAStats):
 
     def __init__(
         self,
-        in_type_x: FieldType,
-        in_type_y: FieldType | None = None,
+        x_type: FieldType,
+        y_type: FieldType | None = None,
         momentum: float = 0.1,
         eps: float = 1e-6,
         center_with_running_mean: bool = True,
     ):
         # Store field types and representations
-        self.in_type_x = in_type_x
-        self.in_type_y = in_type_y if in_type_y is not None else in_type_x
+        self.x_type = x_type
+        self.y_type = y_type if y_type is not None else x_type
 
         # Ensure groups match
-        assert self.in_type_x.fibergroup == self.in_type_y.fibergroup, (
-            "in_type_x and in_type_y must share the same group"
-        )
+        assert self.x_type.fibergroup == self.y_type.fibergroup, "in_type_x and in_type_y must share the same group"
 
         # Store representations for stats computation
-        self._rep_x = self.in_type_x.representation
-        self._rep_y = self.in_type_y.representation
+        self._rep_x = self.x_type.representation
+        self._rep_y = self.y_type.representation
 
         # Initialize EMAStats with the field type sizes
         super().__init__(
-            num_features_x=self.in_type_x.size,
-            num_features_y=self.in_type_y.size,
+            dim_x=self.x_type.size,
+            dim_y=self.y_type.size,
             momentum=momentum,
             eps=eps,
             center_with_running_mean=center_with_running_mean,
@@ -278,14 +277,15 @@ class eEMAStats(EMAStats):
             symmetry-aware estimators.
         """
         # For means, always compute fresh batch means using group-aware method
-        _, mean_x = symm_learning.stats.var_mean(x, rep_x=self._rep_x)
-        _, mean_y = symm_learning.stats.var_mean(y, rep_x=self._rep_y)
+        mean_x = symm_learning.stats.mean(x, rep_x=self._rep_x)
+        mean_y = symm_learning.stats.mean(y, rep_x=self._rep_y)
 
         # For covariances, we need to center using EMA means for consistency (if enabled)
         if self.center_with_running_mean and self.num_batches_tracked > 0:
             # Use running means for centering to maintain EMA consistency
-            center_x = self.running_mean_x
-            center_y = self.running_mean_y
+            # Detach to prevent gradients from flowing through previous iterations
+            center_x = self.running_mean_x.detach()
+            center_y = self.running_mean_y.detach()
         else:
             # First batch or when center_with_running_mean=False: use batch means
             center_x = mean_x
@@ -313,20 +313,20 @@ class eEMAStats(EMAStats):
         Returns:
             Tuple (x, y) - inputs are returned unchanged.
         """
-        assert x.type == self.in_type_x, f"Input x type {x.type} does not match expected type {self.in_type_x}."
-        assert y.type == self.in_type_y, f"Input y type {y.type} does not match expected type {self.in_type_y}."
+        assert x.type == self.x_type, f"Input x type {x.type} does not match expected type {self.x_type}."
+        assert y.type == self.y_type, f"Input y type {y.type} does not match expected type {self.y_type}."
 
         # Apply EMAStats forward to the tensor data
         x_out_tensor, y_out_tensor = super().forward(x.tensor, y.tensor)
 
         # Return as GeometricTensors (should be identical to inputs)
-        return self.in_type_x(x_out_tensor), self.in_type_y(y_out_tensor)
+        return self.x_type(x_out_tensor), self.y_type(y_out_tensor)
 
     def export(self) -> EMAStats:
         """Export to a standard EMAStats layer."""
         exported = EMAStats(
-            num_features_x=self.num_features_x,
-            num_features_y=self.num_features_y,
+            dim_x=self.num_features_x,
+            dim_y=self.num_features_y,
             momentum=self.momentum,
             eps=self.eps,
         )

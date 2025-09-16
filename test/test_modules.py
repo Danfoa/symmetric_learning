@@ -6,6 +6,7 @@ import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
 from escnn.nn import FieldType
 
+from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.nn.normalization import DataNorm
 
 
@@ -298,6 +299,95 @@ def test_affine(group: Group, mx: int, bias: bool):
     affine.check_equivariance(atol=1e-5, rtol=1e-5)
 
 
+@pytest.mark.parametrize(
+    "kind",
+    [pytest.param("ema", id="ema"), pytest.param("eema", id="eema")],
+)
+def test_ema_and_eema_stats(kind: str):
+    import torch
+    from escnn.gspaces import no_base_space
+
+    if kind == "ema":
+        stats = EMAStats(dim_x=3, dim_y=2, momentum=0.1)
+        raw_x = torch.randn(12, stats.num_features_x)
+        raw_y = torch.randn(12, stats.num_features_y)
+
+        def prepare(x_tensor: torch.Tensor, y_tensor: torch.Tensor):
+            return x_tensor, y_tensor
+
+        def extract(output):
+            return output
+
+    else:
+        G = CyclicGroup(3)
+        gspace = no_base_space(G)
+        field = FieldType(gspace, [G.regular_representation])
+        stats = eEMAStats(x_type=field, y_type=field, momentum=0.1)
+        raw_x = torch.randn(12, field.size)
+        raw_y = torch.randn(12, field.size)
+
+        def prepare(x_tensor: torch.Tensor, y_tensor: torch.Tensor):
+            return field(x_tensor), field(y_tensor)
+
+        def extract(output):
+            return output.tensor
+
+    stats.train()
+    x_input, y_input = prepare(raw_x.clone(), raw_y.clone())
+    prev_mean = stats.mean_x.clone()
+    x_out, y_out = stats(x_input, y_input)
+    assert torch.equal(extract(x_out), raw_x)
+    assert torch.equal(extract(y_out), raw_y)
+    assert stats.num_batches_tracked == 1
+    assert not torch.equal(stats.mean_x, prev_mean)
+
+    stats.eval()
+    frozen_mean = stats.mean_x.clone()
+    stats(x_input, y_input)
+    assert torch.equal(stats.mean_x, frozen_mean)
+
+    if kind == "ema":
+        stats.train()
+        linear = torch.nn.Linear(raw_x.shape[1], 1)
+        for _ in range(2):
+            linear.zero_grad()
+            x = torch.randn(4, raw_x.shape[1], requires_grad=True)
+            y = torch.randn(4, raw_y.shape[1], requires_grad=True)
+            x_forward, _ = stats(x, y)
+            linear(x_forward).sum().backward()
+            assert linear.weight.grad is not None
+    else:
+        exported = stats.export()
+        exported.eval()
+        x_std, y_std = exported(raw_x, raw_y)
+        assert torch.equal(x_std, raw_x)
+        assert torch.equal(y_std, raw_y)
+
+
+@pytest.mark.parametrize(
+    "momentum, expect_error",
+    [
+        pytest.param(0.1, None, id="valid-0.1"),
+        pytest.param(0.5, None, id="valid-0.5"),
+        pytest.param(1.0, None, id="valid-1.0"),
+        pytest.param(0.0, ValueError, id="invalid-0.0"),
+        pytest.param(1.5, ValueError, id="invalid-1.5"),
+    ],
+)
+def test_ema_stats_momentum(momentum: float, expect_error: type[Exception] | None):
+    import torch
+
+    if expect_error is not None:
+        with pytest.raises(expect_error):
+            EMAStats(dim_x=2, dim_y=2, momentum=momentum)
+        return
+
+    stats = EMAStats(dim_x=2, dim_y=2, momentum=momentum)
+    stats.train()
+    stats(torch.randn(6, 2), torch.randn(6, 2))
+    assert stats.num_batches_tracked == 1
+
+
 import torch
 import symm_learning
 
@@ -470,7 +560,7 @@ def test_ema_stats_basic():
     from symm_learning.nn.running_stats import EMAStats
 
     # Create EMAStats instance
-    stats = EMAStats(num_features_x=4, num_features_y=3, momentum=0.1)
+    stats = EMAStats(dim_x=4, dim_y=3, momentum=0.1)
 
     # Test initial state
     assert stats.num_batches_tracked == 0
@@ -501,7 +591,7 @@ def test_ema_stats_eval_mode():
     """Test EMAStats in evaluation mode."""
     from symm_learning.nn.running_stats import EMAStats
 
-    stats = EMAStats(num_features_x=3, num_features_y=2, momentum=0.1)
+    stats = EMAStats(dim_x=3, dim_y=2, momentum=0.1)
 
     # Train on one batch to initialize stats
     stats.train()
@@ -531,10 +621,10 @@ def test_ema_stats_center_with_running_mean():
     from symm_learning.nn.running_stats import EMAStats
 
     # Test with center_with_running_mean=True (default)
-    stats_true = EMAStats(num_features_x=2, num_features_y=2, momentum=0.5, center_with_running_mean=True)
+    stats_true = EMAStats(dim_x=2, dim_y=2, momentum=0.5, center_with_running_mean=True)
 
     # Test with center_with_running_mean=False
-    stats_false = EMAStats(num_features_x=2, num_features_y=2, momentum=0.5, center_with_running_mean=False)
+    stats_false = EMAStats(dim_x=2, dim_y=2, momentum=0.5, center_with_running_mean=False)
 
     # Same data for both
     torch.manual_seed(42)
@@ -568,7 +658,7 @@ def test_eema_stats_basic():
     in_type_y = FieldType(gspace, [G.regular_representation] * 1)  # Size: 4
 
     # Create eEMAStats instance
-    stats = eEMAStats(in_type_x=in_type_x, in_type_y=in_type_y, momentum=0.1)
+    stats = eEMAStats(x_type=in_type_x, y_type=in_type_y, momentum=0.1)
 
     # Test initial state
     assert stats.num_batches_tracked == 0
@@ -608,7 +698,7 @@ def test_eema_stats_export():
     in_type_y = FieldType(gspace, [G.regular_representation])  # Size: 3
 
     # Create and train eEMAStats
-    stats = eEMAStats(in_type_x=in_type_x, in_type_y=in_type_y, momentum=0.2)
+    stats = eEMAStats(x_type=in_type_x, y_type=in_type_y, momentum=0.2)
     stats.train()
 
     # Process a batch
@@ -651,7 +741,7 @@ def test_ema_momentum_values(momentum):
     """Test different momentum values."""
     from symm_learning.nn.running_stats import EMAStats
 
-    stats = EMAStats(num_features_x=2, num_features_y=2, momentum=momentum)
+    stats = EMAStats(dim_x=2, dim_y=2, momentum=momentum)
 
     # Process multiple batches
     stats.train()
@@ -669,7 +759,7 @@ def test_invalid_momentum():
     from symm_learning.nn.running_stats import EMAStats
 
     with pytest.raises(ValueError, match="momentum must be in"):
-        EMAStats(num_features_x=2, num_features_y=2, momentum=0.0)
+        EMAStats(dim_x=2, dim_y=2, momentum=0.0)
 
     with pytest.raises(ValueError, match="momentum must be in"):
-        EMAStats(num_features_x=2, num_features_y=2, momentum=1.5)
+        EMAStats(dim_x=2, dim_y=2, momentum=1.5)
