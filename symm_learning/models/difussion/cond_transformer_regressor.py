@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from time import perf_counter
 from typing import Optional, Tuple, Union
 
 import torch
+from tqdm import tqdm
 
 from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
 
@@ -168,12 +170,12 @@ class CondTransformerRegressor(GenCondRegressor):
             # therefore, the upper triangle should be -inf and others (including diag) should be 0.
             mask = (torch.triu(torch.ones(self.in_horizon, self.in_horizon)) == 1).transpose(0, 1)
             mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("mask", mask)
+            self.register_buffer("self_att_mask", mask)
 
             t, s = torch.meshgrid(torch.arange(self.in_horizon), torch.arange(self.cond_horizon), indexing="ij")
             mask = t >= (s - 1)  # add one dimension since opt-time  is the first token in cond
             mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("memory_mask", mask)
+            self.register_buffer("cross_att_mask", mask)
         else:
             self.self_att_mask = None
             self.cross_att_mask = None
@@ -355,62 +357,63 @@ class CondTransformerRegressor(GenCondRegressor):
 
 
 def test():  # noqa: D103
-    # GPT with time embedding
+    torch.manual_seed(0)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Running test on device: {device}")
+    dtype = torch.float32
+    torch.set_float32_matmul_precision("high")
 
-    dx, dz, dv = 16, 10, 20
-    Tx, Tz = 50, 25
+    dx, dz, dv = 30, 10, 30
+    Tx, Tz = 15, 5
+    batch_size = 512
+    num_batches = 30
 
-    transformer = CondTransformerRegressor(
-        in_dim=dx,
-        out_dim=dv,
-        cond_dim=dz,
-        in_horizon=Tx,
-        cond_horizon=Tz,
-        num_layers=6,
-        num_cond_layers=0,
-    )
+    def build_model():
+        model = CondTransformerRegressor(
+            in_dim=dx,
+            out_dim=dv,
+            cond_dim=dz,
+            in_horizon=Tx,
+            cond_horizon=Tz,
+            num_layers=3,
+            num_attention_heads=6,
+            num_cond_layers=0,
+        )
+        return model.to(device=device, dtype=dtype).train()
 
-    print(transformer)
-    opt = transformer.configure_optimizers()
+    X_batches = [torch.randn(batch_size, Tx, dx, device=device, dtype=dtype) for _ in range(num_batches)]
+    Z_batches = [torch.randn(batch_size, Tz, dz, device=device, dtype=dtype) for _ in range(num_batches)]
+    opt_steps = [torch.tensor(float(i % Tx), device=device, dtype=dtype) for i in range(num_batches)]
 
-    opt_step = torch.tensor(0.5)
-    batch_size = 32
-    X = torch.randn((batch_size, Tx, dx))
-    Z = torch.randn((batch_size, Tz, dz))
+    def benchmark(model, skip_first: bool = False):
+        optimizer = model.configure_optimizers()
+        measurements: list[float] = []
+        for idx, (x, z, step) in tqdm(enumerate(zip(X_batches, Z_batches, opt_steps))):
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+            optimizer.zero_grad(set_to_none=True)
+            start.record()
+            out = model(X=x, Z=z, opt_step=step)
+            assert out.shape == (batch_size, Tx, dv), f"out shape {out.shape}!= {(batch_size, Tx, dv)}"
+            loss = out.mean()
+            loss.backward()
+            optimizer.step()
+            if device.type == "cuda":
+                torch.cuda.synchronize()
+            end.record()
+            torch.cuda.synchronize()
+            if skip_first and idx == 0:
+                continue
+            measurements.append(start.elapsed_time(end) * 1e-3)
+        return sum(measurements) / len(measurements)
 
-    V = transformer(X=X, Z=Z, opt_step=opt_step)
+    eager_model = build_model()
+    eager_time = benchmark(eager_model)
+    print(f"Eager avg forward+backward step time:    {eager_time:.3f} [s]")
 
-    assert V.shape == (batch_size, Tx, dv)
-    print("Output shape:", V.shape)
-
-    opt = transformer.configure_optimizers()
-    opt.zero_grad()
-    loss = V.mean()
-    loss.backward()
-    print("Loss backward pass successful.")
-
-    # BERT with time embedding token
-    transformer = CondTransformerRegressor(
-        in_dim=dx,
-        out_dim=dv,
-        cond_dim=dz,
-        in_horizon=Tx,
-        cond_horizon=Tz,
-        num_layers=6,
-        num_cond_layers=6,  # Transformer encoder of conditioning tokens
-    )
-    print(transformer)
-
-    V = transformer(X=X, Z=Z, opt_step=opt_step)
-
-    assert V.shape == (batch_size, Tx, dv)
-    print("Output shape:", V.shape)
-
-    opt = transformer.configure_optimizers()
-    opt.zero_grad()
-    loss = V.mean()
-    loss.backward()
-    print("Loss backward pass successful.")
+    compiled_model = torch.compile(build_model())
+    compiled_time = benchmark(compiled_model, skip_first=True)
+    print(f"Compiled avg forward+backward step time: {compiled_time:.3f} [s] (excluding first batch)")
 
 
 if __name__ == "__main__":
