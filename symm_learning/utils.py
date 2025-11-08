@@ -1,6 +1,8 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
 from collections.abc import Callable
 
+import torch
+
 
 class CallableDict(dict, Callable):
     """Dictionary that can be called as a function."""
