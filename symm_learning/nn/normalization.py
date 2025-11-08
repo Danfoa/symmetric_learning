@@ -1,12 +1,103 @@
 from __future__ import annotations
 
 import torch
+from escnn.group import Representation
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 from torch import batch_norm
 
 import symm_learning
 import symm_learning.stats
-from symm_learning.nn import eAffine
+from symm_learning.linalg import irrep_radii
+from symm_learning.nn.linear import eAffine
+from symm_learning.representation_theory import isotypic_decomp_rep
+
+
+class eLayerNorm(torch.nn.Module):
+    r"""Equivariant Layer Normalization.
+
+    Given an input :math:`x \in \mathbb{R}^{D}`, we first move to the irrep-spectral basis
+    :math:`\hat{x} = Q^{-1}x`, compute one variance scalar per irreducible block,
+    and normalize each block uniformly:
+
+    .. math::
+        \hat{y} = \frac{\hat{x}}{\sqrt{\sigma^{2} + \varepsilon}}, \qquad
+        y = Q\hat{y}.
+
+    When ``equiv_affine=True`` the learnable affine step is performed directly in the spectral basis
+    using the per-irrep scale/bias provided by :class:`~symm_learning.nn.linear.eAffine`.
+
+    Args:
+        in_rep: (:class:`escnn.group.Representation`) description of the feature space.
+        eps: numerical stabilizer added to each variance.
+        equiv_affine: if ``True``, applies an :class:`eAffine` in spectral space.
+        bias: whether the affine term includes invariant biases (only used if ``equiv_affine``).
+        device, dtype: optional tensor factory kwargs.
+    """
+
+    r"""Symmetry-preserving LayerNorm:
+
+    .. math:: y = Q ( (Q^{-1} x) \odot \alpha + \beta )
+    """
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        eps: float = 1e-6,
+        equiv_affine: bool = True,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+    ) -> None:
+        factory_kwargs = {"device": device, "dtype": dtype}
+        super().__init__()
+        self.in_rep, self.out_rep = in_rep, in_rep
+
+        # We require to transition to/from the irrep-spectral basis to compute the normalization and affine transform
+        self.register_buffer("Q", torch.tensor(self.in_rep.change_of_basis, dtype=torch.get_default_dtype()))
+        self.register_buffer("Q_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=torch.get_default_dtype()))
+
+        # Only works for (..., in_rep.size) inputs with normalization over the last dimension
+        self.normalized_shape = (in_rep.size,)
+        self.eps = eps
+        self.equiv_affine = equiv_affine
+        dims = torch.tensor(
+            [self.in_rep.group.irrep(*irrep_id).size for irrep_id in self.in_rep.irreps],
+            dtype=torch.long,
+        )
+        self.register_buffer("irrep_dims", dims)
+        self.register_buffer("irrep_indices", torch.repeat_interleave(torch.arange(len(dims), dtype=torch.long), dims))
+        if self.equiv_affine:
+            self.affine = eAffine(in_rep, bias=bias).to(**factory_kwargs)
+
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:  # noqa: D102
+        if self.equiv_affine:
+            self.affine.reset_parameters()
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        r"""Normalize per irreducible block and (optionally) apply the spectral affine transform."""
+        assert input.shape[-1] == self.in_rep.size, f"Expected (...,{self.in_rep.size}), got {input.shape}"
+
+        radii = irrep_radii(input, rep=self.in_rep)  # (..., num_irreps)
+        dims = self.irrep_dims.to(radii.device, radii.dtype)
+        var_irreps = radii.pow(2) / dims
+        var_broadcasted = var_irreps[..., self.irrep_indices.to(var_irreps.device)]
+
+        x_spec = torch.einsum("ij,...j->...i", self.Q_inv, input)
+        x_spec = x_spec / torch.sqrt(var_broadcasted + self.eps)
+
+        if self.equiv_affine:
+            scale_spec, bias_spec = self.affine.spectral_parameters(device=x_spec.device, dtype=x_spec.dtype)
+            x_spec = x_spec * scale_spec.view(*([1] * (x_spec.ndim - 1)), -1)
+            if bias_spec is not None:
+                x_spec = x_spec + bias_spec.view(*([1] * (x_spec.ndim - 1)), -1)
+
+        normalized = torch.einsum("ij,...j->...i", self.Q, x_spec)
+        return normalized
+
+    def extra_repr(self) -> str:  # noqa: D102
+        return "{normalized_shape}, eps={eps}, affine={equiv_affine}".format(**self.__dict__)
 
 
 class eBatchNorm1d(EquivariantModule):

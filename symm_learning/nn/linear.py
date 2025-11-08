@@ -89,22 +89,35 @@ class eAffine(torch.nn.Module):
 
         x_spectral = torch.einsum("ij,...j->...i", self.Q_inv, x)
 
-        scale = self.scale_dof[self.irrep_indices].to(x_spectral.device, x_spectral.dtype)
-        scale = scale.view(*([1] * (x_spectral.ndim - 1)), -1)
-        x_spectral = x_spectral * scale
+        scale_spec, bias_spec = self.spectral_parameters(device=x_spectral.device, dtype=x_spectral.dtype)
+        x_spectral = x_spectral * scale_spec.view(*([1] * (x_spectral.ndim - 1)), -1)
 
-        if self.has_bias and self.bias_dof.numel() > 0:
-            bias_index = self.bias_dim_to_param.to(x_spectral.device)
-            valid = bias_index >= 0
-            if valid.any():
-                bias_vals = self.bias_dof.to(x_spectral.device, x_spectral.dtype)
-                bias_flat = torch.zeros(self.rep_x.size, device=x_spectral.device, dtype=x_spectral.dtype)
-                bias_flat[valid] = bias_vals[bias_index[valid]]
-                bias_flat = bias_flat.view(*([1] * (x_spectral.ndim - 1)), -1)
-                x_spectral = x_spectral + bias_flat
+        if bias_spec is not None:
+            x_spectral = x_spectral + bias_spec.view(*([1] * (x_spectral.ndim - 1)), -1)
 
         y = torch.einsum("ij,...j->...i", self.Q, x_spectral)
         return y
+
+    def spectral_parameters(self, device=None, dtype=None):
+        """Return per-dimension spectral scale and bias vectors."""
+        scale = self.scale_dof[self.irrep_indices].to(device=device, dtype=dtype or self.scale_dof.dtype)
+        bias = None
+        if self.has_bias and self.bias_dof.numel() > 0:
+            bias_index = self.bias_dim_to_param
+            valid = bias_index >= 0
+            if valid.any():
+                bias = torch.zeros(
+                    self.rep_x.size, device=scale.device if device is None else device, dtype=dtype or scale.dtype
+                )
+                bias_vals = self.bias_dof.to(device=bias.device, dtype=bias.dtype)
+                bias_index = bias_index.to(bias.device)
+                bias[valid] = bias_vals[bias_index[valid]]
+        return scale, bias
+
+    def reset_parameters(self) -> None:  # noqa: D102
+        torch.nn.init.ones_(self.scale_dof)
+        if self.has_bias and self.bias_dof is not None:
+            torch.nn.init.zeros_(self.bias_dof)
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"in_rep{self.in_rep} bias={self.has_bias}"

@@ -35,6 +35,7 @@ def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5):
         errs = gy - gy_expected
         errs = np.abs(errs).reshape(-1)
 
+        assert gy.shape == gy_expected.shape, f"Shape mismatch: got {gy.shape}, expected {gy_expected.shape}"
         assert np.allclose(gy, gy_expected, atol=atol, rtol=rtol), (
             f"Equivariance test failed for group element {g} max scalar error {errs.max()}"
         )
