@@ -116,21 +116,10 @@ class CommutingConstraint(torch.nn.Module):
         return W_eq_flat.reshape_as(W_iso)
 
 
-class eLinear(torch.nn.Linear):
-    """Equivariant Linear layer between two representations."""
-
-    def __init__(self, in_rep: Representation, out_rep: Representation, bias: bool = True):
-        super().__init__(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
-        self.in_rep = in_rep
-        self.out_rep = out_rep
-        # Register parametrizations enforcing equivariance
-        parametrize.register_parametrization(self, "weight", CommutingConstraint(in_rep, out_rep))
-        if bias:
-            parametrize.register_parametrization(self, "bias", InvariantConstraint(out_rep))
-
-
 if __name__ == "__main__":
     from escnn.group import CyclicGroup, DihedralGroup, Representation, directsum
+
+    from symm_learning.nn.linear import eLinear
 
     G = DihedralGroup(6)
 

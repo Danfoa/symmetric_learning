@@ -1,6 +1,7 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
 from collections.abc import Callable
 
+import numpy as np
 import torch
 
 
@@ -10,3 +11,34 @@ class CallableDict(dict, Callable):
     def __call__(self, key):
         """Return the value of the key."""
         return self[key]
+
+
+def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5):
+    """Method that automatically tests the equivariance of the current module."""
+    G = e_module.in_rep.group
+    x = torch.randn(3, e_module.in_rep.size)
+
+    dtype, device = x.dtype, x.device
+
+    errors = []
+
+    # for el in self.out_type.testing_elements:
+    for _ in range(20):
+        g = G.sample()
+        gx = torch.einsum("ij,...j->...i", torch.tensor(e_module.in_rep(g), dtype=dtype, device=device), x)
+        y = e_module(x)
+        gy = torch.einsum("ij,...j->...i", torch.tensor(e_module.out_rep(g)).to(dtype=dtype, device=device), y)
+        gy = gy.detach().cpu().numpy()
+
+        gy_expected = e_module(gx).detach().cpu().numpy()
+
+        errs = gy - gy_expected
+        errs = np.abs(errs).reshape(-1)
+
+        assert np.allclose(gy, gy_expected, atol=atol, rtol=rtol), (
+            f"Equivariance test failed for group element {g} max scalar error {errs.max()}"
+        )
+
+        errors.append((g, errs.mean()))
+
+    print(f"Equivariant check passed for module {e_module}")
