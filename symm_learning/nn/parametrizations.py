@@ -20,7 +20,7 @@ class InvariantConstraint(torch.nn.Module):
     def forward(self, b: torch.Tensor) -> torch.Tensor:
         """Project b onto the invariant subspace using the precomputed projector."""
         self.inv_projector = self.inv_projector.to(b.device, b.dtype)
-        return torch.matmul(self.inv_projector, b)
+        return torch.mv(self.inv_projector, b)
 
 
 class CommutingConstraint(torch.nn.Module):
@@ -132,11 +132,10 @@ class eLinear(torch.nn.Linear):
 if __name__ == "__main__":
     from escnn.group import CyclicGroup, DihedralGroup, Representation, directsum
 
-    G = DihedralGroup(9)
+    G = DihedralGroup(6)
 
-    in_rep = directsum([G.regular_representation] * 6)
-    out_rep = directsum([G.regular_representation] * 12)
-    # out_rep = directsum([G.representations["irrep_1,1"], G.representations["irrep_1,2"]], name="out")
+    in_rep = directsum([G.regular_representation] * 10)
+    out_rep = directsum([G.regular_representation] * 11)
 
     layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=True)
     eq_layer = eLinear(in_rep, out_rep, bias=True)
