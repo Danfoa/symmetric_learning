@@ -13,10 +13,22 @@ class CallableDict(dict, Callable):
         return self[key]
 
 
-def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5):
+def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5, input_dim: int = 2, in_rep=None, out_rep=None):
     """Method that automatically tests the equivariance of the current module."""
-    G = e_module.in_rep.group
-    x = torch.randn(3, e_module.in_rep.size)
+    in_rep = e_module.in_rep if hasattr(e_module, "in_rep") else in_rep
+    out_rep = e_module.out_rep if hasattr(e_module, "out_rep") else out_rep
+    assert in_rep is not None, f"in_rep must be provided or be an attribute of the module {e_module}"
+    assert out_rep is not None, f"out_rep must be provided or be an attribute of the module {e_module}"
+    G = in_rep.group
+
+    batch_size = 11
+    spatial_dims = 9
+    if input_dim == 2:
+        x = torch.randn(batch_size, in_rep.size)
+    elif input_dim == 3:
+        x = torch.randn(batch_size, spatial_dims, in_rep.size)
+    else:
+        raise ValueError(f"Input dimension {input_dim} not supported.")
 
     dtype, device = x.dtype, x.device
 
@@ -25,9 +37,9 @@ def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5):
     # for el in self.out_type.testing_elements:
     for _ in range(20):
         g = G.sample()
-        gx = torch.einsum("ij,...j->...i", torch.tensor(e_module.in_rep(g), dtype=dtype, device=device), x)
+        gx = torch.einsum("ij,...j->...i", torch.tensor(in_rep(g), dtype=dtype, device=device), x)
         y = e_module(x)
-        gy = torch.einsum("ij,...j->...i", torch.tensor(e_module.out_rep(g)).to(dtype=dtype, device=device), y)
+        gy = torch.einsum("ij,...j->...i", torch.tensor(out_rep(g)).to(dtype=dtype, device=device), y)
         gy = gy.detach().cpu().numpy()
 
         gy_expected = e_module(gx).detach().cpu().numpy()

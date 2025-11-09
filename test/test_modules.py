@@ -293,6 +293,42 @@ def test_affine(group: Group, mx: int, bias: bool):
 
 
 @pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 10])
+@pytest.mark.parametrize("bias", [True])
+@pytest.mark.parametrize("affine", [True, False])
+def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
+    import numpy as np
+    import torch
+
+    from symm_learning.nn.normalization import eLayerNorm
+
+    G = group
+    rep = directsum([G.regular_representation] * mx)
+    Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
+    rep = escnn.group.change_basis(rep, Q, name="test_layernorm_rep")
+
+    layer = eLayerNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0)
+
+    if layer.equiv_affine:
+        layer.affine.scale_dof.data.uniform_(-1, 1)
+        if layer.affine.has_bias:
+            layer.affine.bias_dof.data.uniform_(-1, 1)
+
+    x = torch.randn(64, rep.size)
+    y = layer(x)
+
+    assert y.shape == x.shape
+
+    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
     "kind",
     [pytest.param("ema", id="ema"), pytest.param("eema", id="eema")],
 )
