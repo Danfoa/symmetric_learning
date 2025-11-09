@@ -90,6 +90,10 @@ class CommutingConstraint(torch.nn.Module):
 
     def forward(self, W: torch.Tensor) -> torch.Tensor:
         """Project W onto Hom_G(out_rep, in_rep) using a single GEMM-based contraction."""
+        assert W.shape[-2:] == (self.out_rep.size, self.in_rep.size), (
+            f"Expected weight shape (..., {self.out_rep.size}, {self.in_rep.size}), got {W.shape}"
+        )
+
         W_iso = self.Qout.T @ W @ self.Qin  # [Ny, Nx]
 
         W_eq = self._project_gemm(W_iso) if self.num_basis > 0 else torch.zeros_like(W_iso)

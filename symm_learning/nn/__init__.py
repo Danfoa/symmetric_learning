@@ -1,3 +1,6 @@
+"""Symmetric Learning - Neural Network Modules"""
+
+from .activation import eMultiheadAttention
 from .activations import Mish  # noqa: D104
 from .affine import eAffine
 from .conv import GSpace1D, eConv1D, eConvTranspose1D
@@ -14,6 +17,7 @@ __all__ = [
     "IrrepSubspaceNormPooling",
     "eConv1D",
     "eConvTranspose1D",
+    "eMultiheadAttention",
     "GSpace1D",
     "Mish",
     "eBatchNorm1d",
