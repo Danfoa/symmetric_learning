@@ -99,7 +99,8 @@ if __name__ == "__main__":
     in_rep = directsum([G.regular_representation] * m)
 
     for n_heads in [1, 2, 3]:
-        eattention = eMultiheadAttention(in_rep=in_rep, num_heads=n_heads, bias=True, batch_first=True)
+        eattention = eMultiheadAttention(in_rep=in_rep, num_heads=n_heads, bias=True, batch_first=True, dropout=0.1)
+        eattention.eval()  # disable dropout for the test
         check_equivariance(
             lambda x: eattention(x, x, x, need_weights=False)[0],
             input_dim=3,

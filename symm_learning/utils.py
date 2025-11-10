@@ -34,6 +34,9 @@ def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5, input_d
 
     errors = []
 
+    if isinstance(e_module, torch.nn.Module):
+        e_module.eval()  # Disable dropout, batchnorm, etc.
+
     # for el in self.out_type.testing_elements:
     for _ in range(20):
         g = G.sample()
