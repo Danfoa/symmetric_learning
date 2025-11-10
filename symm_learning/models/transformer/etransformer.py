@@ -9,13 +9,19 @@ import torch.nn.functional as F
 from escnn.group import Representation, directsum
 from torch import Tensor
 
+# from torch.nn import Transformer
 from symm_learning.nn.activation import eMultiheadAttention
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.normalization import eLayerNorm
 
 
 class eTransformerEncoderLayer(torch.nn.Module):
-    """Equivariant Transformer encoder layer built from eLinear and eLayerNorm blocks."""
+    """Equivariant Transformer encoder layer with the same API as ``torch.nn.TransformerEncoderLayer``.
+
+    Applies :class:`eMultiheadAttention` followed by an equivariant feed-forward block
+    built from :class:`eLinear` layers and :class:`eLayerNorm`, mirroring PyTorch’s ordering
+    (pre- or post-norm) while constraining every linear map to commute with the group action.
+    """
 
     __constants__ = ["norm_first"]
 
@@ -80,7 +86,15 @@ class eTransformerEncoderLayer(torch.nn.Module):
         src_key_padding_mask: Tensor = None,
         is_causal: bool = False,
     ) -> Tensor:
-        r"""Pass the input through the equivariant encoder layer."""
+        r"""Pass the input through the equivariant encoder layer.
+
+        Args:
+            src: input sequence of shape ``(T, B, D)`` or ``(B, T, D)`` depending on ``batch_first``,
+                with last dimension equal to ``in_rep.size``.
+            src_mask: optional attention mask for the input sequence.
+            src_key_padding_mask: optional padding mask for the batch.
+            is_causal: if ``True``, applies a causal mask to the self-attention block.
+        """
         src_key_padding_mask = F._canonical_mask(
             mask=src_key_padding_mask,
             mask_name="src_key_padding_mask",
@@ -108,11 +122,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
         return x
 
     def _self_attention_block(
-        self,
-        x: Tensor,
-        attn_mask: Tensor = None,
-        key_padding_mask: Tensor = None,
-        is_causal: bool = False,
+        self, x: Tensor, attn_mask: Tensor = None, key_padding_mask: Tensor = None, is_causal: bool = False
     ) -> Tensor:
         x = self.self_attn(
             x,
@@ -130,6 +140,236 @@ class eTransformerEncoderLayer(torch.nn.Module):
         return self.dropout2(x)
 
 
+class eTransformerDecoderLayer(torch.nn.Module):
+    """Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
+
+    Combines an equivariant self-attention block, an equivariant cross-attention block,
+    and the same eLinear/eLayerNorm feed-forward structure used by the encoder so every
+    submodule commutes with the group action while keeping PyTorch’s runtime logic intact.
+    """
+
+    __constants__ = ["norm_first"]
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        nhead: int,
+        dim_feedforward: int = 2048,
+        dropout: float = 0.1,
+        activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
+        layer_norm_eps: float = 1e-5,
+        batch_first: bool = True,
+        norm_first: bool = False,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+    ) -> None:
+        super().__init__()
+        if dim_feedforward <= 0:
+            raise ValueError(f"dim_feedforward must be positive, got {dim_feedforward}")
+
+        self.in_rep, self.out_rep = in_rep, in_rep
+        factory_kwargs = {"device": device, "dtype": dtype or torch.get_default_dtype()}
+
+        G = in_rep.group
+        num_hidden_reps = max(1, ceil(dim_feedforward / G.order()))
+        self.embedding_rep = directsum([G.regular_representation] * num_hidden_reps)
+        self.hidden_dim = self.embedding_rep.size
+        self.requested_dim_feedforward = dim_feedforward
+
+        self.self_attn = eMultiheadAttention(
+            in_rep=self.in_rep,
+            num_heads=nhead,
+            dropout=dropout,
+            bias=bias,
+            batch_first=batch_first,
+            device=device,
+            dtype=dtype,
+        )
+        self.multihead_attn = eMultiheadAttention(
+            in_rep=self.in_rep,
+            num_heads=nhead,
+            dropout=dropout,
+            bias=bias,
+            batch_first=batch_first,
+            device=device,
+            dtype=dtype,
+        )
+
+        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias=bias).to(**factory_kwargs)
+        self.dropout = torch.nn.Dropout(dropout)
+        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias=bias).to(**factory_kwargs)
+
+        self.norm_first = norm_first
+        self.norm1 = eLayerNorm(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        self.norm2 = eLayerNorm(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        self.norm3 = eLayerNorm(self.out_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+
+        self.dropout1 = torch.nn.Dropout(dropout)
+        self.dropout2 = torch.nn.Dropout(dropout)
+        self.dropout3 = torch.nn.Dropout(dropout)
+
+        if isinstance(activation, str):
+            activation = _get_activation_fn(activation)
+        self.activation = activation
+        self.batch_first = batch_first
+
+    def forward(
+        self,
+        tgt: Tensor,
+        memory: Tensor,
+        tgt_mask: Optional[Tensor] = None,
+        memory_mask: Optional[Tensor] = None,
+        tgt_key_padding_mask: Optional[Tensor] = None,
+        memory_key_padding_mask: Optional[Tensor] = None,
+        tgt_is_causal: bool = False,
+        memory_is_causal: bool = False,
+    ) -> Tensor:
+        r"""Pass the input through the equivariant decoder layer.
+
+        Args:
+            tgt: target/query tensor of shape ``(T, B, D)`` or ``(B, T, D)`` matching
+                ``batch_first``. The last dimension must equal ``in_rep.size``.
+            memory: encoder memory tensor of shape ``(S, B, D)`` or ``(B, S, D)``
+                (same ``batch_first``). We assume this tensor transforms under the
+                *same representation* as ``tgt``; i.e., it is typically the output
+                of an equivariant encoder with representation ``in_rep``.
+            tgt_mask: optional target attention mask (same semantics as PyTorch’s API).
+            memory_mask: optional memory attention mask.
+            tgt_key_padding_mask: optional padding mask for the target batch.
+            memory_key_padding_mask: optional padding mask for the memory batch.
+            tgt_is_causal: if ``True``, applies a causal mask to the target self-attention.
+            memory_is_causal: if ``True``, applies a causal mask to the cross-attention.
+        """
+        tgt_key_padding_mask = F._canonical_mask(
+            mask=tgt_key_padding_mask,
+            mask_name="tgt_key_padding_mask",
+            other_type=F._none_or_dtype(tgt_mask),
+            other_name="tgt_mask",
+            target_type=tgt.dtype,
+        )
+        tgt_mask = F._canonical_mask(
+            mask=tgt_mask,
+            mask_name="tgt_mask",
+            other_type=None,
+            other_name="",
+            target_type=tgt.dtype,
+            check_other=False,
+        )
+
+        memory_key_padding_mask = F._canonical_mask(
+            mask=memory_key_padding_mask,
+            mask_name="memory_key_padding_mask",
+            other_type=F._none_or_dtype(memory_mask),
+            other_name="memory_mask",
+            target_type=memory.dtype,
+        )
+        memory_mask = F._canonical_mask(
+            mask=memory_mask,
+            mask_name="memory_mask",
+            other_type=None,
+            other_name="",
+            target_type=memory.dtype,
+            check_other=False,
+        )
+
+        x = tgt
+        if self.norm_first:
+            x = x + self._self_attention_block(self.norm1(x), tgt_mask, tgt_key_padding_mask, tgt_is_causal)
+            x = x + self._multihead_attention_block(
+                self.norm2(x), memory, memory_mask, memory_key_padding_mask, memory_is_causal
+            )
+            x = x + self._feed_forward_block(self.norm3(x))
+        else:
+            x = self.norm1(x + self._self_attention_block(x, tgt_mask, tgt_key_padding_mask, tgt_is_causal))
+            x = self.norm2(
+                x + self._multihead_attention_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+            )
+            x = self.norm3(x + self._feed_forward_block(x))
+
+        return x
+
+    def _self_attention_block(
+        self,
+        x: Tensor,
+        attn_mask: Optional[Tensor],
+        key_padding_mask: Optional[Tensor],
+        is_causal: bool = False,
+    ) -> Tensor:
+        x = self.self_attn(
+            x,
+            x,
+            x,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            need_weights=False,
+            is_causal=is_causal,
+        )[0]
+        return self.dropout1(x)
+
+    def _multihead_attention_block(
+        self,
+        x: Tensor,
+        mem: Tensor,
+        attn_mask: Optional[Tensor],
+        key_padding_mask: Optional[Tensor],
+        is_causal: bool = False,
+    ) -> Tensor:
+        x = self.multihead_attn(
+            x,
+            mem,
+            mem,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            need_weights=False,
+            is_causal=is_causal,
+        )[0]
+        return self.dropout2(x)
+
+    def _feed_forward_block(self, x: Tensor) -> Tensor:
+        x = self.linear2(self.dropout(self.activation(self.linear1(x))))
+        return self.dropout3(x)
+
+    @torch.no_grad()
+    def check_equivariance(
+        self,
+        batch_size: int = 4,
+        tgt_len: int = 3,
+        mem_len: int = 5,
+        samples: int = 20,
+        atol: float = 1e-4,
+        rtol: float = 1e-4,
+    ) -> None:
+        """Quick sanity check ensuring both attention blocks and the full layer are equivariant."""
+        G = self.in_rep.group
+
+        def act(rep: Representation, g, tensor: Tensor) -> Tensor:
+            mat = torch.tensor(rep(g), dtype=tensor.dtype, device=tensor.device)
+            return torch.einsum("ij,...j->...i", mat, tensor)
+
+        for _ in range(samples):
+            g = G.sample()
+            tgt = torch.randn(batch_size, tgt_len, self.in_rep.size, device=self.norm1.Q.device)
+            mem = torch.randn(batch_size, mem_len, self.in_rep.size, device=self.norm1.Q.device)
+            tgt_g = act(self.in_rep, g, tgt)
+            mem_g = act(self.in_rep, g, mem)
+
+            sa = self._self_attention_block(tgt, None, None)
+            sa_g = act(self.in_rep, g, sa)
+            sa_expected = self._self_attention_block(tgt_g, None, None)
+            torch.testing.assert_close(sa_g, sa_expected, atol=atol, rtol=rtol)
+
+            ca = self._multihead_attention_block(tgt, mem, None, None)
+            ca_g = act(self.in_rep, g, ca)
+            ca_expected = self._multihead_attention_block(tgt_g, mem_g, None, None)
+            torch.testing.assert_close(ca_g, ca_expected, atol=atol, rtol=rtol)
+
+            out = self(tgt, mem)
+            out_g = act(self.in_rep, g, out)
+            out_expected = self(tgt_g, mem_g)
+            torch.testing.assert_close(out_g, out_expected, atol=atol, rtol=rtol)
+
+
 def _get_activation_fn(activation: str) -> Callable[[Tensor], Tensor]:
     if activation == "relu":
         return F.relu
@@ -145,7 +385,7 @@ if __name__ == "__main__":
     from symm_learning.utils import check_equivariance
 
     G = CyclicGroup(10)
-    m = 2
+    m = 3
     in_rep = directsum([G.regular_representation] * m)
 
     etransformer = eTransformerEncoderLayer(
@@ -158,6 +398,31 @@ if __name__ == "__main__":
         batch_first=True,
     )
     etransformer.eval()  # disable dropout for the test
+
+    check_equivariance(
+        etransformer._feed_forward_block,
+        input_dim=3,
+        atol=1e-4,
+        rtol=1e-4,
+        in_rep=etransformer.in_rep,
+        out_rep=etransformer.out_rep,
+    )
+    print("Feed-forward block equivariance test passed!\n")
+
     check_equivariance(etransformer, input_dim=3, atol=1e-4, rtol=1e-4)
 
-    print("All tests passed!")
+    print("\n")
+
+    decoder = eTransformerDecoderLayer(
+        in_rep,
+        nhead=1,
+        dim_feedforward=in_rep.size * 2,
+        dropout=0.0,
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+    )
+    decoder.eval()
+    decoder.check_equivariance(atol=1e-3, rtol=1e-3)
+
+    print("Decoder equivariance test passed")
