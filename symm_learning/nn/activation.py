@@ -8,7 +8,27 @@ from symm_learning.nn.parametrizations import CommutingConstraint, InvariantCons
 
 
 class eMultiheadAttention(torch.nn.MultiheadAttention):
-    """Equivariant Multi-head attention built by constraining PyTorch's implementation."""
+    """Drop-in replacement for :class:`torch.nn.MultiheadAttention` that preserves G-equivariance.
+
+    This module keeps the runtime logic of PyTorch’s implementation untouched: we still rely on
+    the packed ``in_proj_weight`` / ``in_proj_bias`` for computing queries, keys, and values,
+    and the internal attention kernel (including mask handling, dropouts, and softmax) is exactly
+    the stock MultiheadAttention behavior.
+
+    Equivariance is achieved by constraining every linear projection involved in the attention block:
+
+    * the input projection ``[Q; K; V] = W_in @ x`` is treated as a single map from the input
+      representation to three stacked copies of a regular-representation block that
+      aligns with the requested ``num_heads`` (enforced via
+      :class:`~symm_learning.nn.parametrizations.CommutingConstraint`);
+    * the optional stacked bias is projected onto the invariant subspace of that same block via
+      :class:`~symm_learning.nn.parametrizations.InvariantConstraint`;
+    * the output projection ``out_proj`` is constrained to commute with the group action so that
+      the concatenated value vectors are mapped back into the original feature space equivariantly.
+
+    Additionally, we restrict ``num_heads`` to divide the number of regular-representation copies
+    present in the input feature space to avoid splitting irreducible subspaces across heads.
+    """
 
     def __init__(
         self,
@@ -69,18 +89,17 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
 
 
 if __name__ == "__main__":
-    from escnn.group import CyclicGroup
+    from escnn.group import CyclicGroup, DihedralGroup
 
     from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
     from symm_learning.utils import check_equivariance
 
-    G = CyclicGroup(4)
-    m = 10
+    G = DihedralGroup(10)
+    m = 6
     in_rep = directsum([G.regular_representation] * m)
 
-    for n_heads in [1, 2, 5, 10]:
+    for n_heads in [1, 2, 3]:
         eattention = eMultiheadAttention(in_rep=in_rep, num_heads=n_heads, bias=True, batch_first=True)
-
         check_equivariance(
             lambda x: eattention(x, x, x, need_weights=False)[0],
             input_dim=3,
