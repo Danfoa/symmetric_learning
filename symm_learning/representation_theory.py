@@ -17,19 +17,25 @@ from symm_learning.utils import CallableDict
 class GroupHomomorphismBasis:
     """TODO"""
 
-    def __init__(self, in_rep: Representation, out_rep: Representation):
+    def __init__(self, in_rep: Representation, out_rep: Representation, basis_expansion: str = "memory_heavy") -> None:
         assert in_rep.group == out_rep.group, f"in group: {in_rep.group} != out group: {out_rep.group}"
-
         self.G = in_rep.group
         self.in_rep = isotypic_decomp_rep(in_rep)
         self.out_rep = isotypic_decomp_rep(out_rep)
         dtype = torch.get_default_dtype()
+
+        if basis_expansion != "memory_heavy":
+            raise NotImplementedError(f"Basis expansion '{basis_expansion}' not implemented yet.")
+
         # Common irreps defining the only non-zero blocks in isotypic basis of Hom_G(in_rep, out_rep)
         self.common_irreps = sorted(set(self.in_rep.irreps).intersection(set(self.out_rep.irreps)))
 
-        self.blocks = {}
+        self.iso_blocks = {}
+        self.basis_elements = []
+        dof_offset = 0
         for irrep_id in self.common_irreps:
             irrep = self.G.irrep(*irrep_id)
+            irrep_dim = irrep.size
             # Slices defining the location of the isotypic subspace block in Hom_G(in_rep, out_rep)
             out_slice = self.out_rep.attributes["isotypic_subspace_dims"][irrep_id]
             in_slice = self.in_rep.attributes["isotypic_subspace_dims"][irrep_id]
@@ -37,24 +43,48 @@ class GroupHomomorphismBasis:
             mul_out = self.out_rep._irreps_multiplicities[irrep_id]
             mul_in = self.in_rep._irreps_multiplicities[irrep_id]
             # Endomorphism basis of the irrep End_G(k=irrep_id)
-            phi = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+            irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+            dim_end_basis = irrep_end_basis.size(0)
             # Normalize basis elements for orthogonal projections.
-            phi = phi / torch.einsum("dij,dij->d", phi, phi).sqrt()[:, None, None]
+            irrep_end_basis = (
+                irrep_end_basis / torch.einsum("dij,dij->d", irrep_end_basis, irrep_end_basis).sqrt()[:, None, None]
+            )
+            dim_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
             # Store block info for inference time use.
-            self.blocks[irrep_id] = dict(
+            self.iso_blocks[irrep_id] = dict(
                 out_slice=out_slice,
                 in_slice=in_slice,
-                endomorphism_basis=phi,
+                endomorphism_basis=irrep_end_basis,
                 mul_out=mul_out,
                 mul_in=mul_in,
                 irrep_dim=irrep.size,
-                degress_of_freedom=mul_out * mul_in * phi.size(0),
+                dim_hom_basis=dim_hom_basis,
+                hom_basis_slice=slice(dof_offset, dof_offset + dim_hom_basis),
             )
+            dof_offset += dim_hom_basis
+            # Construct the basis of Hom_G(V_k^{in}, V_k^{out}) of shape [S_k * m_out * m_in, Ny * Nx]
+            # This is memory-intensive but the fastest way for forward/backward passes.
+            irrep_basis_elements = []
+            for s in range(dim_end_basis):
+                irrep_end_basis = irrep_end_basis[s]  # [d_k, d_k]
+                for o_mul in range(mul_out):
+                    for i_mul in range(mul_in):
+                        basis_block = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=dtype)  # [Ny, Nx]
+                        row_start = out_slice.start + o_mul * irrep_dim
+                        col_start = in_slice.start + i_mul * irrep_dim
+                        basis_block[row_start : row_start + irrep_dim, col_start : col_start + irrep_dim] = (
+                            irrep_end_basis
+                        )
+                        irrep_basis_elements.append(basis_block.reshape(-1))
+            # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
+            self.basis_elements.append(torch.stack(irrep_basis_elements, dim=0))
+
+        self.basis_elements = torch.cat(self.basis_elements, dim=0)  # [dim(Hom_G(in_rep, out_rep)), Ny * Nx]
 
     @property
-    def degrees_of_freedom(self) -> int:
+    def dimension(self) -> int:
         """Return the total number of degrees of freedom of Hom_G(out_rep, in_rep)."""
-        return sum(block["degress_of_freedom"] for block in self.blocks.values())
+        return self.basis_elements.size(0)
 
 
 def isotypic_decomp_rep(rep: Representation) -> Representation:

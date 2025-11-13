@@ -89,6 +89,10 @@ class eLinear(torch.nn.Linear):
         # Instanciate the handler of the basis of Hom_G(in_rep, out_rep)
         self.hom_basis = GroupHomomorphismBasis(in_rep, out_rep)
         self.in_rep, self.out_rep = self.hom_basis.in_rep, self.hom_basis.out_rep
+        if self.hom_basis.dimension == 0:
+            raise ValueError(
+                f"No equivariant linear maps exist between {in_rep} and {out_rep}.\n dim(Hom_G(in_rep, out_rep))=0"
+            )
         # Assert bias vector is feasible given out_rep symmetries
         trivial_id = self.hom_basis.G.trivial_representation.id
         can_have_bias = out_rep._irreps_multiplicities.get(trivial_id, 0) > 0
@@ -98,53 +102,17 @@ class eLinear(torch.nn.Linear):
         self.register_buffer("Qin_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype))
         self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
 
-        # basis_rows will collect one tensor per irrep block, each of shape
-        # [S_k * m_out * m_in, Ny * Nx]. Storing all of them eagerly incurs O(#DoF * Ny * Nx)
-        # memory, which grows as the square of the representation size—acceptable here because
-        # these tensors stay constant once constructed and let us synthesis weights via a
-        # single matmul.
-        basis_rows = []
-        self._coeff_slices = {}
-        coeff_offset = 0
-        for irrep_id, irrep_metadata in self.hom_basis.blocks.items():
-            m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
-            dk = irrep_metadata["irrep_dim"]
-            end_basis = torch.as_tensor(irrep_metadata["endomorphism_basis"], dtype=dtype)  # [S_k, d_k, d_k]
-            dim_end_basis = end_basis.shape[0]  # S_k
+        # Register weight parameters (degrees of freedom: dof) and buffers
+        self.weight_dof = torch.nn.Parameter(torch.zeros(self.hom_basis.dimension, dtype=dtype), requires_grad=True)
+        # Buffer containing the basis elements of Hom_G(out_rep, in_rep) flattened
+        self.register_buffer("_basis_vectors_flat", self.hom_basis.basis_elements)
 
-            num_coeffs = dim_end_basis * m_out * m_in
-            self._coeff_slices[irrep_id] = slice(coeff_offset, coeff_offset + num_coeffs)
-            coeff_offset += num_coeffs
+        if self.has_bias:  # Register bias parameters
+            # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
+            m_out_trivial = out_rep._irreps_multiplicities[trivial_id]
+            bias_param = torch.nn.Parameter(torch.zeros(m_out_trivial), requires_grad=True)
+            self.register_parameter("bias_dof", bias_param)
 
-            # Build flattened basis vectors:
-            # For each endomorphism basis element phi (d_k x d_k), replicate it across every
-            # output/input multiplicity pair (m_out x m_in) and place it in the global (Ny x Nx)
-            # matrix at the contiguous slices corresponding to this irrep block.
-            out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
-            block_rows = []
-            for s in range(dim_end_basis):
-                phi = end_basis[s]  # [d_k, d_k]
-                for o_mul in range(m_out):
-                    for i_mul in range(m_in):
-                        basis_block = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=dtype)  # [Ny, Nx]
-                        row_start = out_slice.start + o_mul * dk
-                        col_start = in_slice.start + i_mul * dk
-                        basis_block[row_start : row_start + dk, col_start : col_start + dk] = phi
-                        block_rows.append(basis_block.reshape(-1))
-            # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
-            basis_rows.append(torch.stack(block_rows, dim=0))
-
-            if self.has_bias and irrep_id == trivial_id:
-                # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
-                bias_param = torch.nn.Parameter(torch.zeros(m_out), requires_grad=True)
-                self.register_parameter("bias_dof", bias_param)
-
-        if coeff_offset == 0:
-            raise ValueError("No equivariant degrees of freedom found; cannot instantiate eLinear2.")
-
-        basis_matrix = torch.cat(basis_rows, dim=0)  # [#coeffs, Ny*Nx]
-        self.register_buffer("_basis_vectors_flat", basis_matrix)
-        self.theta = torch.nn.Parameter(torch.zeros(coeff_offset, dtype=dtype), requires_grad=True)
         # Buffers to hold the expanded parameters
         self.register_buffer("_weight", torch.zeros((out_rep.size, in_rep.size), dtype=dtype))
         if self.has_bias:
@@ -204,8 +172,9 @@ class eLinear(torch.nn.Linear):
 
     def _expand_weight_iso_basis(self) -> torch.Tensor:
         """Expand the weight matrix in Hom_G(out_rep, in_rep) from the constrained trainable parameters."""
-        basis = self._basis_vectors_flat.to(device=self.theta.device, dtype=self.theta.dtype)
-        W_flat = torch.matmul(self.theta, basis)
+        basis = self._basis_vectors_flat.to(device=self.weight_dof.device, dtype=self.weight_dof.dtype)
+
+        W_flat = torch.matmul(self.weight_dof, basis)
         return W_flat.view(self.out_rep.size, self.in_rep.size)
 
     def _expand_bias(self) -> torch.Tensor:
@@ -214,7 +183,7 @@ class eLinear(torch.nn.Linear):
             return None
         # Recompute bias from trainable parameters
         trivial_id = self.out_rep.group.trivial_representation.id
-        trivial_indices = self.hom_basis.blocks[trivial_id]["out_slice"]
+        trivial_indices = self.hom_basis.iso_blocks[trivial_id]["out_slice"]
         return torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
 
 
