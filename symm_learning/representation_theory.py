@@ -14,6 +14,49 @@ from scipy.linalg import block_diag
 from symm_learning.utils import CallableDict
 
 
+class GroupHomomorphismBasis:
+    """TODO"""
+
+    def __init__(self, in_rep: Representation, out_rep: Representation):
+        assert in_rep.group == out_rep.group, f"in group: {in_rep.group} != out group: {out_rep.group}"
+
+        self.G = in_rep.group
+        self.in_rep = isotypic_decomp_rep(in_rep)
+        self.out_rep = isotypic_decomp_rep(out_rep)
+        dtype = torch.get_default_dtype()
+        # Common irreps defining the only non-zero blocks in isotypic basis of Hom_G(in_rep, out_rep)
+        self.common_irreps = sorted(set(self.in_rep.irreps).intersection(set(self.out_rep.irreps)))
+
+        self.blocks = {}
+        for irrep_id in self.common_irreps:
+            irrep = self.G.irrep(*irrep_id)
+            # Slices defining the location of the isotypic subspace block in Hom_G(in_rep, out_rep)
+            out_slice = self.out_rep.attributes["isotypic_subspace_dims"][irrep_id]
+            in_slice = self.in_rep.attributes["isotypic_subspace_dims"][irrep_id]
+            # Multiplicities of the irrep of type k=irrep_id in in_rep and out_rep
+            mul_out = self.out_rep._irreps_multiplicities[irrep_id]
+            mul_in = self.in_rep._irreps_multiplicities[irrep_id]
+            # Endomorphism basis of the irrep End_G(k=irrep_id)
+            phi = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+            # Normalize basis elements for orthogonal projections.
+            phi = phi / torch.einsum("dij,dij->d", phi, phi).sqrt()[:, None, None]
+            # Store block info for inference time use.
+            self.blocks[irrep_id] = dict(
+                out_slice=out_slice,
+                in_slice=in_slice,
+                endomorphism_basis=phi,
+                mul_out=mul_out,
+                mul_in=mul_in,
+                irrep_dim=irrep.size,
+                degress_of_freedom=mul_out * mul_in * phi.size(0),
+            )
+
+    @property
+    def degrees_of_freedom(self) -> int:
+        """Return the total number of degrees of freedom of Hom_G(out_rep, in_rep)."""
+        return sum(block["degress_of_freedom"] for block in self.blocks.values())
+
+
 def isotypic_decomp_rep(rep: Representation) -> Representation:
     r"""Return an equivalent representation disentangled into isotypic subspaces.
 
@@ -273,6 +316,7 @@ def is_complex_irreducible(
 
         def rep(g):
             return rep[g]
+
     else:
         rep = rep
 
@@ -333,6 +377,7 @@ def decompose_representation(
 
         def rep(g):
             return rep[g]
+
     else:
         rep = rep
     # Compute the dimension of the representation
@@ -463,6 +508,7 @@ def cplx_isotypic_decomposition(G: Group, rep: Callable[[GroupElement], np.ndarr
 
         def rep(g):
             return rep[g]
+
     else:
         rep = rep
 

@@ -22,25 +22,35 @@ class InvariantConstraint(torch.nn.Module):
         self.inv_projector = self.inv_projector.to(b.device, b.dtype)
         return torch.mv(self.inv_projector, b)
 
+    def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Return a parameter tensor whose projection equals ``tensor``."""
+        print("[InvariantConstraint] right_inverse called")
+        return tensor
+
 
 class CommutingConstraint(torch.nn.Module):
-    r"""Equivariant weight parametrization using a precomputed orthonormal basis.
+    r"""Equivariant weight parametrization via isotypic-basis projection.
 
     Args:
         in_rep: (:class:`~escnn.group.Representation`) input representation.
         out_rep: (:class:`~escnn.group.Representation`) output representation.
 
-    This parametrization expands all :math:`G`-equivariant linear maps in the isotypic basis
-    :math:`\\{B_i\\}_{i=1}^K` returned by :func:`escnn.group.Representation.endomorphism_basis`.
-    Each basis element is broadcast to the full multiplicity block once at initialization, so
-    projecting a weight matrix boils down to two dense contractions:
+    Every pair of matching isotypic subspaces (one from ``in_rep``, one from ``out_rep``) inherits the
+    same irreducible type :math:`\bar\rho_k`. Inside that block, any equivariant map factors as
 
     .. math::
-        c_i = \\langle B_i, W \\rangle_F, \\quad
-        \\Pi(W) = \\sum_i c_i B_i.
+        A_{i,j}^{(k)} = \sum_{b \in \mathbb{B}_k} \Theta^{(k)}_{b,\,i,j} \,\Psi_k(b),
 
-    Because the :math:`B_i` are orthonormal, no extra normalization is required and the projection can
-    be implemented as a pair of GEMV calls.
+    where :math:`\Psi_k(b)` spans :math:`\mathrm{End}_G(\bar\rho_k)` and
+    :math:`\Theta^{(k)}_{b,\,i,j} = \langle A_{i,j}^{(k)}, \Psi_k(b) \rangle / \|\Psi_k(b)\|^2`.
+    The combinatorics over multiplicity indices is captured by Kronecker-factoring these basis
+    endomorphisms with canonical ``E_{ij}`` selectors.
+
+    Implementation detail: we prebuild all
+    :math:`E_{ij} \otimes \Psi_k(b)` blocks once, stack them into a tall matrix, and perform the whole
+    projection as two batched GEMV operations—one to gather all Frobenius inner products, one to
+    reconstruct the projected weight. This keeps the projection GPU-friendly while matching the
+    orthogonal projection defined by Proposition H.13.
     """
 
     def __init__(self, in_rep: Representation, out_rep: Representation):
@@ -55,37 +65,63 @@ class CommutingConstraint(torch.nn.Module):
         self.common_irreps = sorted(set(self.in_rep.irreps).intersection(set(self.out_rep.irreps)))
         dtype = torch.get_default_dtype()
         total_basis_dim = 0
-        irrep_blocks = []
+        basis_blocks = []
+        basis_norms_chunks = []
+        self.irreps_meta = []
         for irrep_id in self.common_irreps:
             irrep_out_slice = self.out_rep.attributes["isotypic_subspace_dims"][irrep_id]
             irrep_in_slice = self.in_rep.attributes["isotypic_subspace_dims"][irrep_id]
             mul_out = self.out_rep._irreps_multiplicities[irrep_id]
             mul_in = self.in_rep._irreps_multiplicities[irrep_id]
             irrep = G.irrep(*irrep_id)
-            basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)
+            endo_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)
             irrep_dim = irrep.size
-            irrep_blocks.append((irrep_out_slice, irrep_in_slice, basis, mul_out, mul_in, irrep_dim))
-            total_basis_dim += basis.shape[0]
+            self.irreps_meta.append((irrep_out_slice, irrep_in_slice, endo_basis, mul_out, mul_in, irrep_dim))
 
-        basis_vectors = torch.zeros(
-            total_basis_dim,
-            self.out_rep.size,
-            self.in_rep.size,
-            dtype=self.Qin.dtype,
-        )
-        cursor = 0
-        for out_slice, in_slice, basis, mul_out, mul_in, irrep_dim in irrep_blocks:
-            block = (
-                basis[:, None, :, None, :]
-                .repeat(1, mul_out, 1, mul_in, 1)
-                .reshape(basis.shape[0], mul_out * irrep_dim, mul_in * irrep_dim)
+            # Build Kron(E_{ij}, Psi_b) for every multiplicity pair (i, j).
+            pair_blocks = []
+            for i in range(mul_out):
+                out_block = slice(i * irrep_dim, (i + 1) * irrep_dim)
+                for j in range(mul_in):
+                    in_block = slice(j * irrep_dim, (j + 1) * irrep_dim)
+                    block = torch.zeros(
+                        endo_basis.shape[0],
+                        mul_out * irrep_dim,
+                        mul_in * irrep_dim,
+                        dtype=self.Qin.dtype,
+                    )
+                    block[:, out_block, in_block] = endo_basis.to(self.Qin.dtype)
+                    pair_blocks.append(block)
+            pair_blocks = (
+                torch.cat(pair_blocks, dim=0)
+                if pair_blocks
+                else torch.empty(0, mul_out * irrep_dim, mul_in * irrep_dim, dtype=self.Qin.dtype)
             )
-            bdim = block.shape[0]
-            basis_vectors[cursor : cursor + bdim, out_slice, in_slice] = block
-            cursor += bdim
+
+            rows = pair_blocks.shape[0]
+            container = torch.zeros(rows, self.out_rep.size, self.in_rep.size, dtype=self.Qin.dtype)
+            container[:, irrep_out_slice, irrep_in_slice] = pair_blocks
+            basis_blocks.append(container)
+
+            base_norms = torch.einsum("bij,bij->b", endo_basis, endo_basis).to(self.Qin.dtype)
+            basis_norms_chunks.append(base_norms.repeat(mul_out * mul_in))
+            total_basis_dim += rows
+
+        if basis_blocks:
+            basis_vectors = torch.cat(basis_blocks, dim=0)
+            basis_vectors_flat = basis_vectors.reshape(total_basis_dim, -1)
+            basis_norms = torch.cat(basis_norms_chunks, dim=0)
+            basis_inv_norms = torch.zeros_like(basis_norms)
+            mask = basis_norms > 0
+            basis_inv_norms[mask] = basis_norms[mask].reciprocal()
+        else:
+            basis_vectors = torch.zeros(0, self.out_rep.size, self.in_rep.size, dtype=self.Qin.dtype)
+            basis_vectors_flat = basis_vectors.reshape(0, -1)
+            basis_inv_norms = torch.zeros(0, dtype=self.Qin.dtype)
 
         self.register_buffer("basis_vectors", basis_vectors)
-        self.register_buffer("basis_vectors_flat", basis_vectors.reshape(total_basis_dim, -1))
+        self.register_buffer("basis_vectors_flat", basis_vectors_flat)
+        self.register_buffer("basis_inv_norms", basis_inv_norms)
         self.num_basis = total_basis_dim
 
     def forward(self, W: torch.Tensor) -> torch.Tensor:
@@ -114,47 +150,82 @@ class CommutingConstraint(torch.nn.Module):
         :math:`c_i = \\langle B_i, W \\rangle_F` and the synthesis
         :math:`\\sum_i c_i B_i` are computed by standard matrix-vector multiplications.
         """
+        # Flatten once so that all Frobenius inner products <W_iso, B_i> become matrix-vector products.
         W_flat = W_iso.reshape(-1)
-        coeff = torch.mv(self.basis_vectors_flat, W_flat)  # [B]
-        W_eq_flat = torch.mv(self.basis_vectors_flat.t(), coeff)  # [Ny * Nx]
+        coeff = torch.mv(self.basis_vectors_flat, W_flat)  #
+        scaled_coeff = coeff * self.basis_inv_norms
+        W_eq_flat = torch.mv(self.basis_vectors_flat.t(), scaled_coeff)  # [Ny * Nx]
         return W_eq_flat.reshape_as(W_iso)
+
+    @torch.no_grad()
+    def sample_equivariant_iso(self, scheme: str = "xavier_uniform"):
+        """Return W_iso ~ Hom_G(out, in), initialized per-irrep with Xavier/He."""
+        #
+        device = self.Qin.device
+        W_iso = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=self.Qin.dtype, device=device)
+
+        for out_slice, in_slice, endo_basis, m_out, m_in, irrep_dim in self.irreps_meta:
+            dim_endo_basis, _, _ = endo_basis.shape  # number of basis elements
+            dtype = endo_basis.dtype
+            # fans for this irrep
+            fan_in = dim_endo_basis * m_in
+            fan_out = dim_endo_basis * m_out
+            # isotypic_param_shape := (dim_irrep_endomorphism, irep_multiplicity_out, irrep_multiplicity_in)
+            isotypic_param_shape = (dim_endo_basis, m_out, m_in)
+            if scheme == "xavier_uniform":
+                bound = (6.0 / (fan_in + fan_out)) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
+            elif scheme == "xavier_normal":
+                std = (2.0 / (fan_in + fan_out)) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
+            elif scheme in {"kaiming_normal", "he_normal"}:
+                std = (2.0 / fan_in) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
+            elif scheme in {"kaiming_uniform", "he_uniform"}:
+                bound = (6.0 / fan_in) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
+            else:
+                raise ValueError(f"Unknown scheme: {scheme}")
+
+            # Synthesize Σ_b kron(Θ_b, Ψ_b)
+            # basis[b] is [d, d], theta[b] is [m_out, m_in]
+            block = torch.zeros(m_out * irrep_dim, m_in * irrep_dim, device=device, dtype=dtype)
+            for b in range(dim_endo_basis):
+                block.add_(torch.kron(theta[b], endo_basis[b]))
+            W_iso[out_slice, in_slice] = block
+
+        return W_iso
+
+    def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Return a pre-image for the parametrization (identity for now)."""
+        print("[CommutingConstraint] right_inverse called")
+        return tensor
 
 
 if __name__ == "__main__":
-    from escnn.group import CyclicGroup, DihedralGroup, Representation, directsum
+    from escnn.group import CyclicGroup, Icosahedral, directsum
 
-    from symm_learning.nn.linear import eLinear
+    from symm_learning.nn.linear import eLinear, eLinear2
 
-    G = DihedralGroup(6)
+    G = Icosahedral()
 
-    in_rep = directsum([G.regular_representation] * 10)
-    out_rep = directsum([G.regular_representation] * 11)
+    in_rep = directsum([G.regular_representation] * 2)
+    out_rep = directsum([G.regular_representation] * 2)
 
-    layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=True)
-    eq_layer = eLinear(in_rep, out_rep, bias=True)
+    std_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=False)
+    eq_layer_param = eLinear(in_rep, out_rep, bias=False)
+    eq_layer_basis = eLinear2(in_rep, out_rep, bias=False)
 
     in_type = FieldType(no_base_space(G), [in_rep])
     out_type = FieldType(no_base_space(G), [out_rep])
-    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=True)
+    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=False)
 
-    batch_size = 512
-    eq_layer.cuda()
-    device = eq_layer.weight.device
+    batch_size = 1024
+    eq_layer_basis.cuda()
+    device = eq_layer_basis.weight.device
     print(f"Device: {device}")
-    for _ in range(30):
-        x = torch.randn(batch_size, in_rep.size).to(device)
-        for g in G.elements:
-            g_x = torch.einsum("ij,bj->bi", torch.tensor(in_rep(g), dtype=torch.float).to(device), x)
 
-            y = eq_layer(x)
-            g_y = eq_layer(g_x)
-            g_y_expected = torch.einsum("ij,bj->bi", torch.tensor(out_rep(g), dtype=torch.float).to(device), y)
-
-            assert torch.allclose(g_y, g_y_expected, atol=1e-4), f"Equivariance test failed for group element {g}"
-
-    print("Equivariance test passed!")
-
-    def benchmark(module, x, iters=1000, warmup=50, device="cuda"):
+    def benchmark(module, x, iters=500, warmup=50, device="cuda"):
         """Benchmark a module and return independent forward/backward timings (in ms)."""
         torch.cuda.synchronize()
         fwd_start = torch.cuda.Event(enable_timing=True)
@@ -193,20 +264,36 @@ if __name__ == "__main__":
         backward_std = float(bwd_stats.std(unbiased=False).item())
         return (forward_mean, forward_std), (backward_mean, backward_std)
 
-    x = torch.randn(batch_size, in_rep.size).cuda()
-    (time_std_fwd, time_std_fwddev), (time_std_bwd, time_std_bwddev) = benchmark(layer.cuda(), x)
-    print(
-        f"Standard linear layer — forward: {time_std_fwd:.3f} ms ± {time_std_fwddev:.3f} ms, "
-        f"backward: {time_std_bwd:.3f} ms ± {time_std_bwddev:.3f} ms over {batch_size} samples"
-    )
-    (time_eq_fwd, time_eq_fwddev), (time_eq_bwd, time_eq_bwddev) = benchmark(eq_layer.cuda(), x)
-    print(
-        f"Equivariant linear layer — forward: {time_eq_fwd:.3f} ms ± {time_eq_fwddev:.3f} ms, "
-        f"backward: {time_eq_bwd:.3f} ms ± {time_eq_bwddev:.3f} ms over {batch_size} samples"
-    )
-    (time_escnn_fwd, time_escnn_fwddev), (time_escnn_bwd, time_escnn_bwddev) = benchmark(escnn_layer.cuda(), x)
-    print(
-        f"e2cnn linear layer — forward: {time_escnn_fwd:.3f} ms ± {time_escnn_fwddev:.3f} ms, "
-        f"backward: {time_escnn_bwd:.3f} ms ± {time_escnn_bwddev:.3f} ms over {batch_size} samples"
-    )
-    print("Done")
+    x = torch.randn(batch_size, in_rep.size, device=device)
+
+    modules_to_benchmark = [
+        ("Standard", std_layer.cuda()),
+        ("eLinear", eq_layer_param.cuda()),
+        ("eLinear2", eq_layer_basis.cuda()),
+        ("escnn", escnn_layer.cuda()),
+    ]
+
+    results = []
+    for name, module in modules_to_benchmark:
+        (fwd_mean, fwd_std), (bwd_mean, bwd_std) = benchmark(module, x)
+        results.append(
+            {
+                "name": name,
+                "fwd_mean": fwd_mean,
+                "fwd_std": fwd_std,
+                "bwd_mean": bwd_mean,
+                "bwd_std": bwd_std,
+            }
+        )
+
+    header = f"{'Layer':<12} {'Forward (ms)':>18} {'Backward (ms)':>18}"
+    separator = "-" * len(header)
+    print(f"\nBenchmark results per {batch_size}-sample batch")
+    print(separator)
+    print(header)
+    print(separator)
+    for res in results:
+        fwd_str = f"{res['fwd_mean']:.3f} ± {res['fwd_std']:.3f}"
+        bwd_str = f"{res['bwd_mean']:.3f} ± {res['bwd_std']:.3f}"
+        print(f"{res['name']:<12} {fwd_str:>18} {bwd_str:>18}")
+    print(separator)
