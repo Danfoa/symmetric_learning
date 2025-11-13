@@ -80,6 +80,11 @@ class eLinear2(torch.nn.Linear):
         self.register_buffer("Qin_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype))
         self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
 
+        # basis_rows will collect one tensor per irrep block, each of shape
+        # [S_k * m_out * m_in, Ny * Nx]. Storing all of them eagerly incurs O(#DoF * Ny * Nx)
+        # memory, which grows as the square of the representation size—acceptable here because
+        # these tensors stay constant once constructed and let us synthesis weights via a
+        # single matmul.
         basis_rows = []
         self._coeff_slices = {}
         coeff_offset = 0
@@ -93,23 +98,23 @@ class eLinear2(torch.nn.Linear):
             self._coeff_slices[irrep_id] = slice(coeff_offset, coeff_offset + num_coeffs)
             coeff_offset += num_coeffs
 
-            # Build basis rows for this irrep block
+            # Build flattened basis vectors:
+            # For each endomorphism basis element phi (d_k x d_k), replicate it across every
+            # output/input multiplicity pair (m_out x m_in) and place it in the global (Ny x Nx)
+            # matrix at the contiguous slices corresponding to this irrep block.
             out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
             block_rows = []
             for s in range(dim_end_basis):
                 phi = end_basis[s]  # [d_k, d_k]
-                for k in range(m_out * m_in):
-                    o_mul = k // m_in
-                    i_mul = k % m_in
-                    basis_block = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=dtype)  # [Ny, Nx]
-                    row_start = out_slice.start + o_mul * dk
-                    col_start = in_slice.start + i_mul * dk
-                    basis_block[row_start : row_start + dk, col_start : col_start + dk] = phi  # insert [d_k, d_k]
-                    block_rows.append(basis_block.reshape(-1))  # [Ny*Nx]
-            if block_rows:
-                basis_rows.append(torch.stack(block_rows, dim=0))  # [S_k * m_out * m_in, Ny*Nx]
-            else:
-                basis_rows.append(torch.zeros(0, self.out_rep.size * self.in_rep.size, dtype=dtype))
+                for o_mul in range(m_out):
+                    for i_mul in range(m_in):
+                        basis_block = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=dtype)  # [Ny, Nx]
+                        row_start = out_slice.start + o_mul * dk
+                        col_start = in_slice.start + i_mul * dk
+                        basis_block[row_start : row_start + dk, col_start : col_start + dk] = phi
+                        block_rows.append(basis_block.reshape(-1))
+            # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
+            basis_rows.append(torch.stack(block_rows, dim=0))
 
             if self.has_bias and irrep_id == trivial_id:
                 # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep

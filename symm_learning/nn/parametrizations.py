@@ -207,8 +207,14 @@ if __name__ == "__main__":
 
     from symm_learning.nn.linear import eLinear, eLinear2
 
-    G = Icosahedral()
-    # G = CyclicGroup(2)
+    try:
+        G = Icosahedral()
+    except PermissionError as exc:
+        print(f"Falling back to CyclicGroup(2) due to cache permission error: {exc}")
+        G = CyclicGroup(2)
+    except OSError as exc:
+        print(f"Falling back to CyclicGroup(2) due to cache error: {exc}")
+        G = CyclicGroup(2)
     m = 3
     in_rep = directsum([G.regular_representation] * m)
     out_rep = directsum([G.regular_representation] * m * 2)
@@ -222,17 +228,42 @@ if __name__ == "__main__":
     escnn_layer = escnn.nn.Linear(in_type, out_type, bias=False)
 
     batch_size = 1024
-    eq_layer_basis.cuda()
-    device = eq_layer_basis.weight.device
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda") if use_cuda else torch.device("cpu")
+    std_layer = std_layer.to(device)
+    eq_layer_param = eq_layer_param.to(device)
+    eq_layer_basis = eq_layer_basis.to(device)
+    escnn_layer = escnn_layer.to(device)
     print(f"Device: {device}")
 
-    def benchmark(module, x, iters=500, warmup=50, device="cuda"):
+    def module_memory(module: torch.nn.Module):  # noqa: D103
+        trainable = 0
+        frozen = 0
+        for p in module.parameters():
+            nbytes = p.numel() * p.element_size()
+            if p.requires_grad:
+                trainable += nbytes
+            else:
+                frozen += nbytes
+        buffer_bytes = sum(buf.numel() * buf.element_size() for buf in module.buffers())
+        non_trainable = frozen + buffer_bytes
+        return trainable, non_trainable
+
+    def bytes_to_mb(num_bytes: int) -> float:  # noqa: D103
+        return num_bytes / (1024**2)
+
+    import time
+
+    def benchmark(module, x, iters=500, warmup=50):
         """Benchmark a module and return independent forward/backward timings (in ms)."""
-        torch.cuda.synchronize()
-        fwd_start = torch.cuda.Event(enable_timing=True)
-        fwd_end = torch.cuda.Event(enable_timing=True)
-        bwd_start = torch.cuda.Event(enable_timing=True)
-        bwd_end = torch.cuda.Event(enable_timing=True)
+        if use_cuda:
+            torch.cuda.synchronize()
+            fwd_start = torch.cuda.Event(enable_timing=True)
+            fwd_end = torch.cuda.Event(enable_timing=True)
+            bwd_start = torch.cuda.Event(enable_timing=True)
+            bwd_end = torch.cuda.Event(enable_timing=True)
+        else:
+            fwd_start = fwd_end = bwd_start = bwd_end = None
 
         optim = torch.optim.SGD(module.parameters(), lr=0.00001)
         forward_times, backward_times = [], []
@@ -240,22 +271,35 @@ if __name__ == "__main__":
         for i in range(iters + warmup):
             optim.zero_grad()
 
-            fwd_start.record()
+            if use_cuda:
+                fwd_start.record()
+            fwd_start_cpu = time.perf_counter()
             y = module(in_type(x)).tensor if isinstance(module, escnn.nn.Linear) else module(x)
-            fwd_end.record()
+            fwd_end_cpu = time.perf_counter()
+            if use_cuda:
+                fwd_end.record()
 
             loss = y.pow(2).mean()
 
-            bwd_start.record()
+            if use_cuda:
+                bwd_start.record()
+            bwd_start_cpu = time.perf_counter()
             loss.backward()
-            bwd_end.record()
+            bwd_end_cpu = time.perf_counter()
+            if use_cuda:
+                bwd_end.record()
             optim.step()
 
-            torch.cuda.synchronize()
+            if use_cuda:
+                torch.cuda.synchronize()
 
             if i >= warmup:
-                forward_times.append(fwd_start.elapsed_time(fwd_end))
-                backward_times.append(bwd_start.elapsed_time(bwd_end))
+                if use_cuda:
+                    forward_times.append(fwd_start.elapsed_time(fwd_end))
+                    backward_times.append(bwd_start.elapsed_time(bwd_end))
+                else:
+                    forward_times.append((fwd_end_cpu - fwd_start_cpu) * 1000.0)
+                    backward_times.append((bwd_end_cpu - bwd_start_cpu) * 1000.0)
 
         fwd_stats = torch.tensor(forward_times)
         bwd_stats = torch.tensor(backward_times)
@@ -268,14 +312,15 @@ if __name__ == "__main__":
     x = torch.randn(batch_size, in_rep.size, device=device)
 
     modules_to_benchmark = [
-        ("Standard", std_layer.cuda()),
-        ("eLinear", eq_layer_param.cuda()),
-        ("eLinear2", eq_layer_basis.cuda()),
-        ("escnn", escnn_layer.cuda()),
+        ("Standard", std_layer),
+        ("eLinear", eq_layer_param),
+        ("eLinear2", eq_layer_basis),
+        ("escnn", escnn_layer),
     ]
 
     results = []
     for name, module in modules_to_benchmark:
+        train_mem, non_train_mem = module_memory(module)
         (fwd_mean, fwd_std), (bwd_mean, bwd_std) = benchmark(module, x)
         results.append(
             {
@@ -284,10 +329,16 @@ if __name__ == "__main__":
                 "fwd_std": fwd_std,
                 "bwd_mean": bwd_mean,
                 "bwd_std": bwd_std,
+                "total_time": fwd_mean + bwd_mean,
+                "train_mem": train_mem,
+                "non_train_mem": non_train_mem,
             }
         )
 
-    header = f"{'Layer':<12} {'Forward (ms)':>18} {'Backward (ms)':>18}"
+    header = (
+        f"{'Layer':<12} {'Forward (ms)':>18} {'Backward (ms)':>18} {'Total (ms)':>15} "
+        f"{'Trainable MB':>15} {'Non-train MB':>15} {'Total MB':>12}"
+    )
     separator = "-" * len(header)
     print(f"\nBenchmark results per {batch_size}-sample batch")
     print(separator)
@@ -296,5 +347,10 @@ if __name__ == "__main__":
     for res in results:
         fwd_str = f"{res['fwd_mean']:.3f} ± {res['fwd_std']:.3f}"
         bwd_str = f"{res['bwd_mean']:.3f} ± {res['bwd_std']:.3f}"
-        print(f"{res['name']:<12} {fwd_str:>18} {bwd_str:>18}")
+        total_mb = res["train_mem"] + res["non_train_mem"]
+        print(
+            f"{res['name']:<12} {fwd_str:>18} {bwd_str:>18} "
+            f"{res['total_time']:>15.3f} {bytes_to_mb(res['train_mem']):>15.3f} "
+            f"{bytes_to_mb(res['non_train_mem']):>15.3f} {bytes_to_mb(total_mb):>12.3f}"
+        )
     print(separator)
