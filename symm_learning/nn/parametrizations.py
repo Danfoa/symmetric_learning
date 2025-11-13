@@ -208,9 +208,10 @@ if __name__ == "__main__":
     from symm_learning.nn.linear import eLinear, eLinear2
 
     G = Icosahedral()
-
-    in_rep = directsum([G.regular_representation] * 2)
-    out_rep = directsum([G.regular_representation] * 2)
+    # G = CyclicGroup(2)
+    m = 3
+    in_rep = directsum([G.regular_representation] * m)
+    out_rep = directsum([G.regular_representation] * m * 2)
 
     std_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=False)
     eq_layer_param = eLinear(in_rep, out_rep, bias=False)
