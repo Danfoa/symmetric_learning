@@ -7,20 +7,38 @@ from symm_learning.nn.parametrizations import CommutingConstraint, InvariantCons
 from symm_learning.representation_theory import GroupHomomorphismBasis, isotypic_decomp_rep
 
 
+def impose_linear_equivariance(lin: torch.nn.Module, in_rep: Representation, out_rep: Representation) -> None:
+    r"""Impose equivariance constraints on a given torch.nn.Linear layer using torch parametrizations.
+
+    Impose via torch parametrizations (hard constraints on trainable parameters ) that the weight matrix of
+    the given linear layer commutes with the group actions of the input and output representations. That is:
+
+    .. math::
+        \rho_{\text{out}}(g) W = W \rho_{\text{in}}(g) \quad \forall g \in G
+
+    If the layer has a bias term, it is constrained to be invariant:
+    .. math::
+        \rho_{\text{out}}(g) b = b \quad \forall g \in G
+
+    Parameters
+    ----------
+    lin : torch.nn.Module
+        The linear layer to impose equivariance on. Must have 'weight' and optionally 'bias' attributes.
+    in_rep : escnn.group.Representation
+        The input representation of the layer.
+    out_rep : escnn.group.Representation
+        The output representation of the layer.
+    """
+    # Add attributes to the layer for later reference
+    lin.in_rep = in_rep
+    lin.out_rep = out_rep
+    # Register parametrizations enforcing equivariance
+    parametrize.register_parametrization(lin, "weight", CommutingConstraint(in_rep, out_rep))
+    if lin.bias is not None:
+        parametrize.register_parametrization(lin, "bias", InvariantConstraint(out_rep))
+
+
 class eLinear(torch.nn.Linear):
-    """Equivariant Linear layer between two representations using torch parametrizations."""
-
-    def __init__(self, in_rep: Representation, out_rep: Representation, bias: bool = True):
-        super().__init__(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
-        self.in_rep = in_rep
-        self.out_rep = out_rep
-        # Register parametrizations enforcing equivariance
-        parametrize.register_parametrization(self, "weight", CommutingConstraint(in_rep, out_rep))
-        if bias:
-            parametrize.register_parametrization(self, "bias", InvariantConstraint(out_rep))
-
-
-class eLinear2(torch.nn.Linear):
     r"""Equivariant linear map `A in Hom_G(in_rep, out_rep)` parameterized in the isotypic basis.
 
     **Structure.** Decompose input/output into isotypic components for irreps
@@ -119,7 +137,7 @@ class eLinear2(torch.nn.Linear):
             if self.has_bias and irrep_id == trivial_id:
                 # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
                 bias_param = torch.nn.Parameter(torch.zeros(m_out), requires_grad=True)
-                self.register_parameter("bias_DoF", bias_param)
+                self.register_parameter("bias_dof", bias_param)
 
         if coeff_offset == 0:
             raise ValueError("No equivariant degrees of freedom found; cannot instantiate eLinear2.")
@@ -197,8 +215,7 @@ class eLinear2(torch.nn.Linear):
         # Recompute bias from trainable parameters
         trivial_id = self.out_rep.group.trivial_representation.id
         trivial_indices = self.hom_basis.blocks[trivial_id]["out_slice"]
-        bias_dof = getattr(self, "bias_DoF")
-        return torch.mv(self.Qout[:, trivial_indices], bias_dof)
+        return torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
 
 
 class eAffine(torch.nn.Module):
@@ -308,7 +325,7 @@ class eAffine(torch.nn.Module):
 
 if __name__ == "__main__":
     import escnn
-    from escnn.group import CyclicGroup, DihedralGroup, directsum
+    from escnn.group import CyclicGroup, DihedralGroup, Icosahedral, directsum
     from numpy import set_printoptions
     from torch.profiler import ProfilerActivity, profile, record_function
 
@@ -316,52 +333,50 @@ if __name__ == "__main__":
 
     from symm_learning.utils import check_equivariance
 
-    G = DihedralGroup(3)
+    G = Icosahedral()
     m = 5
     rep = directsum([G.regular_representation] * m)
-    rep = escnn.group.change_basis(rep, change_of_basis=rep.change_of_basis_inv, name="iso")
 
-    layer2 = eLinear2(rep, rep, bias=False)
     layer = eLinear(rep, rep, bias=False)
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
-    check_equivariance(layer2, atol=1e-5, rtol=1e-5)
+    # check_equivariance(layer2, atol=1e-5, rtol=1e-5)
 
-    # Identity should be preserved under projection to Hom_G(rep, rep)
-    W_id = torch.eye(rep.size)
-    # print(W_id.detach().cpu().numpy())
-    layer.weight = W_id
-    W_id_proj = layer.weight  # Trigger Hom_G(rep, rep) projection
-    # print(W_id_proj.detach().cpu().numpy())
-    assert torch.allclose(W_id, W_id_proj, atol=1e-5, rtol=1e-5), (
-        f"Identity reprojection error max: {(W_id - W_id_proj).abs().max()}"
-    )
-    print("Identity reprojection test passed.")
+    # # Identity should be preserved under projection to Hom_G(rep, rep)
+    # W_id = torch.eye(rep.size)
+    # # print(W_id.detach().cpu().numpy())
+    # layer.weight = W_id
+    # W_id_proj = layer.weight  # Trigger Hom_G(rep, rep) projection
+    # # print(W_id_proj.detach().cpu().numpy())
+    # assert torch.allclose(W_id, W_id_proj, atol=1e-5, rtol=1e-5), (
+    #     f"Identity reprojection error max: {(W_id - W_id_proj).abs().max()}"
+    # )
+    # print("Identity reprojection test passed.")
 
-    try:
-        # Check the orthogonal projection to Hom_G(rep, rep) works as expected
-        in_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [rep])
-        layer = eLinear(rep, rep, bias=False)
-        escnn_layer = escnn.nn.Linear(in_type, in_type, bias=False)
-        W, b = escnn_layer.expand_parameters()
-        layer.weight = W
-        W_projected = layer.weight
-        assert torch.allclose(W, W_projected, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_projected).abs().max()}"
-        check_equivariance(layer, atol=1e-5, rtol=1e-5)
-        print("Projection invariance test passed.")
+    # try:
+    #     # Check the orthogonal projection to Hom_G(rep, rep) works as expected
+    #     in_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [rep])
+    #     layer = eLinear(rep, rep, bias=False)
+    #     escnn_layer = escnn.nn.Linear(in_type, in_type, bias=False)
+    #     W, b = escnn_layer.expand_parameters()
+    #     layer.weight = W
+    #     W_projected = layer.weight
+    #     assert torch.allclose(W, W_projected, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_projected).abs().max()}"
+    #     check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    #     print("Projection invariance test passed.")
 
-        # For any random linear map check the projected map is indeed in Hom_G(rep, rep)
-        W_random = torch.randn_like(W)
-        layer.weight = W_random
-        check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    #     # For any random linear map check the projected map is indeed in Hom_G(rep, rep)
+    #     W_random = torch.randn_like(W)
+    #     layer.weight = W_random
+    #     check_equivariance(layer, atol=1e-5, rtol=1e-5)
 
-        # Check projection is idempotent
-        W = layer.weight
-        layer.weight = W
-        W_proj2 = layer.weight
-        assert torch.allclose(W, W_proj2, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_proj2).abs().max()}"
-        print("Projection idempotence test passed.")
-    except (PermissionError, OSError) as exc:
-        print(f"Skipping escnn Linear comparison due to environment error: {exc}")
+    #     # Check projection is idempotent
+    #     W = layer.weight
+    #     layer.weight = W
+    #     W_proj2 = layer.weight
+    #     assert torch.allclose(W, W_proj2, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_proj2).abs().max()}"
+    #     print("Projection idempotence test passed.")
+    # except (PermissionError, OSError) as exc:
+    #     print(f"Skipping escnn Linear comparison due to environment error: {exc}")
 
     def backprop_sanity(module: torch.nn.Module, label: str):  # noqa: D103
         module.train()
@@ -376,7 +391,7 @@ if __name__ == "__main__":
         optim.step()
         print(f"{label} backprop test passed (grad norm {grad_norm:.4f})")
 
-    backprop_sanity(layer2, "eLinear2")
+    backprop_sanity(layer, "eLinear")
 
     # def profile_forward_pass(module: torch.nn.Module, batch_size: int = 512, warmup: int = 10, iters: int = 100):
     #     """Profile the forward pass of ``module`` and print a summary table."""

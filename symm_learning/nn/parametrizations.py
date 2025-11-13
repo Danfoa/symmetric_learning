@@ -119,7 +119,7 @@ class CommutingConstraint(torch.nn.Module):
             basis_vectors_flat = basis_vectors.reshape(0, -1)
             basis_inv_norms = torch.zeros(0, dtype=self.Qin.dtype)
 
-        self.register_buffer("basis_vectors", basis_vectors)
+        # self.register_buffer("basis_vectors", basis_vectors)
         self.register_buffer("basis_vectors_flat", basis_vectors_flat)
         self.register_buffer("basis_inv_norms", basis_inv_norms)
         self.num_basis = total_basis_dim
@@ -205,7 +205,7 @@ class CommutingConstraint(torch.nn.Module):
 if __name__ == "__main__":
     from escnn.group import CyclicGroup, Icosahedral, directsum
 
-    from symm_learning.nn.linear import eLinear, eLinear2
+    from symm_learning.nn.linear import eLinear
 
     try:
         G = Icosahedral()
@@ -219,20 +219,20 @@ if __name__ == "__main__":
     in_rep = directsum([G.regular_representation] * m)
     out_rep = directsum([G.regular_representation] * m * 2)
 
-    std_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=False)
-    eq_layer_param = eLinear(in_rep, out_rep, bias=False)
-    eq_layer_basis = eLinear2(in_rep, out_rep, bias=False)
+    std_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=True)
+    eq_layer_param = eLinear(in_rep, out_rep, bias=True)
+    # eq_layer_basis = eLinear2(in_rep, out_rep, bias=True)
 
     in_type = FieldType(no_base_space(G), [in_rep])
     out_type = FieldType(no_base_space(G), [out_rep])
-    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=False)
+    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=True)
 
     batch_size = 1024
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda") if use_cuda else torch.device("cpu")
     std_layer = std_layer.to(device)
     eq_layer_param = eq_layer_param.to(device)
-    eq_layer_basis = eq_layer_basis.to(device)
+    # eq_layer_basis = eq_layer_basis.to(device)
     escnn_layer = escnn_layer.to(device)
     print(f"Device: {device}")
 
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     modules_to_benchmark = [
         ("Standard", std_layer),
         ("eLinear", eq_layer_param),
-        ("eLinear2", eq_layer_basis),
+        # ("eLinear2", eq_layer_basis),
         ("escnn", escnn_layer),
     ]
 
