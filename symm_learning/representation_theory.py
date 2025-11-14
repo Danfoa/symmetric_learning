@@ -46,9 +46,10 @@ class GroupHomomorphismBasis:
             irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
             dim_end_basis = irrep_end_basis.size(0)
             # Normalize basis elements for orthogonal projections.
-            irrep_end_basis = (
-                irrep_end_basis / torch.einsum("dij,dij->d", irrep_end_basis, irrep_end_basis).sqrt()[:, None, None]
-            )
+            # Note: This breaks initialization.
+            # irrep_end_basis = (
+            # irrep_end_basis / torch.einsum("dij,dij->d", irrep_end_basis, irrep_end_basis).sqrt()[:, None, None]
+            # )
             dim_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
             # Store block info for inference time use.
             self.iso_blocks[irrep_id] = dict(

@@ -1,3 +1,5 @@
+import logging
+
 import torch
 import torch.nn.functional as F
 from escnn.group import Representation
@@ -5,6 +7,8 @@ from torch.nn.utils import parametrize
 
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
 from symm_learning.representation_theory import GroupHomomorphismBasis, isotypic_decomp_rep
+
+logger = logging.getLogger(__name__)
 
 
 def impose_linear_equivariance(lin: torch.nn.Module, in_rep: Representation, out_rep: Representation) -> None:
@@ -195,6 +199,14 @@ class eLinear(torch.nn.Linear):
             fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(torch.empty(m_out_inv, m_in_inv))
             bound = 1 / torch.math.sqrt(fan_in) if fan_in > 0 else 0
             torch.nn.init.uniform_(self.bias_dof, -bound, bound)
+
+        logger.debug(f"Reset parameters of linear layer to {scheme}")
+
+    def extra_repr(self):  # noqa: D102
+        return (
+            f"in_rep={self.in_rep} in features={self.in_rep.size} out_rep={self.out_rep} out features"
+            f"={self.out_rep.size} bias={self.bias is not None}"
+        )
 
 
 class eAffine(torch.nn.Module):
