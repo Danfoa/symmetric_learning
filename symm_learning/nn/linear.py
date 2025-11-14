@@ -33,6 +33,7 @@ def impose_linear_equivariance(lin: torch.nn.Module, in_rep: Representation, out
     out_rep : escnn.group.Representation
         The output representation of the layer.
     """
+    assert isinstance(lin, torch.nn.Module), f"lin must be a torch.nn.Module, got {type(lin)}"
     # Add attributes to the layer for later reference
     lin.in_rep = in_rep
     lin.out_rep = out_rep
