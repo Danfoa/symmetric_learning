@@ -103,7 +103,6 @@ class eLinear(torch.nn.Linear):
         self.has_bias = bias and can_have_bias
         # Register change of basis matrices as buffers
         dtype = torch.get_default_dtype()
-        self.register_buffer("Qin_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype))
         self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
 
         # Register weight parameters (degrees of freedom: dof) and buffers
@@ -147,10 +146,8 @@ class eLinear(torch.nn.Linear):
             torch.Tensor Equivariant linear map of shape `(out_rep.size, in_rep.size)`.
         """
         if self.training:  # Recompute bias from trainable parameters
-            basis = self._basis_vectors_flat.to(device=self.weight_dof.device, dtype=self.weight_dof.dtype)
-            W_flat = torch.matmul(self.weight_dof, basis)
-            W_iso = W_flat.view(self.out_rep.size, self.in_rep.size)
-            self._weight = self.Qout @ W_iso @ self.Qin_inv
+            W_flat = torch.matmul(self.weight_dof, self._basis_vectors_flat)
+            self._weight = W_flat.view(self.out_rep.size, self.in_rep.size)
         return self._weight
 
     @property
@@ -201,12 +198,6 @@ class eLinear(torch.nn.Linear):
             torch.nn.init.uniform_(self.bias_dof, -bound, bound)
 
         logger.debug(f"Reset parameters of linear layer to {scheme}")
-
-    def extra_repr(self):  # noqa: D102
-        return (
-            f"in_rep={self.in_rep} in features={self.in_rep.size} out_rep={self.out_rep} out features"
-            f"={self.out_rep.size} bias={self.bias is not None}"
-        )
 
 
 class eAffine(torch.nn.Module):
