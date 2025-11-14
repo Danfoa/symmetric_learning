@@ -15,9 +15,37 @@ from symm_learning.utils import CallableDict
 
 
 class GroupHomomorphismBasis:
-    """TODO"""
+    r"""Compute an explicit basis for :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
+
+    Attributes:
+        G (Group): Symmetry group shared by `in_rep` and `out_rep`.
+        in_rep (Representation): Copy of the input representation rewritten in an
+            isotypic basis, dimension `in_rep.size`.
+        out_rep (Representation): Copy of the output representation rewritten in
+            an isotypic basis, dimension `out_rep.size`.
+        common_irreps (List[Tuple]): Sorted list of irrep identifiers that appear
+            in both `in_rep` and `out_rep`.
+        iso_blocks (Dict[Tuple, Dict[str, Any]]): Metadata for every irrep block; each value stores slices into the
+            output/input coordinates, the endomorphism basis of shape `(D_k, d_k, d_k)`, multiplicities, and the slice
+            selecting the corresponding degrees of freedom inside the basis expansion.
+        basis_elements (torch.Tensor): Stack of basis matrices spanning the
+            equivariant linear maps with shape `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`.
+    """
 
     def __init__(self, in_rep: Representation, out_rep: Representation, basis_expansion: str = "memory_heavy") -> None:
+        """Construct the equivariant basis and cache block-wise metadata.
+
+        Args:
+            in_rep: Input representation whose isotypic decomposition has size `in_rep.size`. The change of basis is
+            applied in-place and used to define the rows of the basis matrices.
+            out_rep: Output representation, treated analogously to `in_rep` with total size `out_rep.size`.
+            basis_expansion: Strategy used to realize the basis. Currently only `"memory_heavy"` is implemented, which
+              materializes every basis element explicitly, resulting in a tensor of shape
+              `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`.
+
+        Raises:
+            AssertionError: If `in_rep` and `out_rep` do not belong to the same symmetry group.
+        """
         assert in_rep.group == out_rep.group, f"in group: {in_rep.group} != out group: {out_rep.group}"
         self.G = in_rep.group
         self.in_rep = isotypic_decomp_rep(in_rep)
@@ -31,7 +59,7 @@ class GroupHomomorphismBasis:
         self.common_irreps = sorted(set(self.in_rep.irreps).intersection(set(self.out_rep.irreps)))
 
         self.iso_blocks = {}
-        self.basis_elements = []
+        basis_elements_iso_basis = []
         dof_offset = 0
         for irrep_id in self.common_irreps:
             irrep = self.G.irrep(*irrep_id)
@@ -45,11 +73,6 @@ class GroupHomomorphismBasis:
             # Endomorphism basis of the irrep End_G(k=irrep_id)
             irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
             dim_end_basis = irrep_end_basis.size(0)
-            # Normalize basis elements for orthogonal projections.
-            # Note: This breaks initialization.
-            # irrep_end_basis = (
-            # irrep_end_basis / torch.einsum("dij,dij->d", irrep_end_basis, irrep_end_basis).sqrt()[:, None, None]
-            # )
             dim_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
             # Store block info for inference time use.
             self.iso_blocks[irrep_id] = dict(
@@ -65,7 +88,7 @@ class GroupHomomorphismBasis:
             dof_offset += dim_hom_basis
             # Construct the basis of Hom_G(V_k^{in}, V_k^{out}) of shape [S_k * m_out * m_in, Ny * Nx]
             # This is memory-intensive but the fastest way for forward/backward passes.
-            irrep_basis_elements = []
+            irrep_basis_elements = []  # (S_k,  Ny, Nx)
             for s in range(dim_end_basis):
                 irrep_end_basis = irrep_end_basis[s]  # [d_k, d_k]
                 for o_mul in range(mul_out):
@@ -76,11 +99,16 @@ class GroupHomomorphismBasis:
                         basis_block[row_start : row_start + irrep_dim, col_start : col_start + irrep_dim] = (
                             irrep_end_basis
                         )
-                        irrep_basis_elements.append(basis_block.reshape(-1))
+                        irrep_basis_elements.append(basis_block)
             # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
-            self.basis_elements.append(torch.stack(irrep_basis_elements, dim=0))
+            basis_elements_iso_basis.append(torch.stack(irrep_basis_elements, dim=0))  # [S_k*m_out_k*m_in_k, Ny, Nx]
 
-        self.basis_elements = torch.cat(self.basis_elements, dim=0)  # [dim(Hom_G(in_rep, out_rep)), Ny * Nx]
+        # Change basis elements from isotypic basis to original input/output basis
+        basis_elements_iso_basis = torch.cat(basis_elements_iso_basis, dim=0)  # [dim(Hom_G(in_rep, out_rep)), Ny, Nx]
+        Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=dtype)
+        Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype)
+        # basis elements of shape (dim(Hom_G(in_rep, out_rep)), Ny, Nx)
+        self.basis_elements = torch.einsum("ab,sbc,cd->sad", Q_out, basis_elements_iso_basis, Q_in_inv)
 
     @property
     def dim(self) -> int:
@@ -88,15 +116,21 @@ class GroupHomomorphismBasis:
         return self.basis_elements.size(0)
 
     @torch.no_grad()
-    def initialize_params(self, scheme: str = "kaiming_uniform") -> torch.Tensor:
+    def initialize_params(self, scheme: str = "kaiming_uniform", return_dense: bool = False) -> torch.Tensor:
         """Return W_iso ~ Hom_G(out, in), initialized per-irrep with Xavier/He."""
-        new_params = torch.zeros((self.dim,))
+        if return_dense:
+            W_iso = torch.zeros((self.out_rep.size, self.in_rep.size), dtype=self.basis_elements.dtype)
+        else:
+            w_dof = torch.zeros((self.dim,))
 
         for _, irrep_metadata in self.iso_blocks.items():
             # for out_slice, in_slice, endo_basis, m_out, m_in, irrep_dim in self.irreps_meta:
             endo_basis = irrep_metadata["endomorphism_basis"]
             m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
+            out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
+            irrep_dim = irrep_metadata["irrep_dim"]
             hom_basis_slice = irrep_metadata["hom_basis_slice"]
+
             dim_endo_basis = endo_basis.size(0)
             dtype, device = endo_basis.dtype, endo_basis.device
             # fans for this irrep
@@ -119,22 +153,31 @@ class GroupHomomorphismBasis:
             else:
                 raise ValueError(f"Unknown scheme: {scheme}")
 
-            new_params[hom_basis_slice] = theta.reshape(-1)
+            if return_dense:
+                # Expand irrep block (m_out * irrep_dim, m_in * irrep_dim)
+                W_iso[out_slice, in_slice] = torch.einsum("soi,sab->oaib", theta, endo_basis).reshape(
+                    m_out * irrep_dim, m_in * irrep_dim
+                )
+            else:
+                w_dof[hom_basis_slice] = theta.reshape(-1)
 
-        return new_params
+        if return_dense:  # Change to original coordinates
+            Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=W_iso.dtype, device=W_iso.device)
+            Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=W_iso.dtype, device=W_iso.device)
+            return Q_out @ W_iso @ Q_in_inv
+        else:
+            return w_dof
 
 
 def isotypic_decomp_rep(rep: Representation) -> Representation:
     r"""Return an equivalent representation disentangled into isotypic subspaces.
 
-    Given an input :class:`~escnn.group.Representation`, this function computes an
-    equivalent representation by updating the change of basis (and its inverse)
-    and reordering the irreducible representations. The returned representation
-    is guaranteed to be disentangled into its isotypic subspaces.
+    Given an input :class:`~escnn.group.Representation`, this function computes an equivalent representation by
+    updating the change of basis (and its inverse) and reordering the irreducible representations. The returned
+    representation is guaranteed to be disentangled into its isotypic subspaces.
 
-    A representation is considered disentangled if, in its spectral basis, the
-    irreducible representations (irreps) are clustered by type, i.e., all
-    irreps of the same type are consecutive:
+    A representation is considered disentangled if, in its spectral basis, the irreducible representations (irreps) are
+    clustered by type, i.e., all irreps of the same type are consecutive:
 
     .. math::
         \rho_{\mathcal{X}} = \mathbf{Q} \left( \bigoplus_{k\in[1,n_{\text{iso}}]} (\mathbf{I}_{m_{k}} \otimes
@@ -143,9 +186,8 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     where :math:`\hat{\rho}_k` is the irreducible representation of type :math:`k`,
     and :math:`m_{k}` is its multiplicity.
 
-    The change of basis of the representation returned by this function can be
-    used to decompose the representation space :math:`\mathcal{X}` into its
-    orthogonal isotypic subspaces:
+    The change of basis of the representation returned by this function can be used to decompose the representation
+    space :math:`\mathcal{X}` into its orthogonal isotypic subspaces:
 
     .. math::
         \mathcal{X} = \bigoplus_{k\in[1,n]} \mathcal{X}^{(k)}

@@ -109,8 +109,12 @@ class eLinear(torch.nn.Linear):
         self.register_parameter(
             "weight_dof", torch.nn.Parameter(torch.zeros(self.homo_basis.dim, dtype=dtype), requires_grad=True)
         )
-        # Buffer containing the basis elements of Hom_G(out_rep, in_rep) flattened
-        self.register_buffer("_basis_vectors_flat", self.homo_basis.basis_elements)
+        # Buffer containing the basis elements of Hom_G(out_rep, in_rep) flattened for forward efficiency.
+        # This is considerably memory heavy, but makes forward/backward passes faster.
+        self.register_buffer(
+            "_basis_vectors_flat",
+            self.homo_basis.basis_elements.reshape(self.homo_basis.dim, self.out_rep.size * self.in_rep.size),
+        )
 
         if self.has_bias:  # Register bias parameters
             # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
