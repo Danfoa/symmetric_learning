@@ -82,9 +82,45 @@ class GroupHomomorphismBasis:
         self.basis_elements = torch.cat(self.basis_elements, dim=0)  # [dim(Hom_G(in_rep, out_rep)), Ny * Nx]
 
     @property
-    def dimension(self) -> int:
+    def dim(self) -> int:
         """Return the total number of degrees of freedom of Hom_G(out_rep, in_rep)."""
         return self.basis_elements.size(0)
+
+    @torch.no_grad()
+    def initialize_params(self, scheme: str = "kaiming_uniform") -> torch.Tensor:
+        """Return W_iso ~ Hom_G(out, in), initialized per-irrep with Xavier/He."""
+        new_params = torch.zeros((self.dim,))
+
+        for _, irrep_metadata in self.iso_blocks.items():
+            # for out_slice, in_slice, endo_basis, m_out, m_in, irrep_dim in self.irreps_meta:
+            endo_basis = irrep_metadata["endomorphism_basis"]
+            m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
+            hom_basis_slice = irrep_metadata["hom_basis_slice"]
+            dim_endo_basis = endo_basis.size(0)
+            dtype, device = endo_basis.dtype, endo_basis.device
+            # fans for this irrep
+            fan_in = dim_endo_basis * m_in
+            fan_out = dim_endo_basis * m_out
+            # isotypic_param_shape := (dim_irrep_endomorphism, irep_multiplicity_out, irrep_multiplicity_in)
+            isotypic_param_shape = (dim_endo_basis, m_out, m_in)
+            if scheme == "xavier_uniform":
+                bound = (6.0 / (fan_in + fan_out)) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
+            elif scheme == "xavier_normal":
+                std = (2.0 / (fan_in + fan_out)) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
+            elif scheme in {"kaiming_normal", "he_normal"}:
+                std = (2.0 / fan_in) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
+            elif scheme in {"kaiming_uniform", "he_uniform"}:
+                bound = (6.0 / fan_in) ** 0.5
+                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
+            else:
+                raise ValueError(f"Unknown scheme: {scheme}")
+
+            new_params[hom_basis_slice] = theta.reshape(-1)
+
+        return new_params
 
 
 def isotypic_decomp_rep(rep: Representation) -> Representation:

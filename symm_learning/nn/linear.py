@@ -87,14 +87,14 @@ class eLinear(torch.nn.Linear):
         self.register_parameter("weight", None)
         self.register_parameter("bias", None)
         # Instanciate the handler of the basis of Hom_G(in_rep, out_rep)
-        self.hom_basis = GroupHomomorphismBasis(in_rep, out_rep)
-        self.in_rep, self.out_rep = self.hom_basis.in_rep, self.hom_basis.out_rep
-        if self.hom_basis.dimension == 0:
+        self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep)
+        self.in_rep, self.out_rep = self.homo_basis.in_rep, self.homo_basis.out_rep
+        if self.homo_basis.dim == 0:
             raise ValueError(
                 f"No equivariant linear maps exist between {in_rep} and {out_rep}.\n dim(Hom_G(in_rep, out_rep))=0"
             )
         # Assert bias vector is feasible given out_rep symmetries
-        trivial_id = self.hom_basis.G.trivial_representation.id
+        trivial_id = self.homo_basis.G.trivial_representation.id
         can_have_bias = out_rep._irreps_multiplicities.get(trivial_id, 0) > 0
         self.has_bias = bias and can_have_bias
         # Register change of basis matrices as buffers
@@ -103,9 +103,11 @@ class eLinear(torch.nn.Linear):
         self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
 
         # Register weight parameters (degrees of freedom: dof) and buffers
-        self.weight_dof = torch.nn.Parameter(torch.zeros(self.hom_basis.dimension, dtype=dtype), requires_grad=True)
+        self.register_parameter(
+            "weight_dof", torch.nn.Parameter(torch.zeros(self.homo_basis.dim, dtype=dtype), requires_grad=True)
+        )
         # Buffer containing the basis elements of Hom_G(out_rep, in_rep) flattened
-        self.register_buffer("_basis_vectors_flat", self.hom_basis.basis_elements)
+        self.register_buffer("_basis_vectors_flat", self.homo_basis.basis_elements)
 
         if self.has_bias:  # Register bias parameters
             # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
@@ -118,8 +120,7 @@ class eLinear(torch.nn.Linear):
         if self.has_bias:
             self.register_buffer("_bias", torch.zeros((out_rep.size,), dtype=dtype))
 
-        self._expand_weight_iso_basis()
-        self._expand_bias()
+        self.reset_parameters(scheme="xavier_normal")
 
     @property
     def weight(self) -> torch.Tensor:
@@ -141,8 +142,10 @@ class eLinear(torch.nn.Linear):
         -------
             torch.Tensor Equivariant linear map of shape `(out_rep.size, in_rep.size)`.
         """
-        if self.training:
-            W_iso = self._expand_weight_iso_basis()
+        if self.training:  # Recompute bias from trainable parameters
+            basis = self._basis_vectors_flat.to(device=self.weight_dof.device, dtype=self.weight_dof.dtype)
+            W_flat = torch.matmul(self.weight_dof, basis)
+            W_iso = W_flat.view(self.out_rep.size, self.in_rep.size)
             self._weight = self.Qout @ W_iso @ self.Qin_inv
         return self._weight
 
@@ -166,25 +169,32 @@ class eLinear(torch.nn.Linear):
         """
         if not self.has_bias:
             return None
-        if self.training:
-            self._bias = self._expand_bias()
+        if self.training:  # Recompute bias from trainable parameters
+            trivial_id = self.out_rep.group.trivial_representation.id
+            trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
+            self._bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
         return self._bias
 
-    def _expand_weight_iso_basis(self) -> torch.Tensor:
-        """Expand the weight matrix in Hom_G(out_rep, in_rep) from the constrained trainable parameters."""
-        basis = self._basis_vectors_flat.to(device=self.weight_dof.device, dtype=self.weight_dof.dtype)
+    @torch.no_grad()
+    def reset_parameters(self, scheme="xavier_normal"):
+        """Reset the parameters of the linear layer using the specified initialization scheme.
 
-        W_flat = torch.matmul(self.weight_dof, basis)
-        return W_flat.view(self.out_rep.size, self.in_rep.size)
+        Parameters
+            scheme (str): The initialization scheme to use, among "xavier_normal", "xavier_uniform", "kaiming_normal",
+                and "kaiming_uniform". Default to "xavier_normal".
+        """
+        if not hasattr(self, "homo_basis"):  # First call on torch.nn.Linear init
+            return super().reset_parameters()
+        new_params = self.homo_basis.initialize_params(scheme)
+        self.weight_dof.copy_(new_params)
 
-    def _expand_bias(self) -> torch.Tensor:
-        """Expand the bias vector in the invariant subspace of out_rep from the constrained trainable parameters."""
-        if not self.has_bias:
-            return None
-        # Recompute bias from trainable parameters
-        trivial_id = self.out_rep.group.trivial_representation.id
-        trivial_indices = self.hom_basis.iso_blocks[trivial_id]["out_slice"]
-        return torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
+        if self.has_bias:
+            trivial_id = self.out_rep.group.trivial_representation.id
+            m_in_inv = self.in_rep._irreps_multiplicities[trivial_id]
+            m_out_inv = self.out_rep._irreps_multiplicities[trivial_id]
+            fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(torch.empty(m_out_inv, m_in_inv))
+            bound = 1 / torch.math.sqrt(fan_in) if fan_in > 0 else 0
+            torch.nn.init.uniform_(self.bias_dof, -bound, bound)
 
 
 class eAffine(torch.nn.Module):
