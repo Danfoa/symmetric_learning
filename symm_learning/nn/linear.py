@@ -11,7 +11,7 @@ from symm_learning.representation_theory import GroupHomomorphismBasis, isotypic
 logger = logging.getLogger(__name__)
 
 
-def impose_linear_equivariance(lin: torch.nn.Module, in_rep: Representation, out_rep: Representation) -> None:
+def impose_linear_equivariance(lin: torch.nn.Linear, in_rep: Representation, out_rep: Representation) -> None:
     r"""Impose equivariance constraints on a given torch.nn.Linear layer using torch parametrizations.
 
     Impose via torch parametrizations (hard constraints on trainable parameters ) that the weight matrix of
@@ -343,7 +343,7 @@ if __name__ == "__main__":
     #     # Check the orthogonal projection to Hom_G(rep, rep) works as expected
     #     in_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [rep])
     #     layer = eLinear(rep, rep, bias=False)
-    #     escnn_layer = escnn.nn.Linear(in_type, in_type, bias=False)
+    # escnn_layer = escnn.nn.Lin`ear(in_type, in_type, bias=False)
     #     W, b = escnn_layer.expand_parameters()
     #     layer.weight = W
     #     W_projected = layer.weight

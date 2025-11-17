@@ -1,3 +1,5 @@
+import logging
+
 import escnn
 import torch
 from escnn.group import Representation
@@ -8,6 +10,8 @@ from torch.nn.utils import parametrize
 from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import GroupHomomorphismBasis
 from symm_learning.utils import check_equivariance
+
+logger = logging.getLogger(__name__)
 
 
 class InvariantConstraint(torch.nn.Module):
@@ -33,7 +37,7 @@ class InvariantConstraint(torch.nn.Module):
 
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a parameter tensor whose projection equals ``tensor``."""
-        print("[InvariantConstraint] right_inverse called")
+        logger.debug("[InvariantConstraint] right_inverse called")
         return tensor
 
 
@@ -98,7 +102,7 @@ class CommutingConstraint(torch.nn.Module):
 
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a pre-image for the parametrization (identity for now)."""
-        print("[CommutingConstraint] right_inverse called")
+        logger.debug("[CommutingConstraint] right_inverse called")
         return tensor
 
 

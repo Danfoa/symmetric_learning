@@ -1,8 +1,11 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
+from __future__ import annotations
+
 from collections.abc import Callable
 
 import numpy as np
 import torch
+from escnn.group import Representation
 
 
 class CallableDict(dict, Callable):
@@ -13,7 +16,14 @@ class CallableDict(dict, Callable):
         return self[key]
 
 
-def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5, input_dim: int = 2, in_rep=None, out_rep=None):
+def check_equivariance(
+    e_module,
+    atol: float = 1e-5,
+    rtol: float = 1e-5,
+    input_dim: int | tuple[int] = 2,
+    in_rep: Representation | tuple[Representation, ...] = None,
+    out_rep: Representation | tuple[Representation, ...] = None,
+):
     """Method that automatically tests the equivariance of the current module."""
     in_rep = e_module.in_rep if hasattr(e_module, "in_rep") else in_rep
     out_rep = e_module.out_rep if hasattr(e_module, "out_rep") else out_rep
@@ -23,6 +33,7 @@ def check_equivariance(e_module, atol: float = 1e-5, rtol: float = 1e-5, input_d
 
     batch_size = 11
     spatial_dims = 9
+
     if input_dim == 2:
         x = torch.randn(batch_size, in_rep.size)
     elif input_dim == 3:
