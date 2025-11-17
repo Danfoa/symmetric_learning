@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 import torch
 from escnn.group import Representation, directsum
 from torch.nn.utils import parametrize
 
+from symm_learning.nn.linear import eLinear
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
+
+logger = logging.getLogger(__name__)
 
 
 class eMultiheadAttention(torch.nn.MultiheadAttention):
@@ -70,22 +75,45 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
         )
         self.in_rep, self.out_rep = in_rep, in_rep
         self._regular_stack_rep = directsum([G.regular_representation] * regular_copies)
-
         if not self._qkv_same_embed_dim:
             raise ValueError("eMultiheadAttention requires kdim == vdim == embed_dim.")
 
         stacked_qkv_rep = directsum([self._regular_stack_rep] * 3)
-        parametrize.register_parametrization(
-            self,
-            "in_proj_weight",
-            CommutingConstraint(in_rep, stacked_qkv_rep),
-        )
+        parametrize.register_parametrization(self, "in_proj_weight", CommutingConstraint(in_rep, stacked_qkv_rep))
         if bias and self.in_proj_bias is not None:
             parametrize.register_parametrization(self, "in_proj_bias", InvariantConstraint(stacked_qkv_rep))
 
-        parametrize.register_parametrization(self.out_proj, "weight", CommutingConstraint(in_rep, in_rep))
-        if bias and self.out_proj.bias is not None:
-            parametrize.register_parametrization(self.out_proj, "bias", InvariantConstraint(in_rep))
+        # Replace output projection linear layer.
+        self.out_proj = eLinear(in_rep, in_rep, bias=bias).to(device=device, dtype=dtype)
+
+        self.reset_parameters(scheme="xavier_uniform")
+
+    @torch.no_grad()
+    def reset_parameters(self, scheme="xavier_uniform") -> None:
+        """Overload parent method to take into account equivariance constraints."""
+        if not hasattr(self, "parametrizations"):
+            return super()._reset_parameters()
+
+        # Reset equivariant linear layers (symm_learning.nn.eLinear)
+        self.out_proj.reset_parameters(scheme=scheme)
+
+        for param_name, constaint_list in self.parametrizations.items():
+            param = getattr(self, param_name)
+            if param.dim() == 2:
+                commuting_constraint: CommutingConstraint = constaint_list[0]
+                W = commuting_constraint.homo_basis.initialize_params(scheme=scheme, return_dense=True)
+                param = W
+                logger.debug(f"Initialized {param_name} with scheme {scheme}")
+            elif param.dim() == 1:
+                # invariant_constraint: InvariantConstraint = constaint_list[0]
+                param = torch.zeros_like(param)
+                logger.debug(f"Initialized {param_name} with zeros")
+
+        # if self._qkv_same_embed_dim:
+        #     xavier_uniform_(self.in_proj_weight)
+        # if self.in_proj_bias is not None:
+        #     constant_(self.in_proj_bias, 0.0)
+        #     constant_(self.out_proj.bias, 0.0)
 
 
 if __name__ == "__main__":

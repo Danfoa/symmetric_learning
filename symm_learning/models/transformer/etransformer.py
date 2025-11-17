@@ -79,6 +79,8 @@ class eTransformerEncoderLayer(torch.nn.Module):
             activation = _get_activation_fn(activation)
         self.activation = activation
 
+        self.reset_parameters()
+
     def forward(
         self,
         src: Tensor,
@@ -139,6 +141,16 @@ class eTransformerEncoderLayer(torch.nn.Module):
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
         return self.dropout2(x)
 
+    @torch.no_grad()
+    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+        # Reset equivariant linear layers (symm_learning.nn.eLinear)
+        self.linear1.reset_parameters(scheme)
+        self.linear2.reset_parameters(scheme)
+        self.norm1.reset_parameters()
+        self.norm2.reset_parameters()
+        # Reset attention layers:
+        self.self_attn.reset_parameters(scheme)
+
 
 class eTransformerDecoderLayer(torch.nn.Module):
     """Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
@@ -186,7 +198,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
             device=device,
             dtype=dtype,
         )
-        self.multihead_attn = eMultiheadAttention(
+        self.cross_attn = eMultiheadAttention(
             in_rep=self.in_rep,
             num_heads=nhead,
             dropout=dropout,
@@ -213,6 +225,8 @@ class eTransformerDecoderLayer(torch.nn.Module):
             activation = _get_activation_fn(activation)
         self.activation = activation
         self.batch_first = batch_first
+
+        self.reset_parameters()
 
     def forward(
         self,
@@ -292,8 +306,8 @@ class eTransformerDecoderLayer(torch.nn.Module):
     def _self_attention_block(
         self,
         x: Tensor,
-        attn_mask: Optional[Tensor],
-        key_padding_mask: Optional[Tensor],
+        attn_mask: Optional[Tensor] = None,
+        key_padding_mask: Optional[Tensor] = None,
         is_causal: bool = False,
     ) -> Tensor:
         x = self.self_attn(
@@ -311,11 +325,11 @@ class eTransformerDecoderLayer(torch.nn.Module):
         self,
         x: Tensor,
         mem: Tensor,
-        attn_mask: Optional[Tensor],
-        key_padding_mask: Optional[Tensor],
+        attn_mask: Optional[Tensor] = None,
+        key_padding_mask: Optional[Tensor] = None,
         is_causal: bool = False,
     ) -> Tensor:
-        x = self.multihead_attn(
+        x = self.cross_attn(
             x,
             mem,
             mem,
@@ -329,6 +343,18 @@ class eTransformerDecoderLayer(torch.nn.Module):
     def _feed_forward_block(self, x: Tensor) -> Tensor:
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
         return self.dropout3(x)
+
+    @torch.no_grad()
+    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+        # Reset equivariant linear layers (symm_learning.nn.eLinear)
+        self.linear1.reset_parameters(scheme)
+        self.linear2.reset_parameters(scheme)
+        self.norm1.reset_parameters()
+        self.norm2.reset_parameters()
+        self.norm3.reset_parameters()
+        # Reset attention layers:
+        self.self_attn.reset_parameters(scheme)
+        self.cross_attn.reset_parameters(scheme)
 
     @torch.no_grad()
     def check_equivariance(
@@ -351,23 +377,29 @@ class eTransformerDecoderLayer(torch.nn.Module):
             g = G.sample()
             tgt = torch.randn(batch_size, tgt_len, self.in_rep.size, device=self.norm1.Q.device)
             mem = torch.randn(batch_size, mem_len, self.in_rep.size, device=self.norm1.Q.device)
-            tgt_g = act(self.in_rep, g, tgt)
-            mem_g = act(self.in_rep, g, mem)
+            g_tgt = act(self.in_rep, g, tgt)
+            g_mem = act(self.in_rep, g, mem)
 
-            sa = self._self_attention_block(tgt, None, None)
-            sa_g = act(self.in_rep, g, sa)
-            sa_expected = self._self_attention_block(tgt_g, None, None)
-            torch.testing.assert_close(sa_g, sa_expected, atol=atol, rtol=rtol)
+            sa = self._self_attention_block(tgt)
+            g_sa = act(self.in_rep, g, sa)
+            g_sa_exp = self._self_attention_block(g_tgt)
+            assert torch.allclose(g_sa, g_sa_exp, atol=atol, rtol=rtol), (
+                f"Self-attention equivarinace failed max error: {torch.max(g_sa - g_sa_exp).item():.3e}"
+            )
 
-            ca = self._multihead_attention_block(tgt, mem, None, None)
-            ca_g = act(self.in_rep, g, ca)
-            ca_expected = self._multihead_attention_block(tgt_g, mem_g, None, None)
-            torch.testing.assert_close(ca_g, ca_expected, atol=atol, rtol=rtol)
+            ca = self._multihead_attention_block(tgt, mem)
+            g_ca = act(self.in_rep, g, ca)
+            g_ca_exp = self._multihead_attention_block(g_tgt, g_mem)
+            assert torch.allclose(g_ca, g_ca_exp, atol=atol, rtol=rtol), (
+                f"Cross-attention equivarinace failed max error: {torch.max(g_ca - g_ca_exp).item():.3e}"
+            )
 
             out = self(tgt, mem)
-            out_g = act(self.in_rep, g, out)
-            out_expected = self(tgt_g, mem_g)
-            torch.testing.assert_close(out_g, out_expected, atol=atol, rtol=rtol)
+            g_out = act(self.in_rep, g, out)
+            g_out_exp = self(g_tgt, g_mem)
+            assert torch.allclose(g_out, g_out_exp, atol=atol, rtol=rtol), (
+                f"Transormer decoder equivarinace failed max error: {torch.max(g_ca - g_ca_exp).item():.3e}"
+            )
 
 
 def _get_activation_fn(activation: str) -> Callable[[Tensor], Tensor]:
@@ -399,21 +431,9 @@ if __name__ == "__main__":
     )
     etransformer.eval()  # disable dropout for the test
 
-    check_equivariance(
-        etransformer._feed_forward_block,
-        input_dim=3,
-        atol=1e-4,
-        rtol=1e-4,
-        in_rep=etransformer.in_rep,
-        out_rep=etransformer.out_rep,
-    )
-    print("Feed-forward block equivariance test passed!\n")
-
     check_equivariance(etransformer, input_dim=3, atol=1e-4, rtol=1e-4)
 
-    print("\n")
-
-    decoder = eTransformerDecoderLayer(
+    tdecoder = eTransformerDecoderLayer(
         in_rep,
         nhead=1,
         dim_feedforward=in_rep.size * 2,
@@ -422,7 +442,6 @@ if __name__ == "__main__":
         norm_first=True,
         batch_first=True,
     )
-    decoder.eval()
-    decoder.check_equivariance(atol=1e-3, rtol=1e-3)
-
+    tdecoder.eval()
+    tdecoder.check_equivariance(atol=1e-3, rtol=1e-3)
     print("Decoder equivariance test passed")
