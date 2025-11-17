@@ -46,16 +46,17 @@ class GenCondRegressor(torch.nn.Module, ABC):
         self.cond_dim = cond_dim
 
     @abstractmethod
-    def forward(self, X: torch.Tensor, Z: torch.Tensor, opt_step: torch.Tensor | float | int):
+    def forward(self, X: torch.Tensor, opt_step: torch.Tensor | float | int, Z: torch.Tensor):
         r"""Forward pass of the generative conditional regressor.
 
         Args:
             X (torch.Tensor): The input/data sample composed of a trajectory of `T_x` points in a `d_x`-dimensional
                 space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
-            Z (torch.Tensor): The conditioning/observation variable composed of `T_z` points in a `d_z`-dimensional
-                space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
             opt_step (Union[torch.Tensor, float, int]): The optimization step(s) `k` at which to evaluate the
                 regressor. Can be a single scalar or a tensor of shape `(B,)`.
+            Z (torch.Tensor): The conditioning/observation variable composed of `T_z` points in a `d_z`-dimensional
+            space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
+
 
         Returns:
             torch.Tensor: The output regression variable of shape `(B, T_x, d_v)`.
@@ -201,9 +202,6 @@ class CondTransformerRegressor(GenCondRegressor):
             torch.nn.Sequential,
         )
         if isinstance(module, (torch.nn.Linear, torch.nn.Embedding)):
-            # Note: Daniel. This is in my opinion a terrible initialization strategy.
-            # I would replace this with:
-            # torch.nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             if isinstance(module, torch.nn.Linear) and module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
@@ -334,9 +332,9 @@ class CondTransformerRegressor(GenCondRegressor):
         z_cond_emb = self.cond_emb(Z)  # (B,Tz,n_emb)
         cond_embeddings = torch.cat([opt_time_emb, z_cond_emb], dim=1)  # (B,Tz + 1,n_emb)
         cond_horizon = cond_embeddings.shape[1]
-        position_embeddings = self.cond_pos_emb[:, :cond_horizon, :]  # each position maps to a (learnable) vector
+        cond_pos_emb = self.cond_pos_emb[:, :cond_horizon, :]  # each position maps to a (learnable) vector
         # Transformer encoder of conditing tokens
-        cond_tokens = self.drop(cond_embeddings + position_embeddings)
+        cond_tokens = self.drop(cond_embeddings + cond_pos_emb)
         cond_tokens = self.encoder(cond_tokens)  # (B,T_cond,n_emb)
 
         # 3. Input embedding/tokenization
@@ -344,8 +342,8 @@ class CondTransformerRegressor(GenCondRegressor):
 
         # 4. Transformer encoder of input tokens with self-attention and cross-attention to cond tokens
         input_horizon = input_tokens.shape[1]
-        position_embeddings = self.pos_emb[:, :input_horizon, :]  # each position maps to a (learnable) vector
-        input_tokens = self.drop(input_tokens + position_embeddings)  # (B,Tx,n_emb)
+        pos_emb = self.pos_emb[:, :input_horizon, :]  # each position maps to a (learnable) vector
+        input_tokens = self.drop(input_tokens + pos_emb)  # (B,Tx,n_emb)
         out_tokens = self.decoder(
             tgt=input_tokens, memory=cond_tokens, tgt_mask=self.self_att_mask, memory_mask=self.cross_att_mask
         )  # (B,Tx,n_emb)
