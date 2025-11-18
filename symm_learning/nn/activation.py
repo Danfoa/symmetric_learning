@@ -46,6 +46,7 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
         add_zero_attn: bool = False,
         device=None,
         dtype=None,
+        init_scheme: str | None = "xavier_normal",
     ) -> None:
         if num_heads <= 0:
             raise ValueError(f"num_heads must be positive, got {num_heads}")
@@ -86,7 +87,8 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
         # Replace output projection linear layer.
         self.out_proj = eLinear(in_rep, in_rep, bias=bias).to(device=device, dtype=dtype)
 
-        self.reset_parameters(scheme="xavier_uniform")
+        if init_scheme is not None:
+            self.reset_parameters(scheme=init_scheme)
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_uniform") -> None:

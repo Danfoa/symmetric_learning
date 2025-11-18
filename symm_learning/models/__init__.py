@@ -1,3 +1,7 @@
+"""TODO"""
+
+from .difussion.cond_transformer_regressor import CondTransformerRegressor
+from .difussion.econd_transformer_regressor import eCondTransformerRegressor
 from .emlp import EMLP, MLP  # noqa: D104
 from .imlp import IMLP
 from .time_cnn.cnn_encoder import TimeCNNEncoder
@@ -12,4 +16,6 @@ __all__ = [
     "TimeCNNEncoder",
     "eTransformerEncoderLayer",
     "eTransformerDecoderLayer",
+    "eCondTransformerRegressor",
+    "CondTransformerRegressor",
 ]

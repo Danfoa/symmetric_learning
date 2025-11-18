@@ -37,7 +37,6 @@ class InvariantConstraint(torch.nn.Module):
 
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a parameter tensor whose projection equals ``tensor``."""
-        logger.debug("[InvariantConstraint] right_inverse called")
         return tensor
 
 
@@ -102,7 +101,6 @@ class CommutingConstraint(torch.nn.Module):
 
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a pre-image for the parametrization (identity for now)."""
-        logger.debug("[CommutingConstraint] right_inverse called")
         return tensor
 
 

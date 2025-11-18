@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 import torch
@@ -86,7 +88,13 @@ class eLinear(torch.nn.Linear):
     Qout : torch.Tensor. Change-of-basis from isotypic to original coords for the output, shape ``[Ny, Ny]``.
     """
 
-    def __init__(self, in_rep: Representation, out_rep: Representation, bias: bool = True):
+    def __init__(
+        self,
+        in_rep: Representation,
+        out_rep: Representation,
+        bias: bool = True,
+        init_scheme: str | None = "xavier_normal",
+    ):
         super().__init__(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
         # Delete linear unconstrained module parameters
         self.register_parameter("weight", None)
@@ -128,7 +136,8 @@ class eLinear(torch.nn.Linear):
         if self.has_bias:
             self.register_buffer("_bias", torch.zeros((out_rep.size,), dtype=dtype))
 
-        self.reset_parameters(scheme="xavier_normal")
+        if init_scheme is not None:
+            self.reset_parameters(scheme=init_scheme)
 
     @property
     def weight(self) -> torch.Tensor:
@@ -189,6 +198,7 @@ class eLinear(torch.nn.Linear):
             scheme (str): The initialization scheme to use, among "xavier_normal", "xavier_uniform", "kaiming_normal",
                 and "kaiming_uniform". Default to "xavier_normal".
         """
+        logger.debug(f"Resetting parameters of {self} with scheme: {scheme}")
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.Linear init
             return super().reset_parameters()
         new_params = self.homo_basis.initialize_params(scheme)
