@@ -19,6 +19,30 @@ from symm_learning.utils import check_equivariance
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
+def test_deepcopy(group: Group):
+    from symm_learning.nn.linear import eLinear
+
+    G = group
+    rep = directsum([G.regular_representation] * 2)
+    layer = eLinear(rep, rep)
+    clone = deepcopy(layer)
+
+    assert layer.in_rep is clone.in_rep, "Deepcopy should reuse the same input Representation object"
+    assert layer.out_rep is clone.out_rep, "Deepcopy should reuse the same output Representation object"
+    assert layer.in_rep.group is clone.in_rep.group, "Deepcopy should reuse the same Group singleton"
+    assert layer.in_rep.group.representations is clone.in_rep.group.representations, (
+        "Deepcopy should not duplicate the group's representation cache"
+    )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 def test_irrep_pooling_equivariance(group: Group):
     """Check the IrrepSubspaceNormPooling layer is G-invariant."""
     import torch

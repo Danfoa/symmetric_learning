@@ -98,6 +98,7 @@ ignore = [
   "D100",  # Ignore missing docstring in public module
   "F401", # Don't remove unused imports
   "D107", # Document __init__ arguments inside class docstring
+  "E402", # Allow module level import not at top of file
 ]
 
 # Exclude specific directories from linting (in addition to global exclude)
