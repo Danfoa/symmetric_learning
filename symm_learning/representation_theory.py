@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
+import logging
 from collections import OrderedDict
 from typing import Callable, Dict, List, Union
 
@@ -12,6 +13,11 @@ from escnn.nn import FieldType
 from scipy.linalg import block_diag
 
 from symm_learning.utils import CallableDict
+
+logger = logging.getLogger(__name__)
+
+# Global cache for basis elements storage.
+_cache_ = {}
 
 
 class GroupHomomorphismBasis:
@@ -59,56 +65,74 @@ class GroupHomomorphismBasis:
         self.common_irreps = sorted(set(self.in_rep.irreps).intersection(set(self.out_rep.irreps)))
 
         self.iso_blocks = {}
-        basis_elements_iso_basis = []
-        dof_offset = 0
-        for irrep_id in self.common_irreps:
-            irrep = self.G.irrep(*irrep_id)
-            irrep_dim = irrep.size
-            # Slices defining the location of the isotypic subspace block in Hom_G(in_rep, out_rep)
-            out_slice = self.out_rep.attributes["isotypic_subspace_dims"][irrep_id]
-            in_slice = self.in_rep.attributes["isotypic_subspace_dims"][irrep_id]
-            # Multiplicities of the irrep of type k=irrep_id in in_rep and out_rep
-            mul_out = self.out_rep._irreps_multiplicities[irrep_id]
-            mul_in = self.in_rep._irreps_multiplicities[irrep_id]
-            # Endomorphism basis of the irrep End_G(k=irrep_id)
-            irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
-            dim_end_basis = irrep_end_basis.size(0)
-            dim_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
-            # Store block info for inference time use.
-            self.iso_blocks[irrep_id] = dict(
-                out_slice=out_slice,
-                in_slice=in_slice,
-                endomorphism_basis=irrep_end_basis,
-                mul_out=mul_out,
-                mul_in=mul_in,
-                irrep_dim=irrep.size,
-                dim_hom_basis=dim_hom_basis,
-                hom_basis_slice=slice(dof_offset, dof_offset + dim_hom_basis),
-            )
-            dof_offset += dim_hom_basis
-            # Construct the basis of Hom_G(V_k^{in}, V_k^{out}) of shape [S_k * m_out * m_in, Ny * Nx]
-            # This is memory-intensive but the fastest way for forward/backward passes.
-            irrep_basis_elements = []  # (S_k,  Ny, Nx)
-            for s in range(dim_end_basis):
-                irrep_end_basis = irrep_end_basis[s]  # [d_k, d_k]
-                for o_mul in range(mul_out):
-                    for i_mul in range(mul_in):
-                        basis_block = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=dtype)  # [Ny, Nx]
-                        row_start = out_slice.start + o_mul * irrep_dim
-                        col_start = in_slice.start + i_mul * irrep_dim
-                        basis_block[row_start : row_start + irrep_dim, col_start : col_start + irrep_dim] = (
-                            irrep_end_basis
-                        )
-                        irrep_basis_elements.append(basis_block)
-            # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
-            basis_elements_iso_basis.append(torch.stack(irrep_basis_elements, dim=0))  # [S_k*m_out_k*m_in_k, Ny, Nx]
+        self.basis_elements = None
 
-        # Change basis elements from isotypic basis to original input/output basis
-        basis_elements_iso_basis = torch.cat(basis_elements_iso_basis, dim=0)  # [dim(Hom_G(in_rep, out_rep)), Ny, Nx]
-        Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=dtype)
-        Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype)
-        # basis elements of shape (dim(Hom_G(in_rep, out_rep)), Ny, Nx)
-        self.basis_elements = torch.einsum("ab,sbc,cd->sad", Q_out, basis_elements_iso_basis, Q_in_inv)
+        global _cache_
+        cache_key = (self.in_rep, self.out_rep)
+        if cache_key in _cache_:
+            logger.debug(f"Using cached basis for Hom_G({self.in_rep}, {self.out_rep})")
+            self.basis_elements = _cache_[cache_key]["basis_elements"]
+            self.iso_blocks = _cache_[cache_key]["iso_blocks"]
+            return
+        else:
+            logger.debug(f"Computing basis for Hom_G({self.in_rep}, {self.out_rep})")
+            basis_elements_iso_basis = []
+            dof_offset = 0
+            for irrep_id in self.common_irreps:
+                irrep = self.G.irrep(*irrep_id)
+                irrep_dim = irrep.size
+                # Slices defining the location of the isotypic subspace block in Hom_G(in_rep, out_rep)
+                out_slice = self.out_rep.attributes["isotypic_subspace_dims"][irrep_id]
+                in_slice = self.in_rep.attributes["isotypic_subspace_dims"][irrep_id]
+                # Multiplicities of the irrep of type k=irrep_id in in_rep and out_rep
+                mul_out = self.out_rep._irreps_multiplicities[irrep_id]
+                mul_in = self.in_rep._irreps_multiplicities[irrep_id]
+                # Endomorphism basis of the irrep End_G(k=irrep_id)
+                irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+                dim_end_basis = irrep_end_basis.size(0)
+                dim_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
+                # Store block info for inference time use.
+                self.iso_blocks[irrep_id] = dict(
+                    out_slice=out_slice,
+                    in_slice=in_slice,
+                    endomorphism_basis=irrep_end_basis,
+                    mul_out=mul_out,
+                    mul_in=mul_in,
+                    irrep_dim=irrep.size,
+                    dim_hom_basis=dim_hom_basis,
+                    hom_basis_slice=slice(dof_offset, dof_offset + dim_hom_basis),
+                )
+                dof_offset += dim_hom_basis
+                # Construct the basis of Hom_G(V_k^{in}, V_k^{out}) of shape [S_k * m_out * m_in, Ny * Nx]
+                # This is memory-intensive but the fastest way for forward/backward passes.
+                irrep_basis_elements = []  # (S_k,  Ny, Nx)
+                for s in range(dim_end_basis):
+                    irrep_end_basis = irrep_end_basis[s]  # [d_k, d_k]
+                    for o_mul in range(mul_out):
+                        for i_mul in range(mul_in):
+                            basis_block = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=dtype)  # [Ny, Nx]
+                            row_start = out_slice.start + o_mul * irrep_dim
+                            col_start = in_slice.start + i_mul * irrep_dim
+                            basis_block[row_start : row_start + irrep_dim, col_start : col_start + irrep_dim] = (
+                                irrep_end_basis
+                            )
+                            irrep_basis_elements.append(basis_block)
+                # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
+                basis_elements_iso_basis.append(
+                    torch.stack(irrep_basis_elements, dim=0)
+                )  # [S_k*m_out_k*m_in_k, Ny, Nx]
+
+            # Change basis elements from isotypic basis to original input/output basis
+            basis_elements_iso_basis = torch.cat(
+                basis_elements_iso_basis, dim=0
+            )  # [dim(Hom_G(in_rep, out_rep)), Ny, Nx]
+            Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=dtype)
+            Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype)
+            # basis elements of shape (dim(Hom_G(in_rep, out_rep)), Ny, Nx)
+            self.basis_elements = torch.einsum("ab,sbc,cd->sad", Q_out, basis_elements_iso_basis, Q_in_inv)
+
+            # Store in global cache
+            _cache_[cache_key] = {"basis_elements": self.basis_elements, "iso_blocks": self.iso_blocks}
 
     @property
     def dim(self) -> int:
@@ -200,14 +224,16 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     """
     # If group representation is already disentangled (in isotypic basis), return it without changes.
     if rep.attributes.get("in_isotypic_basis", False):
+        logger.debug(f"Representation {rep.name} is already in isotypic basis, returning as is.")
         return rep
 
     symm_group = rep.group
+    iso_rep_name = rep.name + "-Iso"
+    if iso_rep_name in symm_group.representations:
+        logger.debug(f"Returning cached {iso_rep_name}")
+        return symm_group.representations[iso_rep_name]
 
-    if rep.name + "-Iso" in symm_group.representations:
-        print(f"Returning cached {rep.name}-Iso")
-        return symm_group.representations[rep.name + "-Iso"]
-
+    logger.debug(f"Computing isotypic decomposition of representation {rep.name}")
     potential_irreps = rep.group.irreps()
     isotypic_subspaces_indices = {irrep.id: [] for irrep in potential_irreps}
 
@@ -258,7 +284,7 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     P_in2iso = permutation_matrix(oneline_permutation)
 
     Q_iso = rep.change_of_basis @ P_in2iso.T
-    rep_iso_basis = directsum(list(ordered_isotypic_reps.values()), name=rep.name + "-Iso", change_of_basis=Q_iso)
+    rep_iso_basis = directsum(list(ordered_isotypic_reps.values()), name=iso_rep_name, change_of_basis=Q_iso)
 
     # Get variable of indices of isotypic subspaces in the disentangled representation.
     d = 0
@@ -273,6 +299,9 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     rep_iso_basis.attributes["isotypic_subspace_dims"] = iso_subspace_dims
     rep_iso_basis.attributes["in_isotypic_basis"] = True  # Boolean flag useful
 
+    # Store representation in symmetry group cache:
+    symm_group.representations[rep_iso_basis.name] = rep_iso_basis
+    logger.debug(f"Stored isotypic decomposition representation {rep_iso_basis.name} in cache.")
     return rep_iso_basis
 
 
