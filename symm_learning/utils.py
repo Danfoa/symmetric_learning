@@ -16,6 +16,24 @@ class CallableDict(dict, Callable):
         return self[key]
 
 
+def module_memory(module: torch.nn.Module):  # noqa: D103
+    trainable = 0
+    frozen = 0
+    for p in module.parameters():
+        nbytes = p.numel() * p.element_size()
+        if p.requires_grad:
+            trainable += nbytes
+        else:
+            frozen += nbytes
+    buffer_bytes = sum(buf.numel() * buf.element_size() for buf in module.buffers())
+    non_trainable = frozen + buffer_bytes
+    return trainable, non_trainable
+
+
+def bytes_to_mb(num_bytes: int) -> float:  # noqa: D103
+    return num_bytes / (1024**2)
+
+
 def check_equivariance(
     e_module,
     atol: float = 1e-5,

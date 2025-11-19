@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 
 import torch
@@ -189,6 +190,19 @@ class eLinear(torch.nn.Linear):
             trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
             self._bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
         return self._bias
+
+    def __deepcopy__(self, memo):
+        """Keep representation and Hom_G basis shared to avoid duplicating large cached tensors."""
+        memo = memo or {}
+        memo[id(self.in_rep)] = self.in_rep
+        memo[id(self.out_rep)] = self.out_rep
+        memo[id(self.homo_basis)] = self.homo_basis
+        cls = self.__class__
+        clone = cls.__new__(cls)
+        memo[id(self)] = clone
+        for k, v in self.__dict__.items():
+            setattr(clone, k, copy.deepcopy(v, memo))
+        return clone
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_normal"):

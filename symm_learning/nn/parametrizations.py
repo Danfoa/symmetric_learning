@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import escnn
@@ -9,7 +10,7 @@ from torch.nn.utils import parametrize
 
 from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import GroupHomomorphismBasis
-from symm_learning.utils import check_equivariance
+from symm_learning.utils import bytes_to_mb, check_equivariance, module_memory
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,17 @@ class InvariantConstraint(torch.nn.Module):
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a parameter tensor whose projection equals ``tensor``."""
         return tensor
+
+    def __deepcopy__(self, memo):  # noqa: D105
+        memo = memo or {}
+        memo[id(self.rep)] = self.rep
+        memo[id(self.inv_projector)] = self.inv_projector
+        cls = self.__class__
+        clone = cls.__new__(cls)
+        memo[id(self)] = clone
+        for k, v in self.__dict__.items():
+            setattr(clone, k, copy.deepcopy(v, memo))
+        return clone
 
 
 class CommutingConstraint(torch.nn.Module):
@@ -103,6 +115,19 @@ class CommutingConstraint(torch.nn.Module):
         """Return a pre-image for the parametrization (identity for now)."""
         return tensor
 
+    def __deepcopy__(self, memo):  # noqa: D105
+        memo = memo or {}
+        memo[id(self.in_rep)] = self.in_rep
+        memo[id(self.out_rep)] = self.out_rep
+        memo[id(self.homo_basis)] = self.homo_basis
+        memo[id(self._basis_vectors_normalized)] = self._basis_vectors_normalized
+        cls = self.__class__
+        clone = cls.__new__(cls)
+        memo[id(self)] = clone
+        for k, v in self.__dict__.items():
+            setattr(clone, k, copy.deepcopy(v, memo))
+        return clone
+
 
 if __name__ == "__main__":
     from escnn.group import CyclicGroup, Icosahedral, directsum
@@ -110,7 +135,7 @@ if __name__ == "__main__":
     from symm_learning.nn.linear import eLinear, impose_linear_equivariance
 
     G = Icosahedral()
-    m = 3
+    m = 4
     in_rep = directsum([G.regular_representation] * m)
     out_rep = directsum([G.regular_representation] * m * 2)
 
@@ -156,22 +181,6 @@ if __name__ == "__main__":
     eq_layer_proj = eq_layer_proj.to(device)
     escnn_layer = escnn_layer.to(device)
     print(f"Device: {device}")
-
-    def module_memory(module: torch.nn.Module):  # noqa: D103
-        trainable = 0
-        frozen = 0
-        for p in module.parameters():
-            nbytes = p.numel() * p.element_size()
-            if p.requires_grad:
-                trainable += nbytes
-            else:
-                frozen += nbytes
-        buffer_bytes = sum(buf.numel() * buf.element_size() for buf in module.buffers())
-        non_trainable = frozen + buffer_bytes
-        return trainable, non_trainable
-
-    def bytes_to_mb(num_bytes: int) -> float:  # noqa: D103
-        return num_bytes / (1024**2)
 
     import time
 
