@@ -207,6 +207,46 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
+@pytest.mark.parametrize("mx", [1])
+@pytest.mark.parametrize("my", [2, 1])
+@pytest.mark.parametrize("basis_expansion_scheme", ["memory_heavy", "isotypic_expansion"])
+def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
+    """Mirror the checks performed in symm_learning.nn.linear.__main__."""
+    import torch
+    import torch.nn.functional as F
+
+    from symm_learning.nn.linear import eLinear
+
+    G = group
+    in_rep = directsum([G.regular_representation] * mx)
+    out_rep = directsum([G.regular_representation] * my)
+
+    def backprop_sanity(module: torch.nn.Module) -> None:
+        module.train()
+        optim = torch.optim.SGD(module.parameters(), lr=1e-3)
+        x = torch.randn(16, module.in_rep.size)
+        target = torch.randn(16, module.out_rep.size)
+        optim.zero_grad()
+        y = module(x)
+        loss = F.mse_loss(y, target)
+        loss.backward()
+        grad_norms = [p.grad.norm().item() for p in module.parameters() if p.grad is not None]
+        assert grad_norms, "Expected at least one gradient to propagate."
+        optim.step()
+
+    layer = eLinear(in_rep, out_rep, bias=False, basis_expansion_scheme=basis_expansion_scheme)
+    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    backprop_sanity(layer)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 def test_activations(group: Group):
     """Test custom activation functions for equivariance."""
     import torch

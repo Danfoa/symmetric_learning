@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 _cache_ = {}
 
 
-class GroupHomomorphismBasis:
+class GroupHomomorphismBasis(torch.nn.Module):
     r"""Compute an explicit basis for :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
 
     Attributes:
@@ -52,65 +52,130 @@ class GroupHomomorphismBasis:
         Raises:
             AssertionError: If `in_rep` and `out_rep` do not belong to the same symmetry group.
         """
+        super().__init__()
         assert in_rep.group == out_rep.group, f"in group: {in_rep.group} != out group: {out_rep.group}"
         self.G = in_rep.group
+        self.basis_expansion = basis_expansion
         self.in_rep = isotypic_decomp_rep(in_rep)
         self.out_rep = isotypic_decomp_rep(out_rep)
         dtype = torch.get_default_dtype()
-
-        if basis_expansion != "memory_heavy":
-            raise NotImplementedError(f"Basis expansion '{basis_expansion}' not implemented yet.")
 
         # Common irreps defining the only non-zero blocks in isotypic basis of Hom_G(in_rep, out_rep)
         self.common_irreps = sorted(set(self.in_rep.irreps).intersection(set(self.out_rep.irreps)))
 
         self.iso_blocks = {}
-        self.basis_elements = None
 
+        dof_offset = 0
+        for irrep_id in self.common_irreps:
+            irrep = self.G.irrep(*irrep_id)
+            # Slices defining the location of the isotypic subspace block in Hom_G(in_rep, out_rep)
+            out_slice = self.out_rep.attributes["isotypic_subspace_dims"][irrep_id]
+            in_slice = self.in_rep.attributes["isotypic_subspace_dims"][irrep_id]
+            # Multiplicities of the irrep of type k=irrep_id in in_rep and out_rep
+            mul_out = self.out_rep._irreps_multiplicities[irrep_id]
+            mul_in = self.in_rep._irreps_multiplicities[irrep_id]
+            # Endomorphism basis of the irrep End_G(k=irrep_id)
+            irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+            # Dimension of basis of homomorphisms between the two isotypic subspaces of type k=irrep_id
+            dim_irrep_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
+            # Store block info for inference time use.
+            self.iso_blocks[irrep_id] = dict(
+                out_slice=out_slice,
+                in_slice=in_slice,
+                endomorphism_basis=irrep_end_basis,
+                mul_out=mul_out,
+                mul_in=mul_in,
+                irrep_dim=irrep.size,
+                dim_hom_basis=dim_irrep_hom_basis,
+                hom_basis_slice=slice(dof_offset, dof_offset + dim_irrep_hom_basis),
+            )
+            dof_offset += dim_irrep_hom_basis
+        # Total dimension of the homomorphism space Hom_G(in_rep, out_rep)
+        self._dim_homomorphism = dof_offset
+
+        if self.basis_expansion == "memory_heavy":
+            # Construct full basis of shape (dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)
+            basis_elements = self._build_fullsize_homomorphism_basis()
+            # Register contiguous buffer such that flattening returns a view.
+            # This register is memory heavy as fuck, but enables ultra fast forward/backward passes.
+            self.register_buffer("basis_elements", basis_elements.contiguous())
+        elif self.basis_expansion == "isotypic_expansion":
+            # We store as buffers only each irrep endomorphism basis.
+            # This is ultra memory efficient, but mildly slower at runtime.
+            for irrep_id, irrep_metadata in self.iso_blocks.items():
+                endo_basis = irrep_metadata["endomorphism_basis"].contiguous()  # [S_k, d_k, d_k]
+                self.register_buffer(f"endo_basis_flat_{irrep_id}", endo_basis.view(endo_basis.size(0), -1))
+            self.register_buffer("Q_in_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype))
+            self.register_buffer("Q_out", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
+        else:
+            raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
+
+    def forward(self, w_dof: torch.Tensor) -> torch.Tensor:
+        """Return W ~ Hom_G(out, in) given the a tensor of basis expansion coefficients of Hom_G(out, in).
+
+        TODO.
+
+        """
+        assert w_dof.shape == (self.dim,), f"Expected w_dof shape {(self.dim,)}, but got {w_dof.shape}"
+
+        if self.basis_expansion == "memory_heavy":
+            W_flat = torch.matmul(w_dof, self.basis_elements.view(self.dim, -1))  # [out_rep.size * in_rep.size]
+            W = W_flat.view(self.out_rep.size, self.in_rep.size)
+        elif self.basis_expansion == "isotypic_expansion":
+            W = w_dof.new_zeros(self.out_rep.size, self.in_rep.size)
+            for irrep_id, irrep_metadata in self.iso_blocks.items():
+                m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
+                out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
+                d_k = irrep_metadata["irrep_dim"]
+                hom_basis_slice = irrep_metadata["hom_basis_slice"]
+
+                endo_basis_flat = getattr(self, f"endo_basis_flat_{irrep_id}")  # [S_k, d_k * d_k]
+                theta_k = w_dof[hom_basis_slice].view(m_out * m_in, endo_basis_flat.size(0))  # [m_out*m_in, S_k]
+                # Compute basis expansion for this irrep block
+                coeffs = torch.matmul(theta_k, endo_basis_flat)  # [m_out*m_in, d_k*d_k]
+                # [m_out*m_in, d_k*d_k] -> [m_out, m_in, d_k, d_k] -> [m_out, d_k, m_in, d_k] -> [m_out*d_k, m_in*d_k]
+                W[out_slice, in_slice] = (
+                    coeffs.view(m_out, m_in, d_k, d_k).permute(0, 2, 1, 3).reshape(m_out * d_k, m_in * d_k)
+                )
+            W = self.Q_out @ (W @ self.Q_in_inv)
+
+        return W
+
+    @property
+    def dim(self) -> int:
+        """Return the total number of degrees of freedom of Hom_G(out_rep, in_rep)."""
+        return self._dim_homomorphism
+
+    @torch.no_grad()
+    def _build_fullsize_homomorphism_basis(self):
+        r"""Construct the basis of :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
+
+        Returns:
+            basis_elements (torch.Tensor): Stack of homomorphism basis elements of shape
+            `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`.
+        """
         global _cache_
         cache_key = (self.in_rep, self.out_rep)
         if cache_key in _cache_:
             logger.debug(f"Using cached basis for Hom_G({self.in_rep}, {self.out_rep})")
-            self.basis_elements = _cache_[cache_key]["basis_elements"]
-            self.iso_blocks = _cache_[cache_key]["iso_blocks"]
-            return
+            basis_elements = _cache_[cache_key]["basis_elements"]
         else:
-            logger.debug(f"Computing basis for Hom_G({self.in_rep}, {self.out_rep})")
+            logger.debug(f"Building full-size basis for Hom_G({self.in_rep}, {self.out_rep})")
             basis_elements_iso_basis = []
-            dof_offset = 0
-            for irrep_id in self.common_irreps:
-                irrep = self.G.irrep(*irrep_id)
-                irrep_dim = irrep.size
-                # Slices defining the location of the isotypic subspace block in Hom_G(in_rep, out_rep)
-                out_slice = self.out_rep.attributes["isotypic_subspace_dims"][irrep_id]
-                in_slice = self.in_rep.attributes["isotypic_subspace_dims"][irrep_id]
-                # Multiplicities of the irrep of type k=irrep_id in in_rep and out_rep
-                mul_out = self.out_rep._irreps_multiplicities[irrep_id]
-                mul_in = self.in_rep._irreps_multiplicities[irrep_id]
-                # Endomorphism basis of the irrep End_G(k=irrep_id)
-                irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+            for _, irrep_metadata in self.iso_blocks.items():
+                irrep_end_basis = irrep_metadata["endomorphism_basis"]
                 dim_end_basis = irrep_end_basis.size(0)
-                dim_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
-                # Store block info for inference time use.
-                self.iso_blocks[irrep_id] = dict(
-                    out_slice=out_slice,
-                    in_slice=in_slice,
-                    endomorphism_basis=irrep_end_basis,
-                    mul_out=mul_out,
-                    mul_in=mul_in,
-                    irrep_dim=irrep.size,
-                    dim_hom_basis=dim_hom_basis,
-                    hom_basis_slice=slice(dof_offset, dof_offset + dim_hom_basis),
-                )
-                dof_offset += dim_hom_basis
-                # Construct the basis of Hom_G(V_k^{in}, V_k^{out}) of shape [S_k * m_out * m_in, Ny * Nx]
+                mul_out, mul_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
+                out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
+                irrep_dim = irrep_metadata["irrep_dim"]
+                # Construct the basis of Hom_G(V_k^{in}, V_k^{out}) of shape [S_k * m_out * m_in, d_out * d_in]
                 # This is memory-intensive but the fastest way for forward/backward passes.
-                irrep_basis_elements = []  # (S_k,  Ny, Nx)
+                irrep_basis_elements = []  # (S_k,  d_out, d_in)
                 for s in range(dim_end_basis):
                     irrep_end_basis = irrep_end_basis[s]  # [d_k, d_k]
                     for o_mul in range(mul_out):
                         for i_mul in range(mul_in):
-                            basis_block = torch.zeros(self.out_rep.size, self.in_rep.size, dtype=dtype)  # [Ny, Nx]
+                            basis_block = torch.zeros(self.out_rep.size, self.in_rep.size)  # [d_out, d_in]
                             row_start = out_slice.start + o_mul * irrep_dim
                             col_start = in_slice.start + i_mul * irrep_dim
                             basis_block[row_start : row_start + irrep_dim, col_start : col_start + irrep_dim] = (
@@ -120,24 +185,20 @@ class GroupHomomorphismBasis:
                 # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
                 basis_elements_iso_basis.append(
                     torch.stack(irrep_basis_elements, dim=0)
-                )  # [S_k*m_out_k*m_in_k, Ny, Nx]
+                )  # [S_k*m_out_k*m_in_k, d_out, d_in]
 
             # Change basis elements from isotypic basis to original input/output basis
             basis_elements_iso_basis = torch.cat(
                 basis_elements_iso_basis, dim=0
-            )  # [dim(Hom_G(in_rep, out_rep)), Ny, Nx]
-            Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=dtype)
-            Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype)
-            # basis elements of shape (dim(Hom_G(in_rep, out_rep)), Ny, Nx)
-            self.basis_elements = torch.einsum("ab,sbc,cd->sad", Q_out, basis_elements_iso_basis, Q_in_inv)
-
+            )  # [dim(Hom_G(in_rep, out_rep)), d_out, d_in]
+            Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=basis_elements_iso_basis.dtype)
+            Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=basis_elements_iso_basis.dtype)
+            # basis elements of shape (dim(Hom_G(in_rep, out_rep)), d_out, d_in)
+            basis_elements = torch.einsum("ab,sbc,cd->sad", Q_out, basis_elements_iso_basis, Q_in_inv).contiguous()
             # Store in global cache
-            _cache_[cache_key] = {"basis_elements": self.basis_elements, "iso_blocks": self.iso_blocks}
+            _cache_[cache_key] = {"basis_elements": basis_elements.cpu()}
 
-    @property
-    def dim(self) -> int:
-        """Return the total number of degrees of freedom of Hom_G(out_rep, in_rep)."""
-        return self.basis_elements.size(0)
+        return basis_elements
 
     @torch.no_grad()
     def initialize_params(self, scheme: str = "kaiming_uniform", return_dense: bool = False) -> torch.Tensor:
@@ -303,6 +364,27 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     symm_group.representations[rep_iso_basis.name] = rep_iso_basis
     logger.debug(f"Stored isotypic decomposition representation {rep_iso_basis.name} in cache.")
     return rep_iso_basis
+
+
+# def direct_sum(reps: List[Representation], name: str = None):
+#     r"""Compute the direct sum of a list of representations."""
+#     from escnn.group import directsum
+
+#     # Name is a string of original representation names, where continuous multiplicities of a
+#     # representaton are groups [rep_1, rep_1, rep_2, rep_1] -> [rep_1 x 2, rep_2, rep_1]
+#     if name is None:
+#         rep_names = []
+#         for rep_id, multiplicities in itertools.groupby(reps, lambda r: r.name):
+#             m_list = list(multiplicities)
+#             if len(m_list) > 1:
+#                 rep_names.append(f"{rep_id} x {len(m_list)}")
+#             else:
+#                 rep_names.append(rep_id)
+#         name = "⊕".join(rep_names)
+
+#     out_rep = directsum(reps, name=name)
+#     out_rep.attributes["direct_sum_reps"] = reps
+#     return out_rep
 
 
 def field_type_to_isotypic_basis(field_type: FieldType):

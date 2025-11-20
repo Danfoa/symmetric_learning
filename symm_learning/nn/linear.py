@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import copy
 import logging
+import os
+import sys
+
+if __package__ is None or __package__ == "":
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import torch
 import torch.nn.functional as F
@@ -47,46 +52,14 @@ def impose_linear_equivariance(lin: torch.nn.Linear, in_rep: Representation, out
 
 
 class eLinear(torch.nn.Linear):
-    r"""Equivariant linear map `A in Hom_G(in_rep, out_rep)` parameterized in the isotypic basis.
+    r"""Parameterize a :math:`\mathbb{G}`-equivariant linear map with optional invariant bias.
 
-    **Structure.** Decompose input/output into isotypic components for irreps
-    :math:`\{\bar\rho_k\}` with multiplicities :math:`m_k^{\text{in}}, m_k^{\text{out}}`
-    and carrier dimension :math:`r_k`. Then
-    :math:`\mathrm{Hom}_G \cong \bigoplus_k \mathbb{R}^{m_k^{\text{out}}\times m_k^{\text{in}}}
-    \otimes \mathrm{End}_G(\bar V_k)`. Each block uses basis
-    :math:`\{E_{pq} \otimes \Phi_k(d)\}`, where :math:`E_{pq}` are multiplicity units and
-    :math:`\{\Phi_k(d)\}_{d=1}^{D_k}` spans :math:`\mathrm{End}_G(\bar V_k)` with
-    :math:`D_k \in \{1,2,4\}` for real/complex/quaternionic types.
-
-    **Parameterization.**
-    For each common irrep :math:`k`, learn
-    :math:`\Theta_k \in \mathbb{R}^{D_k \times m_k^{\text{out}} \times m_k^{\text{in}}}` and synthesize
-    :math:`A_k = \sum_{d=1}^{D_k} \Theta_k[d]\otimes \Phi_k(d)
-      \in \mathbb{R}^{(m_k^{\text{out}} r_k)\times(m_k^{\text{in}} r_k)}`.
-    Assemble blocks in isotypic coordinates and conjugate with
-    :math:`Q_{\text{out}}` and :math:`Q_{\text{in}}^{-1}`.
-
-    **Bias.**
-    Allowed iff the trivial irrep appears in ``out_rep``; the bias lives in the invariant
-    subspace and is parameterized in its multiplicity coordinates.
-
-    Notes:
-    -----
-    * :math:`\Phi_k(d)` are pre-normalized to unit Frobenius norm.
-    * Uses cached :math:`Q_{\text{out}}` and :math:`Q_{\text{in}}^{-1}` buffers.
-    * In eval mode, expanded tensors are cached and refreshed on DoF version changes.
-
-    Parameters
-    ----------
-    in_rep : escnn.group.Representation Input representation of :math:`G`.
-    out_rep : escnn.group.Representation Output representation of :math:`G`.
-    bias : bool, default=True. If True and the trivial irrep is present in ``out_rep``, enables an invariant bias.
+    The layer learns coefficients over :math:`\operatorname{Hom}_G(\text{in}, \text{out})`, synthesizing a dense weight
+    commuting with the supplied representations and, when admissible, a bias in :math:`\mathrm{Fix}_G(\text{out})`.
+    Training rebuilds these tensors every call; evaluation reuses the cached expansion.
 
     Attributes:
-    ----------
-    hom_basis : GroupHomomorphismBasis. Per-irrep slices, multiplicities, and unit-Frobenius endomorphism bases.
-    Qin_inv : torch.Tensor. Inverse change-of-basis to isotypic coords for the input, shape ``[Nx, Nx]``.
-    Qout : torch.Tensor. Change-of-basis from isotypic to original coords for the output, shape ``[Ny, Ny]``.
+        homo_basis (GroupHomomorphismBasis): Handler exposing the equivariant basis and metadata.
     """
 
     def __init__(
@@ -95,13 +68,31 @@ class eLinear(torch.nn.Linear):
         out_rep: Representation,
         bias: bool = True,
         init_scheme: str | None = "xavier_normal",
+        basis_expansion_scheme: str = "isotypic_expansion",
+        # basis_expansion_scheme: str = "memory_heavy",
     ):
+        r"""Initialize the equivariant layer.
+
+        Args:
+            in_rep (Representation): Representation describing how inputs transform.
+            out_rep (Representation): Representation describing how outputs transform.
+            bias (bool, optional): Enables the invariant bias if the trivial irrep is present in ``out_rep``.
+                Default: ``True``.
+            init_scheme (str | None, optional): Initialization method passed to
+                :meth:`GroupHomomorphismBasis.initialize_params`. Use ``None`` to skip initialization. Default:
+                ``"xavier_normal"``.
+            basis_expansion_scheme (str, optional): Strategy for materializing the basis (``"isotypic_expansion"`` or
+                ``"memory_heavy"``). Default: ``"isotypic_expansion"``.
+
+        Raises:
+            ValueError: If :math:`\dim(\mathrm{Hom}_G(\text{in}, \text{out})) = 0`.
+        """
         super().__init__(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
         # Delete linear unconstrained module parameters
         self.register_parameter("weight", None)
         self.register_parameter("bias", None)
         # Instanciate the handler of the basis of Hom_G(in_rep, out_rep)
-        self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep)
+        self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion=basis_expansion_scheme)
         self.in_rep, self.out_rep = self.homo_basis.in_rep, self.homo_basis.out_rep
         if self.homo_basis.dim == 0:
             raise ValueError(
@@ -113,104 +104,63 @@ class eLinear(torch.nn.Linear):
         self.has_bias = bias and can_have_bias
         # Register change of basis matrices as buffers
         dtype = torch.get_default_dtype()
-        self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
 
         # Register weight parameters (degrees of freedom: dof) and buffers
         self.register_parameter(
             "weight_dof", torch.nn.Parameter(torch.zeros(self.homo_basis.dim, dtype=dtype), requires_grad=True)
         )
-        # Buffer containing the basis elements of Hom_G(out_rep, in_rep) flattened for forward efficiency.
-        # This is considerably memory heavy, but makes forward/backward passes faster.
-        self.register_buffer(
-            "_basis_vectors_flat",
-            self.homo_basis.basis_elements.reshape(self.homo_basis.dim, self.out_rep.size * self.in_rep.size),
-        )
 
         if self.has_bias:  # Register bias parameters
             # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
             m_out_trivial = out_rep._irreps_multiplicities[trivial_id]
-            bias_param = torch.nn.Parameter(torch.zeros(m_out_trivial), requires_grad=True)
-            self.register_parameter("bias_dof", bias_param)
-
-        # Buffers to hold the expanded parameters
-        self.register_buffer("_weight", torch.zeros((out_rep.size, in_rep.size), dtype=dtype))
-        if self.has_bias:
-            self.register_buffer("_bias", torch.zeros((out_rep.size,), dtype=dtype))
+            self.register_parameter("bias_dof", torch.nn.Parameter(torch.zeros(m_out_trivial), requires_grad=True))
+            self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
 
         if init_scheme is not None:
             self.reset_parameters(scheme=init_scheme)
+        self._weight, self._bias = None, None
 
-    @property
-    def weight(self) -> torch.Tensor:
-        r"""Dense equivariant weight :math:`W \in \mathbb{R}^{\dim(\mathrm{out}),\,\dim(\mathrm{in})}`.
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        """Apply the equivariant map.
 
-        Computation
-        -----------
-        1. Build :math:`W_{\text{iso}}` blockwise via
-           :math:`W_k = \sum_d \Theta_k[d]\otimes \Phi_k(d)`.
-        2. Change of original input/output basis:
-           :math:`W = Q_{\text{out}}\, W_{\text{iso}}\, Q_{\text{in}}^{-1}`.
-
-        Caching
-        -------
-        * **Training:** recomputed for autograd.
-        * **Eval:** memoized and refreshed when DoF versions change.
+        Args:
+            input (torch.Tensor): Tensor whose last dimension equals ``in_rep.size``.
 
         Returns:
-        -------
-            torch.Tensor Equivariant linear map of shape `(out_rep.size, in_rep.size)`.
+            torch.Tensor: Output tensor with the same leading shape as ``input`` and last dimension ``out_rep.size``.
         """
-        if self.training:  # Recompute bias from trainable parameters
-            W_flat = torch.matmul(self.weight_dof, self._basis_vectors_flat)
-            self._weight = W_flat.view(self.out_rep.size, self.in_rep.size)
-        return self._weight
+        if self.training or self._weight is None:
+            W, b = self.expand_weight_and_bias()
+            self._weight, self._bias = W, b  # Cache for inference.
+        else:  # Return cached weight and bias
+            device = next(self.parameters()).device
+            W = self._weight.to(device)
+            b = self._bias.to(device) if self.has_bias else None
 
-    @property
-    def bias(self) -> torch.Tensor:
-        r"""Invariant bias :math:`b \in \mathrm{Fix}_G(\mathrm{out\_rep})`.
+        return F.linear(input, W, b)
 
-        If the trivial irrep is present with multiplicity :math:`m_{\text{triv}}^{\text{out}}`,
-        parameterize :math:`\beta \in \mathbb{R}^{m_{\text{triv}}^{\text{out}}}` and embed via
-
-        .. math::
-            b \;=\; Q_{\text{out}}[:,\,\mathcal{I}_{\text{triv}}]\;\beta,
-
-        where :math:`\mathcal{I}_{\text{triv}}` selects the trivial isotypic columns
-        (note :math:`r_{\text{triv}}=1`). Caching mirrors :meth:`weight`.
+    def expand_weight_and_bias(self):
+        r"""Return the dense equivariant weight and optional invariant bias.
 
         Returns:
-        -------
-        torch.Tensor or None
-            Invariant bias vector of shape `(out_rep.size,)` or ``None`` if not admissible.
+            Tuple[torch.Tensor, Optional[torch.Tensor]]: Dense matrix of shape ``(out_rep.size, in_rep.size)`` and the
+            invariant bias (or ``None`` if the trivial irrep is absent).
         """
-        if not self.has_bias:
-            return None
-        if self.training:  # Recompute bias from trainable parameters
+        W = self.homo_basis(self.weight_dof)  # Recompute linear map
+        bias = None
+        if self.has_bias:  # Recompute bias
             trivial_id = self.out_rep.group.trivial_representation.id
             trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
-            self._bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
-        return self._bias
-
-    def __deepcopy__(self, memo):
-        """Keep representation and Hom_G basis shared to avoid duplicating large cached tensors."""
-        memo = memo or {}
-        memo[id(self.in_rep)] = self.in_rep
-        memo[id(self.out_rep)] = self.out_rep
-        memo[id(self.homo_basis)] = self.homo_basis
-        cls = self.__class__
-        clone = cls.__new__(cls)
-        memo[id(self)] = clone
-        for k, v in self.__dict__.items():
-            setattr(clone, k, copy.deepcopy(v, memo))
-        return clone
+            bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
+        return W, bias
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_normal"):
-        """Reset the parameters of the linear layer using the specified initialization scheme.
+        """Reset all trainable parameters.
 
-        Parameters
-            scheme (str): The initialization scheme to use, among "xavier_normal", "xavier_uniform", "kaiming_normal",
-                and "kaiming_uniform". Default to "xavier_normal".
+        Args:
+            scheme (str): Initialization scheme (``"xavier_normal"``, ``"xavier_uniform"``, ``"kaiming_normal"``, or
+                ``"kaiming_uniform"``).
         """
         logger.debug(f"Resetting parameters of {self} with scheme: {scheme}")
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.Linear init
@@ -337,57 +287,47 @@ class eAffine(torch.nn.Module):
 if __name__ == "__main__":
     import escnn
     from escnn.group import CyclicGroup, DihedralGroup, Icosahedral, directsum
+    from escnn.nn import Linear
     from numpy import set_printoptions
-    from torch.profiler import ProfilerActivity, profile, record_function
 
     set_printoptions(precision=2, suppress=True)
 
-    from symm_learning.utils import check_equivariance
+    from symm_learning.utils import bytes_to_mb, check_equivariance, module_memory_breakdown
 
-    G = Icosahedral()
-    m = 5
-    rep = directsum([G.regular_representation] * m)
+    G = CyclicGroup(2)
+    m_in, m_out = 5, 1
+    in_rep = directsum([G.regular_representation] * m_in)
+    out_rep = directsum([G.regular_representation] * m_out)
 
-    layer = eLinear(rep, rep, bias=False)
-    check_equivariance(layer, atol=1e-5, rtol=1e-5)
-    # check_equivariance(layer2, atol=1e-5, rtol=1e-5)
+    def describe_memory(label: str, module: torch.nn.Module) -> None:
+        """Pretty-print parameter/buffer memory consumption for ``module``."""
+        entries = module_memory_breakdown(module)
+        if not entries:
+            print(f"\n{label}: no parameters or buffers.")
+            return
+        entries.sort(key=lambda item: item["bytes"], reverse=True)
 
-    # # Identity should be preserved under projection to Hom_G(rep, rep)
-    # W_id = torch.eye(rep.size)
-    # # print(W_id.detach().cpu().numpy())
-    # layer.weight = W_id
-    # W_id_proj = layer.weight  # Trigger Hom_G(rep, rep) projection
-    # # print(W_id_proj.detach().cpu().numpy())
-    # assert torch.allclose(W_id, W_id_proj, atol=1e-5, rtol=1e-5), (
-    #     f"Identity reprojection error max: {(W_id - W_id_proj).abs().max()}"
-    # )
-    # print("Identity reprojection test passed.")
+        print(f"\n{label} memory breakdown")
+        header = f"{'Kind':<12}{'Name':<45}{'Trainable':<11}{'Shape':<25}{'DType':<12}{'MB':>10}"
+        print(header)
+        print("-" * len(header))
+        for entry in entries:
+            shape = "×".join(str(dim) for dim in entry["shape"]) if entry["shape"] else "scalar"
+            mb = bytes_to_mb(entry["bytes"])
+            print(
+                f"{entry['kind']:<12}{entry['name']:<45}{str(entry['trainable']):<11}"
+                f"{shape:<25}{entry['dtype']:<12}{mb:>10.3f}"
+            )
+        total_trainable = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "parameter" and e["trainable"])
+        total_frozen = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "parameter" and not e["trainable"])
+        total_buffers = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "buffer")
+        print("-" * len(header))
+        print(f"{'Trainable params MB:':<68}{total_trainable:>10.3f}")
+        print(f"{'Frozen params MB:':<68}{total_frozen:>10.3f}")
+        print(f"{'Buffers MB:':<68}{total_buffers:>10.3f}")
 
-    # try:
-    #     # Check the orthogonal projection to Hom_G(rep, rep) works as expected
-    #     in_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [rep])
-    #     layer = eLinear(rep, rep, bias=False)
-    # escnn_layer = escnn.nn.Lin`ear(in_type, in_type, bias=False)
-    #     W, b = escnn_layer.expand_parameters()
-    #     layer.weight = W
-    #     W_projected = layer.weight
-    #     assert torch.allclose(W, W_projected, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_projected).abs().max()}"
-    #     check_equivariance(layer, atol=1e-5, rtol=1e-5)
-    #     print("Projection invariance test passed.")
-
-    #     # For any random linear map check the projected map is indeed in Hom_G(rep, rep)
-    #     W_random = torch.randn_like(W)
-    #     layer.weight = W_random
-    #     check_equivariance(layer, atol=1e-5, rtol=1e-5)
-
-    #     # Check projection is idempotent
-    #     W = layer.weight
-    #     layer.weight = W
-    #     W_proj2 = layer.weight
-    #     assert torch.allclose(W, W_proj2, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_proj2).abs().max()}"
-    #     print("Projection idempotence test passed.")
-    # except (PermissionError, OSError) as exc:
-    #     print(f"Skipping escnn Linear comparison due to environment error: {exc}")
+    baseline_layer = torch.nn.Linear(in_rep.size, out_rep.size, bias=True)
+    describe_memory("torch.nn.Linear baseline", baseline_layer)
 
     def backprop_sanity(module: torch.nn.Module, label: str):  # noqa: D103
         module.train()
@@ -398,40 +338,13 @@ if __name__ == "__main__":
         y = module(x)
         loss = F.mse_loss(y, target)
         loss.backward()
-        grad_norm = sum((p.grad.norm().item() for p in module.parameters() if p.grad is not None))
         optim.step()
+        grad_norm = sum((p.grad.norm().item() for p in module.parameters() if p.grad is not None))
         print(f"{label} backprop test passed (grad norm {grad_norm:.4f})")
 
-    backprop_sanity(layer, "eLinear")
-
-    # def profile_forward_pass(module: torch.nn.Module, batch_size: int = 512, warmup: int = 10, iters: int = 100):
-    #     """Profile the forward pass of ``module`` and print a summary table."""
-    #     module_device = next(module.parameters()).device
-    #     module.train()
-    #     x = torch.randn(batch_size, module.in_rep.size, device=module_device)
-    #     activities = [ProfilerActivity.CPU]
-    #     if torch.cuda.is_available():
-    #         activities.append(ProfilerActivity.CUDA)
-
-    #     for _ in range(warmup):
-    #         module(x)
-    #     if torch.cuda.is_available():
-    #         torch.cuda.synchronize()
-
-    #     with profile(activities=activities, record_shapes=True, profile_memory=True) as prof:
-    #         for _ in range(iters):
-    #             with record_function("eLinear2_forward"):
-    #                 module(x)
-    #         if torch.cuda.is_available():
-    #             torch.cuda.synchronize()
-
-    #     print("\nForward-pass profiler summary (sorted by self CPU time)")
-    #     print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=30))
-    #     if torch.cuda.is_available():
-    #         print("\nForward-pass profiler summary (sorted by self CUDA time)")
-    #         print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
-
-    # print("\nProfiling eLinear2 forward pass ...")
-    # layer2.train()
-    # module_for_profile = layer2.cuda() if torch.cuda.is_available() else layer2
-    # profile_forward_pass(module_for_profile)
+    for basis_expansion in ["isotypic_expansion", "memory_heavy"]:
+        layer = eLinear(in_rep, out_rep, bias=False, basis_expansion_scheme=basis_expansion)
+        describe_memory(f"eLinear ({basis_expansion})", layer)
+        check_equivariance(layer, atol=1e-5, rtol=1e-5)
+        print(f"eLinear with basis expansion '{basis_expansion}' equivariant test passed.")
+        backprop_sanity(layer, f"eLinear with basis expansion '{basis_expansion}'")

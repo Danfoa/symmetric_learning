@@ -16,18 +16,83 @@ class CallableDict(dict, Callable):
         return self[key]
 
 
+def _tensor_bytes(t: torch.Tensor) -> int:
+    if t.layout == torch.sparse_coo:
+        vals = t._values()
+        idx = t._indices()
+        return vals.numel() * vals.element_size() + idx.numel() * idx.element_size()
+    if t.layout == torch.sparse_csr or t.layout == torch.sparse_bsr:
+        total = t.values().numel() * t.values().element_size()
+        total += t.crow_indices().numel() * t.crow_indices().element_size()
+        total += t.col_indices().numel() * t.col_indices().element_size()
+        return total
+    if t.layout == torch.sparse_csc:
+        total = t.values().numel() * t.values().element_size()
+        total += t.ccol_indices().numel() * t.ccol_indices().element_size()
+        total += t.row_indices().numel() * t.row_indices().element_size()
+        return total
+    return t.numel() * t.element_size()
+
+
 def module_memory(module: torch.nn.Module):  # noqa: D103
     trainable = 0
     frozen = 0
     for p in module.parameters():
-        nbytes = p.numel() * p.element_size()
+        nbytes = _tensor_bytes(p)
         if p.requires_grad:
             trainable += nbytes
         else:
             frozen += nbytes
-    buffer_bytes = sum(buf.numel() * buf.element_size() for buf in module.buffers())
+    buffer_bytes = sum(_tensor_bytes(buf) for buf in module.buffers())
     non_trainable = frozen + buffer_bytes
     return trainable, non_trainable
+
+
+def module_memory_breakdown(module: torch.nn.Module) -> list[dict]:
+    """Return a per-tensor memory breakdown for ``module``."""
+
+    def _entry(name: str, tensor: torch.Tensor, kind: str, trainable: bool) -> dict:
+        return {
+            "name": name,
+            "kind": kind,
+            "trainable": bool(trainable),
+            "shape": tuple(tensor.shape),
+            "dtype": str(tensor.dtype).replace("torch.", ""),
+            "numel": tensor.numel(),
+            "bytes": _tensor_bytes(tensor),
+        }
+
+    details: list[dict] = []
+    for name, param in module.named_parameters():
+        details.append(_entry(name, param, "parameter", param.requires_grad))
+    for name, buf in module.named_buffers():
+        details.append(_entry(name, buf, "buffer", False))
+
+    return details
+
+
+def module_device_memory(module: torch.nn.Module, device: str | torch.device | None = None) -> tuple[int, int]:
+    """Measure actual CUDA memory footprint (allocated and peak) of a module cloned onto ``device``."""
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device(device)
+    if device.type != "cuda":
+        return 0, 0
+
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats(device)
+    torch.cuda.synchronize(device)
+
+    module.to("cpu")
+    before = torch.cuda.memory_allocated(device)
+    module_clone = module.to(device)
+    torch.cuda.synchronize(device)
+    allocated = torch.cuda.memory_allocated(device) - before
+    peak = torch.cuda.max_memory_allocated(device)
+
+    del module_clone
+    torch.cuda.empty_cache()
+    return allocated, peak
 
 
 def bytes_to_mb(num_bytes: int) -> float:  # noqa: D103

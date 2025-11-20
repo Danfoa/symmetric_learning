@@ -10,7 +10,7 @@ from torch.nn.utils import parametrize
 
 from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import GroupHomomorphismBasis
-from symm_learning.utils import bytes_to_mb, check_equivariance, module_memory
+from symm_learning.utils import bytes_to_mb, check_equivariance, module_device_memory, module_memory
 
 logger = logging.getLogger(__name__)
 
@@ -134,18 +134,19 @@ if __name__ == "__main__":
 
     from symm_learning.nn.linear import eLinear, impose_linear_equivariance
 
+    # G = CyclicGroup(2)
     G = Icosahedral()
     m = 4
+    bias = True
     in_rep = directsum([G.regular_representation] * m)
     out_rep = directsum([G.regular_representation] * m * 2)
-
-    eq_layer_proj = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=True)
+    eq_layer_proj = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
     impose_linear_equivariance(lin=eq_layer_proj, in_rep=in_rep, out_rep=out_rep)
 
     # Check the orthogonal projection to Hom_G(rep, rep) works as expected
-    in_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [in_rep])
-    out_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [out_rep])
-    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=False)
+    in_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * m)
+    out_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * m * 2)
+    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=bias)
     W, b = escnn_layer.expand_parameters()
     eq_layer_proj.weight = W
     W_projected = eq_layer_proj.weight
@@ -166,16 +167,15 @@ if __name__ == "__main__":
     print("Projection idempotence test passed.")
 
     # ____________________________________________________________________________________
-    standad_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=True)
-    eq_layer = eLinear(in_rep, out_rep, bias=True)
+    standad_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
+    eq_layer = eLinear(in_rep, out_rep, bias=bias)
 
     in_type = FieldType(no_base_space(G), [in_rep])
     out_type = FieldType(no_base_space(G), [out_rep])
-    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=True)
+    escnn_layer = escnn.nn.Linear(in_type, out_type, bias=bias)
 
-    batch_size = 1024
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda") if use_cuda else torch.device("cpu")
+    batch_size = 512
+    device = torch.device("cuda")
     standad_layer = standad_layer.to(device)
     eq_layer = eq_layer.to(device)
     eq_layer_proj = eq_layer_proj.to(device)
@@ -186,14 +186,11 @@ if __name__ == "__main__":
 
     def benchmark(module, x, iters=1000, warmup=50):
         """Benchmark a module and return independent forward/backward timings (in ms)."""
-        if use_cuda:
-            torch.cuda.synchronize()
-            fwd_start = torch.cuda.Event(enable_timing=True)
-            fwd_end = torch.cuda.Event(enable_timing=True)
-            bwd_start = torch.cuda.Event(enable_timing=True)
-            bwd_end = torch.cuda.Event(enable_timing=True)
-        else:
-            fwd_start = fwd_end = bwd_start = bwd_end = None
+        torch.cuda.synchronize()
+        fwd_start = torch.cuda.Event(enable_timing=True)
+        fwd_end = torch.cuda.Event(enable_timing=True)
+        bwd_start = torch.cuda.Event(enable_timing=True)
+        bwd_end = torch.cuda.Event(enable_timing=True)
 
         optim = torch.optim.SGD(module.parameters(), lr=0.00001)
         forward_times, backward_times = [], []
@@ -201,35 +198,22 @@ if __name__ == "__main__":
         for i in range(iters + warmup):
             optim.zero_grad()
 
-            if use_cuda:
-                fwd_start.record()
-            fwd_start_cpu = time.perf_counter()
+            fwd_start.record()
             y = module(in_type(x)).tensor if isinstance(module, escnn.nn.Linear) else module(x)
-            fwd_end_cpu = time.perf_counter()
-            if use_cuda:
-                fwd_end.record()
+            fwd_end.record()
 
             loss = y.pow(2).mean()
 
-            if use_cuda:
-                bwd_start.record()
-            bwd_start_cpu = time.perf_counter()
+            bwd_start.record()
             loss.backward()
-            bwd_end_cpu = time.perf_counter()
-            if use_cuda:
-                bwd_end.record()
+            bwd_end.record()
             optim.step()
 
-            if use_cuda:
-                torch.cuda.synchronize()
+            torch.cuda.synchronize()
 
             if i >= warmup:
-                if use_cuda:
-                    forward_times.append(fwd_start.elapsed_time(fwd_end))
-                    backward_times.append(bwd_start.elapsed_time(bwd_end))
-                else:
-                    forward_times.append((fwd_end_cpu - fwd_start_cpu) * 1000.0)
-                    backward_times.append((bwd_end_cpu - bwd_start_cpu) * 1000.0)
+                forward_times.append(fwd_start.elapsed_time(fwd_end))
+                backward_times.append(bwd_start.elapsed_time(bwd_end))
 
         fwd_stats = torch.tensor(forward_times)
         bwd_stats = torch.tensor(backward_times)
@@ -251,6 +235,7 @@ if __name__ == "__main__":
     results = []
     for name, module in modules_to_benchmark:
         train_mem, non_train_mem = module_memory(module)
+        gpu_alloc, gpu_peak = module_device_memory(module)
         (fwd_mean, fwd_std), (bwd_mean, bwd_std) = benchmark(module, x)
         results.append(
             {
@@ -262,12 +247,14 @@ if __name__ == "__main__":
                 "total_time": fwd_mean + bwd_mean,
                 "train_mem": train_mem,
                 "non_train_mem": non_train_mem,
+                "gpu_mem": gpu_alloc,
+                "gpu_peak": gpu_peak,
             }
         )
 
     header = (
         f"{'Layer':<12} {'Forward (ms)':>18} {'Backward (ms)':>18} {'Total (ms)':>15} "
-        f"{'Trainable MB':>15} {'Non-train MB':>15} {'Total MB':>12}"
+        f"{'Trainable MB':>15} {'Non-train MB':>15} {'Total MB':>12} {'GPU Alloc MB':>15} {'GPU Peak MB':>15}"
     )
     separator = "-" * len(header)
     print(f"\nBenchmark results per {batch_size}-sample batch")
@@ -278,9 +265,12 @@ if __name__ == "__main__":
         fwd_str = f"{res['fwd_mean']:.3f} ± {res['fwd_std']:.3f}"
         bwd_str = f"{res['bwd_mean']:.3f} ± {res['bwd_std']:.3f}"
         total_mb = res["train_mem"] + res["non_train_mem"]
+        gpu_alloc_mb = bytes_to_mb(res["gpu_mem"])
+        gpu_peak_mb = bytes_to_mb(res["gpu_peak"])
         print(
             f"{res['name']:<12} {fwd_str:>18} {bwd_str:>18} "
             f"{res['total_time']:>15.3f} {bytes_to_mb(res['train_mem']):>15.3f} "
-            f"{bytes_to_mb(res['non_train_mem']):>15.3f} {bytes_to_mb(total_mb):>12.3f}"
+            f"{bytes_to_mb(res['non_train_mem']):>15.3f} {bytes_to_mb(total_mb):>12.3f} "
+            f"{gpu_alloc_mb:>15.3f} {gpu_peak_mb:>15.3f}"
         )
     print(separator)
