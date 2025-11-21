@@ -86,7 +86,7 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
             parametrize.register_parametrization(self, "in_proj_bias", InvariantConstraint(stacked_qkv_rep))
 
         # Replace output projection linear layer.
-        self.out_proj = eLinear(in_rep, in_rep, bias=bias).to(device=device, dtype=dtype)
+        self.out_proj = eLinear(in_rep, in_rep, bias=bias, init_scheme=init_scheme).to(device=device, dtype=dtype)
 
         if init_scheme is not None:
             self.reset_parameters(scheme=init_scheme)
@@ -96,7 +96,7 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
         """Overload parent method to take into account equivariance constraints."""
         if not hasattr(self, "parametrizations"):
             return super()._reset_parameters()
-
+        logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
         # Reset equivariant linear layers (symm_learning.nn.eLinear)
         self.out_proj.reset_parameters(scheme=scheme)
 

@@ -165,7 +165,6 @@ class eLinear(torch.nn.Linear):
         """
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.Linear init
             return super().reset_parameters()
-        logger.debug(f"Resetting parameters of {self} with scheme: {scheme}")
         new_params = self.homo_basis.initialize_params(scheme)
         self.weight_dof.copy_(new_params)
 

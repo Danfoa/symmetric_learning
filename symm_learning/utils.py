@@ -34,7 +34,32 @@ def _tensor_bytes(t: torch.Tensor) -> int:
     return t.numel() * t.element_size()
 
 
-def module_memory(module: torch.nn.Module):  # noqa: D103
+def module_memory(module: torch.nn.Module, units: str = "bytes"):
+    """Return trainable/non-trainable parameter memory for ``module``.
+
+    Parameters
+    ----------
+    module : torch.nn.Module
+        Module whose parameter memory footprint is inspected.
+    units : {"bytes", "kib", "mib", "gib"}, optional
+        Output units. ``kib``/``mib``/``gib`` are binary kilo/mega/gigabytes (powers of 1024).
+        Default is raw bytes.
+
+    Returns:
+    -------
+    Tuple[float, float]
+        Memory in the selected units stored in parameters that require gradients, and frozen parameters plus buffers.
+    """
+    unit_scale = {
+        "bytes": 1,
+        "kib": 1024,
+        "mib": 1024**2,
+        "gib": 1024**3,
+    }
+    if units.lower() not in unit_scale:
+        raise ValueError(f"Unsupported units '{units}'. Expected one of {tuple(unit_scale.keys())}.")
+    scale = unit_scale[units.lower()]
+
     trainable = 0
     frozen = 0
     for p in module.parameters():
@@ -45,11 +70,11 @@ def module_memory(module: torch.nn.Module):  # noqa: D103
             frozen += nbytes
     buffer_bytes = sum(_tensor_bytes(buf) for buf in module.buffers())
     non_trainable = frozen + buffer_bytes
-    return trainable, non_trainable
+    return trainable / scale, non_trainable / scale
 
 
 def module_memory_breakdown(module: torch.nn.Module) -> list[dict]:
-    """Return a per-tensor memory breakdown for ``module``."""
+    """Return a per-tensor memory breakdown for ``module`` (sizes in bytes)."""
 
     def _entry(name: str, tensor: torch.Tensor, kind: str, trainable: bool) -> dict:
         return {
@@ -100,7 +125,7 @@ def describe_memory(label: str, module: torch.nn.Module) -> None:
 
 
 def module_device_memory(module: torch.nn.Module, device: str | torch.device | None = None) -> tuple[int, int]:
-    """Measure actual CUDA memory footprint (allocated and peak) of a module cloned onto ``device``."""
+    """Measure CUDA memory footprint (bytes allocated/peak) of ``module`` cloned onto ``device``."""
     if device is None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = torch.device(device)

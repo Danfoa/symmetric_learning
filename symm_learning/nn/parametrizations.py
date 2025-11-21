@@ -39,17 +39,6 @@ class InvariantConstraint(torch.nn.Module):
         """Return a parameter tensor whose projection equals ``tensor``."""
         return tensor
 
-    def __deepcopy__(self, memo):  # noqa: D105
-        memo = memo or {}
-        memo[id(self.rep)] = self.rep
-        memo[id(self.inv_projector)] = self.inv_projector
-        cls = self.__class__
-        clone = cls.__new__(cls)
-        memo[id(self)] = clone
-        for k, v in self.__dict__.items():
-            setattr(clone, k, copy.deepcopy(v, memo))
-        return clone
-
 
 class CommutingConstraint(torch.nn.Module):
     r"""Equivariant weight parametrization via isotypic-basis projection.
@@ -114,19 +103,6 @@ class CommutingConstraint(torch.nn.Module):
         """Return a pre-image for the parametrization (identity for now)."""
         return tensor
 
-    def __deepcopy__(self, memo):  # noqa: D105
-        memo = memo or {}
-        memo[id(self.in_rep)] = self.in_rep
-        memo[id(self.out_rep)] = self.out_rep
-        memo[id(self.homo_basis)] = self.homo_basis
-        memo[id(self._basis_vectors_normalized)] = self._basis_vectors_normalized
-        cls = self.__class__
-        clone = cls.__new__(cls)
-        memo[id(self)] = clone
-        for k, v in self.__dict__.items():
-            setattr(clone, k, copy.deepcopy(v, memo))
-        return clone
-
 
 if __name__ == "__main__":
     from escnn.group import CyclicGroup, Icosahedral
@@ -173,7 +149,7 @@ if __name__ == "__main__":
     out_type = FieldType(no_base_space(G), [out_rep])
     escnn_layer = escnn.nn.Linear(in_type, out_type, bias=bias)
 
-    batch_size = 512
+    batch_size = 1024
     device = torch.device("cuda")
     standad_layer = standad_layer.to(device)
     eq_layer = eq_layer.to(device)
