@@ -172,14 +172,14 @@ class GroupHomomorphismBasis(torch.nn.Module):
                 # This is memory-intensive but the fastest way for forward/backward passes.
                 irrep_basis_elements = []  # (S_k,  d_out, d_in)
                 for s in range(dim_end_basis):
-                    irrep_end_basis = irrep_end_basis[s]  # [d_k, d_k]
+                    endo_basis_s = irrep_end_basis[s]  # [d_k, d_k]
                     for o_mul in range(mul_out):
                         for i_mul in range(mul_in):
                             basis_block = torch.zeros(self.out_rep.size, self.in_rep.size)  # [d_out, d_in]
                             row_start = out_slice.start + o_mul * irrep_dim
                             col_start = in_slice.start + i_mul * irrep_dim
                             basis_block[row_start : row_start + irrep_dim, col_start : col_start + irrep_dim] = (
-                                irrep_end_basis
+                                endo_basis_s
                             )
                             irrep_basis_elements.append(basis_block)
                 # Every block contributes exactly S_k * m_out * m_in rows; no need for an emptiness check.
@@ -252,6 +252,9 @@ class GroupHomomorphismBasis(torch.nn.Module):
             return Q_out @ W_iso @ Q_in_inv
         else:
             return w_dof
+
+    def extra_repr(self):  # noqa: D102
+        return f"basis_expansion={self.basis_expansion}\nin_rep={self.in_rep}\nout_rep={self.out_rep}"
 
 
 def isotypic_decomp_rep(rep: Representation) -> Representation:
@@ -366,25 +369,27 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     return rep_iso_basis
 
 
-# def direct_sum(reps: List[Representation], name: str = None):
-#     r"""Compute the direct sum of a list of representations."""
-#     from escnn.group import directsum
+def direct_sum(reps: List[Representation], name: str = None):
+    r"""Compute the direct sum of a list of representations."""
+    from escnn.group import directsum
 
-#     # Name is a string of original representation names, where continuous multiplicities of a
-#     # representaton are groups [rep_1, rep_1, rep_2, rep_1] -> [rep_1 x 2, rep_2, rep_1]
-#     if name is None:
-#         rep_names = []
-#         for rep_id, multiplicities in itertools.groupby(reps, lambda r: r.name):
-#             m_list = list(multiplicities)
-#             if len(m_list) > 1:
-#                 rep_names.append(f"{rep_id} x {len(m_list)}")
-#             else:
-#                 rep_names.append(rep_id)
-#         name = "⊕".join(rep_names)
+    if len(reps) == 1:
+        return reps[0]
+    # Name is a string of original representation names, where continuous multiplicities of a
+    # representaton are groups [rep_1, rep_1, rep_2, rep_1] -> [rep_1 x 2, rep_2, rep_1]
+    if name is None:
+        rep_names = []
+        for rep_id, multiplicities in itertools.groupby(reps, lambda r: r.name):
+            m_list = list(multiplicities)
+            if len(m_list) > 1:
+                rep_names.append(f"{rep_id} x {len(m_list)}")
+            else:
+                rep_names.append(rep_id)
+        name = "⊕".join(rep_names)
 
-#     out_rep = directsum(reps, name=name)
-#     out_rep.attributes["direct_sum_reps"] = reps
-#     return out_rep
+    out_rep = directsum(reps, name=name)
+    out_rep.attributes["direct_sum_reps"] = reps
+    return out_rep
 
 
 def field_type_to_isotypic_basis(field_type: FieldType):

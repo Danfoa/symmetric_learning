@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-import copy
 import logging
-import os
-import sys
-
-if __package__ is None or __package__ == "":
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import torch
 import torch.nn.functional as F
@@ -14,7 +8,7 @@ from escnn.group import Representation
 from torch.nn.utils import parametrize
 
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
-from symm_learning.representation_theory import GroupHomomorphismBasis, isotypic_decomp_rep
+from symm_learning.representation_theory import GroupHomomorphismBasis, direct_sum, isotypic_decomp_rep
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +63,6 @@ class eLinear(torch.nn.Linear):
         bias: bool = True,
         init_scheme: str | None = "xavier_normal",
         basis_expansion_scheme: str = "isotypic_expansion",
-        # basis_expansion_scheme: str = "memory_heavy",
     ):
         r"""Initialize the equivariant layer.
 
@@ -129,13 +122,7 @@ class eLinear(torch.nn.Linear):
         Returns:
             torch.Tensor: Output tensor with the same leading shape as ``input`` and last dimension ``out_rep.size``.
         """
-        if self.training or self._weight is None:
-            W, b = self.expand_weight_and_bias()
-            self._weight, self._bias = W, b  # Cache for inference.
-        else:  # Return cached weight and bias
-            device = next(self.parameters()).device
-            W = self._weight.to(device)
-            b = self._bias.to(device) if self.has_bias else None
+        W, b = self.expand_weight_and_bias()
 
         return F.linear(input, W, b)
 
@@ -149,10 +136,24 @@ class eLinear(torch.nn.Linear):
         W = self.homo_basis(self.weight_dof)  # Recompute linear map
         bias = None
         if self.has_bias:  # Recompute bias
-            trivial_id = self.out_rep.group.trivial_representation.id
-            trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
-            bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
+            bias = self._expand_bias()
+        self._weight = W
+        self._bias = bias
         return W, bias
+
+    def _expand_bias(self):
+        trivial_id = self.out_rep.group.trivial_representation.id
+        trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
+        bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
+        return bias
+
+    @property
+    def weight(self) -> torch.Tensor:  # noqa: D102
+        return self.homo_basis(self.weight_dof)
+
+    @property
+    def bias(self) -> torch.Tensor | None:  # noqa: D102
+        return self._expand_bias() if self.has_bias else None
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_normal"):
@@ -162,9 +163,9 @@ class eLinear(torch.nn.Linear):
             scheme (str): Initialization scheme (``"xavier_normal"``, ``"xavier_uniform"``, ``"kaiming_normal"``, or
                 ``"kaiming_uniform"``).
         """
-        logger.debug(f"Resetting parameters of {self} with scheme: {scheme}")
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.Linear init
             return super().reset_parameters()
+        logger.debug(f"Resetting parameters of {self} with scheme: {scheme}")
         new_params = self.homo_basis.initialize_params(scheme)
         self.weight_dof.copy_(new_params)
 
@@ -285,48 +286,23 @@ class eAffine(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    import escnn
     from escnn.group import CyclicGroup, DihedralGroup, Icosahedral, directsum
     from escnn.nn import Linear
     from numpy import set_printoptions
+
+    from symm_learning.utils import describe_memory
 
     set_printoptions(precision=2, suppress=True)
 
     from symm_learning.utils import bytes_to_mb, check_equivariance, module_memory_breakdown
 
-    G = CyclicGroup(2)
+    G = CyclicGroup(3)
     m_in, m_out = 5, 1
-    in_rep = directsum([G.regular_representation] * m_in)
-    out_rep = directsum([G.regular_representation] * m_out)
+    bias = False
+    in_rep = direct_sum([G.regular_representation] * m_in)
+    out_rep = direct_sum([G.regular_representation] * m_out)
 
-    def describe_memory(label: str, module: torch.nn.Module) -> None:
-        """Pretty-print parameter/buffer memory consumption for ``module``."""
-        entries = module_memory_breakdown(module)
-        if not entries:
-            print(f"\n{label}: no parameters or buffers.")
-            return
-        entries.sort(key=lambda item: item["bytes"], reverse=True)
-
-        print(f"\n{label} memory breakdown")
-        header = f"{'Kind':<12}{'Name':<45}{'Trainable':<11}{'Shape':<25}{'DType':<12}{'MB':>10}"
-        print(header)
-        print("-" * len(header))
-        for entry in entries:
-            shape = "×".join(str(dim) for dim in entry["shape"]) if entry["shape"] else "scalar"
-            mb = bytes_to_mb(entry["bytes"])
-            print(
-                f"{entry['kind']:<12}{entry['name']:<45}{str(entry['trainable']):<11}"
-                f"{shape:<25}{entry['dtype']:<12}{mb:>10.3f}"
-            )
-        total_trainable = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "parameter" and e["trainable"])
-        total_frozen = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "parameter" and not e["trainable"])
-        total_buffers = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "buffer")
-        print("-" * len(header))
-        print(f"{'Trainable params MB:':<68}{total_trainable:>10.3f}")
-        print(f"{'Frozen params MB:':<68}{total_frozen:>10.3f}")
-        print(f"{'Buffers MB:':<68}{total_buffers:>10.3f}")
-
-    baseline_layer = torch.nn.Linear(in_rep.size, out_rep.size, bias=True)
+    baseline_layer = torch.nn.Linear(in_rep.size, out_rep.size, bias=bias)
     describe_memory("torch.nn.Linear baseline", baseline_layer)
 
     def backprop_sanity(module: torch.nn.Module, label: str):  # noqa: D103
@@ -343,7 +319,7 @@ if __name__ == "__main__":
         print(f"{label} backprop test passed (grad norm {grad_norm:.4f})")
 
     for basis_expansion in ["isotypic_expansion", "memory_heavy"]:
-        layer = eLinear(in_rep, out_rep, bias=False, basis_expansion_scheme=basis_expansion)
+        layer = eLinear(in_rep, out_rep, bias=bias, basis_expansion_scheme=basis_expansion)
         describe_memory(f"eLinear ({basis_expansion})", layer)
         check_equivariance(layer, atol=1e-5, rtol=1e-5)
         print(f"eLinear with basis expansion '{basis_expansion}' equivariant test passed.")
