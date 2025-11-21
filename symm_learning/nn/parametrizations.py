@@ -6,10 +6,9 @@ import torch
 from escnn.group import Representation
 from escnn.gspaces import no_base_space
 from escnn.nn import FieldType
-from torch.nn.utils import parametrize
 
 from symm_learning.linalg import invariant_orthogonal_projector
-from symm_learning.representation_theory import GroupHomomorphismBasis
+from symm_learning.representation_theory import GroupHomomorphismBasis, direct_sum
 from symm_learning.utils import bytes_to_mb, check_equivariance, module_device_memory, module_memory
 
 logger = logging.getLogger(__name__)
@@ -130,16 +129,16 @@ class CommutingConstraint(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    from escnn.group import CyclicGroup, Icosahedral, directsum
+    from escnn.group import CyclicGroup, Icosahedral
 
     from symm_learning.nn.linear import eLinear, impose_linear_equivariance
 
     # G = CyclicGroup(2)
     G = Icosahedral()
-    m = 4
+    m = 2
     bias = True
-    in_rep = directsum([G.regular_representation] * m)
-    out_rep = directsum([G.regular_representation] * m * 2)
+    in_rep = direct_sum([G.regular_representation] * m)
+    out_rep = direct_sum([G.regular_representation] * m * 2)
     eq_layer_proj = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
     impose_linear_equivariance(lin=eq_layer_proj, in_rep=in_rep, out_rep=out_rep)
 
@@ -152,7 +151,7 @@ if __name__ == "__main__":
     W_projected = eq_layer_proj.weight
     assert torch.allclose(W, W_projected, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_projected).abs().max()}"
     check_equivariance(eq_layer_proj, atol=1e-5, rtol=1e-5, in_rep=in_rep, out_rep=out_rep)
-    print("Projection invariance test passed.")
+    print("Projection equivariance test passed.")
 
     # For any random linear map check the projected map is indeed in Hom_G(rep, rep)
     W_random = torch.randn_like(W)

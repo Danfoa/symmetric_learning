@@ -12,6 +12,7 @@ from escnn.group import CyclicGroup, DihedralGroup, Representation, directsum
 from torch.utils.data import DataLoader, TensorDataset
 
 from symm_learning.nn.linear import eLinear
+from symm_learning.representation_theory import direct_sum
 
 GROUP_BUILDERS: Dict[str, Callable[[int], object]] = {
     "cyclic": CyclicGroup,
@@ -109,7 +110,7 @@ def _build_group_rep(cfg: TrainingDynamicsConfig) -> Tuple[object, Representatio
     if builder is None:
         raise ValueError(f"Symmetry '{cfg.symmetry}' not supported. Choose from {list(GROUP_BUILDERS)}.")
     group = builder(cfg.symmetry_order)
-    rep = directsum([group.regular_representation] * cfg.regular_copies)
+    rep = direct_sum([group.regular_representation] * cfg.regular_copies)
     return group, rep
 
 

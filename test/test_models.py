@@ -6,8 +6,10 @@ import io
 import escnn
 import pytest
 import torch
-from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
+from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral
 from escnn.nn import FieldType
+
+from symm_learning.representation_theory import direct_sum
 
 
 @pytest.mark.parametrize(
@@ -26,7 +28,7 @@ def test_emlp(  # noqa: D103
     group: Group, hidden_units: int, activation: str, bias: bool, pointwise_activation: bool
 ):  # noqa: D103
     x_rep = group.regular_representation  # ρ_Χ
-    y_rep = directsum([group.regular_representation] * 2)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
+    y_rep = direct_sum([group.regular_representation] * 2)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
 
     x_rep.name = "x_rep"
     y_rep.name = "y_rep"

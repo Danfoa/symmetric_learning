@@ -15,6 +15,7 @@ from symm_learning.models.transformer.etransformer import eTransformerEncoderLay
 from symm_learning.nn.linear import eAffine, eLinear
 from symm_learning.nn.normalization import eLayerNorm
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
+from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import check_equivariance
 
 GROUP_BUILDERS: Dict[str, Callable[[int], object]] = {
@@ -325,7 +326,7 @@ if __name__ == "__main__":
 
     G = escnn.group.Icosahedral()
     # G = escnn.group.CyclicGroup(5)
-    rep = directsum([G.regular_representation] * cfg.regular_copies)
+    rep = direct_sum([G.regular_representation] * cfg.regular_copies)
     dim = rep.size
 
     transformer_encoder = torch.nn.TransformerEncoderLayer(

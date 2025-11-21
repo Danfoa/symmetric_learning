@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 
 import torch
-from escnn.group import Representation, directsum
+from escnn.group import Representation
 from torch.nn.utils import parametrize
 
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
+from symm_learning.representation_theory import direct_sum
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +76,11 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
             dtype=dtype,
         )
         self.in_rep, self.out_rep = in_rep, in_rep
-        self._regular_stack_rep = directsum([G.regular_representation] * regular_copies)
+        self._regular_stack_rep = direct_sum([G.regular_representation] * regular_copies)
         if not self._qkv_same_embed_dim:
             raise ValueError("eMultiheadAttention requires kdim == vdim == embed_dim.")
 
-        stacked_qkv_rep = directsum([self._regular_stack_rep] * 3)
+        stacked_qkv_rep = direct_sum([G.regular_representation] * regular_copies * 3)
         parametrize.register_parametrization(self, "in_proj_weight", CommutingConstraint(in_rep, stacked_qkv_rep))
         if bias and self.in_proj_bias is not None:
             parametrize.register_parametrization(self, "in_proj_bias", InvariantConstraint(stacked_qkv_rep))
@@ -119,14 +120,15 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
 
 
 if __name__ == "__main__":
+    logger.setLevel(logging.DEBUG)
     from escnn.group import CyclicGroup, DihedralGroup
 
     from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
     from symm_learning.utils import check_equivariance
 
-    G = DihedralGroup(10)
+    G = CyclicGroup(10)
     m = 6
-    in_rep = directsum([G.regular_representation] * m)
+    in_rep = direct_sum([G.regular_representation] * m)
 
     for n_heads in [1, 2, 3]:
         eattention = eMultiheadAttention(in_rep=in_rep, num_heads=n_heads, bias=True, batch_first=True, dropout=0.1)

@@ -8,6 +8,7 @@ from escnn.nn import FieldType
 
 from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.nn.normalization import DataNorm
+from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import check_equivariance
 
 
@@ -23,7 +24,7 @@ def test_deepcopy(group: Group):
     from symm_learning.nn.linear import eLinear
 
     G = group
-    rep = directsum([G.regular_representation] * 2)
+    rep = direct_sum([G.regular_representation] * 2)
     layer = eLinear(rep, rep)
     clone = deepcopy(layer)
 
@@ -49,7 +50,7 @@ def test_irrep_pooling_equivariance(group: Group):
 
     from symm_learning.nn import IrrepSubspaceNormPooling
 
-    y_rep = directsum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
+    y_rep = direct_sum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
     pooling_layer = IrrepSubspaceNormPooling(in_type=type_Y)
     pooling_layer.check_equivariance(atol=1e-5, rtol=1e-5)
@@ -79,7 +80,7 @@ def test_change2disentangled_basis_equivariance(group: Group):  # noqa: D103
     from symm_learning.nn import Change2DisentangledBasis
     from symm_learning.representation_theory import isotypic_decomp_rep
 
-    y_rep = directsum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
+    y_rep = direct_sum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
     change_layer = Change2DisentangledBasis(in_type=type_Y)
     change_layer.check_equivariance(atol=1e-5, rtol=1e-5)
@@ -218,8 +219,8 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
     from symm_learning.nn.linear import eLinear
 
     G = group
-    in_rep = directsum([G.regular_representation] * mx)
-    out_rep = directsum([G.regular_representation] * my)
+    in_rep = direct_sum([G.regular_representation] * mx)
+    out_rep = direct_sum([G.regular_representation] * my)
 
     def backprop_sanity(module: torch.nn.Module) -> None:
         module.train()
@@ -335,7 +336,7 @@ def test_affine(group: Group, mx: int, bias: bool):
     from symm_learning.nn.linear import eAffine
 
     G = group
-    rep = directsum([G.regular_representation] * mx)
+    rep = direct_sum([G.regular_representation] * mx)
     # Random orthogonal matrix for change of basis, using QR decomposition
     Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, Q, name="test_rep")
@@ -373,7 +374,7 @@ def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
     from symm_learning.nn.normalization import eLayerNorm
 
     G = group
-    rep = directsum([G.regular_representation] * mx)
+    rep = direct_sum([G.regular_representation] * mx)
     Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, Q, name="test_layernorm_rep")
 

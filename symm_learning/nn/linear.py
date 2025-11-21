@@ -286,7 +286,7 @@ class eAffine(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    from escnn.group import CyclicGroup, DihedralGroup, Icosahedral, directsum
+    from escnn.group import CyclicGroup, DihedralGroup, Icosahedral
     from escnn.nn import Linear
     from numpy import set_printoptions
 
@@ -296,7 +296,8 @@ if __name__ == "__main__":
 
     from symm_learning.utils import bytes_to_mb, check_equivariance, module_memory_breakdown
 
-    G = CyclicGroup(3)
+    G = CyclicGroup(10)
+    # G = Icosahedral()
     m_in, m_out = 5, 1
     bias = False
     in_rep = direct_sum([G.regular_representation] * m_in)

@@ -8,7 +8,7 @@ from typing import Callable, Dict, List, Union
 
 import numpy as np
 import torch
-from escnn.group import Group, GroupElement, Representation, directsum
+from escnn.group import Group, GroupElement, Representation
 from escnn.nn import FieldType
 from scipy.linalg import block_diag
 
@@ -348,7 +348,7 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     P_in2iso = permutation_matrix(oneline_permutation)
 
     Q_iso = rep.change_of_basis @ P_in2iso.T
-    rep_iso_basis = directsum(list(ordered_isotypic_reps.values()), name=iso_rep_name, change_of_basis=Q_iso)
+    rep_iso_basis = direct_sum(list(ordered_isotypic_reps.values()), name=iso_rep_name, change_of_basis=Q_iso)
 
     # Get variable of indices of isotypic subspaces in the disentangled representation.
     d = 0
@@ -369,12 +369,13 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     return rep_iso_basis
 
 
-def direct_sum(reps: List[Representation], name: str = None):
+def direct_sum(reps: List[Representation], name: str = None, change_of_basis: np.ndarray = None) -> Representation:
     r"""Compute the direct sum of a list of representations."""
     from escnn.group import directsum
 
     if len(reps) == 1:
         return reps[0]
+
     # Name is a string of original representation names, where continuous multiplicities of a
     # representaton are groups [rep_1, rep_1, rep_2, rep_1] -> [rep_1 x 2, rep_2, rep_1]
     if name is None:
@@ -382,12 +383,12 @@ def direct_sum(reps: List[Representation], name: str = None):
         for rep_id, multiplicities in itertools.groupby(reps, lambda r: r.name):
             m_list = list(multiplicities)
             if len(m_list) > 1:
-                rep_names.append(f"{rep_id} x {len(m_list)}")
+                rep_names.append(f"({rep_id} x {len(m_list)})")
             else:
                 rep_names.append(rep_id)
         name = "⊕".join(rep_names)
 
-    out_rep = directsum(reps, name=name)
+    out_rep = directsum(reps, name=name, change_of_basis=change_of_basis)
     out_rep.attributes["direct_sum_reps"] = reps
     return out_rep
 

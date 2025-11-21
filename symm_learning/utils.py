@@ -71,6 +71,34 @@ def module_memory_breakdown(module: torch.nn.Module) -> list[dict]:
     return details
 
 
+def describe_memory(label: str, module: torch.nn.Module) -> None:
+    """Pretty-print parameter/buffer memory consumption for ``module``."""
+    entries = module_memory_breakdown(module)
+    if not entries:
+        print(f"\n{label}: no parameters or buffers.")
+        return
+    entries.sort(key=lambda item: item["bytes"], reverse=True)
+
+    print(f"\n{label} memory breakdown")
+    header = f"{'Kind':<12}{'Name':<45}{'Trainable':<11}{'Shape':<25}{'DType':<12}{'MB':>10}"
+    print(header)
+    print("-" * len(header))
+    for entry in entries:
+        shape = "×".join(str(dim) for dim in entry["shape"]) if entry["shape"] else "scalar"
+        mb = bytes_to_mb(entry["bytes"])
+        print(
+            f"{entry['kind']:<12}{entry['name']:<45}{str(entry['trainable']):<11}"
+            f"{shape:<25}{entry['dtype']:<12}{mb:>10.3f}"
+        )
+    total_trainable = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "parameter" and e["trainable"])
+    total_frozen = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "parameter" and not e["trainable"])
+    total_buffers = sum(bytes_to_mb(e["bytes"]) for e in entries if e["kind"] == "buffer")
+    print("-" * len(header))
+    print(f"{'Trainable params MB:':<68}{total_trainable:>10.3f}")
+    print(f"{'Frozen params MB:':<68}{total_frozen:>10.3f}")
+    print(f"{'Buffers MB:':<68}{total_buffers:>10.3f}")
+
+
 def module_device_memory(module: torch.nn.Module, device: str | torch.device | None = None) -> tuple[int, int]:
     """Measure actual CUDA memory footprint (allocated and peak) of a module cloned onto ``device``."""
     if device is None:
@@ -106,6 +134,7 @@ def check_equivariance(
     input_dim: int | tuple[int] = 2,
     in_rep: Representation | tuple[Representation, ...] = None,
     out_rep: Representation | tuple[Representation, ...] = None,
+    module_name: str = None,
 ):
     """Method that automatically tests the equivariance of the current module."""
     in_rep = e_module.in_rep if hasattr(e_module, "in_rep") else in_rep
@@ -113,7 +142,7 @@ def check_equivariance(
     assert in_rep is not None, f"in_rep must be provided or be an attribute of the module {e_module}"
     assert out_rep is not None, f"out_rep must be provided or be an attribute of the module {e_module}"
     G = in_rep.group
-
+    module_name = e_module if module_name is None else module_name
     batch_size = 11
     spatial_dims = 9
 
@@ -151,4 +180,4 @@ def check_equivariance(
 
         errors.append((g, errs.mean()))
 
-    print(f"Equivariant check passed for module {e_module}")
+    print(f"Equivariant check passed for module {module_name}")
