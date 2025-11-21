@@ -13,7 +13,12 @@ from symm_learning.representation_theory import GroupHomomorphismBasis, direct_s
 logger = logging.getLogger(__name__)
 
 
-def impose_linear_equivariance(lin: torch.nn.Linear, in_rep: Representation, out_rep: Representation) -> None:
+def impose_linear_equivariance(
+    lin: torch.nn.Linear,
+    in_rep: Representation,
+    out_rep: Representation,
+    basis_expansion_scheme: str = "isotypic_expansion",
+) -> None:
     r"""Impose equivariance constraints on a given torch.nn.Linear layer using torch parametrizations.
 
     Impose via torch parametrizations (hard constraints on trainable parameters ) that the weight matrix of
@@ -34,13 +39,17 @@ def impose_linear_equivariance(lin: torch.nn.Linear, in_rep: Representation, out
         The input representation of the layer.
     out_rep : escnn.group.Representation
         The output representation of the layer.
+    basis_expansion_scheme : str
+        Basis expansion strategy for the commuting constraint (``\"memory_heavy\"`` or ``\"isotypic_expansion\"``).
     """
     assert isinstance(lin, torch.nn.Module), f"lin must be a torch.nn.Module, got {type(lin)}"
     # Add attributes to the layer for later reference
     lin.in_rep = in_rep
     lin.out_rep = out_rep
     # Register parametrizations enforcing equivariance
-    parametrize.register_parametrization(lin, "weight", CommutingConstraint(in_rep, out_rep))
+    parametrize.register_parametrization(
+        lin, "weight", CommutingConstraint(in_rep, out_rep, basis_expansion=basis_expansion_scheme)
+    )
     if lin.bias is not None:
         parametrize.register_parametrization(lin, "bias", InvariantConstraint(out_rep))
 

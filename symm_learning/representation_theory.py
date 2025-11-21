@@ -21,33 +21,50 @@ _cache_ = {}
 
 
 class GroupHomomorphismBasis(torch.nn.Module):
-    r"""Compute an explicit basis for :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
+    r"""Handle bases of :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})` and related operations.
+
+    This module can (1) synthesize equivariant linear maps from basis coefficients and (2) orthogonally project dense
+    matrices onto the equivariant subspace, with the computation strategy governed by ``basis_expansion``.
 
     Attributes:
         G (Group): Symmetry group shared by `in_rep` and `out_rep`.
-        in_rep (Representation): Copy of the input representation rewritten in an
-            isotypic basis, dimension `in_rep.size`.
-        out_rep (Representation): Copy of the output representation rewritten in
-            an isotypic basis, dimension `out_rep.size`.
-        common_irreps (List[Tuple]): Sorted list of irrep identifiers that appear
-            in both `in_rep` and `out_rep`.
-        iso_blocks (Dict[Tuple, Dict[str, Any]]): Metadata for every irrep block; each value stores slices into the
-            output/input coordinates, the endomorphism basis of shape `(D_k, d_k, d_k)`, multiplicities, and the slice
-            selecting the corresponding degrees of freedom inside the basis expansion.
-        basis_elements (torch.Tensor): Stack of basis matrices spanning the
-            equivariant linear maps with shape `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`.
+        in_rep (Representation): Input representation rewritten in an isotypic basis.
+        out_rep (Representation): Output representation rewritten in an isotypic basis.
+        basis_expansion (str): Strategy (`"memory_heavy"` or `"isotypic_expansion"`) controlling storage/perf trade-offs
+        common_irreps (List[Tuple]): Irrep identifiers present in both `in_rep` and `out_rep`.
+        iso_blocks (Dict[Tuple, Dict[str, Any]]): Per-irrep metadata for irreps shared by `in_rep`/`out_rep`, keys:
+            - ``out_slice`` / ``in_slice``: slice selecting the isotypic coordinates in out/in reps.
+            - ``mul_out`` / ``mul_in``: multiplicities of the irrep in out/in reps.
+            - ``irrep_dim``: Dimension of the irreducible representation  ``d_k``.
+            - ``endomorphism_basis``: basis of ``End_G(irrep_k)`` for the irrep of type k, of shape ``(S_k, d_k, d_k)``.
+            - ``dim_hom_basis``: Dimension of the homomorphism between isotypic spaces of type k. That is
+                ``dim(Hom_G(V_k^{in}, V_k^{out})) = m_out * m_in * S_k``.
+            - ``hom_basis_slice``: slice containing the degrees of freedom associated to
+                ``dim(Hom_G(V_k^{in}, V_k^{out}))`` from a vector of shape `(dim(Hom_G(in_rep, out_rep)),)`.
+        If ``basis_expansion == "memory_heavy"``:
+            basis_elements (torch.Tensor): Full dense basis stack `(dim, out_rep.size, in_rep.size)` when memory-heavy.
+            basis_norm_sq (torch.Tensor): Squared Frobenius norms of basis elements when memory-heavy.
+        If ``basis_expansion == "isotypic_expansion"``:
+            endo_basis_flat_* (torch.Tensor): Per-irrep flattened endomorphism bases `(S_k, d_k*d_k)` when
+                ``basis_expansion='isotypic_expansion'``.
+            endo_basis_norm_sq_* (torch.Tensor): Per-irrep squared norms of the flattened endomorphism bases.
+            Q_in_inv / Q_out (torch.Tensor): Change-of-basis matrices cached as buffers for isotypic expansion.
     """
 
-    def __init__(self, in_rep: Representation, out_rep: Representation, basis_expansion: str = "memory_heavy") -> None:
+    def __init__(
+        self, in_rep: Representation, out_rep: Representation, basis_expansion: str = "isotypic_expansion"
+    ) -> None:
         """Construct the equivariant basis and cache block-wise metadata.
 
         Args:
             in_rep: Input representation whose isotypic decomposition has size `in_rep.size`. The change of basis is
             applied in-place and used to define the rows of the basis matrices.
             out_rep: Output representation, treated analogously to `in_rep` with total size `out_rep.size`.
-            basis_expansion: Strategy used to realize the basis. Currently only `"memory_heavy"` is implemented, which
-              materializes every basis element explicitly, resulting in a tensor of shape
-              `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`.
+            basis_expansion: Strategy for realizing the basis. ``"memory_heavy"`` stores the full stack of basis
+              elements with shape `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`, maximizing speed at the
+              cost of one dense matrix per basis element. ``"isotypic_expansion"`` keeps only the tiny irrep
+              endomorphism bases `(S_k, d_k, d_k)` and reconstructs on the fly—much lighter on memory, moderately
+              slower.
 
         Raises:
             AssertionError: If `in_rep` and `out_rep` do not belong to the same symmetry group.
@@ -99,22 +116,30 @@ class GroupHomomorphismBasis(torch.nn.Module):
             # Register contiguous buffer such that flattening returns a view.
             # This register is memory heavy as fuck, but enables ultra fast forward/backward passes.
             self.register_buffer("basis_elements", basis_elements.contiguous())
+            basis_norm_sq = torch.einsum("sab,sab->s", self.basis_elements, self.basis_elements)
+            self.register_buffer("basis_norm_sq", basis_norm_sq)
         elif self.basis_expansion == "isotypic_expansion":
             # We store as buffers only each irrep endomorphism basis.
             # This is ultra memory efficient, but mildly slower at runtime.
             for irrep_id, irrep_metadata in self.iso_blocks.items():
                 endo_basis = irrep_metadata["endomorphism_basis"].contiguous()  # [S_k, d_k, d_k]
-                self.register_buffer(f"endo_basis_flat_{irrep_id}", endo_basis.view(endo_basis.size(0), -1))
+                endo_basis_flat = endo_basis.view(endo_basis.size(0), -1)
+                self.register_buffer(f"endo_basis_flat_{irrep_id}", endo_basis_flat)
+                endo_basis_norm_sq = torch.einsum("sd,sd->s", endo_basis_flat, endo_basis_flat)
+                self.register_buffer(f"endo_basis_norm_sq_{irrep_id}", endo_basis_norm_sq)
             self.register_buffer("Q_in_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype))
             self.register_buffer("Q_out", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
         else:
             raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
 
     def forward(self, w_dof: torch.Tensor) -> torch.Tensor:
-        """Return W ~ Hom_G(out, in) given the a tensor of basis expansion coefficients of Hom_G(out, in).
+        r"""Return :math:`W \\in \\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})` from basis coefficients.
 
-        TODO.
+        Args:
+            w_dof (torch.Tensor): Basis expansion coefficients of shape `(dim,)`.
 
+        Returns:
+            torch.Tensor: Dense matrix of shape `(out_rep.size, in_rep.size)`.
         """
         assert w_dof.shape == (self.dim,), f"Expected w_dof shape {(self.dim,)}, but got {w_dof.shape}"
 
@@ -140,6 +165,67 @@ class GroupHomomorphismBasis(torch.nn.Module):
             W = self.Q_out @ (W @ self.Q_in_inv)
 
         return W
+
+    def orthogonal_projection(self, W: torch.Tensor) -> torch.Tensor:
+        r"""Project a dense matrix onto :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
+
+        Args:
+            W (torch.Tensor): Weight matrix of shape ``(..., out_rep.size, in_rep.size)`` in the original basis.
+
+        Returns:
+            torch.Tensor: Projection of ``W`` onto the equivariant subspace, matching the input shape.
+
+        Note:
+            The projection is orthogonal with respect to the Frobenius inner product. The selected
+            ``basis_expansion`` controls how the projection is computed (speed vs. memory) but not the result.
+        """
+        assert W.shape[-2:] == (self.out_rep.size, self.in_rep.size), (
+            f"Expected weight shape (..., {self.out_rep.size}, {self.in_rep.size}), got {W.shape}"
+        )
+
+        if self.basis_expansion == "memory_heavy":
+            basis_flat = self.basis_elements.view(self.dim, -1)  # [S, d_out*d_in]
+            W_flat = W.view(*W.shape[:-2], -1)  # [..., d_out*d_in]
+            # coeff = <W, B_s> / ||B_s||^2, yields [..., S]
+            coeff = W_flat.matmul(basis_flat.mT) / self.basis_norm_sq
+            # Recompose: sum_s coeff_s * B_s, returning [..., d_out*d_in]
+            W_proj_flat = coeff.matmul(basis_flat)
+            return W_proj_flat.view(*W.shape)
+
+        if self.basis_expansion == "isotypic_expansion":
+            Q_out_inv = self.Q_out.mT
+            Q_in = self.Q_in_inv.mT
+            W_iso_in = (Q_out_inv @ W) @ Q_in  # [..., d_out, d_in] in isotypic basis
+            W_iso = torch.zeros_like(W_iso_in)  # accumulator in isotypic basis
+            leading_shape = W_iso_in.shape[:-2]  # batch (possibly empty) dims
+
+            for irrep_id, irrep_metadata in self.iso_blocks.items():
+                m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
+                out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
+                d_k = irrep_metadata["irrep_dim"]
+                endo_basis_flat = getattr(self, f"endo_basis_flat_{irrep_id}")
+                endo_norm_sq = getattr(self, f"endo_basis_norm_sq_{irrep_id}")
+
+                block = W_iso_in[..., out_slice, in_slice]
+                block = block.view(*leading_shape, m_out, d_k, m_in, d_k)
+                block = block.permute(*range(len(leading_shape)), -4, -2, -3, -1)  # [..., m_out, m_in, d_k, d_k]
+                block_flat = block.reshape(*leading_shape, m_out * m_in, d_k * d_k)  # [..., m_out*m_in, d_k^2]
+
+                # coeff[..., (o,i), s] = <block_{o,i}, E_s> / ||E_s||^2
+                coeff = block_flat.matmul(endo_basis_flat.mT)
+                coeff = coeff / endo_norm_sq
+                block_proj_flat = coeff.matmul(endo_basis_flat)  # [..., m_out*m_in, d_k^2]
+
+                block_proj = block_proj_flat.view(*leading_shape, m_out, m_in, d_k, d_k)
+                block_proj = block_proj.permute(*range(len(leading_shape)), -4, -2, -3, -1)
+                block_proj = block_proj.reshape(*leading_shape, m_out * d_k, m_in * d_k)
+                W_iso_block = W_iso[..., out_slice, in_slice]
+                W_iso_block.copy_(block_proj)
+
+            W_proj = (self.Q_out @ W_iso) @ self.Q_in_inv  # back to original basis
+            return W_proj
+
+        raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
 
     @property
     def dim(self) -> int:
@@ -191,8 +277,11 @@ class GroupHomomorphismBasis(torch.nn.Module):
             basis_elements_iso_basis = torch.cat(
                 basis_elements_iso_basis, dim=0
             )  # [dim(Hom_G(in_rep, out_rep)), d_out, d_in]
-            Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=basis_elements_iso_basis.dtype)
-            Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=basis_elements_iso_basis.dtype)
+            if self.basis_expansion == "memory_heavy":
+                Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=basis_elements_iso_basis.dtype)
+                Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=basis_elements_iso_basis.dtype)
+            else:
+                Q_out, Q_in_inv = self.Q_out, self.Q_in_inv
             # basis elements of shape (dim(Hom_G(in_rep, out_rep)), d_out, d_in)
             basis_elements = torch.einsum("ab,sbc,cd->sad", Q_out, basis_elements_iso_basis, Q_in_inv).contiguous()
             # Store in global cache
@@ -204,7 +293,7 @@ class GroupHomomorphismBasis(torch.nn.Module):
     def initialize_params(self, scheme: str = "kaiming_uniform", return_dense: bool = False) -> torch.Tensor:
         """Return W_iso ~ Hom_G(out, in), initialized per-irrep with Xavier/He."""
         if return_dense:
-            W_iso = torch.zeros((self.out_rep.size, self.in_rep.size), dtype=self.basis_elements.dtype)
+            W_iso = torch.zeros((self.out_rep.size, self.in_rep.size), dtype=torch.get_default_dtype())
         else:
             w_dof = torch.zeros((self.dim,))
 

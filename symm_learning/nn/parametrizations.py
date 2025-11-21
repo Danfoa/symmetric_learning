@@ -48,6 +48,8 @@ class CommutingConstraint(torch.nn.Module):
             size ``in_rep.size``.
         out_rep (:class:`~escnn.group.Representation`): Output representation of
             size ``out_rep.size``.
+        basis_expansion (str, optional): Strategy used to realize the basis
+            (``"memory_heavy"`` or ``"isotypic_expansion"``).
 
     Attributes:
         homo_basis (GroupHomomorphismBasis): Basis generator carrying the
@@ -55,9 +57,6 @@ class CommutingConstraint(torch.nn.Module):
             :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
         in_rep / out_rep (Representation): Cached references to the isotypic
             versions of the supplied representations.
-        _basis_vectors_normalized (torch.Tensor): Tensor of shape
-            ``(dim, out_rep.size, in_rep.size)`` storing the orthonormal basis
-            elements used to project weights into the equivariant subspace.
 
     Every pair of matching isotypic subspaces (one from ``in_rep``, one from
     ``out_rep``) inherits the same irreducible type :math:`\\bar\\rho_k`.
@@ -78,26 +77,15 @@ class CommutingConstraint(torch.nn.Module):
     projection defined by Proposition H.13.
     """
 
-    def __init__(self, in_rep: Representation, out_rep: Representation):
+    def __init__(self, in_rep: Representation, out_rep: Representation, basis_expansion: str = "isotypic_expansion"):
         super().__init__()
-        self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep)
+        self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion=basis_expansion)
         self.in_rep = self.homo_basis.in_rep
         self.out_rep = self.homo_basis.out_rep
 
-        basis_elements = self.homo_basis.basis_elements
-        basis_norms = torch.einsum("sab,sab->s", basis_elements, basis_elements).sqrt()
-        self.register_buffer("_basis_vectors_normalized", basis_elements / basis_norms[:, None, None])
-
     def forward(self, W: torch.Tensor) -> torch.Tensor:
         """Project W onto Hom_G(out_rep, in_rep)."""
-        assert W.shape[-2:] == (self.out_rep.size, self.in_rep.size), (
-            f"Expected weight shape (..., {self.out_rep.size}, {self.in_rep.size}), got {W.shape}"
-        )
-        # Compute basis expansion coefficients
-        coeff = torch.einsum("sab,...ab->...s", self._basis_vectors_normalized, W)
-        # Expand the orthogonal projection in basis of Hom_G(out_rep, in_rep)
-        W_proj = torch.einsum("sab,...s->...ab", self._basis_vectors_normalized, coeff)
-        return W_proj
+        return self.homo_basis.orthogonal_projection(W)
 
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a pre-image for the parametrization (identity for now)."""
@@ -115,35 +103,45 @@ if __name__ == "__main__":
     bias = True
     in_rep = direct_sum([G.regular_representation] * m)
     out_rep = direct_sum([G.regular_representation] * m * 2)
-    eq_layer_proj = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
-    impose_linear_equivariance(lin=eq_layer_proj, in_rep=in_rep, out_rep=out_rep)
+    eq_layer_proj_heavy = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
+    impose_linear_equivariance(
+        lin=eq_layer_proj_heavy, in_rep=in_rep, out_rep=out_rep, basis_expansion_scheme="memory_heavy"
+    )
+    eq_layer_proj_iso = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
+    impose_linear_equivariance(
+        lin=eq_layer_proj_iso, in_rep=in_rep, out_rep=out_rep, basis_expansion_scheme="isotypic_expansion"
+    )
 
     # Check the orthogonal projection to Hom_G(rep, rep) works as expected
     in_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * m)
     out_type = escnn.nn.FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * m * 2)
     escnn_layer = escnn.nn.Linear(in_type, out_type, bias=bias)
     W, b = escnn_layer.expand_parameters()
-    eq_layer_proj.weight = W
-    W_projected = eq_layer_proj.weight
-    assert torch.allclose(W, W_projected, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_projected).abs().max()}"
-    check_equivariance(eq_layer_proj, atol=1e-5, rtol=1e-5, in_rep=in_rep, out_rep=out_rep)
-    print("Projection equivariance test passed.")
 
-    # For any random linear map check the projected map is indeed in Hom_G(rep, rep)
-    W_random = torch.randn_like(W)
-    eq_layer_proj.weight = W_random
-    check_equivariance(eq_layer_proj, atol=1e-5, rtol=1e-5)
+    def check_projection(layer, label):  # noqa: D103
+        layer.weight = W
+        W_projected = layer.weight
+        assert torch.allclose(W, W_projected, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_projected).abs().max()}"
+        check_equivariance(layer, atol=1e-5, rtol=1e-5, in_rep=in_rep, out_rep=out_rep)
+        print(f"{label} projection equivariance test passed.")
 
-    # Check projection is idempotent
-    W = eq_layer_proj.weight
-    eq_layer_proj.weight = W
-    W_proj2 = eq_layer_proj.weight
-    assert torch.allclose(W, W_proj2, atol=1e-5, rtol=1e-5), f"Max err: {(W - W_proj2).abs().max()}"
-    print("Projection idempotence test passed.")
+        W_random = torch.randn_like(W)
+        layer.weight = W_random
+        check_equivariance(layer, atol=1e-5, rtol=1e-5)
+
+        W_proj = layer.weight
+        layer.weight = W_proj
+        W_proj2 = layer.weight
+        assert torch.allclose(W_proj, W_proj2, atol=1e-5, rtol=1e-5), f"Max err: {(W_proj - W_proj2).abs().max()}"
+        print(f"{label} projection idempotence test passed.")
+
+    check_projection(eq_layer_proj_heavy, "Memory-heavy")
+    check_projection(eq_layer_proj_iso, "Isotypic-expansion")
 
     # ____________________________________________________________________________________
     standad_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
-    eq_layer = eLinear(in_rep, out_rep, bias=bias)
+    eq_layer_iso = eLinear(in_rep, out_rep, bias=bias, basis_expansion_scheme="isotypic_expansion")
+    eq_layer_heavy = eLinear(in_rep, out_rep, bias=bias, basis_expansion_scheme="memory_heavy")
 
     in_type = FieldType(no_base_space(G), [in_rep])
     out_type = FieldType(no_base_space(G), [out_rep])
@@ -152,8 +150,10 @@ if __name__ == "__main__":
     batch_size = 1024
     device = torch.device("cuda")
     standad_layer = standad_layer.to(device)
-    eq_layer = eq_layer.to(device)
-    eq_layer_proj = eq_layer_proj.to(device)
+    eq_layer_iso = eq_layer_iso.to(device)
+    eq_layer_heavy = eq_layer_heavy.to(device)
+    eq_layer_proj_heavy = eq_layer_proj_heavy.to(device)
+    eq_layer_proj_iso = eq_layer_proj_iso.to(device)
     escnn_layer = escnn_layer.to(device)
     print(f"Device: {device}")
 
@@ -202,8 +202,10 @@ if __name__ == "__main__":
 
     modules_to_benchmark = [
         ("Standard", standad_layer),
-        ("eLinear", eq_layer),
-        ("Linear (Proj)", eq_layer_proj),
+        ("eLinear (iso)", eq_layer_iso),
+        ("eLinear (heavy)", eq_layer_heavy),
+        ("Linear Proj (iso)", eq_layer_proj_iso),
+        ("Linear Proj (heavy)", eq_layer_proj_heavy),
         ("escnn", escnn_layer),
     ]
 
@@ -227,8 +229,9 @@ if __name__ == "__main__":
             }
         )
 
+    name_width = 20
     header = (
-        f"{'Layer':<12} {'Forward (ms)':>18} {'Backward (ms)':>18} {'Total (ms)':>15} "
+        f"{'Layer':<{name_width}} {'Forward (ms)':>18} {'Backward (ms)':>18} {'Total (ms)':>15} "
         f"{'Trainable MB':>15} {'Non-train MB':>15} {'Total MB':>12} {'GPU Alloc MB':>15} {'GPU Peak MB':>15}"
     )
     separator = "-" * len(header)
@@ -243,7 +246,7 @@ if __name__ == "__main__":
         gpu_alloc_mb = bytes_to_mb(res["gpu_mem"])
         gpu_peak_mb = bytes_to_mb(res["gpu_peak"])
         print(
-            f"{res['name']:<12} {fwd_str:>18} {bwd_str:>18} "
+            f"{res['name']:<{name_width}} {fwd_str:>18} {bwd_str:>18} "
             f"{res['total_time']:>15.3f} {bytes_to_mb(res['train_mem']):>15.3f} "
             f"{bytes_to_mb(res['non_train_mem']):>15.3f} {bytes_to_mb(total_mb):>12.3f} "
             f"{gpu_alloc_mb:>15.3f} {gpu_peak_mb:>15.3f}"
