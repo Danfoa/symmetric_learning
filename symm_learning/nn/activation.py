@@ -130,16 +130,29 @@ if __name__ == "__main__":
     m = 6
     in_rep = direct_sum([G.regular_representation] * m)
 
-    for n_heads in [1, 2, 3]:
-        eattention = eMultiheadAttention(in_rep=in_rep, num_heads=n_heads, bias=True, batch_first=True, dropout=0.1)
-        eattention.eval()  # disable dropout for the test
-        check_equivariance(
-            lambda x: eattention(x, x, x, need_weights=False)[0],
-            input_dim=3,
-            in_rep=eattention.in_rep,
-            out_rep=eattention.out_rep,
-            atol=1e-3,
-            rtol=1e-3,
-        )
+    class AttentionStack(torch.nn.Module):  # noqa: D101
+        def __init__(self, att_layer: torch.nn.MultiheadAttention, iters: int = 1):
+            super().__init__()
+            self.att = att_layer
+            self.iters = iters
 
-        print(f"Equivariance test passed for eMultiheadAttention with {n_heads} heads!")
+        def forward(self, x: torch.Tensor):  # noqa: D102
+            for _ in range(self.iters):
+                y = eattention(x, x, x, need_weights=False)[0]
+                x = y
+            return x
+
+    for n in [1, 5, 10, 20]:
+        for n_heads in [1, 2, 3]:
+            eattention = eMultiheadAttention(in_rep=in_rep, num_heads=n_heads, bias=True, batch_first=True, dropout=0.1)
+            eattention.eval()  # disable dropout for the test
+            stack = AttentionStack(eattention, iters=n)
+            check_equivariance(
+                stack,
+                input_dim=3,
+                in_rep=eattention.in_rep,
+                out_rep=eattention.out_rep,
+                module_name=f"Attention x {n} n_heads = {n_heads}",
+            )
+
+            print(f"Equivariance test passed for [eMultiheadAttention x {n}] with {n_heads} heads!")

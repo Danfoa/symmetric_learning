@@ -284,10 +284,17 @@ class eAffine(torch.nn.Module):
                 bias[valid] = bias_vals[bias_index[valid]]
         return scale, bias
 
-    def reset_parameters(self) -> None:  # noqa: D102
-        torch.nn.init.ones_(self.scale_dof)
-        if self.has_bias and self.bias_dof is not None:
-            torch.nn.init.zeros_(self.bias_dof)
+    def reset_parameters(self, scheme="identity") -> None:  # noqa: D102
+        if scheme == "identity":
+            torch.nn.init.ones_(self.scale_dof)
+            if self.has_bias and self.bias_dof is not None:
+                torch.nn.init.zeros_(self.bias_dof)
+        elif scheme == "random":
+            torch.nn.init.uniform_(self.scale_dof, -1, 1)
+            if self.has_bias and self.bias_dof is not None:
+                torch.nn.init.uniform_(self.bias_dof, -1, 1)
+        else:
+            raise NotImplementedError(f"Init scheme {scheme} not implemented")
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"in_rep{self.in_rep} bias={self.has_bias}"

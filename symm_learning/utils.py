@@ -167,8 +167,8 @@ def check_equivariance(
     assert in_rep is not None, f"in_rep must be provided or be an attribute of the module {e_module}"
     assert out_rep is not None, f"out_rep must be provided or be an attribute of the module {e_module}"
     G = in_rep.group
-    module_name = e_module if module_name is None else module_name
-    batch_size = 11
+    module_name = e_module.__class__.__name__ if module_name is None else module_name
+    batch_size = 20
     spatial_dims = 9
 
     if input_dim == 2:
@@ -205,4 +205,4 @@ def check_equivariance(
 
         errors.append((g, errs.mean()))
 
-    print(f"Equivariant check passed for module {module_name}")
+    print(f"Equivariant check passed for module {module_name} with max error {max(e[1] for e in errors)} ")

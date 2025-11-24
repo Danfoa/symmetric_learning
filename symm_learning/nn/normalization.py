@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+
+import numpy as np
 import torch
 from escnn.group import Representation
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
@@ -9,7 +12,7 @@ import symm_learning
 import symm_learning.stats
 from symm_learning.linalg import irrep_radii
 from symm_learning.nn.linear import eAffine
-from symm_learning.representation_theory import isotypic_decomp_rep
+from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
 
 
 class eLayerNorm(torch.nn.Module):
@@ -47,6 +50,7 @@ class eLayerNorm(torch.nn.Module):
         bias: bool = True,
         device=None,
         dtype=None,
+        init_scheme="identity",
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
@@ -69,11 +73,11 @@ class eLayerNorm(torch.nn.Module):
         if self.equiv_affine:
             self.affine = eAffine(in_rep, bias=bias).to(**factory_kwargs)
 
-        self.reset_parameters()
+        self.reset_parameters(init_scheme)
 
-    def reset_parameters(self) -> None:  # noqa: D102
+    def reset_parameters(self, scheme="identity") -> None:  # noqa: D102
         if self.equiv_affine:
-            self.affine.reset_parameters()
+            self.affine.reset_parameters(scheme)
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         r"""Normalize per irreducible block and (optionally) apply the spectral affine transform."""
@@ -673,3 +677,173 @@ class eDataNorm(DataNorm, EquivariantModule):
         exported.eval()
 
         return exported
+
+
+if __name__ == "__main__":
+    # logger.setLevel(logging.DEBUG)
+    from escnn.group import CyclicGroup, DihedralGroup
+
+    from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
+    from symm_learning.nn.linear import eLinear
+    from symm_learning.utils import check_equivariance
+
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    G = CyclicGroup(10)
+    m = 10
+    in_rep = direct_sum([G.regular_representation] * m)
+
+    class ModuleStack(torch.nn.Module):  # noqa: D101
+        def __init__(self, module, iters: int = 1):
+            super().__init__()
+            self.module = module
+            self.iters = iters
+
+        def forward(self, x: torch.Tensor):  # noqa: D102
+            for _ in range(self.iters):
+                y = x + self.module(x)
+                x = y
+            return x
+
+    def check_equivariance_local(  # noqa: D103
+        module,
+        module_name: str,
+        in_rep,
+        out_rep=None,
+        batch_size: int = 64,
+        samples: int = 20,
+        input_dim: int = 3,
+        atol: float = 1e-5,
+        rtol: float = 1e-5,
+        dtype=torch.float64,
+        raise_on_fail: bool = True,
+    ):
+        out_rep = out_rep or in_rep
+        spatial_dims = 9
+        module = module.to(dtype=dtype)
+        if input_dim == 2:
+            x = torch.randn(batch_size, in_rep.size, dtype=dtype)
+        elif input_dim == 3:
+            x = torch.randn(batch_size, spatial_dims, in_rep.size, dtype=dtype)
+        else:
+            raise ValueError(f"Unsupported input_dim {input_dim}")
+
+        module.eval()
+        max_err = 0.0
+        success = True
+        for g in G.elements:
+            # g = in_rep.group.sample()
+            gx = torch.einsum("ij,...j->...i", torch.tensor(in_rep(g), dtype=dtype), x)
+            y = module(x)
+            gy = torch.einsum("ij,...j->...i", torch.tensor(out_rep(g), dtype=dtype), y)
+            gy_expected = module(gx)
+            err = (gy - gy_expected).abs().max().item()
+            max_err = max(max_err, err)
+            if not torch.allclose(gy, gy_expected, atol=atol, rtol=rtol):
+                success = False
+                if raise_on_fail:
+                    raise AssertionError(f"Equivariance test failed for {module_name} and g={g}, max err {err}")
+                break
+        if success:
+            print(f"Equivariant check passed for module {module_name} with max error {max_err}")
+        return success, max_err
+
+    class ResidualStack(torch.nn.Module):  # noqa: D101
+        def __init__(self, lin, norm, iters: int = 1, normalize: bool = True, residual: bool = True):
+            super().__init__()
+            self.lin = lin
+            self.norm = norm
+            self.act = torch.nn.ReLU()
+            self.iters = iters
+            self.normalize = normalize
+            self.residual = residual
+
+        def forward(self, x: torch.Tensor):  # noqa: D102
+            for _ in range(self.iters):
+                xp = x
+                if self.normalize:
+                    xp = self.norm(xp)
+                xp = self.lin(xp)
+                xp = self.act(xp)
+                y = x + xp if self.residual else xp
+                x = y
+            return x
+
+    ln_results = []
+    res_results = []
+    # Test LayerNorm with a residual add to see if the add alone causes drift.
+    print("\nLayerNorm residual chains (bias=False, equiv_affine=False)")
+    for n in [1, 10, 50]:
+        norm = eLayerNorm(in_rep=in_rep, bias=False, equiv_affine=False, init_scheme="random")
+
+        class LNResidual(torch.nn.Module):  # noqa: D101
+            def __init__(self, norm_layer, iters):
+                super().__init__()
+                self.norm_layer = norm_layer
+                self.iters = iters
+
+            def forward(self, x):  # noqa: D102
+                for _ in range(self.iters):
+                    x = x + self.norm_layer(x)
+                return x
+
+        stack = LNResidual(norm, n)
+        ok, err = check_equivariance_local(
+            stack,
+            module_name=f"{norm}+res x {n}",
+            in_rep=norm.in_rep,
+            out_rep=norm.out_rep,
+            atol=1e-4,
+            rtol=1e-4,
+            raise_on_fail=False,
+        )
+        ln_results.append({"depth": n, "ok": ok, "err": err, "normalize": True, "residual": True})
+
+    print("\nResidual stacks (norm ? -> linear -> act -> residual ?)")
+    init_schemes = ["xavier_normal", "xavier_uniform", "kaiming_normal", "kaiming_uniform"]
+    configs = [
+        {"normalize": True, "residual": True},
+        {"normalize": True, "residual": False},
+        {"normalize": False, "residual": True},
+        {"normalize": False, "residual": False},
+    ]
+    for cfg in configs:
+        print(f"\nConfig normalize={cfg['normalize']}, residual={cfg['residual']}")
+        for scheme in init_schemes:
+            print(f"  Init scheme: {scheme}")
+            for n in [1, 5, 10]:
+                lin = eLinear(in_rep=in_rep, out_rep=in_rep, bias=False, init_scheme=scheme)
+                norm = eLayerNorm(in_rep=in_rep, bias=False, equiv_affine=False, init_scheme="random")
+                stack = ResidualStack(lin=lin, norm=norm, iters=n, normalize=cfg["normalize"], residual=cfg["residual"])
+                ok, err = check_equivariance_local(
+                    stack,
+                    module_name=f"[res_stack init={scheme} norm={cfg['normalize']} res={cfg['residual']}] x {n}",
+                    in_rep=norm.in_rep,
+                    out_rep=norm.out_rep,
+                    atol=1e-4,
+                    rtol=1e-4,
+                    raise_on_fail=False,
+                )
+                res_results.append(
+                    {
+                        "scheme": scheme,
+                        "depth": n,
+                        "ok": ok,
+                        "err": err,
+                        "normalize": cfg["normalize"],
+                        "residual": cfg["residual"],
+                    }
+                )
+
+    def print_table(title, rows, headers):  # noqa: D103
+        print(f"\n{title}")
+        print(f"{'norm':<6} {'res':<5} {headers[0]:<15} {headers[1]:<8} {headers[2]:<6} {'max_err':>12}")
+        for r in rows:
+            print(
+                f"{str(r['normalize']):<6} {str(r['residual']):<5} {str(r[headers[0]]):<15} "
+                f"{str(r[headers[1]]):<8} {str(r[headers[2]]):<6} {r['err']:.3e}"
+            )
+
+    print_table("LayerNorm residual summary", ln_results, headers=("depth", "ok", "err"))
+    print_table("Residual stack summary", res_results, headers=("scheme", "depth", "ok"))
