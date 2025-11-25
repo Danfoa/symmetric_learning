@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Literal
 
 import torch
 import torch.nn.functional as F
@@ -215,7 +216,12 @@ class eAffine(torch.nn.Module):
         - Output: of shape `(..., D)`
     """
 
-    def __init__(self, in_rep: Representation, bias: bool = True):
+    def __init__(
+        self,
+        in_rep: Representation,
+        bias: bool = True,
+        init_scheme: Literal["identity", "random"] | None = "identity",
+    ):
         super().__init__()
         self.in_rep, self.out_rep = in_rep, in_rep
 
@@ -252,6 +258,9 @@ class eAffine(torch.nn.Module):
                 offset += dim
             self.register_buffer("bias_dim_to_param", dim_to_param)
 
+        if init_scheme is not None:
+            self.reset_parameters(scheme=init_scheme)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Applies the affine transformation; works for any input with last dim ``D``."""
         if x.shape[-1] != self.rep_x.size:
@@ -284,7 +293,13 @@ class eAffine(torch.nn.Module):
                 bias[valid] = bias_vals[bias_index[valid]]
         return scale, bias
 
-    def reset_parameters(self, scheme="identity") -> None:  # noqa: D102
+    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:
+        """Initialize spectral scale/bias DoFs.
+
+        Args:
+            scheme: ``"identity"`` sets all scales to one and bias to zero; ``"random"`` samples both
+                uniformly in ``[-1, 1]``. Set to ``None`` when loading checkpoints to skip reinit.
+        """
         if scheme == "identity":
             torch.nn.init.ones_(self.scale_dof)
             if self.has_bias and self.bias_dof is not None:
