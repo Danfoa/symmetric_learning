@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Literal
 
 import numpy as np
 import torch
@@ -13,6 +14,84 @@ import symm_learning.stats
 from symm_learning.linalg import irrep_radii
 from symm_learning.nn.linear import eAffine
 from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
+
+
+class eRMSNorm(torch.nn.Module):
+    r"""Equivariant Root-Mean-Square Normalization.
+
+    This layer mirrors :class:`torch.nn.RMSNorm` while keeping the affine step symmetry-preserving.
+    For an input :math:`x \in \mathbb{R}^{D}` with :math:`D = \texttt{in_rep.size}`, it shares a
+    single normalization factor across all channels:
+
+    .. math::
+        \operatorname{rms}(x) = \sqrt{\tfrac{1}{D}\langle x, x\rangle + \varepsilon}, \qquad
+        y = \frac{x}{\operatorname{rms}(x)}.
+
+    When ``equiv_affine=True`` a learnable :class:`~symm_learning.nn.linear.eAffine` is applied
+    after normalization, providing per-irrep scales (and optional invariant biases) that commute
+    with the group action and therefore preserve equivariance.
+
+    Args:
+        in_rep (escnn.group.Representation): Description of the feature space.
+        eps (float): Numerical stabilizer added inside the RMS computation.
+        equiv_affine (bool): If ``True``, apply a symmetry-preserving :class:`eAffine` after normalization.
+        bias (bool): Include invariant biases in the affine term (only used if ``equiv_affine``).
+        device, dtype: Optional tensor factory kwargs passed to the affine parameters.
+        init_scheme (Literal["identity", "random"] | None): Initialization scheme forwarded to
+            :meth:`eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful when loading checkpoints).
+
+    Shape:
+        - Input: ``(..., in_rep.size)``
+        - Output: same shape
+
+    Note:
+        The normalization factor is a single scalar per sample, so the operation commutes with any
+        matrix representing the group action defined by ``in_rep``.
+    """
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        eps: float = 1e-6,
+        equiv_affine: bool = True,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+        init_scheme: Literal["identity", "random"] | None = "identity",
+    ):
+        super().__init__()
+        factory_kwargs = {"device": device, "dtype": dtype}
+        self.in_rep, self.out_rep = in_rep, in_rep
+        if equiv_affine:
+            self.affine = eAffine(in_rep, bias=bias).to(**factory_kwargs)
+            if init_scheme is not None:
+                self.affine.reset_parameters(init_scheme)
+        self.eps = eps
+        self.normalized_shape = (in_rep.size,)
+
+        if init_scheme is not None:
+            self.reset_parameters(init_scheme)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        """Normalize by a single RMS scalar and (optionally) apply equivariant affine.
+
+        Args:
+            input: Tensor shaped ``(..., in_rep.size)``.
+
+        Returns:
+            Tensor with identical shape, RMS-normalized and possibly transformed by :class:`eAffine`.
+        """
+        assert input.shape[-1] == self.in_rep.size, f"Expected (...,{self.in_rep.size}), got {input.shape}"
+        rms_input = torch.sqrt(self.eps + torch.mean(input.pow(2), dim=-1, keepdim=True))
+        normalized = input / rms_input
+        if hasattr(self, "affine"):
+            normalized = self.affine(normalized)
+        return normalized
+
+    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:
+        """(Re)initialize the optional affine transform using the provided scheme."""
+        if hasattr(self, "affine"):
+            self.affine.reset_parameters(scheme)
 
 
 class eLayerNorm(torch.nn.Module):
@@ -50,7 +129,7 @@ class eLayerNorm(torch.nn.Module):
         bias: bool = True,
         device=None,
         dtype=None,
-        init_scheme="identity",
+        init_scheme: Literal["identity", "random"] | None = "identity",
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
@@ -75,7 +154,7 @@ class eLayerNorm(torch.nn.Module):
 
         self.reset_parameters(init_scheme)
 
-    def reset_parameters(self, scheme="identity") -> None:  # noqa: D102
+    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:  # noqa: D102
         if self.equiv_affine:
             self.affine.reset_parameters(scheme)
 

@@ -5,7 +5,7 @@ from .conv import GSpace1D, eConv1D, eConvTranspose1D
 from .disentangled import Change2DisentangledBasis
 from .distributions import EquivMultivariateNormal, _EquivMultivariateNormal
 from .linear import eAffine, eLinear
-from .normalization import DataNorm, eBatchNorm1d, eDataNorm, eLayerNorm
+from .normalization import DataNorm, eBatchNorm1d, eDataNorm, eLayerNorm, eRMSNorm
 from .pooling import IrrepSubspaceNormPooling
 from .running_stats import EMAStats, eEMAStats
 
@@ -27,4 +27,5 @@ __all__ = [
     "eLinear",
     "eAffine",
     "eLayerNorm",
+    "eRMSNorm",
 ]

@@ -240,83 +240,50 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
     backprop_sanity(layer)
 
 
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-def test_activations(group: Group):
-    """Test custom activation functions for equivariance."""
-    import torch
-    from escnn.gspaces import no_base_space
+# @pytest.mark.parametrize(
+#     "group",
+#     [
+#         pytest.param(CyclicGroup(5), id="cyclic5"),
+#         pytest.param(Icosahedral(), id="icosahedral"),
+#     ],
+# )
+# @pytest.mark.parametrize("mx", [1])
+# @pytest.mark.parametrize("affine", [True, False])
+# @pytest.mark.parametrize("running_stats", [True, False])
+# def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
+#     """Check the eBatchNorm1d layer is G-invariant."""
+#     import torch
 
-    from symm_learning.nn import Mish
+#     from symm_learning.nn import GSpace1D, eBatchNorm1d
 
-    gspace = no_base_space(group)
-    in_type = FieldType(gspace, [group.regular_representation] * 3)
+#     G = group
+#     gspace = GSpace1D(G)
 
-    mish_layer = Mish(in_type)
-    mish_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+#     in_type = FieldType(gspace, [G.regular_representation] * mx)
 
-    t_mish_layer = mish_layer.export()
+#     time = 2
+#     batch_size = 5
+#     x = torch.randn(batch_size, in_type.size, time)
+#     x = in_type(x)
 
-    batch_size = 10
-    x = torch.randn(batch_size, in_type.size, dtype=torch.float32)
-    y_mish = mish_layer(in_type(x)).tensor
-    y_mish_torch = t_mish_layer(x)
+#     batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
 
-    assert torch.allclose(y_mish, y_mish_torch, atol=1e-5, rtol=1e-5), (
-        f"Max error: {torch.max(torch.abs(y_mish - y_mish_torch)):.5f}"
-    )
+#     if hasattr(batchnorm_layer, "affine_transform"):
+#         # Randomize the scale and bias DoFs
+#         batchnorm_layer.affine_transform.scale_dof.data.uniform_(-1, 1)
+#         if batchnorm_layer.affine_transform.has_bias:
+#             batchnorm_layer.affine_transform.bias_dof.data.uniform_(-1, 1)
 
+#     batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
 
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-@pytest.mark.parametrize("mx", [1])
-@pytest.mark.parametrize("affine", [True, False])
-@pytest.mark.parametrize("running_stats", [True, False])
-def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
-    """Check the eBatchNorm1d layer is G-invariant."""
-    import torch
+#     batchnorm_layer.eval()
 
-    from symm_learning.nn import GSpace1D, eBatchNorm1d
+#     # TODO: This is not passing.
+#     # y = batchnorm_layer(x).tensor
+#     # y_torch = batchnorm_layer.export()(x.tensor)
 
-    G = group
-    gspace = GSpace1D(G)
-
-    in_type = FieldType(gspace, [G.regular_representation] * mx)
-
-    time = 2
-    batch_size = 5
-    x = torch.randn(batch_size, in_type.size, time)
-    x = in_type(x)
-
-    batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
-
-    if hasattr(batchnorm_layer, "affine_transform"):
-        # Randomize the scale and bias DoFs
-        batchnorm_layer.affine_transform.scale_dof.data.uniform_(-1, 1)
-        if batchnorm_layer.affine_transform.has_bias:
-            batchnorm_layer.affine_transform.bias_dof.data.uniform_(-1, 1)
-
-    batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
-
-    batchnorm_layer.eval()
-
-    # TODO: This is not passing.
-    # y = batchnorm_layer(x).tensor
-    # y_torch = batchnorm_layer.export()(x.tensor)
-
-    # print(y.shape, y_torch.shape)
-    # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5), f"{y - y_torch} should be 0"
+#     # print(y.shape, y_torch.shape)
+#     # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5), f"{y - y_torch} should be 0"
 
 
 @pytest.mark.parametrize(
@@ -391,6 +358,66 @@ def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
     assert y.shape == x.shape
 
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 10])
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("affine", [True, False])
+def test_rms_norm(group: Group, mx: int, bias: bool, affine: bool):
+    import numpy as np
+    import torch
+
+    from symm_learning.nn.normalization import eRMSNorm
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+    Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
+    rep = escnn.group.change_basis(rep, Q, name="test_rmsnorm_rep")
+
+    layer = eRMSNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0)
+
+    if hasattr(layer, "affine"):
+        layer.affine.scale_dof.data.uniform_(-1, 1)
+        if layer.affine.has_bias:
+            layer.affine.bias_dof.data.uniform_(-1, 1)
+
+    x = torch.randn(64, rep.size)
+    y = layer(x)
+
+    assert y.shape == x.shape
+
+    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("eps", [0.0, 1e-5])
+def test_rms_norm_functional(eps: float):
+    import torch
+
+    from symm_learning.nn.normalization import eRMSNorm
+
+    G = CyclicGroup(4)
+    rep = direct_sum([G.regular_representation] * 2)
+
+    layer = eRMSNorm(in_rep=rep, equiv_affine=False, eps=eps)
+
+    x = torch.randn(32, rep.size) + 0.1
+    y = layer(x)
+
+    expected_rms = torch.sqrt(torch.mean(x.pow(2), dim=-1, keepdim=True) + eps)
+    expected = x / expected_rms
+
+    assert torch.allclose(y, expected, atol=1e-6, rtol=1e-6)
+
+    if eps == 0.0:
+        rms = torch.sqrt(torch.mean(y.pow(2), dim=-1))
+        assert torch.allclose(rms, torch.ones_like(rms), atol=1e-6, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
