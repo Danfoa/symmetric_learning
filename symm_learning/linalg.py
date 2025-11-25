@@ -6,6 +6,7 @@ from escnn.group import Representation
 from torch import Tensor
 
 
+@DeprecationWarning
 def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
     r"""Given a random variable in an isotypic subspace, flatten the r.v. into G-irreducible subspaces.
 
@@ -41,6 +42,47 @@ def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
 
     assert Z.shape == (x.shape[0] * irrep_dim, mk)
     return Z
+
+
+def irrep_radii(x: Tensor, rep: Representation) -> Tensor:
+    r"""Compute the Euclidean radius of every irreducible subspace in a representation space.
+
+    Args:
+        x: (:class:`torch.Tensor`) of shape :math:`(..., D)` describing vectors transforming according to ``rep``.
+        rep: (:class:`~escnn.group.Representation`) acting on the last dimension of ``x``.
+
+    Returns:
+        (:class:`torch.Tensor`): Radii of shape :math:`(..., N)` where :math:`N` equals ``len(rep.irreps)``. The output
+        order follows the listing in :attr:`rep.irreps` regardless of how the irreps are grouped in memory.
+
+    Shape:
+        - **Input** ``x``: :math:`(..., D)` with :math:`D = \dim(\rho)`.
+        - **Output**: :math:`(..., N)` containing the per-irrep Euclidean norms.
+    """
+    if x.shape[-1] != rep.size:
+        raise ValueError(f"Expected last dimension {rep.size}, got {x.shape[-1]}")
+
+    if "Q_inv" not in rep.attributes:  # cache inverse change-of-basis for reuse
+        Q_inv = torch.tensor(rep.change_of_basis_inv, device=x.device, dtype=x.dtype)
+        rep.attributes["Q_inv"] = Q_inv
+    else:
+        Q_inv = rep.attributes["Q_inv"].to(x.device, x.dtype)
+
+    # Change to irrep-spectral basis
+    x_spectral = torch.einsum("ij,...j->...i", Q_inv, x)
+    # Compute a mask for each irreducible subspace (subspace associated to an irrep)
+    n_subspaces = len(rep.irreps)
+    subspace_ids = _get_irrep_subspace_index(rep).to(x.device)
+
+    flat = x_spectral.reshape(-1, rep.size)
+    flat_sq = flat.pow(2)  # squared magnitudes per coordinate
+
+    scatter_idx = subspace_ids.view(1, -1).expand(flat_sq.size(0), -1)  # broadcast labels across batch
+    radii_sq = torch.zeros(flat_sq.size(0), n_subspaces, device=x.device, dtype=x.dtype)
+    radii_sq.scatter_add_(1, scatter_idx, flat_sq)  # sum squares inside each irrep block
+
+    radii = radii_sq.sqrt().reshape(*x_spectral.shape[:-1], n_subspaces)
+    return radii
 
 
 def lstsq(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
@@ -219,3 +261,14 @@ def _project_to_irrep_endomorphism_basis(A: Tensor, rep_x: Representation, rep_y
     # Reshape to (my * d, mx * d)
     A_equiv = A_irreps.permute(0, 2, 1, 3).reshape(m_y * irrep.size, m_x * irrep.size)
     return A_equiv
+
+
+def _get_irrep_subspace_index(rep: Representation):
+    labels = torch.empty(rep.size, dtype=torch.long)
+    irreps_dims = {id: rep.group.irrep(*id).size for id in rep._irreps_multiplicities}
+    pos = 0
+    for count, irrep_id in enumerate(rep.irreps):
+        labels[pos : pos + irreps_dims[irrep_id]] = count  # fill contiguous block for this copy
+        pos += irreps_dims[irrep_id]
+
+    return labels

@@ -1,18 +1,18 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
+from __future__ import annotations
+
 import escnn
 import numpy as np
 import pytest
-import torch
-from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
-from escnn.nn import FieldType
+from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral
 
-from symm_learning.representation_theory import isotypic_decomp_rep
+from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
 
 
 @pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10), Icosahedral()])
 def test_rep_decomposition(group: Group):
     """Check that the disentangled representation is equivalent to the original representation."""
-    rep = directsum([group.regular_representation] * 10)
+    rep = direct_sum([group.regular_representation] * 10)
     # Random change of basis.
     P, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, P, name="test_rep")

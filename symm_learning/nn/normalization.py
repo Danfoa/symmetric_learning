@@ -1,12 +1,186 @@
 from __future__ import annotations
 
+import logging
+from typing import Literal
+
+import numpy as np
 import torch
+from escnn.group import Representation
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 from torch import batch_norm
 
 import symm_learning
 import symm_learning.stats
-from symm_learning.nn import eAffine
+from symm_learning.linalg import irrep_radii
+from symm_learning.nn.linear import eAffine
+from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
+
+
+class eRMSNorm(torch.nn.Module):
+    r"""Equivariant Root-Mean-Square Normalization.
+
+    This layer mirrors :class:`torch.nn.RMSNorm` while keeping the affine step symmetry-preserving.
+    For an input :math:`x \in \mathbb{R}^{D}` with :math:`D = \texttt{in_rep.size}`, it shares a
+    single normalization factor across all channels:
+
+    .. math::
+        \operatorname{rms}(x) = \sqrt{\tfrac{1}{D}\langle x, x\rangle + \varepsilon}, \qquad
+        y = \frac{x}{\operatorname{rms}(x)}.
+
+    When ``equiv_affine=True`` a learnable :class:`~symm_learning.nn.linear.eAffine` is applied
+    after normalization, providing per-irrep scales (and optional invariant biases) that commute
+    with the group action and therefore preserve equivariance.
+
+    Args:
+        in_rep (escnn.group.Representation): Description of the feature space.
+        eps (float): Numerical stabilizer added inside the RMS computation.
+        equiv_affine (bool): If ``True``, apply a symmetry-preserving :class:`eAffine` after normalization.
+        bias (bool): Include invariant biases in the affine term (only used if ``equiv_affine``).
+        device, dtype: Optional tensor factory kwargs passed to the affine parameters.
+        init_scheme (Literal["identity", "random"] | None): Initialization scheme forwarded to
+            :meth:`eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful when loading checkpoints).
+
+    Shape:
+        - Input: ``(..., in_rep.size)``
+        - Output: same shape
+
+    Note:
+        The normalization factor is a single scalar per sample, so the operation commutes with any
+        matrix representing the group action defined by ``in_rep``.
+    """
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        eps: float = 1e-6,
+        equiv_affine: bool = True,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+        init_scheme: Literal["identity", "random"] | None = "identity",
+    ):
+        super().__init__()
+        factory_kwargs = {"device": device, "dtype": dtype}
+        self.in_rep, self.out_rep = in_rep, in_rep
+        if equiv_affine:
+            self.affine = eAffine(in_rep, bias=bias).to(**factory_kwargs)
+            if init_scheme is not None:
+                self.affine.reset_parameters(init_scheme)
+        self.eps = eps
+        self.normalized_shape = (in_rep.size,)
+
+        if init_scheme is not None:
+            self.reset_parameters(init_scheme)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        """Normalize by a single RMS scalar and (optionally) apply equivariant affine.
+
+        Args:
+            input: Tensor shaped ``(..., in_rep.size)``.
+
+        Returns:
+            Tensor with identical shape, RMS-normalized and possibly transformed by :class:`eAffine`.
+        """
+        assert input.shape[-1] == self.in_rep.size, f"Expected (...,{self.in_rep.size}), got {input.shape}"
+        rms_input = torch.sqrt(self.eps + torch.mean(input.pow(2), dim=-1, keepdim=True))
+        normalized = input / rms_input
+        if hasattr(self, "affine"):
+            normalized = self.affine(normalized)
+        return normalized
+
+    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:
+        """(Re)initialize the optional affine transform using the provided scheme."""
+        if hasattr(self, "affine"):
+            self.affine.reset_parameters(scheme)
+
+
+class eLayerNorm(torch.nn.Module):
+    r"""Equivariant Layer Normalization.
+
+    Given an input :math:`x \in \mathbb{R}^{D}`, we first move to the irrep-spectral basis
+    :math:`\hat{x} = Q^{-1}x`, compute one variance scalar per irreducible block,
+    and normalize each block uniformly:
+
+    .. math::
+        \hat{y} = \frac{\hat{x}}{\sqrt{\sigma^{2} + \varepsilon}}, \qquad
+        y = Q\hat{y}.
+
+    When ``equiv_affine=True`` the learnable affine step is performed directly in the spectral basis
+    using the per-irrep scale/bias provided by :class:`~symm_learning.nn.linear.eAffine`.
+
+    Args:
+        in_rep: (:class:`escnn.group.Representation`) description of the feature space.
+        eps: numerical stabilizer added to each variance.
+        equiv_affine: if ``True``, applies an :class:`eAffine` in spectral space.
+        bias: whether the affine term includes invariant biases (only used if ``equiv_affine``).
+        device, dtype: optional tensor factory kwargs.
+    """
+
+    r"""Symmetry-preserving LayerNorm:
+
+    .. math:: y = Q ( (Q^{-1} x) \odot \alpha + \beta )
+    """
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        eps: float = 1e-6,
+        equiv_affine: bool = True,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+        init_scheme: Literal["identity", "random"] | None = "identity",
+    ) -> None:
+        factory_kwargs = {"device": device, "dtype": dtype}
+        super().__init__()
+        self.in_rep, self.out_rep = in_rep, in_rep
+
+        # We require to transition to/from the irrep-spectral basis to compute the normalization and affine transform
+        self.register_buffer("Q", torch.tensor(self.in_rep.change_of_basis, dtype=torch.get_default_dtype()))
+        self.register_buffer("Q_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=torch.get_default_dtype()))
+
+        # Only works for (..., in_rep.size) inputs with normalization over the last dimension
+        self.normalized_shape = (in_rep.size,)
+        self.eps = eps
+        self.equiv_affine = equiv_affine
+        dims = torch.tensor(
+            [self.in_rep.group.irrep(*irrep_id).size for irrep_id in self.in_rep.irreps],
+            dtype=torch.long,
+        )
+        self.register_buffer("irrep_dims", dims)
+        self.register_buffer("irrep_indices", torch.repeat_interleave(torch.arange(len(dims), dtype=torch.long), dims))
+        if self.equiv_affine:
+            self.affine = eAffine(in_rep, bias=bias).to(**factory_kwargs)
+
+        self.reset_parameters(init_scheme)
+
+    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:  # noqa: D102
+        if self.equiv_affine:
+            self.affine.reset_parameters(scheme)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        r"""Normalize per irreducible block and (optionally) apply the spectral affine transform."""
+        assert input.shape[-1] == self.in_rep.size, f"Expected (...,{self.in_rep.size}), got {input.shape}"
+
+        radii = irrep_radii(input, rep=self.in_rep)  # (..., num_irreps)
+        dims = self.irrep_dims.to(radii.device, radii.dtype)
+        var_irreps = radii.pow(2) / dims
+        var_broadcasted = var_irreps[..., self.irrep_indices.to(var_irreps.device)]
+
+        x_spec = torch.einsum("ij,...j->...i", self.Q_inv, input)
+        x_spec = x_spec / torch.sqrt(var_broadcasted + self.eps)
+
+        if self.equiv_affine:
+            scale_spec, bias_spec = self.affine.spectral_parameters(device=x_spec.device, dtype=x_spec.dtype)
+            x_spec = x_spec * scale_spec.view(*([1] * (x_spec.ndim - 1)), -1)
+            if bias_spec is not None:
+                x_spec = x_spec + bias_spec.view(*([1] * (x_spec.ndim - 1)), -1)
+
+        normalized = torch.einsum("ij,...j->...i", self.Q, x_spec)
+        return normalized
+
+    def extra_repr(self) -> str:  # noqa: D102
+        return "{normalized_shape}, eps={eps}, affine={equiv_affine}".format(**self.__dict__)
 
 
 class eBatchNorm1d(EquivariantModule):
@@ -582,3 +756,173 @@ class eDataNorm(DataNorm, EquivariantModule):
         exported.eval()
 
         return exported
+
+
+if __name__ == "__main__":
+    # logger.setLevel(logging.DEBUG)
+    from escnn.group import CyclicGroup, DihedralGroup
+
+    from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
+    from symm_learning.nn.linear import eLinear
+    from symm_learning.utils import check_equivariance
+
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    G = CyclicGroup(10)
+    m = 10
+    in_rep = direct_sum([G.regular_representation] * m)
+
+    class ModuleStack(torch.nn.Module):  # noqa: D101
+        def __init__(self, module, iters: int = 1):
+            super().__init__()
+            self.module = module
+            self.iters = iters
+
+        def forward(self, x: torch.Tensor):  # noqa: D102
+            for _ in range(self.iters):
+                y = x + self.module(x)
+                x = y
+            return x
+
+    def check_equivariance_local(  # noqa: D103
+        module,
+        module_name: str,
+        in_rep,
+        out_rep=None,
+        batch_size: int = 64,
+        samples: int = 20,
+        input_dim: int = 3,
+        atol: float = 1e-5,
+        rtol: float = 1e-5,
+        dtype=torch.float64,
+        raise_on_fail: bool = True,
+    ):
+        out_rep = out_rep or in_rep
+        spatial_dims = 9
+        module = module.to(dtype=dtype)
+        if input_dim == 2:
+            x = torch.randn(batch_size, in_rep.size, dtype=dtype)
+        elif input_dim == 3:
+            x = torch.randn(batch_size, spatial_dims, in_rep.size, dtype=dtype)
+        else:
+            raise ValueError(f"Unsupported input_dim {input_dim}")
+
+        module.eval()
+        max_err = 0.0
+        success = True
+        for g in G.elements:
+            # g = in_rep.group.sample()
+            gx = torch.einsum("ij,...j->...i", torch.tensor(in_rep(g), dtype=dtype), x)
+            y = module(x)
+            gy = torch.einsum("ij,...j->...i", torch.tensor(out_rep(g), dtype=dtype), y)
+            gy_expected = module(gx)
+            err = (gy - gy_expected).abs().max().item()
+            max_err = max(max_err, err)
+            if not torch.allclose(gy, gy_expected, atol=atol, rtol=rtol):
+                success = False
+                if raise_on_fail:
+                    raise AssertionError(f"Equivariance test failed for {module_name} and g={g}, max err {err}")
+                break
+        if success:
+            print(f"Equivariant check passed for module {module_name} with max error {max_err}")
+        return success, max_err
+
+    class ResidualStack(torch.nn.Module):  # noqa: D101
+        def __init__(self, lin, norm, iters: int = 1, normalize: bool = True, residual: bool = True):
+            super().__init__()
+            self.lin = lin
+            self.norm = norm
+            self.act = torch.nn.ReLU()
+            self.iters = iters
+            self.normalize = normalize
+            self.residual = residual
+
+        def forward(self, x: torch.Tensor):  # noqa: D102
+            for _ in range(self.iters):
+                xp = x
+                if self.normalize:
+                    xp = self.norm(xp)
+                xp = self.lin(xp)
+                xp = self.act(xp)
+                y = x + xp if self.residual else xp
+                x = y
+            return x
+
+    ln_results = []
+    res_results = []
+    # Test LayerNorm with a residual add to see if the add alone causes drift.
+    print("\nLayerNorm residual chains (bias=False, equiv_affine=False)")
+    for n in [1, 10, 50]:
+        norm = eLayerNorm(in_rep=in_rep, bias=False, equiv_affine=False, init_scheme="random")
+
+        class LNResidual(torch.nn.Module):  # noqa: D101
+            def __init__(self, norm_layer, iters):
+                super().__init__()
+                self.norm_layer = norm_layer
+                self.iters = iters
+
+            def forward(self, x):  # noqa: D102
+                for _ in range(self.iters):
+                    x = x + self.norm_layer(x)
+                return x
+
+        stack = LNResidual(norm, n)
+        ok, err = check_equivariance_local(
+            stack,
+            module_name=f"{norm}+res x {n}",
+            in_rep=norm.in_rep,
+            out_rep=norm.out_rep,
+            atol=1e-4,
+            rtol=1e-4,
+            raise_on_fail=False,
+        )
+        ln_results.append({"depth": n, "ok": ok, "err": err, "normalize": True, "residual": True})
+
+    print("\nResidual stacks (norm ? -> linear -> act -> residual ?)")
+    init_schemes = ["xavier_normal", "xavier_uniform", "kaiming_normal", "kaiming_uniform"]
+    configs = [
+        {"normalize": True, "residual": True},
+        {"normalize": True, "residual": False},
+        {"normalize": False, "residual": True},
+        {"normalize": False, "residual": False},
+    ]
+    for cfg in configs:
+        print(f"\nConfig normalize={cfg['normalize']}, residual={cfg['residual']}")
+        for scheme in init_schemes:
+            print(f"  Init scheme: {scheme}")
+            for n in [1, 5, 10]:
+                lin = eLinear(in_rep=in_rep, out_rep=in_rep, bias=False, init_scheme=scheme)
+                norm = eLayerNorm(in_rep=in_rep, bias=False, equiv_affine=False, init_scheme="random")
+                stack = ResidualStack(lin=lin, norm=norm, iters=n, normalize=cfg["normalize"], residual=cfg["residual"])
+                ok, err = check_equivariance_local(
+                    stack,
+                    module_name=f"[res_stack init={scheme} norm={cfg['normalize']} res={cfg['residual']}] x {n}",
+                    in_rep=norm.in_rep,
+                    out_rep=norm.out_rep,
+                    atol=1e-4,
+                    rtol=1e-4,
+                    raise_on_fail=False,
+                )
+                res_results.append(
+                    {
+                        "scheme": scheme,
+                        "depth": n,
+                        "ok": ok,
+                        "err": err,
+                        "normalize": cfg["normalize"],
+                        "residual": cfg["residual"],
+                    }
+                )
+
+    def print_table(title, rows, headers):  # noqa: D103
+        print(f"\n{title}")
+        print(f"{'norm':<6} {'res':<5} {headers[0]:<15} {headers[1]:<8} {headers[2]:<6} {'max_err':>12}")
+        for r in rows:
+            print(
+                f"{str(r['normalize']):<6} {str(r['residual']):<5} {str(r[headers[0]]):<15} "
+                f"{str(r[headers[1]]):<8} {str(r[headers[2]]):<6} {r['err']:.3e}"
+            )
+
+    print_table("LayerNorm residual summary", ln_results, headers=("depth", "ok", "err"))
+    print_table("Residual stack summary", res_results, headers=("scheme", "depth", "ok"))

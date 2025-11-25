@@ -41,7 +41,7 @@ def mean(x: Tensor, rep_x: Representation) -> Tensor:
 
     mean_empirical = torch.mean(x_flat, dim=0)  # Mean over batch as sequence length.
     # Project to the inv-subspace and map back to the original basis
-    mean_result = torch.einsum("ij,j->i...", P_inv.to(device=x_flat.device), mean_empirical)
+    mean_result = torch.einsum("ij,j->i...", P_inv.to(device=x_flat.device, dtype=mean_empirical.dtype), mean_empirical)
     return mean_result
 
 

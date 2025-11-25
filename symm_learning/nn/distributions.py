@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import escnn
 import torch
-import torch.nn.functional as F
-from escnn.group import directsum
 from escnn.nn import EquivariantModule, FieldType
+
+from symm_learning.representation_theory import direct_sum
 
 
 def _equiv_mean_var_from_input(
@@ -97,7 +97,7 @@ class EquivMultivariateNormal(EquivariantModule):
         Q = torch.tensor(rep_y.change_of_basis, dtype=torch.get_default_dtype())
         self.register_buffer("Q2_T", (Q.pow(2)).t())  # (n, n) transposed
         # ----- Group action on the degrees of freedom of the Cov matrix ------------
-        self.rep_cov_dof = directsum([G.trivial_representation] * len(rep_y.irreps))
+        self.rep_cov_dof = direct_sum([G.trivial_representation] * len(rep_y.irreps))
 
         self.in_type = FieldType(y_type.gspace, [rep_y, self.rep_cov_dof])
         self.out_type = self.y_type  # Not used.
@@ -231,7 +231,7 @@ if __name__ == "__main__":
 
     rep_x = x_type.representation
     G = rep_x.group
-    rep_var = directsum([G.trivial_representation] * rep_x.size)
+    rep_var = direct_sum([G.trivial_representation] * rep_x.size)
 
     e_normal = EquivMultivariateNormal(y_type, diagonal=True)
 

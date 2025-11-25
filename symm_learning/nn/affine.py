@@ -1,8 +1,6 @@
 import torch
 from escnn.nn import EquivariantModule, FieldType, GeometricTensor
 
-from symm_learning.stats import var_mean
-
 
 class eAffine(EquivariantModule):
     r"""Applies a symmetry-preserving affine transformation to the input :class:`escnn.nn.GeometricTensor`.

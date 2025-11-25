@@ -10,7 +10,7 @@ from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Represen
 from torch import Tensor
 
 from symm_learning.linalg import invariant_orthogonal_projector
-from symm_learning.representation_theory import isotypic_decomp_rep
+from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
 from symm_learning.stats import _isotypic_cov, cov, var_mean
 
 
@@ -24,7 +24,6 @@ from symm_learning.stats import _isotypic_cov, cov, var_mean
 )
 def test_var_mean(group: Group):  # noqa: D103
     import escnn
-    from escnn.group import directsum
 
     G = group
 
@@ -39,7 +38,7 @@ def test_var_mean(group: Group):  # noqa: D103
 
     # Test that G-invariant random variables should have equivalent mean and var as standard computation
     mx = 10
-    rep_x = directsum([G.trivial_representation] * mx)
+    rep_x = direct_sum([G.trivial_representation] * mx)
     x, mean, var = compute_moments_for_rep(rep_x)
     mean_gt = torch.mean(x, dim=0)
     var_gt = torch.var(x, dim=0)
@@ -48,7 +47,7 @@ def test_var_mean(group: Group):  # noqa: D103
 
     # Ensure that computing the mean and variance on the Group orbit is equivalent to the standard computation
     mx = 1
-    rep_x = directsum([G.regular_representation] * mx)  # 2D irrep * mx
+    rep_x = direct_sum([G.regular_representation] * mx)  # 2D irrep * mx
     x, mean, var = compute_moments_for_rep(rep_x)
 
     def data_orbit(x, rep_x):
@@ -94,8 +93,8 @@ def test_cross_cov(group: Group):  # noqa: D103
     G = group
     # G = escnn.group.CyclicGroup(3)
     mx, my = 1, 2
-    x_rep = directsum([G.regular_representation] * mx)
-    y_rep = directsum([G.regular_representation] * my)
+    x_rep = direct_sum([G.regular_representation] * mx)
+    y_rep = direct_sum([G.regular_representation] * my)
 
     # G = escnn.group.CyclicGroup(3)
 
@@ -124,8 +123,8 @@ def test_cross_cov(group: Group):  # noqa: D103
 
     # Test that r.v with different irrep types have no covariance. ===========================================
     irrep_id1, irrep_id2 = list(G._irreps.keys())[:2]
-    x_rep = directsum([G._irreps[irrep_id1]] * mx)
-    y_rep = directsum([G._irreps[irrep_id2]] * my)
+    x_rep = direct_sum([G._irreps[irrep_id1]] * mx)
+    y_rep = direct_sum([G._irreps[irrep_id2]] * my)
     X = torch.randn(batch_size, x_rep.size)
     Y = torch.randn(batch_size, y_rep.size)
     Cxy = cov(X, Y, x_rep, y_rep).cpu().numpy()
@@ -172,8 +171,8 @@ def test_cross_cov(group: Group):  # noqa: D103
 #     for irrep in G.representations.values():
 #         if not isinstance(irrep, IrreducibleRepresentation):
 #             continue
-#         x_rep = isotypic_decomp_rep(directsum([irrep] * mx))  # ρ_Χ
-#         y_rep = isotypic_decomp_rep(directsum([irrep] * my))  # ρ_Y
+#         x_rep = isotypic_decomp_rep(direct_sum([irrep] * mx))  # ρ_Χ
+#         y_rep = isotypic_decomp_rep(direct_sum([irrep] * my))  # ρ_Y
 
 #         x_rep_iso = x_rep.attributes["isotypic_reps"][irrep.id]
 #         y_rep_iso = y_rep.attributes["isotypic_reps"][irrep.id]

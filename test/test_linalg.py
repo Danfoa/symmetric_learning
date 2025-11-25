@@ -1,4 +1,6 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
+from __future__ import annotations
+
 import numpy as np
 import pytest
 import torch
@@ -6,6 +8,7 @@ from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Irreduci
 from escnn.nn import FieldType
 
 from symm_learning.linalg import _project_to_irrep_endomorphism_basis, lstsq
+from symm_learning.representation_theory import direct_sum
 
 
 @pytest.mark.parametrize(
@@ -24,8 +27,8 @@ def test_lstsq(group: Group, mx: int, my: int):  # noqa: D103
 
     # Icosahedral group has irreps of dimensions [1, ... 5]. Good test case.
     G = group
-    rep_x = directsum([G.regular_representation] * mx)
-    rep_y = directsum([G.regular_representation] * my)
+    rep_x = direct_sum([G.regular_representation] * mx)
+    rep_y = direct_sum([G.regular_representation] * my)
 
     x_field = FieldType(escnn.gspaces.no_base_space(G), representations=[rep_x])
     y_field = FieldType(escnn.gspaces.no_base_space(G), representations=[rep_y])

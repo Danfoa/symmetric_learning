@@ -8,8 +8,14 @@ from typing import Union
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from einops.layers.torch import Rearrange
+
+
+class UnsqueezeLast(nn.Module):
+    """Append a singleton channel dimension."""
+
+    def forward(self, x):  # noqa: D102
+        return x.unsqueeze(-1)
+
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +270,7 @@ class SinusoidalPosEmb(nn.Module):
     def forward(self, x):  # noqa: D102
         device = x.device
         half_dim = self.dim // 2
-        emb = math.log(10000) / (half_dim - 1)
+        emb = math.log(10000) / max((half_dim - 1), 1)
         emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
         emb = x[:, None] * emb[None, :]
         emb = torch.cat((emb.sin(), emb.cos()), dim=-1)
@@ -358,11 +364,7 @@ class ConditionalResidualBlock1D(nn.Module):
             cond_channels = out_channels * 2
         self.cond_predict_scale = cond_predict_scale
         self.out_channels = out_channels
-        self.cond_encoder = nn.Sequential(
-            nn.Linear(cond_dim, cond_channels),
-            nn.Mish(),
-            Rearrange("batch c -> batch c 1"),
-        )
+        self.cond_encoder = nn.Sequential(nn.Linear(cond_dim, cond_channels), nn.Mish(), UnsqueezeLast())
 
         # make sure dimensions compatible
         self.residual_conv = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()

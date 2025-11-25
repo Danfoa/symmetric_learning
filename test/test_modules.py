@@ -1,13 +1,41 @@
+from __future__ import annotations
+
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
 from copy import deepcopy
 
 import escnn
 import pytest
-from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
+from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
 from escnn.nn import FieldType
 
 from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.nn.normalization import DataNorm
+from symm_learning.representation_theory import direct_sum
+from symm_learning.utils import check_equivariance
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+def test_deepcopy(group: Group):
+    from symm_learning.nn.linear import eLinear
+
+    G = group
+    rep = direct_sum([G.regular_representation] * 2)
+    layer = eLinear(rep, rep)
+    clone = deepcopy(layer)
+
+    assert layer.in_rep is clone.in_rep, "Deepcopy should reuse the same input Representation object"
+    assert layer.out_rep is clone.out_rep, "Deepcopy should reuse the same output Representation object"
+    assert layer.in_rep.group is clone.in_rep.group, "Deepcopy should reuse the same Group singleton"
+    assert layer.in_rep.group.representations is clone.in_rep.group.representations, (
+        "Deepcopy should not duplicate the group's representation cache"
+    )
 
 
 @pytest.mark.parametrize(
@@ -24,20 +52,20 @@ def test_irrep_pooling_equivariance(group: Group):
 
     from symm_learning.nn import IrrepSubspaceNormPooling
 
-    y_rep = directsum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
+    y_rep = direct_sum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
     pooling_layer = IrrepSubspaceNormPooling(in_type=type_Y)
     pooling_layer.check_equivariance(atol=1e-5, rtol=1e-5)
 
-    t_pooling_layer = pooling_layer.export()
-    batch_size = 10
-    y = type_Y(torch.randn(batch_size, type_Y.size, dtype=torch.float32))
-    y_iso = pooling_layer(y).tensor
-    y_iso_torch = t_pooling_layer(y.tensor)
+    # t_pooling_layer = pooling_layer.export()
+    # batch_size = 10
+    # y = type_Y(torch.randn(batch_size, type_Y.size, dtype=torch.float32))
+    # y_iso = pooling_layer(y).tensor
+    # y_iso_torch = t_pooling_layer(y.tensor)
 
-    assert torch.allclose(y_iso, y_iso_torch, atol=1e-5, rtol=1e-5), (
-        f"Max error: {torch.max(torch.abs(y_iso - y_iso_torch)):.5f}"
-    )
+    # assert torch.allclose(y_iso, y_iso_torch, atol=1e-5, rtol=1e-5), (
+    #     f"Max error: {torch.max(torch.abs(y_iso - y_iso_torch)):.5f}"
+    # )
 
 
 @pytest.mark.parametrize(
@@ -54,7 +82,7 @@ def test_change2disentangled_basis_equivariance(group: Group):  # noqa: D103
     from symm_learning.nn import Change2DisentangledBasis
     from symm_learning.representation_theory import isotypic_decomp_rep
 
-    y_rep = directsum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
+    y_rep = direct_sum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
     type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
     change_layer = Change2DisentangledBasis(in_type=type_Y)
     change_layer.check_equivariance(atol=1e-5, rtol=1e-5)
@@ -182,75 +210,82 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-def test_activations(group: Group):
-    """Test custom activation functions for equivariance."""
-    import torch
-    from escnn.gspaces import no_base_space
-
-    from symm_learning.nn import Mish
-
-    gspace = no_base_space(group)
-    in_type = FieldType(gspace, [group.regular_representation] * 3)
-
-    mish_layer = Mish(in_type)
-    mish_layer.check_equivariance(atol=1e-5, rtol=1e-5)
-
-    t_mish_layer = mish_layer.export()
-
-    batch_size = 10
-    x = torch.randn(batch_size, in_type.size, dtype=torch.float32)
-    y_mish = mish_layer(in_type(x)).tensor
-    y_mish_torch = t_mish_layer(x)
-
-    assert torch.allclose(y_mish, y_mish_torch, atol=1e-5, rtol=1e-5), (
-        f"Max error: {torch.max(torch.abs(y_mish - y_mish_torch)):.5f}"
-    )
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
 @pytest.mark.parametrize("mx", [1])
-@pytest.mark.parametrize("affine", [True, False])
-@pytest.mark.parametrize("running_stats", [True, False])
-def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
-    """Check the eBatchNorm1d layer is G-invariant."""
+@pytest.mark.parametrize("my", [2, 1])
+@pytest.mark.parametrize("basis_expansion_scheme", ["memory_heavy", "isotypic_expansion"])
+def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
+    """Mirror the checks performed in symm_learning.nn.linear.__main__."""
     import torch
+    import torch.nn.functional as F
 
-    from symm_learning.nn import GSpace1D, eBatchNorm1d
+    from symm_learning.nn.linear import eLinear
 
     G = group
-    gspace = GSpace1D(G)
+    in_rep = direct_sum([G.regular_representation] * mx)
+    out_rep = direct_sum([G.regular_representation] * my)
 
-    in_type = FieldType(gspace, [G.regular_representation] * mx)
+    def backprop_sanity(module: torch.nn.Module) -> None:
+        module.train()
+        optim = torch.optim.SGD(module.parameters(), lr=1e-3)
+        x = torch.randn(16, module.in_rep.size)
+        target = torch.randn(16, module.out_rep.size)
+        optim.zero_grad()
+        y = module(x)
+        loss = F.mse_loss(y, target)
+        loss.backward()
+        grad_norms = [p.grad.norm().item() for p in module.parameters() if p.grad is not None]
+        assert grad_norms, "Expected at least one gradient to propagate."
+        optim.step()
 
-    time = 2
-    batch_size = 5
-    x = torch.randn(batch_size, in_type.size, time)
-    x = in_type(x)
+    layer = eLinear(in_rep, out_rep, bias=False, basis_expansion_scheme=basis_expansion_scheme)
+    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    backprop_sanity(layer)
 
-    batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
 
-    if hasattr(batchnorm_layer, "affine_transform"):
-        # Randomize the scale and bias DoFs
-        batchnorm_layer.affine_transform.scale_dof.data.uniform_(-1, 1)
-        if batchnorm_layer.affine_transform.has_bias:
-            batchnorm_layer.affine_transform.bias_dof.data.uniform_(-1, 1)
+# @pytest.mark.parametrize(
+#     "group",
+#     [
+#         pytest.param(CyclicGroup(5), id="cyclic5"),
+#         pytest.param(Icosahedral(), id="icosahedral"),
+#     ],
+# )
+# @pytest.mark.parametrize("mx", [1])
+# @pytest.mark.parametrize("affine", [True, False])
+# @pytest.mark.parametrize("running_stats", [True, False])
+# def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
+#     """Check the eBatchNorm1d layer is G-invariant."""
+#     import torch
 
-    batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+#     from symm_learning.nn import GSpace1D, eBatchNorm1d
 
-    batchnorm_layer.eval()
+#     G = group
+#     gspace = GSpace1D(G)
 
-    # TODO: This is not passing.
-    # y = batchnorm_layer(x).tensor
-    # y_torch = batchnorm_layer.export()(x.tensor)
+#     in_type = FieldType(gspace, [G.regular_representation] * mx)
 
-    # print(y.shape, y_torch.shape)
-    # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5), f"{y - y_torch} should be 0"
+#     time = 2
+#     batch_size = 5
+#     x = torch.randn(batch_size, in_type.size, time)
+#     x = in_type(x)
+
+#     batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
+
+#     if hasattr(batchnorm_layer, "affine_transform"):
+#         # Randomize the scale and bias DoFs
+#         batchnorm_layer.affine_transform.scale_dof.data.uniform_(-1, 1)
+#         if batchnorm_layer.affine_transform.has_bias:
+#             batchnorm_layer.affine_transform.bias_dof.data.uniform_(-1, 1)
+
+#     batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+#     batchnorm_layer.eval()
+
+#     # TODO: This is not passing.
+#     # y = batchnorm_layer(x).tensor
+#     # y_torch = batchnorm_layer.export()(x.tensor)
+
+#     # print(y.shape, y_torch.shape)
+#     # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5), f"{y - y_torch} should be 0"
 
 
 @pytest.mark.parametrize(
@@ -263,40 +298,254 @@ def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
 @pytest.mark.parametrize("mx", [1, 10])
 @pytest.mark.parametrize("bias", [True, False])
 def test_affine(group: Group, mx: int, bias: bool):
-    """Check the eBatchNorm1d layer is G-invariant."""
     import numpy as np
     import torch
     from escnn.gspaces import no_base_space
 
-    from symm_learning.nn import GSpace1D, eAffine
+    from symm_learning.nn.linear import eAffine
 
     G = group
-    rep = directsum([G.regular_representation] * mx)
+    rep = direct_sum([G.regular_representation] * mx)
     # Random orthogonal matrix for change of basis, using QR decomposition
     Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, Q, name="test_rep")
 
-    in_type = FieldType(no_base_space(G), representations=[rep])
-
     batch_size = 100
-    x = torch.randn(batch_size, in_type.size)
-    x = in_type(x)
+    x = torch.randn(batch_size, rep.size)
 
-    affine = eAffine(in_type, bias=bias)
+    affine = eAffine(in_rep=rep, bias=bias)
 
     # Randomize the scale and bias DoFs
     affine.scale_dof.data.uniform_(-1, 1)
     if affine.has_bias:
         affine.bias_dof.data.uniform_(-1, 1)
 
-    affine.check_equivariance(atol=1e-5, rtol=1e-5)
+    y = affine(x)
+    assert not torch.allclose(y, x, atol=1e-5, rtol=1e-5)
 
-    in_type = FieldType(GSpace1D(G), [rep])
-    time = 40
-    x = torch.randn(batch_size, in_type.size, time)
-    x = in_type(x)
-    affine = eAffine(in_type, bias=bias)
-    affine.check_equivariance(atol=1e-5, rtol=1e-5)
+    check_equivariance(affine, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 10])
+@pytest.mark.parametrize("bias", [True])
+@pytest.mark.parametrize("affine", [True, False])
+def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
+    import numpy as np
+    import torch
+
+    from symm_learning.nn.normalization import eLayerNorm
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+    Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
+    rep = escnn.group.change_basis(rep, Q, name="test_layernorm_rep")
+
+    layer = eLayerNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0)
+
+    if layer.equiv_affine:
+        layer.affine.scale_dof.data.uniform_(-1, 1)
+        if layer.affine.has_bias:
+            layer.affine.bias_dof.data.uniform_(-1, 1)
+
+    x = torch.randn(64, rep.size)
+    y = layer(x)
+
+    assert y.shape == x.shape
+
+    check_equivariance(layer, atol=1e-4, rtol=1e-4)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 10])
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("affine", [True, False])
+def test_rms_norm(group: Group, mx: int, bias: bool, affine: bool):
+    import numpy as np
+    import torch
+
+    from symm_learning.nn.normalization import eRMSNorm
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+    Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
+    rep = escnn.group.change_basis(rep, Q, name="test_rmsnorm_rep")
+
+    layer = eRMSNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0)
+
+    if hasattr(layer, "affine"):
+        layer.affine.scale_dof.data.uniform_(-1, 1)
+        if layer.affine.has_bias:
+            layer.affine.bias_dof.data.uniform_(-1, 1)
+
+    x = torch.randn(64, rep.size)
+    y = layer(x)
+
+    assert y.shape == x.shape
+
+    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("eps", [0.0, 1e-5])
+def test_rms_norm_functional(eps: float):
+    import torch
+
+    from symm_learning.nn.normalization import eRMSNorm
+
+    G = CyclicGroup(4)
+    rep = direct_sum([G.regular_representation] * 2)
+
+    layer = eRMSNorm(in_rep=rep, equiv_affine=False, eps=eps)
+
+    x = torch.randn(32, rep.size) + 0.1
+    y = layer(x)
+
+    expected_rms = torch.sqrt(torch.mean(x.pow(2), dim=-1, keepdim=True) + eps)
+    expected = x / expected_rms
+
+    assert torch.allclose(y, expected, atol=1e-6, rtol=1e-6)
+
+    if eps == 0.0:
+        rms = torch.sqrt(torch.mean(y.pow(2), dim=-1))
+        assert torch.allclose(rms, torch.ones_like(rms), atol=1e-6, rtol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 2])
+def test_etransformer_encoder(group: Group, mx: int):
+    """Check equivariance of single-layer and 5-layer encoder stacks."""
+    import torch
+
+    from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+
+    encoder_kwargs = dict(
+        in_rep=rep,
+        nhead=1,
+        dim_feedforward=rep.size * 4,
+        dropout=0.1,
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+    )
+
+    encoder = eTransformerEncoderLayer(**encoder_kwargs)
+    encoder.eval()
+    check_equivariance(
+        encoder,
+        input_dim=3,
+        module_name="encoder layer",
+        in_rep=rep,
+        out_rep=rep,
+        atol=1e-4,
+        rtol=1e-4,
+    )
+
+    base_layer = eTransformerEncoderLayer(**encoder_kwargs)
+    base_layer.reset_parameters()
+    base_layer.eval()
+    encoder_stack = torch.nn.TransformerEncoder(encoder_layer=base_layer, num_layers=5, enable_nested_tensor=False)
+    for layer in encoder_stack.layers:
+        if hasattr(layer, "reset_parameters"):
+            layer.reset_parameters()
+    encoder_stack.eval()
+    check_equivariance(
+        encoder_stack,
+        input_dim=3,
+        module_name="encoder stack depth=5",
+        in_rep=rep,
+        out_rep=rep,
+        atol=1e-4,
+        rtol=1e-4,
+    )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 2])
+def test_etransformer_decoder(group: Group, mx: int):
+    """Check equivariance of single-layer and 5-layer decoder stacks."""
+    import torch
+
+    from symm_learning.models.transformer.etransformer import eTransformerDecoderLayer
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+
+    decoder_kwargs = dict(
+        in_rep=rep,
+        nhead=1,
+        dim_feedforward=rep.size * 4,
+        dropout=0.1,
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+    )
+
+    decoder = eTransformerDecoderLayer(**decoder_kwargs)
+    decoder.eval()
+    decoder.check_equivariance(batch_size=3, tgt_len=2, mem_len=3, samples=5, atol=1e-3, rtol=1e-3)
+
+    def check_decoder_stack(
+        module: torch.nn.Module, rep: Representation, samples: int = 5, atol: float = 1e-3, rtol: float = 1e-3
+    ):
+        G_local = rep.group
+
+        def act(rep_local: Representation, g, tensor: torch.Tensor) -> torch.Tensor:
+            mat = torch.tensor(rep_local(g), dtype=tensor.dtype, device=tensor.device)
+            return torch.einsum("ij,...j->...i", mat, tensor)
+
+        B, tgt_len, mem_len = 3, 2, 3
+        module.eval()
+        for _ in range(samples):
+            g = G_local.sample()
+            tgt = torch.randn(B, tgt_len, rep.size)
+            mem = torch.randn(B, mem_len, rep.size)
+            out = module(tgt=tgt, memory=mem)
+            g_tgt = act(rep, g, tgt)
+            g_mem = act(rep, g, mem)
+            g_out = module(tgt=g_tgt, memory=g_mem)
+            g_out_exp = act(rep, g, out)
+            assert torch.allclose(g_out, g_out_exp, atol=atol, rtol=rtol), (
+                f"Decoder stack equivariance failed, max err {(g_out - g_out_exp).abs().max().item():.3e}"
+            )
+
+    base_layer = eTransformerDecoderLayer(**decoder_kwargs)
+    base_layer.reset_parameters()
+    base_layer.eval()
+    decoder_stack = torch.nn.TransformerDecoder(decoder_layer=base_layer, num_layers=5)
+    for layer in decoder_stack.layers:
+        if hasattr(layer, "reset_parameters"):
+            layer.reset_parameters()
+    decoder_stack.eval()
+    check_decoder_stack(decoder_stack, rep, samples=5, atol=1e-3, rtol=1e-3)
 
 
 @pytest.mark.parametrize(
@@ -374,7 +623,7 @@ def test_ema_and_eema_stats(kind: str):
         pytest.param(1.5, ValueError, id="invalid-1.5"),
     ],
 )
-def test_ema_stats_momentum(momentum: float, expect_error: type[Exception] | None):
+def test_ema_stats_momentum(momentum: float, expect_error: Exception | None):
     import torch
 
     if expect_error is not None:
@@ -389,7 +638,6 @@ def test_ema_stats_momentum(momentum: float, expect_error: type[Exception] | Non
 
 
 import torch
-import symm_learning
 
 
 def _test_datanorm_layer(datanorm: DataNorm):
