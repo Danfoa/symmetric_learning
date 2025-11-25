@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
+from __future__ import annotations
+
 import escnn
 import numpy as np
 import pytest

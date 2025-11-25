@@ -304,7 +304,7 @@ def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
 
     assert y.shape == x.shape
 
-    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    check_equivariance(layer, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize(

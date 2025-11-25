@@ -1,7 +1,6 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
 from __future__ import annotations
 
-
 import numpy as np
 import pytest
 import torch
