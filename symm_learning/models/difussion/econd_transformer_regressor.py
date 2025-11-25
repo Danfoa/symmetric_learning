@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import random
+import time
 from typing import Optional, Tuple, Union
 
 import torch
@@ -11,6 +12,8 @@ import symm_learning
 from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.models.difussion.cond_transformer_regressor import GenCondRegressor
 from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.representation_theory import direct_sum
+from symm_learning.utils import module_memory
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +41,7 @@ class eCondTransformerRegressor(GenCondRegressor):
         p_drop_attn: float = 0.1,
         causal_attn: bool = False,
         num_cond_layers: int = 0,
+        init_scheme: str = "xavier_uniform",
     ) -> None:
         out_rep = out_rep or in_rep
         super().__init__(in_rep.size, out_rep.size, cond_rep.size)
@@ -55,13 +59,13 @@ class eCondTransformerRegressor(GenCondRegressor):
         assert cond_rep.group == G == out_rep.group, "All representations must belong to the same group"
         if embedding_dim % G.order() != 0:
             raise ValueError(f"embedding_dim ({embedding_dim}) must be a multiple of the group order ({G.order()})")
-        regular_copies = embedding_dim // G.order()
-        self.embedding_rep = directsum([G.regular_representation] * regular_copies)
+        regular_copies = max(1, embedding_dim // G.order())
+        self.embedding_rep = direct_sum([G.regular_representation] * regular_copies)
 
         self.register_buffer("invariant_projector", invariant_orthogonal_projector(self.embedding_rep))
 
-        self.input_emb = symm_learning.nn.eLinear(in_rep, self.embedding_rep, bias=True)
-        self.cond_emb = symm_learning.nn.eLinear(cond_rep, self.embedding_rep, bias=True)
+        self.input_emb = symm_learning.nn.eLinear(in_rep, self.embedding_rep, bias=True, init_scheme=None)
+        self.cond_emb = symm_learning.nn.eLinear(cond_rep, self.embedding_rep, bias=True, init_scheme=None)
         self.opt_time_emb = SinusoidalPosEmb(embedding_dim)
 
         self.pos_emb = torch.nn.Parameter(torch.zeros(1, in_horizon, embedding_dim))
@@ -77,14 +81,20 @@ class eCondTransformerRegressor(GenCondRegressor):
                 activation="gelu",
                 batch_first=True,
                 norm_first=True,
+                init_scheme=None,
+            )
+            logger.debug(
+                f"Initializing {num_cond_layers} layers of eTransformerEncoderLayer of "
+                f"{sum(p.numel() for p in encoder_layer.parameters()) / 1e6:.2f}M parameters each"
             )
             self.encoder = torch.nn.TransformerEncoder(encoder_layer=encoder_layer, num_layers=num_cond_layers)
         else:
-            hidden_rep = directsum([self.embedding_rep] * 4, name="mlp_hidden_rep")
+            hidden_rep = direct_sum([self.embedding_rep] * 4)
+            logger.debug(f"Initializing eMLP encoder with hidden representation {hidden_rep}")
             self.encoder = torch.nn.Sequential(
-                symm_learning.nn.eLinear(in_rep=self.embedding_rep, out_rep=hidden_rep, bias=True),
+                symm_learning.nn.eLinear(in_rep=self.embedding_rep, out_rep=hidden_rep, bias=True, init_scheme=None),
                 torch.nn.Mish(),
-                symm_learning.nn.eLinear(in_rep=hidden_rep, out_rep=self.embedding_rep, bias=True),
+                symm_learning.nn.eLinear(in_rep=hidden_rep, out_rep=self.embedding_rep, bias=True, init_scheme=None),
             )
 
         decoder_layer = symm_learning.models.eTransformerDecoderLayer(
@@ -95,7 +105,9 @@ class eCondTransformerRegressor(GenCondRegressor):
             activation="gelu",
             batch_first=True,
             norm_first=True,  # important for stability (?)
+            init_scheme=None,
         )
+        logger.debug(f"Initializing {num_layers} layers of eTransformerDecoderLayer")
         self.decoder = torch.nn.TransformerDecoder(decoder_layer=decoder_layer, num_layers=num_layers)
 
         # Self-Attention and Cross-Attention mask.
@@ -117,36 +129,44 @@ class eCondTransformerRegressor(GenCondRegressor):
             self.self_att_mask = None
             self.cross_att_mask = None
 
-        self.ln_f = symm_learning.nn.eLayerNorm(self.embedding_rep, eps=1e-5, equiv_affine=True, bias=True)
-        self.head = symm_learning.nn.eLinear(self.embedding_rep, out_rep, bias=True)
+        self.layer_norm = symm_learning.nn.eLayerNorm(self.embedding_rep, eps=1e-5, equiv_affine=True, bias=True)
+        self.head = symm_learning.nn.eLinear(self.embedding_rep, out_rep, bias=True, init_scheme=None)
 
-        self.reset_parameters()
-        logger.info("number of parameters: %e", sum(p.numel() for p in self.parameters()))
+        self.reset_parameters(scheme=init_scheme)
+        trainable_mem, non_trainable_mem = module_memory(self, units="MiB")
+        logger.info(
+            f"[{self.__class__.__name__}]: {trainable_mem:.3f} MiB trainable, {non_trainable_mem:.3f} "
+            f"MiB non-trainable parameters."
+        )
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_uniform") -> None:
         """Re-initialize all parameters."""
+        logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
         # Initialize eLinear layers.
         self.input_emb.reset_parameters(scheme=scheme)
         self.cond_emb.reset_parameters(scheme=scheme)
         self.head.reset_parameters(scheme=scheme)
+        # Initialize final layer norm and head.
+        self.layer_norm.reset_parameters()
         # Initalize conditional encoder layers.
         if isinstance(self.encoder, torch.nn.TransformerEncoder):
-            for layer in self.encoder.layers:
+            for i, layer in enumerate(self.encoder.layers, start=1):
                 assert isinstance(layer, symm_learning.models.eTransformerEncoderLayer)
+                logger.debug(f"Resetting encoder layer {i}:[{layer.__class__.__name__}] with scheme: {scheme}")
                 layer.reset_parameters(scheme=scheme)
         else:  # eMLP.
-            for module in self.encoder:
+            for i, module in enumerate(self.encoder, start=1):
                 if isinstance(module, symm_learning.nn.eLinear):
+                    logger.debug(f"Resetting encoder module {i}:[{module.__class__.__name__}] with scheme: {scheme}")
                     module.reset_parameters(scheme=scheme)
         # Initialize decoder layers.
-        for layer in self.decoder.layers:
+        for i, layer in enumerate(self.decoder.layers, start=1):
             assert isinstance(layer, symm_learning.models.eTransformerDecoderLayer)
+            logger.debug(f"Resetting decoder layer {i}:[{layer.__class__.__name__}] with scheme: {scheme}")
             layer.reset_parameters(scheme=scheme)
-        # Initialize final layer norm and head.
-        self.ln_f.reset_parameters()
 
-        print(f"[{self.__class__.__name__}]: parameters initialized with `{scheme}` scheme.")
+        logger.info(f"[{self.__class__.__name__}]: parameters initialized with `{scheme}` scheme.")
 
     def get_optim_groups(self, weight_decay: float = 1e-3):
         """Todo."""
@@ -192,11 +212,19 @@ class eCondTransformerRegressor(GenCondRegressor):
         optim_groups = self.get_optim_groups(weight_decay=weight_decay)
         return torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas)
 
-    def forward(self, X: torch.Tensor, Z: torch.Tensor, opt_step: torch.Tensor | float | int):
+    def forward(
+        self,
+        X: torch.Tensor,
+        opt_step: torch.Tensor | float | int,
+        Z: torch.Tensor,
+    ):
         r"""Forward pass approximating :math:`V_k = f(X_k, Z, k)`."""
-        assert X.shape[1] <= self.in_horizon, f"Input horizon {X.shape[1]} larger than {self.in_horizon}"
-        assert Z.shape[1] <= self.cond_horizon - 1, f"Cond horizon {Z.shape[1]} larger than {self.cond_horizon - 1}"
-
+        assert X.dim() == 3 and X.shape[-1] == self.in_rep.size and X.shape[1] <= self.in_horizon, (
+            f"Expected X shape (B, Tx<={self.in_horizon}, {self.in_rep.size}) got {X.shape}"
+        )
+        assert Z.dim() == 3 and Z.shape[-1] == self.cond_rep.size and Z.shape[1] <= self.cond_horizon, (
+            f"Expected Z shape (B, Tz<={self.cond_horizon}, {self.cond_rep.size}) got {Z.shape}"
+        )
         batch_size = X.shape[0]
 
         # 1. Inference-time optimization step embedding (k). First conditioning token.
@@ -233,7 +261,7 @@ class eCondTransformerRegressor(GenCondRegressor):
             tgt=input_tokens, memory=cond_tokens, tgt_mask=self.self_att_mask, memory_mask=self.cross_att_mask
         )  # (B, Tx, D)
         # 5. Regression head projecting to output dimension.
-        out_tokens = self.ln_f(out_tokens)
+        out_tokens = self.layer_norm(out_tokens)
         out = self.head(out_tokens)  # (B, Tx, out_dim)
         return out
 
@@ -250,7 +278,7 @@ class eCondTransformerRegressor(GenCondRegressor):
 
         G = self.in_rep.group
         in_len = min(in_len, self.in_horizon)
-        cond_len = min(cond_len, self.cond_horizon - 1)
+        cond_len = min(cond_len, self.cond_horizon)
         training_mode = self.training
         self.eval()
 
@@ -285,29 +313,71 @@ class eCondTransformerRegressor(GenCondRegressor):
 
 
 if __name__ == "__main__":
+    from symm_learning.utils import describe_memory
+
+    # Set logging to debug
+    logging.basicConfig(level=logging.DEBUG)
+    # Set debug message to [name][level][time][message]
+    formatter = logging.Formatter("[%(name)s][%(levelname)s][%(asctime)s]: %(message)s")
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(formatter)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float32
 
     from escnn.group import CyclicGroup, Icosahedral
 
-    G = Icosahedral()
-    in_rep = directsum([G.regular_representation] * 2)  # dim 8
+    # G = Icosahedral()
+    # # G = CyclicGroup(2)
+    # d = 70
+    # # m = int(70 // G.order())
+    # m = 1
+    # in_rep = directsum([G.regular_representation] * m)  # dim 8
+    # cond_rep = in_rep
+    # out_rep = in_rep
+
+    # Tx, Tz = 8, 6
+    # model = eCondTransformerRegressor(
+    #     in_rep=in_rep,
+    #     cond_rep=cond_rep,
+    #     out_rep=out_rep,
+    #     in_horizon=Tx,
+    #     cond_horizon=Tz,
+    #     num_layers=8,
+    #     num_attention_heads=1,
+    #     embedding_dim=G.order() * m,
+    #     num_cond_layers=0,
+    # ).to(device=device, dtype=dtype)
+
+    # model.check_equivariance()
+    # G = Icosahedral()
+    G = CyclicGroup(2)
+    m = 5
+    embedding_dim = G.order() * m * 4
+    in_rep = direct_sum([G.regular_representation] * m)  # dim 8
+    print(in_rep.size)
     cond_rep = in_rep
     out_rep = in_rep
 
     Tx, Tz = 8, 6
+
+    start_time = time.time()
     model = eCondTransformerRegressor(
         in_rep=in_rep,
         cond_rep=cond_rep,
         out_rep=out_rep,
         in_horizon=Tx,
         cond_horizon=Tz,
-        num_layers=3,
-        num_attention_heads=2,
-        embedding_dim=G.order() * 2,
+        num_layers=5,
+        num_attention_heads=1,
+        embedding_dim=embedding_dim,
         num_cond_layers=0,
-    ).to(device=device, dtype=dtype)
+    )
+    # print(describe_memory("eCondTransformer", model))
+    print(f"Model initialized in {time.time() - start_time:.2f} seconds")
 
-    model.check_equivariance()
+    model.to(device=device, dtype=dtype)
+    model.eval()
+    model.check_equivariance(atol=1e-2, rtol=1e-2)
 
-    print("All tests passed!")
+    print("Equivariance test passed!")

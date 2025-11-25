@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import copy
+import logging
 from collections.abc import Callable
 from math import ceil
 from typing import Optional, Union
 
 import torch
 import torch.nn.functional as F
-from escnn.group import Representation, directsum
+from escnn.group import Representation
 from torch import Tensor
 
 # from torch.nn import Transformer
 from symm_learning.nn.activation import eMultiheadAttention
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.normalization import eLayerNorm
+from symm_learning.representation_theory import direct_sum
+
+logger = logging.getLogger(__name__)
 
 
 class eTransformerEncoderLayer(torch.nn.Module):
@@ -38,6 +43,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
         bias: bool = True,
         device=None,
         dtype=None,
+        init_scheme: str | None = "xavier_normal",
     ) -> None:
         super().__init__()
         if dim_feedforward <= 0:
@@ -48,7 +54,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
 
         G = in_rep.group
         num_hidden_reps = max(1, ceil(dim_feedforward / G.order()))
-        self.embedding_rep = directsum([G.regular_representation] * num_hidden_reps)
+        self.embedding_rep = direct_sum([G.regular_representation] * num_hidden_reps)
         self.hidden_dim = self.embedding_rep.size
         self.requested_dim_feedforward = dim_feedforward
 
@@ -60,10 +66,11 @@ class eTransformerEncoderLayer(torch.nn.Module):
             batch_first=batch_first,
             device=device,
             dtype=dtype,
+            init_scheme=init_scheme,
         )
 
-        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias=bias).to(**factory_kwargs)
-        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias=bias).to(**factory_kwargs)
+        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
+        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
 
         self.dropout = torch.nn.Dropout(dropout)
         self.dropout1 = torch.nn.Dropout(dropout)
@@ -79,7 +86,8 @@ class eTransformerEncoderLayer(torch.nn.Module):
             activation = _get_activation_fn(activation)
         self.activation = activation
 
-        self.reset_parameters()
+        if init_scheme is not None:
+            self.reset_parameters(scheme=init_scheme)
 
     def forward(
         self,
@@ -143,7 +151,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
-        # Reset equivariant linear layers (symm_learning.nn.eLinear)
+        logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
         self.linear1.reset_parameters(scheme)
         self.linear2.reset_parameters(scheme)
         self.norm1.reset_parameters()
@@ -175,6 +183,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
         bias: bool = True,
         device=None,
         dtype=None,
+        init_scheme: str | None = "xavier_uniform",
     ) -> None:
         super().__init__()
         if dim_feedforward <= 0:
@@ -185,7 +194,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
 
         G = in_rep.group
         num_hidden_reps = max(1, ceil(dim_feedforward / G.order()))
-        self.embedding_rep = directsum([G.regular_representation] * num_hidden_reps)
+        self.embedding_rep = direct_sum([G.regular_representation] * num_hidden_reps)
         self.hidden_dim = self.embedding_rep.size
         self.requested_dim_feedforward = dim_feedforward
 
@@ -197,6 +206,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
             batch_first=batch_first,
             device=device,
             dtype=dtype,
+            init_scheme=init_scheme,
         )
         self.cross_attn = eMultiheadAttention(
             in_rep=self.in_rep,
@@ -206,11 +216,12 @@ class eTransformerDecoderLayer(torch.nn.Module):
             batch_first=batch_first,
             device=device,
             dtype=dtype,
+            init_scheme=init_scheme,
         )
 
-        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias=bias).to(**factory_kwargs)
+        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
         self.dropout = torch.nn.Dropout(dropout)
-        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias=bias).to(**factory_kwargs)
+        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
 
         self.norm_first = norm_first
         self.norm1 = eLayerNorm(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
@@ -226,7 +237,8 @@ class eTransformerDecoderLayer(torch.nn.Module):
         self.activation = activation
         self.batch_first = batch_first
 
-        self.reset_parameters()
+        if init_scheme is not None:
+            self.reset_parameters(scheme=init_scheme)
 
     def forward(
         self,
@@ -346,6 +358,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+        logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
         # Reset equivariant linear layers (symm_learning.nn.eLinear)
         self.linear1.reset_parameters(scheme)
         self.linear2.reset_parameters(scheme)
@@ -411,17 +424,20 @@ def _get_activation_fn(activation: str) -> Callable[[Tensor], Tensor]:
 
 
 if __name__ == "__main__":
-    from escnn.group import CyclicGroup, DihedralGroup
+    import logging
+
+    # logging.basicConfig(level=logging.DEBUG)
+    from escnn.group import CyclicGroup, DihedralGroup, Icosahedral
 
     from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
-    from symm_learning.utils import check_equivariance
+    from symm_learning.utils import check_equivariance, describe_memory
 
-    G = CyclicGroup(10)
-    m = 3
-    in_rep = directsum([G.regular_representation] * m)
+    G = CyclicGroup(2)
+    m = 2
+    in_rep = direct_sum([G.regular_representation] * m)
 
-    etransformer = eTransformerEncoderLayer(
-        in_rep,
+    encoder_kwargs = dict(
+        in_rep=in_rep,
         nhead=1,
         dim_feedforward=in_rep.size * 4,
         dropout=0.1,
@@ -429,12 +445,49 @@ if __name__ == "__main__":
         norm_first=True,
         batch_first=True,
     )
+    etransformer = eTransformerEncoderLayer(**encoder_kwargs)
     etransformer.eval()  # disable dropout for the test
+    # describe_memory("transformer encoder", etransformer)
+    check_equivariance(
+        lambda x: etransformer._feed_forward_block(x),
+        in_rep=etransformer.in_rep,
+        out_rep=etransformer.out_rep,
+        module_name="feed forward",
+    )
+    check_equivariance(
+        lambda x: etransformer._self_attention_block(x),
+        in_rep=etransformer.in_rep,
+        out_rep=etransformer.out_rep,
+        module_name="self_attention",
+    )
 
-    check_equivariance(etransformer, input_dim=3, atol=1e-4, rtol=1e-4)
+    for depth in [1, 3, 5, 10]:
+        base_layer = eTransformerEncoderLayer(**encoder_kwargs)
+        base_layer.reset_parameters()
+        base_layer.eval()
+        encoder_stack = torch.nn.TransformerEncoder(
+            encoder_layer=base_layer, num_layers=depth, enable_nested_tensor=False
+        )
+        for layer in encoder_stack.layers:
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()
+        encoder_stack.eval()
+        print(f"\n Testing encoder stack depth={depth} equivariance...")
+        check_equivariance(
+            encoder_stack,
+            input_dim=3,
+            module_name=f"encoder stack depth={depth}",
+            atol=1e-4,
+            rtol=1e-4,
+            in_rep=in_rep,
+            out_rep=in_rep,
+        )
+        print(f"Encoder stack depth={depth} equivariance test passed")
 
-    tdecoder = eTransformerDecoderLayer(
-        in_rep,
+    print("\n\n\nTesting decoder layer equivariance...")
+
+    decoder_kwargs = dict(
+        in_rep=in_rep,
         nhead=1,
         dim_feedforward=in_rep.size * 2,
         dropout=0.0,
@@ -442,6 +495,42 @@ if __name__ == "__main__":
         norm_first=True,
         batch_first=True,
     )
+    tdecoder = eTransformerDecoderLayer(**decoder_kwargs)
     tdecoder.eval()
-    tdecoder.check_equivariance(atol=1e-3, rtol=1e-3)
+    tdecoder.check_equivariance()
+
+    def check_decoder_stack(module: torch.nn.Module, rep: Representation, depth: int, atol=1e-4, rtol=1e-4):  # noqa: D103
+        G = rep.group
+
+        def act(rep: Representation, g, tensor: Tensor) -> Tensor:
+            mat = torch.tensor(rep(g), dtype=tensor.dtype, device=tensor.device)
+            return torch.einsum("ij,...j->...i", mat, tensor)
+
+        B, tgt_len, mem_len = 11, 3, 5
+        module.eval()
+        for _ in range(10):
+            g = G.sample()
+            tgt = torch.randn(B, tgt_len, rep.size)
+            mem = torch.randn(B, mem_len, rep.size)
+            out = module(tgt=tgt, memory=mem)
+            g_tgt = act(rep, g, tgt)
+            g_mem = act(rep, g, mem)
+            g_out = module(tgt=g_tgt, memory=g_mem)
+            g_out_exp = act(rep, g, out)
+            assert torch.allclose(g_out, g_out_exp, atol=atol, rtol=rtol), (
+                f"Decoder stack depth={depth} equivariance failed, max err {(g_out - g_out_exp).abs().max().item():.3e}"
+            )
+
+    for depth in (1, 3, 5, 10):
+        base_layer = eTransformerDecoderLayer(**decoder_kwargs)
+        base_layer.reset_parameters()
+        base_layer.eval()
+        decoder_stack = torch.nn.TransformerDecoder(decoder_layer=base_layer, num_layers=depth)
+        for layer in decoder_stack.layers:
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()
+        decoder_stack.eval()
+        print(f"\n Testing decoder stack depth={depth} equivariance...")
+        check_decoder_stack(decoder_stack, in_rep, depth=depth, atol=1e-3, rtol=1e-3)
+        print(f"Decoder stack depth={depth} equivariance test passed")
     print("Decoder equivariance test passed")
