@@ -116,66 +116,131 @@ def test_emlp(  # noqa: D103
     assert torch.allclose(original, restored, atol=1e-5, rtol=1e-5)
 
 
-@pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
-@pytest.mark.parametrize("n_inv_features", [10])
-@pytest.mark.parametrize("hidden_units", [[128], [128, 64]])
-@pytest.mark.parametrize("activation", ["ReLU"])
-@pytest.mark.parametrize("bias", [True])
-def test_imlp(  # noqa: D103
-    group: Group, n_inv_features: int, hidden_units: int, activation: str, bias: bool
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("m", [1, 5])
+@pytest.mark.parametrize("horizons", [(10, 5)])
+@pytest.mark.parametrize("num_layers", [6])
+@pytest.mark.parametrize("num_cond_layers", [0, 6])
+@pytest.mark.parametrize("num_attention_heads", [0, 2, 4])
+def test_econd_transformer_regressor(
+    group: Group,
+    m: int,
+    horizons: tuple[int, int],
+    num_layers: int,
+    num_cond_layers: int,
+    num_attention_heads: int,
 ):
-    x_rep = group.regular_representation  # ρ_Χ
-    x_rep.name = "x_rep"
-    type_X = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[x_rep] * 5)
+    """Port equivariance checks from eCondTransformerRegressor __main__ into pytest."""
+    from symm_learning.models.difussion.econd_transformer_regressor import eCondTransformerRegressor
 
-    from symm_learning.models import IMLP
+    G = group
+    in_rep = direct_sum([G.regular_representation] * m)
+    cond_rep = in_rep
+    out_rep = in_rep
 
-    imlp = IMLP(
-        in_type=type_X,
-        out_dim=n_inv_features,
-        hidden_units=hidden_units,
-        activation=activation,
-        bias=bias,
+    in_horizon, cond_horizon = horizons
+    embedding_dim = G.order() * m * 4
+    regular_copies = embedding_dim // G.order()
+
+    kwargs = dict(
+        in_rep=in_rep,
+        cond_rep=cond_rep,
+        out_rep=out_rep,
+        in_horizon=in_horizon,
+        cond_horizon=cond_horizon,
+        num_layers=num_layers,
+        num_attention_heads=num_attention_heads,
+        embedding_dim=embedding_dim,
+        num_cond_layers=num_cond_layers,
+        p_drop_emb=0.1,
+        p_drop_attn=0.1,
+        causal_attn=False,
     )
 
-    imlp.check_equivariance(atol=1e-5, rtol=1e-5)
+    if num_attention_heads < 1 or regular_copies % num_attention_heads != 0:
+        with pytest.raises(ValueError):
+            eCondTransformerRegressor(**kwargs)
+        return
 
-    timlp = imlp.export()
-
-    batch_dim = 50
-    x = type_X(torch.rand(batch_dim, type_X.size))
-    y = imlp(x).tensor
-    y_t = timlp(x.tensor)
-
-    assert torch.allclose(y, y_t, atol=1e-5, rtol=1e-5)
-
-    # --- Additional forward and backward pass ---
-    # Make sure the input tensor requires gradients for the backward pass.
-    x_grad = type_X(torch.rand(batch_dim, type_X.size, requires_grad=True))
-    y_grad = imlp(x_grad)
-    # Create a dummy loss and backpropagate.
-    dummy_loss = (y_grad.tensor**2).sum()
-    dummy_loss.backward()
-
-    # Saving and loading preserves behaviour
-    buffer = io.BytesIO()
-    torch.save(imlp.state_dict(), buffer)
-    buffer.seek(0)
-    reloaded_imlp = IMLP(
-        in_type=type_X,
-        out_dim=n_inv_features,
-        hidden_units=hidden_units,
-        activation=activation,
-        bias=bias,
+    model = eCondTransformerRegressor(**kwargs)
+    model.eval()
+    model.check_equivariance(
+        batch_size=2,
+        in_len=min(3, in_horizon),
+        cond_len=min(2, cond_horizon),
+        atol=1e-3,
+        rtol=1e-3,
     )
-    reloaded_imlp.load_state_dict(torch.load(buffer))
-    reloaded_imlp.eval()
-    imlp.eval()
-    with torch.no_grad():
-        test_raw = torch.rand(batch_dim, type_X.size)
-        original = imlp(type_X(test_raw.clone())).tensor
-        restored = reloaded_imlp(type_X(test_raw.clone())).tensor
-    assert torch.allclose(original, restored, atol=1e-5, rtol=1e-5)
+
+
+# TODO: Migrate eMLP and iMLP to new equivariant backend.
+# @pytest.mark.parametrize("group", [CyclicGroup(5), DihedralGroup(10)])
+# @pytest.mark.parametrize("n_inv_features", [10])
+# @pytest.mark.parametrize("hidden_units", [[128], [128, 64]])
+# @pytest.mark.parametrize("activation", ["ReLU"])
+# @pytest.mark.parametrize("bias", [True])
+# def test_imlp(  # noqa: D103
+#     group: Group, n_inv_features: int, hidden_units: int, activation: str, bias: bool
+# ):
+#     x_rep = group.regular_representation  # ρ_Χ
+#     x_rep.name = "x_rep"
+#     type_X = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[x_rep] * 5)
+
+#     from symm_learning.models import IMLP
+
+#     imlp = IMLP(
+#         in_type=type_X,
+#         out_dim=n_inv_features,
+#         hidden_units=hidden_units,
+#         activation=activation,
+#         bias=bias,
+#     )
+
+#     imlp.check_equivariance(atol=1e-5, rtol=1e-5)
+
+#     timlp = imlp.export()
+
+#     batch_dim = 50
+#     x = type_X(torch.rand(batch_dim, type_X.size))
+#     y = imlp(x).tensor
+#     y_t = timlp(x.tensor)
+
+#     assert torch.allclose(y, y_t, atol=1e-5, rtol=1e-5)
+
+#     # --- Additional forward and backward pass ---
+#     # Make sure the input tensor requires gradients for the backward pass.
+#     x_grad = type_X(torch.rand(batch_dim, type_X.size, requires_grad=True))
+#     y_grad = imlp(x_grad)
+#     # Create a dummy loss and backpropagate.
+#     dummy_loss = (y_grad.tensor**2).sum()
+#     dummy_loss.backward()
+
+#     # Saving and loading preserves behaviour
+#     buffer = io.BytesIO()
+#     torch.save(imlp.state_dict(), buffer)
+#     buffer.seek(0)
+#     reloaded_imlp = IMLP(
+#         in_type=type_X,
+#         out_dim=n_inv_features,
+#         hidden_units=hidden_units,
+#         activation=activation,
+#         bias=bias,
+#     )
+#     reloaded_imlp.load_state_dict(torch.load(buffer))
+#     reloaded_imlp.eval()
+#     imlp.eval()
+#     with torch.no_grad():
+#         test_raw = torch.rand(batch_dim, type_X.size)
+#         original = imlp(type_X(test_raw.clone())).tensor
+#         restored = reloaded_imlp(type_X(test_raw.clone())).tensor
+#     assert torch.allclose(original, restored, atol=1e-5, rtol=1e-5)
 
 
 # @pytest.mark.parametrize(

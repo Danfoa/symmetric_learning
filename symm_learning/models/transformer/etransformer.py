@@ -4,7 +4,7 @@ import copy
 import logging
 from collections.abc import Callable
 from math import ceil
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import torch
 import torch.nn.functional as F
@@ -14,7 +14,7 @@ from torch import Tensor
 # from torch.nn import Transformer
 from symm_learning.nn.activation import eMultiheadAttention
 from symm_learning.nn.linear import eLinear
-from symm_learning.nn.normalization import eLayerNorm
+from symm_learning.nn.normalization import eLayerNorm, eRMSNorm
 from symm_learning.representation_theory import direct_sum
 
 logger = logging.getLogger(__name__)
@@ -38,12 +38,13 @@ class eTransformerEncoderLayer(torch.nn.Module):
         dropout: float = 0.1,
         activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
         layer_norm_eps: float = 1e-5,
-        batch_first: bool = False,
-        norm_first: bool = False,
+        batch_first: bool = True,
+        norm_first: bool = True,
+        norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
         device=None,
         dtype=None,
-        init_scheme: str | None = "xavier_normal",
+        init_scheme: str | None = "xavier_uniform",
     ) -> None:
         super().__init__()
         if dim_feedforward <= 0:
@@ -76,8 +77,15 @@ class eTransformerEncoderLayer(torch.nn.Module):
         self.dropout1 = torch.nn.Dropout(dropout)
         self.dropout2 = torch.nn.Dropout(dropout)
 
-        self.norm1 = eLayerNorm(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
-        self.norm2 = eLayerNorm(self.out_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        if norm_module == "layernorm":
+            norm_cls = eLayerNorm
+        elif norm_module == "rmsnorm":
+            norm_cls = eRMSNorm
+        else:
+            raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
+
+        self.norm1 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        self.norm2 = norm_cls(self.out_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
 
         self.norm_first = norm_first
         self.batch_first = batch_first
@@ -179,7 +187,8 @@ class eTransformerDecoderLayer(torch.nn.Module):
         activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
         layer_norm_eps: float = 1e-5,
         batch_first: bool = True,
-        norm_first: bool = False,
+        norm_first: bool = True,
+        norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
         device=None,
         dtype=None,
@@ -224,9 +233,15 @@ class eTransformerDecoderLayer(torch.nn.Module):
         self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
 
         self.norm_first = norm_first
-        self.norm1 = eLayerNorm(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
-        self.norm2 = eLayerNorm(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
-        self.norm3 = eLayerNorm(self.out_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        if norm_module == "layernorm":
+            norm_cls = eLayerNorm
+        elif norm_module == "rmsnorm":
+            norm_cls = eRMSNorm
+        else:
+            raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
+        self.norm1 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        self.norm2 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        self.norm3 = norm_cls(self.out_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
 
         self.dropout1 = torch.nn.Dropout(dropout)
         self.dropout2 = torch.nn.Dropout(dropout)
@@ -381,15 +396,16 @@ class eTransformerDecoderLayer(torch.nn.Module):
     ) -> None:
         """Quick sanity check ensuring both attention blocks and the full layer are equivariant."""
         G = self.in_rep.group
+        device = next(self.parameters()).device
 
         def act(rep: Representation, g, tensor: Tensor) -> Tensor:
-            mat = torch.tensor(rep(g), dtype=tensor.dtype, device=tensor.device)
+            mat = torch.tensor(rep(g), dtype=tensor.dtype, device=device)
             return torch.einsum("ij,...j->...i", mat, tensor)
 
         for _ in range(samples):
             g = G.sample()
-            tgt = torch.randn(batch_size, tgt_len, self.in_rep.size, device=self.norm1.Q.device)
-            mem = torch.randn(batch_size, mem_len, self.in_rep.size, device=self.norm1.Q.device)
+            tgt = torch.randn(batch_size, tgt_len, self.in_rep.size, device=device)
+            mem = torch.randn(batch_size, mem_len, self.in_rep.size, device=device)
             g_tgt = act(self.in_rep, g, tgt)
             g_mem = act(self.in_rep, g, mem)
 

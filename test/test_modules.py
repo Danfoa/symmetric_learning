@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import escnn
 import pytest
-from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
+from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
 from escnn.nn import FieldType
 
 from symm_learning.nn import EMAStats, eEMAStats
@@ -418,6 +418,132 @@ def test_rms_norm_functional(eps: float):
     if eps == 0.0:
         rms = torch.sqrt(torch.mean(y.pow(2), dim=-1))
         assert torch.allclose(rms, torch.ones_like(rms), atol=1e-6, rtol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 2])
+def test_etransformer_encoder(group: Group, mx: int):
+    """Check equivariance of single-layer and 5-layer encoder stacks."""
+    import torch
+
+    from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+
+    encoder_kwargs = dict(
+        in_rep=rep,
+        nhead=1,
+        dim_feedforward=rep.size * 4,
+        dropout=0.1,
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+    )
+
+    encoder = eTransformerEncoderLayer(**encoder_kwargs)
+    encoder.eval()
+    check_equivariance(
+        encoder,
+        input_dim=3,
+        module_name="encoder layer",
+        in_rep=rep,
+        out_rep=rep,
+        atol=1e-4,
+        rtol=1e-4,
+    )
+
+    base_layer = eTransformerEncoderLayer(**encoder_kwargs)
+    base_layer.reset_parameters()
+    base_layer.eval()
+    encoder_stack = torch.nn.TransformerEncoder(encoder_layer=base_layer, num_layers=5, enable_nested_tensor=False)
+    for layer in encoder_stack.layers:
+        if hasattr(layer, "reset_parameters"):
+            layer.reset_parameters()
+    encoder_stack.eval()
+    check_equivariance(
+        encoder_stack,
+        input_dim=3,
+        module_name="encoder stack depth=5",
+        in_rep=rep,
+        out_rep=rep,
+        atol=1e-4,
+        rtol=1e-4,
+    )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(DihedralGroup(10), id="dihedral10"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [1, 2])
+def test_etransformer_decoder(group: Group, mx: int):
+    """Check equivariance of single-layer and 5-layer decoder stacks."""
+    import torch
+
+    from symm_learning.models.transformer.etransformer import eTransformerDecoderLayer
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+
+    decoder_kwargs = dict(
+        in_rep=rep,
+        nhead=1,
+        dim_feedforward=rep.size * 4,
+        dropout=0.1,
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+    )
+
+    decoder = eTransformerDecoderLayer(**decoder_kwargs)
+    decoder.eval()
+    decoder.check_equivariance(batch_size=3, tgt_len=2, mem_len=3, samples=5, atol=1e-3, rtol=1e-3)
+
+    def check_decoder_stack(
+        module: torch.nn.Module, rep: Representation, samples: int = 5, atol: float = 1e-3, rtol: float = 1e-3
+    ):
+        G_local = rep.group
+
+        def act(rep_local: Representation, g, tensor: torch.Tensor) -> torch.Tensor:
+            mat = torch.tensor(rep_local(g), dtype=tensor.dtype, device=tensor.device)
+            return torch.einsum("ij,...j->...i", mat, tensor)
+
+        B, tgt_len, mem_len = 3, 2, 3
+        module.eval()
+        for _ in range(samples):
+            g = G_local.sample()
+            tgt = torch.randn(B, tgt_len, rep.size)
+            mem = torch.randn(B, mem_len, rep.size)
+            out = module(tgt=tgt, memory=mem)
+            g_tgt = act(rep, g, tgt)
+            g_mem = act(rep, g, mem)
+            g_out = module(tgt=g_tgt, memory=g_mem)
+            g_out_exp = act(rep, g, out)
+            assert torch.allclose(g_out, g_out_exp, atol=atol, rtol=rtol), (
+                f"Decoder stack equivariance failed, max err {(g_out - g_out_exp).abs().max().item():.3e}"
+            )
+
+    base_layer = eTransformerDecoderLayer(**decoder_kwargs)
+    base_layer.reset_parameters()
+    base_layer.eval()
+    decoder_stack = torch.nn.TransformerDecoder(decoder_layer=base_layer, num_layers=5)
+    for layer in decoder_stack.layers:
+        if hasattr(layer, "reset_parameters"):
+            layer.reset_parameters()
+    decoder_stack.eval()
+    check_decoder_stack(decoder_stack, rep, samples=5, atol=1e-3, rtol=1e-3)
 
 
 @pytest.mark.parametrize(

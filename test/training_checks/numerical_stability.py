@@ -7,13 +7,15 @@ from typing import Callable, Dict, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from sentry_sdk import init
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from escnn.group import CyclicGroup, DihedralGroup, directsum
+import symm_learning
 from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
 from symm_learning.nn.linear import eAffine, eLinear
-from symm_learning.nn.normalization import eLayerNorm
+from symm_learning.nn.normalization import eLayerNorm, eRMSNorm
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import check_equivariance
@@ -295,13 +297,13 @@ INIT_REGISTRY: Dict[str, Callable[[torch.Tensor], None]] = {
 
 @dataclass
 class DemoBlockConfig:
-    depth: int = 5
-    batch_size: int = 1024
+    depth: int = 10
+    batch_size: int = 700
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     dtype: torch.dtype = torch.float32
     #
-    regular_copies: int = 1  # neurons = order * regular_copies
+    regular_copies: int = 50  # neurons = order * regular_copies
     activation: str = "gelu"
     init: str = "kaiming_uniform"
     bias: bool = False
@@ -324,48 +326,48 @@ if __name__ == "__main__":
 
     cfg = DemoBlockConfig()
 
-    G = escnn.group.Icosahedral()
-    # G = escnn.group.CyclicGroup(5)
+    # G = escnn.group.Icosahedral()
+    G = escnn.group.CyclicGroup(2)
     rep = direct_sum([G.regular_representation] * cfg.regular_copies)
     dim = rep.size
 
-    transformer_encoder = torch.nn.TransformerEncoderLayer(
+    t_encoder_norm_first = torch.nn.TransformerEncoderLayer(
         d_model=rep.size, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=True
     )
-    linear = torch.nn.Linear(rep.size, rep.size, bias=cfg.bias)
-    layer_norm = torch.nn.LayerNorm(normalized_shape=(rep.size,))
-    layer_norm.weight.data.uniform_(-0.1, 0.1)
-    layer_norm.bias.data.uniform_(-0.1, 0.1)
-    dense_block = torch.nn.Sequential(linear, layer_norm, transformer_encoder)
-    # dense_block = torch.nn.Sequential()
-
-    etransformer_encoder = eTransformerEncoderLayer(
-        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=True
+    t_encoder_norm_last = torch.nn.TransformerEncoderLayer(
+        d_model=rep.size, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=False
     )
 
-    elinear = eLinear(rep, rep, bias=cfg.bias)
-    elayer_norm = eLayerNorm(rep)
-    elayer_norm.affine.scale_dof.data.uniform_(-0.1, 0.1)
-    elayer_norm.affine.bias_dof.data.uniform_(-0.1, 0.1)
-    equiv_block = nn.Sequential(elinear, elayer_norm, etransformer_encoder)
+    et_encoder_norm_first_layernorm = eTransformerEncoderLayer(
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=True, norm_module="layernorm"
+    )
+    et_encoder_norm_last_layernorm = eTransformerEncoderLayer(
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=False, norm_module="layernorm"
+    )
+    et_encoder_norm_first_rmsnorm = eTransformerEncoderLayer(
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=True, norm_module="rmsnorm"
+    )
+    et_encoder_norm_last_rmsnorm = eTransformerEncoderLayer(
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=False, norm_module="rmsnorm"
+    )
+    for et_module in [
+        et_encoder_norm_first_layernorm,
+        et_encoder_norm_last_layernorm,
+        et_encoder_norm_first_rmsnorm,
+        et_encoder_norm_last_rmsnorm,
+    ]:
+        et_module.reset_parameters(scheme="xavier_uniform")
+        et_module.norm1.reset_parameters("random")
+        et_module.norm2.reset_parameters("random")
 
-    # run_experiment(
-    #     modules={
-    #         "dense": (dense_block, None),
-    #         "equivariant": (equiv_block, None),
-    #         # "escnn": (escnn_block, _init_hook_factory(INIT_REGISTRY["no_init"])),
-    #     },
-    #     input_shape=(dim,),
-    #     cfg=cfg,
-    #     title=(
-    #         f"{cfg.symmetry.title()}(|G|={dim // cfg.regular_copies}) with depth={cfg.depth}, "
-    #         f"dim={dim}, activation={cfg.activation} init={cfg.init}"
-    #     ),
-    # )
     # _________________RUN EXPERIMENT ______________________________________________
     modules = {
-        "TransformerEncoder": (dense_block, None),
-        "eTransformerEncoder": (equiv_block, None),
+        "TransformerEncoder (norm first)": t_encoder_norm_first,
+        "TransformerEncoder (norm last)": t_encoder_norm_last,
+        "eTransformerEncoder (LayerNorm, norm first)": et_encoder_norm_first_layernorm,
+        "eTransformerEncoder (LayerNorm, norm last)": et_encoder_norm_last_layernorm,
+        "eTransformerEncoder (RMSNorm, norm first)": et_encoder_norm_first_rmsnorm,
+        "eTransformerEncoder (RMSNorm, norm last)": et_encoder_norm_last_rmsnorm,
     }
     title = f"{G} with depth={cfg.depth}, dim={dim}, activation={cfg.activation}"
     input_shapes = [(rep.size,)]
@@ -376,10 +378,10 @@ if __name__ == "__main__":
 
     base_inputs = []
     for s in input_shapes:
-        base_inputs.append(torch.randn(cfg.batch_size, *s, device=cfg.device, dtype=cfg.dtype))
+        base_inputs.append(torch.randn(cfg.batch_size, *s, device=cfg.device, dtype=cfg.dtype) * 10)
 
     stats = {}
-    for name, (layer_module, layer_init_hook) in modules.items():
+    for name, layer_module in modules.items():
         # Use fresh inputs per module to avoid reusing a graph between backward calls.
         inputs = [x.detach().clone().requires_grad_(True) for x in base_inputs]
         # Build a stack of layers _______________________________________________________________________
@@ -415,4 +417,4 @@ if __name__ == "__main__":
         stack.zero_grad(set_to_none=True)
     stack.zero_grad(set_to_none=True)
 
-    plot_violin_distributions(stats, title=title, share_y_axes=True)
+    plot_violin_distributions(stats, title=title, share_y_axes=False)

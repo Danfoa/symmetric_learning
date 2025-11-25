@@ -140,7 +140,7 @@ class CondTransformerRegressor(GenCondRegressor):
                 dropout=p_drop_attn,
                 activation="gelu",
                 batch_first=True,
-                norm_first=True,
+                norm_first=False,
             )
             self.encoder = torch.nn.TransformerEncoder(encoder_layer=encoder_layer, num_layers=num_cond_layers)
         else:
@@ -158,7 +158,7 @@ class CondTransformerRegressor(GenCondRegressor):
             dropout=p_drop_attn,
             activation="gelu",
             batch_first=True,
-            norm_first=True,  # important for stability
+            norm_first=False,  # important for stability
         )
         self.decoder = torch.nn.TransformerDecoder(decoder_layer=decoder_layer, num_layers=num_layers)
 
@@ -182,7 +182,7 @@ class CondTransformerRegressor(GenCondRegressor):
             self.cross_att_mask = None
 
         # Decoder head
-        self.ln_f = torch.nn.LayerNorm(embedding_dim)
+        self.layer_norm = torch.nn.LayerNorm(embedding_dim)
         self.head = torch.nn.Linear(embedding_dim, out_dim)
 
         # init
@@ -297,27 +297,22 @@ class CondTransformerRegressor(GenCondRegressor):
         optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas)
         return optimizer
 
-    def forward(
-        self,
-        X: torch.Tensor,
-        Z: torch.Tensor,
-        opt_step: torch.Tensor | float | int,
-    ):
+    def forward(self, X: torch.Tensor, opt_step: torch.Tensor | float | int, Z: torch.Tensor):
         r"""Forward pass of the conditional transformer regressor, approximating V_k = f(X_k, Z, k).
 
         Args:
             X (torch.Tensor): The input/data sample composed of a trajectory of `T_x` points in a `d_x`-dimensional
                 space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
-            Z (torch.Tensor): The conditioning/observation variable composed of `T_z` points in a `d_z`-dimensional
-                space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
             opt_step (Union[torch.Tensor, float, int]): The optimization timestep(s) `k` at which to evaluate the
                 regressor. Can be a single scalar or a tensor of shape `(B,)`.
+            Z (torch.Tensor): The conditioning/observation variable composed of `T_z` points in a `d_z`-dimensional
+            space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
 
         Returns:
             torch.Tensor: The output regression variable of shape `(B, T_x, d_v)`.
         """
-        assert X.shape[1] <= self.in_horizon, f"Input horizon {X.shape[1]} larger than {self.in_horizon}"
-        assert Z.shape[1] <= self.cond_horizon - 1, f"Cond horizon {Z.shape[1]} larger than {self.cond_horizon - 1}"
+        # assert X.shape[1] <= self.in_horizon, f"Input horizon {X.shape[1]} larger than {self.in_horizon}"
+        # assert Z.shape[1] <= self.cond_horizon - 1, f"Cond horizon {Z.shape[1]} larger than {self.cond_horizon - 1}"
 
         # 1. Inference-time optimization step embedding (k). First conditioning token.
         if isinstance(opt_step, torch.Tensor):
@@ -349,7 +344,7 @@ class CondTransformerRegressor(GenCondRegressor):
         )  # (B,Tx,n_emb)
 
         # 5. Regression head projecting to output dimension.
-        out_tokens = self.ln_f(out_tokens)
+        out_tokens = self.layer_norm(out_tokens)
         out = self.head(out_tokens)  # (B,Tx, out_dim := d_v)
         return out
 

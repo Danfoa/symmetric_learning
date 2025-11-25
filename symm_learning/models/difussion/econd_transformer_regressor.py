@@ -69,7 +69,7 @@ class eCondTransformerRegressor(GenCondRegressor):
         self.opt_time_emb = SinusoidalPosEmb(embedding_dim)
 
         self.pos_emb = torch.nn.Parameter(torch.zeros(1, in_horizon, embedding_dim))
-        self.cond_pos_emb = torch.nn.Parameter(torch.zeros(1, cond_horizon, embedding_dim))
+        self.cond_pos_emb = torch.nn.Parameter(torch.zeros(1, cond_horizon + 1, embedding_dim))
 
         # Encoder parameterized as an equivariant MLP or a Transformer
         if num_cond_layers > 0:
@@ -80,7 +80,8 @@ class eCondTransformerRegressor(GenCondRegressor):
                 dropout=p_drop_attn,
                 activation="gelu",
                 batch_first=True,
-                norm_first=True,
+                norm_first=True,  # important for stability.
+                norm_module="rmsnorm",  # important for stability.
                 init_scheme=None,
             )
             logger.debug(
@@ -104,7 +105,8 @@ class eCondTransformerRegressor(GenCondRegressor):
             dropout=p_drop_attn,
             activation="gelu",
             batch_first=True,
-            norm_first=True,  # important for stability (?)
+            norm_first=True,  # important for stability.
+            norm_module="rmsnorm",  # important for stability.
             init_scheme=None,
         )
         logger.debug(f"Initializing {num_layers} layers of eTransformerDecoderLayer")
@@ -241,9 +243,11 @@ class eCondTransformerRegressor(GenCondRegressor):
         # 2. Conditioning variable Z embedding/tokenization
         z_cond_emb = self.cond_emb(Z)  # (B, Tz-1, D)
         cond_embeddings = torch.cat([opt_time_emb, z_cond_emb], dim=1)  # (B, Tz, D)
-        cond_horizon = cond_embeddings.shape[1]  # (Tz)
+        cond_horizon = z_cond_emb.shape[1]  # (Tz)
         # Project time embedding onto embedding space's invariant subspace
-        cond_pos_emb = torch.einsum("ij,...j->...i", self.invariant_projector, self.cond_pos_emb[:, :cond_horizon, :])
+        cond_pos_emb = torch.einsum(
+            "ij,...j->...i", self.invariant_projector, self.cond_pos_emb[:, : cond_horizon + 1, :]
+        )
         # Transformer encoder of conditing tokens
         cond_tokens = self.dropout(cond_embeddings + cond_pos_emb)  # (B, Tz, D)
         cond_tokens = self.encoder(cond_tokens)  # (B, Tz, D)

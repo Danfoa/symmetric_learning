@@ -411,7 +411,7 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
         active_isotypic_reps[irrep_id] = Representation(
             group=rep.group,
             irreps=[irrep_id] * multiplicities,
-            name=f"IsoSubspace {irrep_id}",
+            name=f"{rep.name}-IsoSubspace{irrep_id}",
             change_of_basis=np.identity(irrep.size * multiplicities),
             supported_nonlinearities=irrep.supported_nonlinearities,
         )
