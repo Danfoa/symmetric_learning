@@ -8,7 +8,6 @@ from typing import Union
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class UnsqueezeLast(nn.Module):

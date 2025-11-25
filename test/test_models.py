@@ -1,5 +1,7 @@
 """Model integration tests."""
 
+from __future__ import annotations
+
 import io
 
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25

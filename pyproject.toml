@@ -22,10 +22,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-xdist",
     "ruff",
     "pre-commit",
     "sphinx-autobuild",
     "renku-sphinx-theme",
+    "tqdm",
 ]
 
 docs = [

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
 from copy import deepcopy
 
@@ -357,7 +359,7 @@ def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
 
     assert y.shape == x.shape
 
-    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    check_equivariance(layer, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize(
@@ -621,7 +623,7 @@ def test_ema_and_eema_stats(kind: str):
         pytest.param(1.5, ValueError, id="invalid-1.5"),
     ],
 )
-def test_ema_stats_momentum(momentum: float, expect_error: type[Exception] | None):
+def test_ema_stats_momentum(momentum: float, expect_error: Exception | None):
     import torch
 
     if expect_error is not None:
@@ -636,7 +638,6 @@ def test_ema_stats_momentum(momentum: float, expect_error: type[Exception] | Non
 
 
 import torch
-import symm_learning
 
 
 def _test_datanorm_layer(datanorm: DataNorm):

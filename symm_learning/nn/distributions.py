@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import escnn
 import torch
-import torch.nn.functional as F
 from escnn.nn import EquivariantModule, FieldType
 
 from symm_learning.representation_theory import direct_sum
