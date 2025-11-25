@@ -6,7 +6,6 @@ from time import perf_counter
 from typing import Optional, Tuple, Union
 
 import torch
-from tqdm import tqdm
 
 from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
 
@@ -351,6 +350,8 @@ class CondTransformerRegressor(GenCondRegressor):
 
 def test():  # noqa: D103
     torch.manual_seed(0)
+    from tqdm import tqdm
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Running test on device: {device}")
     dtype = torch.float32

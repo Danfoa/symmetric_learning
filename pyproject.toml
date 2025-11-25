@@ -26,6 +26,7 @@ dev = [
     "pre-commit",
     "sphinx-autobuild",
     "renku-sphinx-theme",
+    "tqdm",
 ]
 
 docs = [

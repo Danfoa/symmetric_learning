@@ -9,8 +9,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from escnn.gspaces import no_base_space
-from escnn.nn import EquivariantModule, FieldType, GeometricTensor, Linear
-from escnn.nn.modules.basismanager import BasisManager, BlocksBasisExpansion
+from escnn.nn import EquivariantModule, FieldType, GeometricTensor
+from escnn.nn.modules.basismanager import BlocksBasisExpansion
 
 from symm_learning.representation_theory import isotypic_decomp_rep
 

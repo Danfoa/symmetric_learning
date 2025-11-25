@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 12/02/25
 import escnn
 import numpy as np
 import pytest
-import torch
-from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, directsum
-from escnn.nn import FieldType
+from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral
 
 from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
 
