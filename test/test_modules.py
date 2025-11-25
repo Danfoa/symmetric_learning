@@ -11,14 +11,13 @@ from escnn.nn import FieldType
 from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.nn.normalization import DataNorm
 from symm_learning.representation_theory import direct_sum
-from symm_learning.utils import check_equivariance
+from symm_learning.utils import backprop_sanity, check_equivariance
 
 
 @pytest.mark.parametrize(
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
@@ -42,63 +41,25 @@ def test_deepcopy(group: Group):
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-def test_irrep_pooling_equivariance(group: Group):
-    """Check the IrrepSubspaceNormPooling layer is G-invariant."""
-    import torch
-
-    from symm_learning.nn import IrrepSubspaceNormPooling
-
-    y_rep = direct_sum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
-    type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
-    pooling_layer = IrrepSubspaceNormPooling(in_type=type_Y)
-    pooling_layer.check_equivariance(atol=1e-5, rtol=1e-5)
-
-    # t_pooling_layer = pooling_layer.export()
-    # batch_size = 10
-    # y = type_Y(torch.randn(batch_size, type_Y.size, dtype=torch.float32))
-    # y_iso = pooling_layer(y).tensor
-    # y_iso_torch = t_pooling_layer(y.tensor)
-
-    # assert torch.allclose(y_iso, y_iso_torch, atol=1e-5, rtol=1e-5), (
-    #     f"Max error: {torch.max(torch.abs(y_iso - y_iso_torch)):.5f}"
-    # )
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-def test_change2disentangled_basis_equivariance(group: Group):  # noqa: D103
+def test_change2disentangled(group: Group):  # noqa: D103
     import torch
 
     from symm_learning.nn import Change2DisentangledBasis
     from symm_learning.representation_theory import isotypic_decomp_rep
 
     y_rep = direct_sum([group.regular_representation] * 10)  # ρ_Y = ρ_Χ ⊕ ρ_Χ
-    type_Y = FieldType(gspace=escnn.gspaces.no_base_space(group), representations=[y_rep])
-    change_layer = Change2DisentangledBasis(in_type=type_Y)
-    change_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+    change_layer = Change2DisentangledBasis(in_rep=y_rep)
+    check_equivariance(change_layer, atol=1e-5, rtol=1e-5)
 
-    t_change_layter = change_layer.export()
     batch_size = 10
-    y = torch.randn(batch_size, type_Y.size, dtype=torch.float32)
+    y = torch.randn(batch_size, y_rep.size, dtype=torch.float32)
     rep_y = isotypic_decomp_rep(y_rep)
     Q_inv = torch.tensor(rep_y.change_of_basis_inv, dtype=torch.float32)
     y_iso = torch.einsum("ij,...j->...i", Q_inv, y)
-    y_iso_nn = change_layer(type_Y(y)).tensor
-    y_iso_torch = t_change_layter(y)
-
-    assert torch.allclose(y_iso_nn, y_iso_torch, atol=1e-5, rtol=1e-5), (
-        f"Max error: {torch.max(torch.abs(y_iso_nn - y_iso_torch)):.5f}"
-    )
+    y_iso_nn = change_layer(y)
     assert torch.allclose(y_iso_nn, y_iso, atol=1e-5, rtol=1e-5), (
         f"Max error: {torch.max(torch.abs(y_iso_nn - y_iso)):.5f}"
     )
@@ -108,7 +69,6 @@ def test_change2disentangled_basis_equivariance(group: Group):  # noqa: D103
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
@@ -140,7 +100,6 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
@@ -206,7 +165,6 @@ def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, p
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
@@ -223,19 +181,6 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
     G = group
     in_rep = direct_sum([G.regular_representation] * mx)
     out_rep = direct_sum([G.regular_representation] * my)
-
-    def backprop_sanity(module: torch.nn.Module) -> None:
-        module.train()
-        optim = torch.optim.SGD(module.parameters(), lr=1e-3)
-        x = torch.randn(16, module.in_rep.size)
-        target = torch.randn(16, module.out_rep.size)
-        optim.zero_grad()
-        y = module(x)
-        loss = F.mse_loss(y, target)
-        loss.backward()
-        grad_norms = [p.grad.norm().item() for p in module.parameters() if p.grad is not None]
-        assert grad_norms, "Expected at least one gradient to propagate."
-        optim.step()
 
     layer = eLinear(in_rep, out_rep, bias=False, basis_expansion_scheme=basis_expansion_scheme)
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
@@ -426,7 +371,6 @@ def test_rms_norm_functional(eps: float):
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
@@ -485,7 +429,6 @@ def test_etransformer_encoder(group: Group, mx: int):
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )

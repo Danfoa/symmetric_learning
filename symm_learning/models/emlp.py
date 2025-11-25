@@ -3,172 +3,199 @@ from __future__ import annotations
 import logging
 from math import ceil
 
-import escnn
 import torch
-from escnn.group import Representation, directsum
-from escnn.nn import EquivariantModule, FieldType, FourierPointwise, GeometricTensor, PointwiseNonLinearity
+from escnn.group import Representation
 
-import symm_learning
+from symm_learning.nn.linear import eLinear
+from symm_learning.nn.pooling import IrrepSubspaceNormPooling
+from symm_learning.representation_theory import direct_sum
 
-
-def _get_group_kwargs(group: escnn.group.Group) -> dict:
-    """Configuration for sampling elements of the group to achieve equivariance."""
-    grid_type = "regular" if not group.continuous else "rand"
-    N = group.order() if not group.continuous else 10
-    kwargs = dict()
-
-    if isinstance(group, escnn.group.DihedralGroup):
-        N = N // 2
-    elif isinstance(group, escnn.group.DirectProductGroup):
-        G1_args = _get_group_kwargs(group.G1)
-        G2_args = _get_group_kwargs(group.G2)
-        kwargs.update({f"G1_{k}": v for k, v in G1_args.items()})
-        kwargs.update({f"G2_{k}": v for k, v in G2_args.items()})
-
-    return dict(N=N, type=grid_type, **kwargs)
+logger = logging.getLogger(__name__)
 
 
-class EMLP(EquivariantModule):
-    """G-Equivariant Multi-Layer Perceptron."""
+class eMLP(torch.nn.Module):
+    """Equivariant MLP composed of :class:`~symm_learning.nn.linear.eLinear` layers.
+
+    The network preserves the action of the underlying group on every layer by
+    constructing hidden representations from the group regular representation
+    (or a user-provided base representation) repeated as needed to reach the
+    requested width.
+    """
 
     def __init__(
         self,
-        in_type: FieldType,
-        out_type: FieldType,
+        in_rep: Representation,
+        out_rep: Representation,
         hidden_units: list[int],
-        activation: str | list[str] = "ReLU",
-        batch_norm: bool = False,
-        pointwise_activation: bool = True,
+        activation: torch.nn.Module = torch.nn.ReLU(),
+        dropout: float = 0.0,
         bias: bool = True,
         hidden_rep: Representation | None = None,
-    ):
-        """EMLP constructor.
+        init_scheme: str | None = "xavier_normal",
+    ) -> None:
+        """Create an equivariant MLP.
 
         Args:
-            in_type: Input field type.
-            out_type: Output field type.
-            hidden_units: List of number of units in each hidden layer.
-            activation: Name of the class of activation function or list of activation names.
-            bias: Whether to include a bias term in the linear layers.
-            batch_norm: Whether to include equivariant batch normalization before activations.
-            hidden_rep: Representation used (up to multiplicity) to construct the hidden layer `FieldType`. If None,
-                it defaults to the regular representation.
-            pointwise_activation: Whether to use a pointwise activation function (e.g., ReLU, ELU, LeakyReLU). This
-                only works for latent representations build in regular (permutation) basis. If False, a
-                `FourierPointwise` activation is used, and the latent representations are build in the irrep spectral
-                basis.
+            in_rep: Input representation defining the group action on the input.
+            out_rep: Output representation; must belong to the same group as ``in_rep``.
+            hidden_units: Width of each hidden layer (number of representation copies).
+            activation: Non-linearity inserted after every hidden layer.
+            dropout: Dropout probability applied after activations; ``0.0`` disables it.
+            bias: Whether to include a bias term in equivariant linear layers.
+            hidden_rep: Base representation used to build hidden layers. Defaults to the
+                regular representation when ``None``.
+            init_scheme: Parameter initialization scheme passed to :class:`eLinear`.
         """
-        super(EMLP, self).__init__()
-        assert hasattr(hidden_units, "__iter__") and hasattr(hidden_units, "__len__"), (
-            "hidden_units must be a list of integers"
-        )
-        assert len(hidden_units) > 0, "A MLP with 0 hidden layers is equivalent to a linear layer"
+        super().__init__()
+        if len(hidden_units) == 0:
+            raise ValueError("hidden_units must contain at least one layer")
+        if in_rep.group != out_rep.group:
+            raise ValueError("Input and output representations must belong to the same group")
 
-        self.G = in_type.fibergroup
-        self.in_type, self.out_type = in_type, out_type
-        self.pointwise_activation = pointwise_activation
+        G = in_rep.group
+        self.in_rep, self.out_rep = in_rep, out_rep
 
-        hidden_rep = hidden_rep or self.G.regular_representation
-        self._check_for_shur_blocking(hidden_rep)
+        assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module, got {type(activation)}"
 
-        if isinstance(activation, str):
-            activations = [activation] * len(hidden_units)
-        else:
-            assert isinstance(activation, list) and len(activation) == len(hidden_units), (
-                "List of activation names must have the same length as the number of hidden layers"
-            )
-            activations = activation
+        drop_value = float(dropout)
+        assert 0.0 <= drop_value <= 1.0, f"dropout must be within [0, 1], got {drop_value}"
 
-        layers = []
-        layer_in_type = in_type
+        base_hidden_rep = hidden_rep or G.regular_representation
+        assert base_hidden_rep.group == G, "hidden_rep must belong to the same group as in_rep"
 
-        for units, act_name in zip(hidden_units, activations):
-            act = self._get_activation(act_name, hidden_rep, units)
-            linear = escnn.nn.Linear(in_type=layer_in_type, out_type=act.in_type, bias=bias)
-            if batch_norm:
-                layers.append(symm_learning.nn.eBatchNorm1d(in_type=act.in_type))
-            layer_in_type = act.out_type
-            layers.extend([linear, act])
+        self.hidden_specs = []
 
-        # Head layer
-        layers.append(escnn.nn.Linear(in_type=layer_in_type, out_type=out_type, bias=bias))
-        self.net = escnn.nn.SequentialModule(*layers)
+        layers: list[torch.nn.Module] = []
+        prev_rep = in_rep
 
-    def forward(self, x: GeometricTensor | torch.Tensor) -> GeometricTensor:
-        """Forward pass of the EMLP."""
-        if not isinstance(x, GeometricTensor):
-            x = self.in_type(x)
+        for idx, requested_dim in enumerate(hidden_units):
+            target_rep = _hidden_representation(base_hidden_rep, requested_dim)
+            linear = eLinear(prev_rep, target_rep, bias=bias, init_scheme=init_scheme)
+            layers.append(linear)
+            layers.append(activation)
+            if drop_value > 0:
+                layers.append(torch.nn.Dropout(drop_value))
+            prev_rep = target_rep
+            self.hidden_specs.append(target_rep)
+
+        layers.append(eLinear(prev_rep, out_rep, bias=bias, init_scheme=init_scheme))
+        self.net = torch.nn.Sequential(*layers)
+
+        if init_scheme is not None:
+            self.reset_parameters(init_scheme)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the equivariant MLP to ``x`` preserving group structure.
+
+        Args:
+            x: Tensor with trailing dimension matching ``in_rep.size``.
+
+        Returns:
+            Tensor with trailing dimension ``out_rep.size``.
+        """
+        assert x.shape[-1] == self.in_rep.size, f"Expected (..., {self.in_rep.size}), got {x.shape}"
         return self.net(x)
 
-    def evaluate_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, ...]:  # noqa: D102
-        return self.net.evaluate_output_shape(input_shape)
+    @torch.no_grad()
+    def reset_parameters(self, scheme: str = "xavier_normal") -> None:
+        """Reinitialize all :class:`eLinear` layers with the provided scheme."""
+        for module in self.net:
+            if isinstance(module, eLinear):
+                module.reset_parameters(scheme)
+        logger.debug(f"Initialized eMLP with scheme '{scheme}'")
 
-    def extra_repr(self) -> str:  # noqa: D102
-        return f"{self.G}-equivariant MLP: in={self.in_type}, out={self.out_type}"
 
-    def export(self) -> torch.nn.Sequential:
-        """Exporting to a torch.nn.Sequential"""
-        if not self.pointwise_activation:
-            raise RuntimeError(
-                "`FourierPointwise` activation has no `export` method. Only EMLP with `pointwise_activation=True` "
-                "can be exported at the moment"
-            )
-        return self.net.export()
+class iMLP(torch.nn.Module):
+    """G-invariant MLP built from an equivariant backbone and invariant head."""
 
-    def _get_activation(self, activation: str, hidden_rep: Representation, n_units: int) -> EquivariantModule:
-        """Gets a representation action on the output of a linear layer with n_units /neurons"""
-        channels = max(1, ceil(n_units / hidden_rep.size))
-        if self.pointwise_activation:
-            in_type = FieldType(self.in_type.gspace, representations=[hidden_rep] * channels)
-            if activation.lower() == "elu":
-                act = escnn.nn.ELU(in_type=in_type)
-            elif activation.lower() == "relu":
-                act = escnn.nn.ReLU(in_type=in_type)
-            elif activation.lower() == "leakyrelu":
-                act = escnn.nn.LeakyReLU(in_type=in_type)
-            elif activation.lower() == "mish":
-                import symm_learning.nn
+    def __init__(
+        self,
+        in_rep: Representation,
+        out_dim: int,
+        hidden_units: list[int],
+        activation: torch.nn.Module = torch.nn.ReLU(),
+        dropout: float = 0.0,
+        bias: bool = True,
+        hidden_rep: Representation | None = None,
+        init_scheme: str | None = "xavier_normal",
+    ):
+        """Create a group-invariant MLP.
 
-                act = symm_learning.nn.Mish(in_type=in_type)
-            else:
-                act = escnn.nn.PointwiseNonLinearity(in_type=in_type, function=f"p_{activation.lower()}")
-        else:
-            grid_kwargs = _get_group_kwargs(self.G)
-            act = FourierPointwise(
-                self.in_type.gspace,
-                channels=channels,
-                irreps=list(set(hidden_rep.irreps)),
-                function=f"p_{activation.lower()}",
-                inplace=True,
-                **grid_kwargs,
-            )
-        return act
+        The model first applies an equivariant MLP to extract group-aware
+        features, pools them into the trivial representation, and finishes with
+        an unconstrained linear head to produce invariant outputs.
 
-    def _check_for_shur_blocking(self, hidden_rep: Representation) -> None:
-        """Check if large portions of the network will be zeroed due to Shur's orthogonality relations."""
-        if self.pointwise_activation:
-            out_irreps = set(self.out_type.representation.irreps)
-            in_irreps = set(self.in_type.representation.irreps)
-            hidden_irreps = set(hidden_rep.irreps)
+        Args:
+            in_rep: Input representation defining the group action on the input.
+            out_dim: Dimension of the invariant output vector.
+            hidden_units: Width of each hidden layer in the equivariant backbone.
+            activation: Non-linearity inserted after every hidden layer and after the backbone.
+            dropout: Dropout probability applied after backbone activations.
+            bias: Whether to include biases in the backbone and head.
+            hidden_rep: Base representation used to build hidden layers. Defaults to the
+                regular representation when ``None``.
+            init_scheme: Parameter initialization scheme passed to :class:`eLinear`.
+        """
+        super().__init__()
+        assert isinstance(hidden_units, list) and len(hidden_units) > 0, (
+            f"hidden_units must be a non-empty list, got {hidden_units}"
+        )
+        self.in_rep = in_rep
+        self.out_rep = direct_sum([in_rep.group.trivial_representation] * out_dim)
+        G = in_rep.group
 
-            # Get the set of irreps in the output not present in the hidden representation:
-            out_missing_irreps = out_irreps - hidden_irreps
-            in_missing_irreps = in_irreps - hidden_irreps
-            msg = (
-                "\n\tUsing `pointwise_activation` the dimensions associated to the missing irreps will be zeroes out"
-                " (by Shur's orthogonality). "
-                "\n\tEither set `pointwise_activation=False` or pass a different `hidden_rep`"
-            )
-            if len(out_missing_irreps) > 0:
-                raise ValueError(
-                    f"Output irreps {out_missing_irreps} not present in the hidden layers irreps {hidden_irreps}.{msg}"
-                )
-            if len(in_missing_irreps) > 0:
-                raise ValueError(
-                    f"Input irreps {in_missing_irreps} not present in the hidden layers irreps {hidden_irreps}.{msg}"
-                )
-        else:
-            return
+        # Build the equivariant feature extractor (eMLP)
+        last_dim = hidden_units[-1]
+        base_hidden_rep = hidden_rep or G.regular_representation
+        out_rep = _hidden_representation(base_hidden_rep, last_dim)
+        self.emlp_backbone = eMLP(
+            in_rep=in_rep,
+            out_rep=out_rep,
+            hidden_units=hidden_units,
+            activation=activation,
+            dropout=dropout,
+            bias=bias,
+            hidden_rep=hidden_rep,
+            init_scheme=None,
+        )
+        # G-invariant pooling
+        inv_pooling = IrrepSubspaceNormPooling(in_rep=out_rep)
+        # Unconstrained head
+        self.head = torch.nn.Linear(
+            in_features=inv_pooling.out_rep.size,
+            out_features=out_dim,
+            bias=bias,
+        )
+        # Network: [emlp -> activation -> inv pooling -> head]
+        self.net = torch.nn.Sequential(*self.emlp_backbone.net, activation, inv_pooling, self.head)
+
+        if init_scheme is not None:
+            self.reset_parameters(init_scheme)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute invariant outputs from the input representation values."""
+        assert x.shape[-1] == self.in_rep.size, f"Expected (..., {self.in_rep.size}), got {x.shape}"
+        return self.net(x)
+
+    @torch.no_grad()
+    def reset_parameters(self, scheme: str = "xavier_normal") -> None:
+        """Reinitialize all :class:`eLinear` layers with the provided scheme."""
+        self.emlp_backbone.reset_parameters(scheme)
+        # Initialize the unconstraine head
+        if scheme == "xavier_normal":
+            torch.nn.init.xavier_normal_(self.head.weight)
+        elif scheme == "xavier_uniform":
+            torch.nn.init.xavier_uniform_(self.head.weight)
+        elif scheme == "kaiming_normal":
+            torch.nn.init.kaiming_normal_(self.head.weight, nonlinearity="linear")
+        elif scheme == "kaiming_uniform":
+            torch.nn.init.kaiming_uniform_(self.head.weight, nonlinearity="linear")
+        logger.debug(f"Initialized iMLP head with scheme '{scheme}'")
+
+
+def _hidden_representation(base: Representation, target_dim: int) -> Representation:
+    repeats = max(1, ceil(target_dim / base.size))
+    return direct_sum([base] * repeats)
 
 
 class MLP(torch.nn.Module):
@@ -194,7 +221,6 @@ class MLP(torch.nn.Module):
             bias: Whether to include a bias term in the linear layers.
         """
         super().__init__()
-        logging.info("Instantiating MLP (PyTorch)")
         self.in_dim, self.out_dim = in_dim, out_dim
 
         assert hasattr(hidden_units, "__iter__") and hasattr(hidden_units, "__len__"), (

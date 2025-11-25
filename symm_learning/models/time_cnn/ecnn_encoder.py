@@ -7,8 +7,7 @@ import escnn.nn as escnn_nn
 import torch
 from escnn.nn import FieldType, GeometricTensor
 
-from symm_learning.models.emlp import EMLP
-from symm_learning.models.imlp import IMLP
+import symm_learning
 from symm_learning.nn import eBatchNorm1d
 from symm_learning.nn.conv import GSpace1D, eConv1D
 
@@ -111,19 +110,19 @@ class eTimeCNNEncoder(torch.nn.Module):
         rep_out = out_type.representation
         invariant_head = set(rep_out.irreps) == {rep_out.group.trivial_representation.id}
         if invariant_head:
-            self.head = IMLP(
+            self.head = symm_learning.nn.iMLP(
                 in_type=head_in_type,
                 out_dim=out_type.size,
                 hidden_units=mlp_hidden,
-                activation="ReLU",
+                activation=activation,
                 bias=bias,
             )
         else:
-            self.head = EMLP(
-                in_type=head_in_type,
-                out_type=FieldType(gspace_1d, out_type.representations),
+            self.head = symm_learning.nn.eMLP(
+                in_rep=head_in_type,
+                out_rep=FieldType(gspace_1d, out_type.representations),
                 hidden_units=mlp_hidden,
-                activation="ReLU",
+                activation=activation,
                 batch_norm=batch_norm,
                 bias=bias,
             )

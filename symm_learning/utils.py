@@ -73,6 +73,21 @@ def module_memory(module: torch.nn.Module, units: str = "bytes"):
     return trainable / scale, non_trainable / scale
 
 
+def backprop_sanity(module: torch.nn.Module) -> None:
+    """Simple backpropagation sanity check for ``module``."""
+    module.train()
+    optim = torch.optim.SGD(module.parameters(), lr=1e-3)
+    x = torch.randn(16, module.in_rep.size)
+    target = torch.randn(16, module.out_rep.size)
+    optim.zero_grad()
+    y = module(x)
+    loss = torch.nn.functional.mse_loss(y, target)
+    loss.backward()
+    grad_norms = [p.grad.norm().item() for p in module.parameters() if p.grad is not None]
+    assert grad_norms, "Expected at least one gradient to propagate."
+    optim.step()
+
+
 def module_memory_breakdown(module: torch.nn.Module) -> list[dict]:
     """Return a per-tensor memory breakdown for ``module`` (sizes in bytes)."""
 
