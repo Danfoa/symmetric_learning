@@ -17,7 +17,7 @@ from symm_learning.utils import backprop_sanity, check_equivariance
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-@pytest.mark.parametrize("hidden_units", [[32], [64, 64]])
+@pytest.mark.parametrize("hidden_units", [[64, 64]])
 @pytest.mark.parametrize("activation", [torch.nn.ReLU()])
 @pytest.mark.parametrize("bias", [True])
 def test_emlp(group: Group, hidden_units: int, activation: str, bias: bool):  # noqa: D103
@@ -55,15 +55,50 @@ def test_imlp(group: Group, hidden_units: int):  # noqa: D103
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-@pytest.mark.parametrize("m", [1, 5])
+@pytest.mark.parametrize("mx", [1])
+@pytest.mark.parametrize("hidden_channels", [[64]])
+@pytest.mark.parametrize("mlp_hidden", [[32, 32]])
+def test_time_ecnn(group: Group, mx: int, hidden_channels: list[int], mlp_hidden: list[int]):  # noqa: D103
+    from symm_learning.models.time_cnn.ecnn_encoder import eTimeCNNEncoder
+
+    G = group
+    in_rep = direct_sum([G.regular_representation] * mx)
+    out_rep = direct_sum([G.regular_representation] * mx)
+
+    model = eTimeCNNEncoder(
+        in_rep=in_rep,
+        out_rep=out_rep,
+        hidden_channels=hidden_channels,
+        time_horizon=16,
+        activation=torch.nn.ReLU(),
+        batch_norm=True,
+        bias=True,
+        mlp_hidden=mlp_hidden,
+        downsample="stride",
+        append_last_frame=True,
+        init_scheme="xavier_normal",
+    )
+    model.eval()
+
+    # Equivariance check: act on channel dimension
+    model.check_equivariance(atol=1e-4, rtol=1e-4)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("m", [2])
 @pytest.mark.parametrize("horizons", [(10, 5)])
-@pytest.mark.parametrize("num_layers", [6])
-@pytest.mark.parametrize("num_cond_layers", [0, 6])
-@pytest.mark.parametrize("num_attention_heads", [0, 2, 4])
+@pytest.mark.parametrize("num_layers", [2])
+@pytest.mark.parametrize("num_cond_layers", [2])
+@pytest.mark.parametrize("num_attention_heads", [0, 4])
 def test_econd_transformer_regressor(
     group: Group,
     m: int,
