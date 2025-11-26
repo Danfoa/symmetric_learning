@@ -13,6 +13,8 @@ from symm_learning.representation_theory import GroupHomomorphismBasis, direct_s
 
 logger = logging.getLogger(__name__)
 
+eINIT_SCHEMES = Literal["xavier_normal", "xavier_uniform", "kaiming_normal", "kaiming_uniform"]
+
 
 def impose_linear_equivariance(
     lin: torch.nn.Linear,

@@ -199,7 +199,7 @@ def _hidden_representation(base: Representation, target_dim: int) -> Representat
 
 
 class MLP(torch.nn.Module):
-    """Standard baseline MLP. Symmetry-related parameters are ignored."""
+    """Standard baseline MLP."""
 
     def __init__(
         self,

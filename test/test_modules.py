@@ -102,110 +102,47 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-@pytest.mark.parametrize("mx", [1])
-@pytest.mark.parametrize("my", [2])
-@pytest.mark.parametrize("kernel_size", [2, 4])
-@pytest.mark.parametrize("bias", [True, False])
-@pytest.mark.parametrize("stride", [1])
-@pytest.mark.parametrize("padding", [0])
-def test_conv1d(group: Group, mx: int, my: int, kernel_size: int, stride: int, padding: int, bias: bool):
-    """Check the eConv1D layer is G-invariant."""
-    import torch
-
-    from symm_learning.nn import GSpace1D, eConv1D, eConvTranspose1D
-
-    G = group
-    gspace = GSpace1D(G)
-    in_type = FieldType(gspace, [G.regular_representation] * mx)
-    out_type = FieldType(gspace, [G.regular_representation] * my)
-
-    time = 10
-    batch_size = 3
-    x = torch.randn(batch_size, in_type.size, time)
-    x = in_type(x)
-
-    conv_layer = eConv1D(in_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
-    # print(conv_layer)
-    # print("Weights shape:", conv_layer.weights.shape)
-    # print("Kernel shape:", conv_layer.kernel.shape)
-
-    conv_layer.check_equivariance(atol=1e-5, rtol=1e-5)
-
-    y = conv_layer(x).tensor
-    y_torch = conv_layer.export()(x.tensor)
-
-    assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5)
-
-    conv_transpose_layer = eConvTranspose1D(
-        in_type=out_type,
-        out_type=in_type,
-        kernel_size=kernel_size,
-        stride=stride,
-        padding=padding,
-        bias=bias,
-    )
-
-    conv_transpose_layer.check_equivariance(atol=1e-5, rtol=1e-5)
-
-    x_trans = conv_transpose_layer(out_type(y)).tensor
-    x_torch_trans = conv_transpose_layer.export()(y)
-    assert torch.allclose(x_trans, x_torch_trans, atol=1e-5, rtol=1e-5)
-
-    assert x_trans.shape == x.shape
-
-    # conv1_layer = eConv1D(in_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
-    # conv2_layer = eConv1D(out_type, out_type, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
-
-    # cnn = escnn.nn.SequentialModule(conv1_layer, conv2_layer)
-    # cnn.check_equivariance(atol=1e-5, rtol=1e-5)
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
 @pytest.mark.parametrize("mx", [2])
 @pytest.mark.parametrize("my", [5])
-def test_conv1d_(group: Group, mx: int, my: int):  # noqa: D103
+def test_conv1d(group: Group, mx: int, my: int):  # noqa: D103
     import torch
-    from symm_learning.nn.conv import eConv1D_
+    from symm_learning.nn.conv import eConv1d, eConvTranspose1d
 
     G = group
     in_rep = direct_sum([G.regular_representation] * mx)
     out_rep = direct_sum([G.regular_representation] * my)
 
-    layer = eConv1D_(in_rep, out_rep, kernel_size=3, padding=1, bias=True)
+    layer = eConv1d(in_rep, out_rep, kernel_size=3, padding=1, bias=True)
     layer.eval()
 
-    B, L = 3, 7
+    B, L = 10, 30
     x = torch.randn(B, in_rep.size, L)
     y = layer(x)
     assert y.shape == (B, out_rep.size, L), f"Expected output shape {(B, out_rep.size, L)} got {y.shape}"
 
-    # Equivariance: act on channel dimension (second axis)
-    for _ in range(5):
-        g = G.sample()
-        rho_in = torch.tensor(in_rep(g), dtype=x.dtype)
-        rho_out = torch.tensor(out_rep(g), dtype=y.dtype)
-        gx = torch.einsum("ij,bjl->bil", rho_in, x)
-        y_expected = layer(gx)
-        gy = torch.einsum("ij,bjl->bil", rho_out, y)
-        assert torch.allclose(gy, y_expected, atol=1e-5, rtol=1e-5), (
-            f"Equivariance failed for group element {g} with max error {(gy - y_expected).abs().max().item():.3e}"
-        )
+    layer.check_equivariance(atol=1e-5, rtol=1e-5)
 
     # Gradient sanity check
     layer.train()
     layer.zero_grad()
     out = layer(x)
-    target = torch.randn_like(out)
-    loss = (out - target).pow(2).mean()
+    loss = (out - torch.randn_like(out)).pow(2).mean()
     loss.backward()
     grads = [p.grad for p in layer.parameters() if p.grad is not None]
     assert grads, "Expected gradients to propagate through eConv1D_"
+
+    # Transposed variant: equivariance and backprop
+    t_layer = eConvTranspose1d(out_rep, in_rep, kernel_size=3, padding=1, bias=True)
+    t_layer.eval()
+    t_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    t_layer.train()
+    t_layer.zero_grad()
+    out_t = t_layer(torch.randn(B, out_rep.size, L))
+    loss_t = (out_t - torch.randn_like(out_t)).pow(2).mean()
+    loss_t.backward()
+    grads_t = [p.grad for p in t_layer.parameters() if p.grad is not None]
+    assert grads_t, "Expected gradients to propagate through eConvTranspose1d"
 
 
 @pytest.mark.parametrize(
