@@ -171,10 +171,12 @@ class eLayerNorm(torch.nn.Module):
         x_spec = x_spec / torch.sqrt(var_broadcasted + self.eps)
 
         if self.equiv_affine:
-            scale_spec, bias_spec = self.affine.spectral_parameters(device=x_spec.device, dtype=x_spec.dtype)
-            x_spec = x_spec * scale_spec.view(*([1] * (x_spec.ndim - 1)), -1)
-            if bias_spec is not None:
-                x_spec = x_spec + bias_spec.view(*([1] * (x_spec.ndim - 1)), -1)
+            spectral_scale, spectral_bias = self.affine.broadcast_spectral_scale_and_bias(
+                self.affine.scale_dof, self.affine.bias_dof
+            )
+            x_spec = x_spec * spectral_scale.view(*([1] * (x_spec.ndim - 1)), -1)
+            if spectral_bias is not None:
+                x_spec = x_spec + spectral_bias.view(*([1] * (x_spec.ndim - 1)), -1)
 
         normalized = torch.einsum("ij,...j->...i", self.Q, x_spec)
         return normalized

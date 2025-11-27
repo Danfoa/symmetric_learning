@@ -376,7 +376,9 @@ class eAffine(torch.nn.Module):
             scale_spec = self.scale_dof[self.irrep_indices]  # (D,)
             bias_orig = self.bias_module.bias if self.has_bias and self.bias_module is not None else None
         else:
-            scale_spec, spectral_bias = self.get_spectral_scale_and_bias(scale_dof, bias_dof, input_shape=input.shape)
+            scale_spec, spectral_bias = self.broadcast_spectral_scale_and_bias(
+                scale_dof, bias_dof, input_shape=input.shape
+            )
             bias_orig = None
             if spectral_bias is not None:
                 # Map spectral bias back to original basis: (..., D)
@@ -388,7 +390,7 @@ class eAffine(torch.nn.Module):
             y = y + bias_orig
         return y
 
-    def get_spectral_scale_and_bias(
+    def broadcast_spectral_scale_and_bias(
         self,
         scale_dof: torch.Tensor,
         bias_dof: torch.Tensor | None = None,
