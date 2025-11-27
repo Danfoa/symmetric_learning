@@ -167,6 +167,28 @@ def bytes_to_mb(num_bytes: int) -> float:  # noqa: D103
     return num_bytes / (1024**2)
 
 
+def get_spectral_trivial_dims(rep: Representation) -> list[int]:
+    """Return the list of indices of the trivial irreps in the spectral decomposition of ``rep``."""
+    G = rep.group
+    trivial_id = G.trivial_representation.id
+    trivial_spectral_dims = []
+    offset = 0
+    for irrep_id in rep.irreps:
+        if irrep_id == trivial_id:
+            trivial_spectral_dims.append(offset)
+        offset += G.irrep(*irrep_id).size
+
+    return trivial_spectral_dims
+
+
+def get_spectral_trivial_mask(rep: Representation) -> torch.Tensor:
+    """Return a boolean mask selecting the trivial irreps in the spectral decomposition of ``rep``."""
+    trivial_dims = get_spectral_trivial_dims(rep)
+    mask = torch.zeros(rep.size, dtype=torch.bool)
+    mask[trivial_dims] = 1
+    return mask
+
+
 def check_equivariance(
     e_module,
     atol: float = 1e-5,

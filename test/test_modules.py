@@ -152,20 +152,89 @@ def test_conv1d(group: Group, mx: int, my: int):  # noqa: D103
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
-@pytest.mark.parametrize("mx", [1])
-@pytest.mark.parametrize("my", [2, 1])
+@pytest.mark.parametrize("mx", [3])
+@pytest.mark.parametrize("my", [2])
 @pytest.mark.parametrize("basis_expansion_scheme", ["memory_heavy", "isotypic_expansion"])
 def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
-    """Mirror the checks performed in symm_learning.nn.linear.__main__."""
+    import torch
     from symm_learning.nn.linear import eLinear
 
     G = group
     in_rep = direct_sum([G.regular_representation] * mx)
     out_rep = direct_sum([G.regular_representation] * my)
 
-    layer = eLinear(in_rep, out_rep, bias=False, basis_expansion_scheme=basis_expansion_scheme)
+    layer = eLinear(in_rep, out_rep, bias=True, basis_expansion_scheme=basis_expansion_scheme)
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
     backprop_sanity(layer)
+
+    # Eval: mutate params but cached weight should be returned.
+    layer.eval()
+    w_cached = layer.weight.clone()
+    layer.weight_dof.data.add_(torch.randn_like(layer.weight_dof))
+    assert torch.allclose(layer.weight, w_cached), "Eval should reuse cached weight"
+
+    # Train: recompute weight, so cache and output should change.
+    layer.train()
+    w_train = layer.weight
+    assert not torch.allclose(w_train, w_cached), "Train should recompute weight"
+
+    # Back to eval: new cache should match training weight.
+    layer.eval()
+    w_refreshed = layer.weight
+    assert torch.allclose(w_refreshed, w_train), "Eval after train should cache refreshed weight"
+
+    # Explicit call to expand_weight should refresh cache.
+    layer.weight_dof.data.add_(torch.randn_like(layer.weight_dof))
+    layer.expand_weight()
+    w_expanded = layer.weight
+    assert not torch.allclose(w_expanded, w_refreshed), "Explicit expand_weight should refresh cache"
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [2])
+def test_bias(group: Group, mx: int):
+    import torch
+
+    from symm_learning.nn.linear import InvariantBias
+
+    G = group
+    in_rep = direct_sum([G.regular_representation] * mx)
+
+    bias_layer = InvariantBias(in_rep)
+
+    check_equivariance(bias_layer, atol=1e-5, rtol=1e-5)
+    backprop_sanity(bias_layer)
+
+    # Cache is refreshed on eval and reused while staying in eval mode.
+    x = torch.randn(4, in_rep.size)
+    bias_layer.bias_dof.data.fill_(1.0)
+    bias_layer.eval()  # recompute cache after modifying bias_dof
+    cached_bias = bias_layer._bias.clone()
+    y_eval = bias_layer(x)
+    assert torch.allclose(y_eval, x + cached_bias)
+    bias_layer.bias_dof.data.fill_(3.0)
+    y_eval_cached = bias_layer(x)
+    assert torch.allclose(y_eval_cached, y_eval)  # should reuse cached bias
+    assert torch.allclose(bias_layer._bias, cached_bias)
+
+    # Switching to train recomputes with the latest bias_dof, then eval caches again.
+    bias_layer.train()
+    bias_layer.bias_dof.data.fill_(2.0)
+    y_train = bias_layer(x)
+    assert not torch.allclose(y_train, y_eval)
+
+    bias_layer.eval()  # cache current bias
+    updated_cached = bias_layer._bias.clone()
+    bias_layer.bias_dof.data.fill_(4.0)
+    y_eval_after = bias_layer(x)
+    assert torch.allclose(y_eval_after, x + updated_cached)
+    assert torch.allclose(bias_layer._bias, updated_cached)
 
 
 # @pytest.mark.parametrize(
@@ -223,10 +292,10 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
 )
 @pytest.mark.parametrize("mx", [1, 10])
 @pytest.mark.parametrize("bias", [True, False])
-def test_affine(group: Group, mx: int, bias: bool):
+@pytest.mark.parametrize("learnable", [True, False])
+def test_affine(group: Group, mx: int, bias: bool, learnable: bool):
     import numpy as np
     import torch
-    from escnn.gspaces import no_base_space
 
     from symm_learning.nn.linear import eAffine
 
@@ -236,14 +305,37 @@ def test_affine(group: Group, mx: int, bias: bool):
     Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, Q, name="test_rep")
 
-    batch_size = 100
+    batch_size = 20
     x = torch.randn(batch_size, rep.size)
 
-    affine = eAffine(in_rep=rep, bias=bias, init_scheme="random")
-    y = affine(x)
-    assert not torch.allclose(y, x, atol=1e-5, rtol=1e-5)
+    affine = eAffine(in_rep=rep, bias=bias, learnable=learnable, init_scheme="random" if learnable else None)
+    if learnable:
+        y = affine(x)
+        check_equivariance(affine, atol=1e-5, rtol=1e-5)
+    else:
+        scale = torch.full((batch_size, affine.num_scale_dof), 2.0)
+        bias_dof = torch.full((batch_size, affine.num_bias_dof), 0.25) if bias and affine.num_bias_dof > 0 else None
+        y = affine(x, scale_dof=scale, bias_dof=bias_dof)
 
-    check_equivariance(affine, atol=1e-5, rtol=1e-5)
+        class _AffineWithExternal(torch.nn.Module):
+            def __init__(self, base, scale_dof, bias_dof):
+                super().__init__()
+                self.base = base
+                self.scale = scale_dof
+                self.bias = bias_dof
+                self.in_rep = base.in_rep
+                self.out_rep = base.out_rep
+
+            def forward(self, inp):
+                scale_arg = self.scale.to(device=inp.device, dtype=inp.dtype)
+                bias_arg = None if self.bias is None else self.bias.to(device=inp.device, dtype=inp.dtype)
+                return self.base(inp, scale_dof=scale_arg, bias_dof=bias_arg)
+
+        wrapped = _AffineWithExternal(affine, scale, bias_dof)
+        check_equivariance(wrapped, atol=1e-5, rtol=1e-5)
+
+    assert y.shape == x.shape
+    assert not torch.allclose(y, x, atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -267,12 +359,7 @@ def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
     Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, Q, name="test_layernorm_rep")
 
-    layer = eLayerNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0)
-
-    if layer.equiv_affine:
-        layer.affine.scale_dof.data.uniform_(-1, 1)
-        if layer.affine.has_bias:
-            layer.affine.bias_dof.data.uniform_(-1, 1)
+    layer = eLayerNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0, init_scheme="random")
 
     x = torch.randn(64, rep.size)
     y = layer(x)
@@ -303,12 +390,7 @@ def test_rms_norm(group: Group, mx: int, bias: bool, affine: bool):
     Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, Q, name="test_rmsnorm_rep")
 
-    layer = eRMSNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0)
-
-    if hasattr(layer, "affine"):
-        layer.affine.scale_dof.data.uniform_(-1, 1)
-        if layer.affine.has_bias:
-            layer.affine.bias_dof.data.uniform_(-1, 1)
+    layer = eRMSNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0, init_scheme="random")
 
     x = torch.randn(64, rep.size)
     y = layer(x)
