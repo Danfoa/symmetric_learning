@@ -58,6 +58,29 @@ def test_imlp(group: Group, hidden_units: int):  # noqa: D103
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
+@pytest.mark.parametrize("mx", [2])
+@pytest.mark.parametrize("my", [3])
+def test_cond_res_block(group: Group, mx: int, my: int):  # noqa: D103
+    import torch
+    from symm_learning.models.difussion.cond_eunet1d import eConditionalResidualBlock1D
+
+    G = group
+    in_rep = direct_sum([G.regular_representation] * mx)
+    out_rep = direct_sum([G.regular_representation] * my)
+    cond_rep = direct_sum([G.regular_representation] * 2 * my)
+    layer = eConditionalResidualBlock1D(in_rep=in_rep, out_rep=out_rep, cond_rep=cond_rep)
+    layer.eval()
+
+    layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 @pytest.mark.parametrize("mx", [1])
 @pytest.mark.parametrize("hidden_channels", [[64]])
 @pytest.mark.parametrize("mlp_hidden", [[32, 32]])

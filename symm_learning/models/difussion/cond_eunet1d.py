@@ -1,23 +1,31 @@
 from __future__ import annotations
 
-import logging
 from math import ceil
-from typing import Union
+from typing import Iterable
 
-import escnn
 import torch
-from escnn.nn import EquivariantModule, FieldType, GeometricTensor, IdentityModule
+from escnn.group import Representation
 
-from symm_learning.models import EMLP, IMLP
 from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
-from symm_learning.nn import Mish, eBatchNorm1d, eConv1D, eConvTranspose1D
-from symm_learning.representation_theory import isotypic_decomp_rep
-
-logger = logging.getLogger(__name__)
+from symm_learning.nn import IrrepSubspaceNormPooling, eAffine, eConv1d, eConvTranspose1d, eRMSNorm
+from symm_learning.representation_theory import direct_sum
 
 
-class eConditionalResidualBlock1D(EquivariantModule):
-    """Equivariant conditional residual block for symmetric signals in time/sequence.
+class _eChannelRMSNorm(torch.nn.Module):
+    """Apply eRMSNorm over channels for tensors shaped (B, C, L)."""
+
+    def __init__(self, rep: Representation, eps: float = 1e-6):
+        super().__init__()
+        self.norm = eRMSNorm(rep, eps=eps, equiv_affine=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        y = x.permute(0, 2, 1)  # (B, L, C)
+        y = self.norm(y)
+        return y.permute(0, 2, 1)
+
+
+class eConditionalResidualBlock1D(torch.nn.Module):
+    """Channel-equivariant conditional residual block with FiLM modulation.
 
     This block applies two equivariant convolutional layers with a residual
     connection. The output of the first convolutional block is modulated by a
@@ -30,218 +38,151 @@ class eConditionalResidualBlock1D(EquivariantModule):
     learnable parameter for each irreducible representation (irrep). The bias
     is applied only to the invariant (trivial) subspaces of the representation.
     See details in :class:`~symm_learning.nn.eAffine`.
-
-    Args:
-        in_type (FieldType): The type of the input field.
-        out_type (FieldType): The type of the output field.
-        cond_type (FieldType): The type of the conditioning field, which must be
-            invariant.
-        kernel_size (int, optional): The size of the convolutional kernel.
-            Defaults to 3.
-        cond_predict_scale (bool, optional): Whether to predict the scale
-            parameter in the FiLM layer. If False, only bias is used.
-            Defaults to False.
-    """
-
-    def __init__(
-        self, in_type: FieldType, out_type: FieldType, cond_type: FieldType, kernel_size=3, cond_predict_scale=False
-    ):
-        super().__init__()
-        assert in_type.gspace == out_type.gspace, "Input and output types must have the same G-space"
-
-        self.in_type = in_type
-        self.out_type = out_type
-        self.cond_type = cond_type
-        self.film_with_scale = cond_predict_scale
-
-        self.conv1 = self._conv_block(in_type, out_type, kernel_size)
-        self.conv2 = self._conv_block(out_type, out_type, kernel_size)
-
-        # Equivariant version of the FiLM modulation https://arxiv.org/abs/1709.07871. ================================
-        # Similar to the concept presented in vector neurons, the FiLM modulation applies an affine transformation to
-        # the output of the first convolution block (batch, C1_out, horizon), computed from the conditioning tensor.
-        # (batch, cond_dim). Given that we aim to preserve equivariance, this affine transformation has to be
-        # equivariant, meaning that the scale and bias vectors are symmetry constrained.
-        self.rep_out = isotypic_decomp_rep(out_type.representation)
-        G = self.rep_out.group
-        self.film_with_bias = G.trivial_representation.id in self.rep_out.attributes["isotypic_reps"]
-        self.n_bias_params, self.n_scale_params = 0, 0
-        if self.film_with_bias:  # Bias DoF config __________________________________________________________________
-            inv_subspace_dims: slice = self.rep_out.attributes["isotypic_subspace_dims"][G.trivial_representation.id]
-            self.n_bias_params = inv_subspace_dims.stop - inv_subspace_dims.start
-            inv_projector = torch.tensor(self.rep_out.change_of_basis[:, inv_subspace_dims]).to(
-                dtype=torch.get_default_dtype()
-            )
-            self.register_buffer("inv_projector", inv_projector)
-
-        if self.film_with_scale:  # Scale DoF config __________________________________________________________________
-            self.n_scale_params = len(self.rep_out.irreps)
-            # Configure multiplicities of scale parameters for each irrep subspace.
-            irrep_dims = torch.tensor([G.irrep(*irrep_id).size for irrep_id in self.rep_out.irreps])
-            self.register_buffer("irrep_indices", torch.repeat_interleave(torch.arange(len(irrep_dims)), irrep_dims))
-            # Change of basis to irrep spectral basis.
-            dtype = torch.get_default_dtype()
-            self.register_buffer("Q", torch.tensor(self.rep_out.change_of_basis, dtype=dtype))
-            self.register_buffer("Q_inv", torch.tensor(self.rep_out.change_of_basis_inv, dtype=dtype))
-
-        # Invariant NN parameterizing the DoF of the scale and bias of the affine transformation. ======================
-        self.cond_encoder = IMLP(
-            in_type=cond_type,
-            out_dim=self.n_scale_params + self.n_bias_params,
-            hidden_units=[cond_type.size],
-            activation="Mish",
-            bias=True,
-        )
-
-        # make sure dimensions compatible
-        self.residual_conv = (
-            eConv1D(in_type, out_type, kernel_size=1) if in_type != out_type else escnn.nn.IdentityModule(out_type)
-        )
-
-    def forward(self, x: GeometricTensor, cond: GeometricTensor) -> GeometricTensor:
-        """Forward pass through the block.
-
-        Args:
-            x (GeometricTensor): The input tensor.
-            cond (GeometricTensor): The global conditioning tensor (Assumed invariant to group action).
-
-        Returns:
-            GeometricTensor
-        """
-        assert cond.type == self.cond_type, f"Expected conditioning type {self.cond_type}, got {cond.type}"
-        assert x.type == self.in_type, f"Expected input type {self.in_type}, got {x.type}"
-
-        # First convolution block
-        out = self.conv1(x)
-        # Compute the conditioning which will modulate linearly the first convolution output
-        dof = self.cond_encoder(cond)
-        assert dof.shape[1] == self.n_scale_params + self.n_bias_params
-        film_scale_dof, film_bias_dof = dof.tensor[:, : self.n_scale_params], dof.tensor[:, self.n_scale_params :]
-
-        if self.film_with_scale:
-            # Reshape film_scale for proper broadcasting: (B, C) -> (B, C, 1)
-            film_scale_spectral = film_scale_dof[:, self.irrep_indices, None]
-            # This is computationally expensive, but for now easiest way to implement equivariant scaling.
-            out_spectral = torch.einsum("ij,bj...->bi...", self.Q_inv, out.tensor)
-            out_spectral_scaled = out_spectral * film_scale_spectral
-            out_scaled = torch.einsum("ij,bj...->bi...", self.Q, out_spectral_scaled)
-            out = self.out_type(out_scaled)
-        if self.film_with_bias:
-            bias = torch.einsum("ij,bj->bi", self.inv_projector, film_bias_dof)
-            out_biased = out.tensor + bias[:, :, None]  # Broadcasting bias to match output shape
-            out = self.out_type(out_biased)
-
-        out = self.conv2(out)
-        out = self.out_type(out.tensor + self.residual_conv(x).tensor)
-        return out
-
-    def evaluate_output_shape(self, input_shape):  # noqa: D102
-        s1 = self.blocks[0].evaluate_output_shape(input_shape)
-        s2 = self.blocks[1].evaluate_output_shape(s1)
-        return s2
-
-    @staticmethod
-    def _conv_block(in_type: FieldType, out_type: FieldType, kernel_size: int):  # noqa: D102
-        return escnn.nn.SequentialModule(
-            # Equivariant Time-Convolution
-            eConv1D(in_type, out_type, kernel_size, padding=kernel_size // 2),
-            # Use eBatchNorm instead of GroupNorm to keep equivariance
-            eBatchNorm1d(out_type, affine=True),
-            # Use Mish activation function as in the original code
-            Mish(out_type),
-        )
-
-    def check_equivariance(self, atol=1e-5, rtol=1e-5):  # noqa: D102
-        import numpy as np
-
-        B, T = 3, 5
-        x = torch.randn(B, self.in_type.size, *[T] * self.in_type.gspace.dimensionality)
-        x = GeometricTensor(x, self.in_type)
-
-        cond = torch.randn(B, self.cond_type.size)
-        cond = self.cond_type(cond)
-
-        was_training = self.training
-        self.eval()  # Set the module to evaluation mode to disable batchnorm statistics updates
-
-        # for el in self.out_type.testing_elements:
-        for _ in range(20):
-            g = self.in_type.gspace.fibergroup.sample()
-            rep_X_g = torch.tensor(self.in_type.representation(g), dtype=x.tensor.dtype)
-            rep_Y_g = torch.tensor(self.out_type.representation(g), dtype=x.tensor.dtype)
-            rep_cond_g = torch.tensor(self.cond_type.representation(g), dtype=cond.tensor.dtype)
-
-            gx = self.in_type(torch.einsum("ij,bjt->bit", rep_X_g, x.tensor))
-            gcond = self.cond_type(torch.einsum("ij,bj->bi", rep_cond_g, cond.tensor))
-
-            y = self(x, cond).tensor
-
-            gy = self(gx, gcond).tensor
-            gy_gt = torch.einsum("ij,bjt->bit", rep_Y_g, y)
-
-            errs = (gy_gt - gy).detach().numpy()
-            errs = np.abs(errs).reshape(-1)
-
-            assert torch.allclose(gy_gt, gy, atol=atol, rtol=rtol), (
-                'The error found during equivariance check with element "{}" is too high: '
-                "max = {}, mean = {} var ={}".format(g, errs.max(), errs.mean(), errs.var())
-            )
-
-        self.train(was_training)  # Restore the training mode if it was previously set
-
-
-class eConditionalUnet1D(EquivariantModule):
-    """Equivariant U-Net model for 1D signals, conditioned on diffusion timestep and other context.
-
-    This model adapts the ConditionalU-Net for symmetric signals on time/sequence.
-    The U-net is composed of equivariant down and up blocks built from residual CNNs.
-    Each residual block has a FiLM (Feature-wise Linear Modulation) layer that applies
-    the global conditioning information to the intermediate features. Crucially,
-    this conditioning if invariant to the group action.
-
-    Local equivariant conditioning is supported.
-
-    Args:
-        input_type (FieldType): The type of the input field.
-        local_cond_type (FieldType): The type of the local conditioning field.
-        global_cond_type (FieldType, optional): The type of the global
-            conditioning field. Defaults to None.
-        diffusion_step_embed_dim (int, optional): The dimension of the diffusion
-            step embedding. Defaults to 256.
-        down_dims (list, optional): A list of channel dimensions for the
-            downsampling path. Defaults to [256, 512, 1024].
-        kernel_size (int, optional): The size of the convolutional kernel.
-            Defaults to 3.
-        cond_predict_scale (bool, optional): Whether to predict the scale
-            parameter in the FiLM layer. Defaults to False.
     """
 
     def __init__(
         self,
-        input_type: FieldType,
-        local_cond_type: FieldType,
-        global_cond_type: FieldType = None,
-        diffusion_step_embed_dim=256,
-        down_dims=[256, 512, 1024],
-        kernel_size=3,
-        # n_groups=8,
-        cond_predict_scale=False,
+        in_rep: Representation,
+        out_rep: Representation,
+        cond_rep: Representation,
+        kernel_size: int = 3,
+        cond_predict_scale: bool = True,
+        activation: torch.nn.Module = torch.nn.ReLU(),
+        normalize: bool = True,
+        init_scheme: str | None = "xavier_uniform",
+    ):
+        r"""Initialize the conditional residual block.
+
+        Args:
+            in_rep (Representation): Input representation acting on the channel axis.
+            out_rep (Representation): Output representation for the convolutions and residual.
+            cond_rep (Representation): Representation of the conditioning vector used to predict FiLM parameters.
+            kernel_size (int, optional): Spatial kernel size for the equivariant convolutions. Defaults to 3.
+            cond_predict_scale (bool, optional): Whether the FiLM encoder predicts scale parameters.
+                Currently must be ``True``. Defaults to True.
+            activation (torch.nn.Module, optional): Non-linearity applied after each normalization. Defaults to ``ReLU``
+            normalize (bool, optional): If ``True``, apply channel-wise equivariant RMS normalization. Defaults to True.
+            init_scheme (str | None, optional): Weight initialization scheme for convolutions.
+                Defaults to ``\"xavier_uniform\"``.
+        """
+        super().__init__()
+        self.in_rep, self.out_rep, self.cond_rep = in_rep, out_rep, cond_rep
+        if not cond_predict_scale:
+            raise NotImplementedError("Currently only cond_predict_scale=True is supported.")
+
+        self.conv1 = eConv1d(in_rep, out_rep, kernel_size, padding=kernel_size // 2, init_scheme=init_scheme)
+        self.conv2 = eConv1d(out_rep, out_rep, kernel_size, padding=kernel_size // 2, init_scheme=init_scheme)
+
+        self.norm1 = _eChannelRMSNorm(out_rep) if normalize else torch.nn.Identity()
+        self.norm2 = _eChannelRMSNorm(out_rep) if normalize else torch.nn.Identity()
+        self.act = activation
+
+        self.affine = eAffine(in_rep=out_rep, learnable=False)
+        self.film_dims = self.affine.num_scale_dof + self.affine.num_bias_dof
+
+        # Invariant encoder of FiLM modulation parameters
+        self.cond_encoder = torch.nn.Sequential(
+            IrrepSubspaceNormPooling(in_rep=cond_rep),
+            torch.nn.Linear(in_features=len(cond_rep.irreps), out_features=self.film_dims),
+            torch.nn.Mish(),
+        )
+
+        self.residual_conv = (  # Final conv for residual addition if needed.
+            eConv1d(in_rep, out_rep, 1, init_scheme=init_scheme) if in_rep != out_rep else torch.nn.Identity()
+        )
+
+    def forward(self, x: torch.Tensor, cond: torch.Tensor) -> torch.Tensor:
+        """Apply two equivariant conv blocks with FiLM modulation and a residual connection.
+
+        Args:
+            x (torch.Tensor): Input of shape ``(B, in_rep.size, L)`` where ``B`` is batch and ``L`` is sequence length.
+            cond (torch.Tensor): Conditioning tensor of shape ``(B, cond_rep.size)`` used to predict FiLM parameters.
+
+        Returns:
+            torch.Tensor: Output tensor of shape ``(B, out_rep.size, L)`` after modulation and residual addition.
+        """
+        assert x.shape[1] == self.in_rep.size, f"Expected channel dim {self.in_rep.size}, got {x.shape}"
+        assert cond.shape[-1] == self.cond_rep.size, f"Cond dim mismatch {cond.shape}"
+
+        B, _, L = x.shape
+
+        out = self.conv1(x)  # (B, C, L)
+        out = self.act(self.norm1(out))
+
+        if self.film_dims > 0:
+            film_params = self.cond_encoder(cond)  # (B, film_dims)
+            scale_dof = torch.broadcast_to(
+                film_params[:, None, : self.affine.num_scale_dof], (B, L, self.affine.num_scale_dof)
+            )  # (B, num_scale_dof) -> (B, L, num_scale_dof)
+            bias_dof = torch.broadcast_to(
+                film_params[:, None, self.affine.num_scale_dof :], (B, L, self.affine.num_bias_dof)
+            )  # (B, num_bias_dof) -> (B, L, num_bias_dof)
+            out = self.affine(
+                out.permute(0, 2, 1),  # (B, C, L) -> (B, L, C)
+                scale_dof=scale_dof,
+                bias_dof=bias_dof,
+            ).permute(0, 2, 1)  # (B, L, C) -> (B, C, L)
+
+        out = self.conv2(out)
+        out = self.act(self.norm2(out))
+
+        res = self.residual_conv(x) if self.residual_conv is not None else x
+        return out + res
+
+    @torch.no_grad()
+    def check_equivariance(self, atol=1e-5, rtol=1e-5):  # noqa: D102
+        G = self.in_rep.group
+        B, L = 10, 30
+        device, dtype = next(self.parameters()).device, next(self.parameters()).dtype
+        x = torch.randn(B, self.in_rep.size, L, device=device, dtype=dtype)
+        z = torch.randn(B, self.cond_rep.size, device=device, dtype=dtype)
+        y = self(x, z)
+
+        for _ in range(10):
+            g = G.sample()
+            rho_in = torch.tensor(self.in_rep(g), dtype=x.dtype, device=x.device)
+            rho_out = torch.tensor(self.out_rep(g), dtype=y.dtype, device=y.device)
+            rho_cond = torch.tensor(self.cond_rep(g), dtype=z.dtype, device=z.device)
+            gx = torch.einsum("ij,bjl->bil", rho_in, x)
+            gz = torch.einsum("ij,bj->bi", rho_cond, z)
+            y_expected = self(gx, gz)
+            gy = torch.einsum("ij,bjl->bil", rho_out, y)
+            assert torch.allclose(gy, y_expected, atol=atol, rtol=rtol), (
+                f"Equivariance failed for group element {g} with max error {(gy - y_expected).abs().max().item():.3e}"
+            )
+
+
+class eConditionalUnet1D(torch.nn.Module):
+    """Equivariant U-Net for 1D signals with global conditioning and FiLM."""
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        local_cond_rep: Representation | None,
+        global_cond_rep: Representation | None = None,
+        diffusion_step_embed_dim: int = 256,
+        down_dims: Iterable[int] = (256, 512, 1024),
+        kernel_size: int = 3,
+        cond_predict_scale: bool = True,
+        activation: torch.nn.Module = torch.nn.ReLU(),
+        normalize: bool = True,
+        downsample: str = "stride",
+        init_scheme: str | None = "xavier_uniform",
     ):
         super().__init__()
-        self.in_type = self.out_type = input_type
-        self.global_cond_type = global_cond_type
-        self.local_cond_type = local_cond_type
+        assert downsample in {"stride", "pooling"}, "downsample must be 'stride' or 'pooling'"
+        self.in_rep = self.out_rep = in_rep
+        self.global_cond_rep = global_cond_rep
+        self.local_cond_rep = local_cond_rep
+        self.downsample = downsample
 
-        all_dims = [input_type.size] + list(down_dims)
-        reg_rep = input_type.fibergroup.regular_representation
-        trivial_rep = input_type.gspace.fibergroup.trivial_representation
+        G = in_rep.group
+        reg_rep = G.regular_representation
+        trivial_rep = G.trivial_representation
 
-        all_types = [input_type] + [
-            FieldType(input_type.gspace, representations=[reg_rep] * ceil(dim / reg_rep.size)) for dim in down_dims
-        ]
-
-        # start_dim = down_dims[0]
-        start_type = all_types[1]
+        down_dims = list(down_dims)
+        # all_dims = [in_rep.size] + down_dims
+        reps = [in_rep] + [direct_sum([reg_rep] * ceil(d / reg_rep.size)) for d in down_dims]
 
         diffusion_step_encoder = torch.nn.Sequential(
             SinusoidalPosEmb(diffusion_step_embed_dim),
@@ -249,316 +190,294 @@ class eConditionalUnet1D(EquivariantModule):
             torch.nn.Mish(),
             torch.nn.Linear(diffusion_step_embed_dim * 4, diffusion_step_embed_dim),
         )
-        print(f"Diffusion encoder {sum(p.numel() for p in diffusion_step_encoder.parameters()) / 1000} [k] params")
 
-        gs_global = escnn.gspaces.no_base_space(input_type.fibergroup)
-        if global_cond_type is not None:
-            self.cond_type = FieldType(
-                gs_global, representations=global_cond_type.representations + (trivial_rep,) * diffusion_step_embed_dim
-            )
+        if global_cond_rep is not None:
+            cond_rep = direct_sum([global_cond_rep, direct_sum([trivial_rep] * diffusion_step_embed_dim)])
         else:
-            self.cond_type = FieldType(gs_global, representations=[trivial_rep] * diffusion_step_embed_dim)
+            cond_rep = direct_sum([trivial_rep] * diffusion_step_embed_dim)
+        self.cond_rep = cond_rep
+        self.diffusion_step_encoder = diffusion_step_encoder
 
-        # all_dims = [64, 256, 512, 1024, 2048] -> in_out = [(64, 256), (256, 512), (512, 1024), (1024, 2048)]
-        in_out = list(zip(all_dims[:-1], all_dims[1:]))
-        in_out_types = list(zip(all_types[:-1], all_types[1:]))
+        block_kwargs = dict(
+            kernel_size=kernel_size,
+            cond_predict_scale=cond_predict_scale,
+            activation=activation,
+            normalize=normalize,
+            init_scheme=init_scheme,
+        )
+        conv_kwargs = dict(bias=True, init_scheme=init_scheme)
+
+        in_out_reps = list(zip(reps[:-1], reps[1:]))
 
         local_cond_encoder = None
-        if local_cond_type is not None:
-            _, out_type = in_out_types[0]
-            in_type = local_cond_type
+        if local_cond_rep is not None:
+            first_out_rep = in_out_reps[0][1]
             local_cond_encoder = torch.nn.ModuleList(
                 [
-                    # down encoder -> Local context added to the start of the U-Net
                     eConditionalResidualBlock1D(
-                        in_type=in_type,
-                        out_type=out_type,
-                        # Global invariant conditioning. TODO: This means we can use iMLP instead of a MLP.
-                        cond_type=self.cond_type,
-                        kernel_size=kernel_size,
-                        cond_predict_scale=cond_predict_scale,
+                        in_rep=local_cond_rep,
+                        out_rep=first_out_rep,
+                        cond_rep=cond_rep,
+                        **block_kwargs,
                     ),
-                    # up encoder -> Local context added to the end of the U-Net
                     eConditionalResidualBlock1D(
-                        in_type=in_type,
-                        out_type=out_type,
-                        # Global invariant conditioning. TODO: This means we can use iMLP instead of a MLP.
-                        cond_type=self.cond_type,
-                        kernel_size=kernel_size,
-                        cond_predict_scale=cond_predict_scale,
+                        in_rep=local_cond_rep,
+                        out_rep=first_out_rep,
+                        cond_rep=cond_rep,
+                        **block_kwargs,
                     ),
                 ]
             )
-            print(f"local encoder {sum(p.numel() for p in local_cond_encoder.parameters()) / 1000} [k] params")
-        # mid_dim = all_dims[-1]
-        mid_type = all_types[-1]  # Core dimension of the U-Net (lowest time resolution, highest feature dimension)
+        self.local_cond_encoder = local_cond_encoder
+
+        mid_rep = reps[-1]
         self.mid_modules = torch.nn.ModuleList(
             [
                 eConditionalResidualBlock1D(
-                    mid_type,
-                    mid_type,
-                    cond_type=self.cond_type,
-                    kernel_size=kernel_size,
-                    cond_predict_scale=cond_predict_scale,
+                    mid_rep,
+                    mid_rep,
+                    cond_rep=cond_rep,
+                    **block_kwargs,
                 ),
                 eConditionalResidualBlock1D(
-                    mid_type,
-                    mid_type,
-                    cond_type=self.cond_type,
-                    kernel_size=kernel_size,
-                    cond_predict_scale=cond_predict_scale,
+                    mid_rep,
+                    mid_rep,
+                    cond_rep=cond_rep,
+                    **block_kwargs,
                 ),
             ]
         )
-        print(f"Mid CNN {sum(p.numel() for p in self.mid_modules.parameters()) / 1000} [k] params")
 
-        down_modules = torch.nn.ModuleList([])
-        for ind, (in_type, out_type) in enumerate(in_out_types):
-            is_last = ind >= (len(in_out) - 1)
-            id = IdentityModule(out_type)
+        down_modules = torch.nn.ModuleList()
+        for idx, (rep_in, rep_out) in enumerate(in_out_reps):
+            is_last = idx == len(in_out_reps) - 1
             down_modules.append(
-                torch.nn.ModuleList(  # Level blocks: ResNet Block 1 + ResNet Block 2 + Downsampling Conv
+                torch.nn.ModuleList(
                     [
-                        eConditionalResidualBlock1D(  # ResNet Block 1
-                            in_type=in_type,
-                            out_type=out_type,
-                            cond_type=self.cond_type,
-                            kernel_size=kernel_size,
-                            cond_predict_scale=cond_predict_scale,
+                        eConditionalResidualBlock1D(
+                            rep_in,
+                            rep_out,
+                            cond_rep=cond_rep,
+                            **block_kwargs,
                         ),
-                        eConditionalResidualBlock1D(  # ResNet Block 2
-                            in_type=out_type,
-                            out_type=out_type,
-                            cond_type=self.cond_type,
-                            kernel_size=kernel_size,
-                            cond_predict_scale=cond_predict_scale,
+                        eConditionalResidualBlock1D(
+                            rep_out,
+                            rep_out,
+                            cond_rep=cond_rep,
+                            **block_kwargs,
                         ),
-                        # Add downsampling conv layer
-                        eConv1D(out_type, out_type, kernel_size=3, stride=2, padding=1) if not is_last else id,
+                        eConv1d(
+                            rep_out,
+                            rep_out,
+                            kernel_size=3,
+                            stride=2 if not is_last and downsample == "stride" else 1,
+                            padding=1,
+                            **conv_kwargs,
+                        )
+                        if (downsample == "stride" and not is_last)
+                        else (
+                            torch.nn.MaxPool1d(kernel_size=2, stride=2)
+                            if downsample == "pooling" and not is_last
+                            else torch.nn.Identity()
+                        ),
                     ]
                 )
             )
-        print(f"Down CNN {sum(p.numel() for p in down_modules.parameters()) / 1000} [k] params")
+        self.down_modules = down_modules
 
-        up_modules = torch.nn.ModuleList([])
-        for ind, (in_type, out_type) in enumerate(reversed(in_out_types[1:])):
-            is_last = ind >= (len(in_out) - 1)
-            # Given the skip connections, we double the input_type
-            upsample_in_type = FieldType(out_type.gspace, representations=out_type.representations * 2)
-            id = IdentityModule(in_type)
+        up_modules = torch.nn.ModuleList()
+        current_rep = in_out_reps[-1][1]  # deepest representation
+        up_pairs = list(reversed(in_out_reps[1:]))  # skip shallowest pair
+        for idx, (target_rep, skip_rep) in enumerate((pair[0], pair[1]) for pair in up_pairs):
+            is_last = idx == len(up_pairs) - 1
+            upsample_in_rep = direct_sum([current_rep, skip_rep])  # concat current + skip
+            out_rep = target_rep
             up_modules.append(
                 torch.nn.ModuleList(
                     [
-                        eConditionalResidualBlock1D(  # ResNet Block 1
-                            in_type=upsample_in_type,
-                            out_type=in_type,
-                            cond_type=self.cond_type,
-                            kernel_size=kernel_size,
-                            cond_predict_scale=cond_predict_scale,
+                        eConditionalResidualBlock1D(
+                            upsample_in_rep,
+                            out_rep,
+                            cond_rep=cond_rep,
+                            **block_kwargs,
                         ),
-                        eConditionalResidualBlock1D(  # ResNet Block 2
-                            in_type=in_type,
-                            out_type=in_type,
-                            cond_type=self.cond_type,
-                            kernel_size=kernel_size,
-                            cond_predict_scale=cond_predict_scale,
+                        eConditionalResidualBlock1D(
+                            out_rep,
+                            out_rep,
+                            cond_rep=cond_rep,
+                            **block_kwargs,
                         ),
-                        eConvTranspose1D(in_type, in_type, kernel_size=3, stride=2, padding=1) if not is_last else id,
+                        eConvTranspose1d(
+                            out_rep,
+                            out_rep,
+                            kernel_size=3,
+                            stride=2 if not is_last and downsample == "stride" else 1,
+                            padding=1,
+                            **conv_kwargs,
+                        )
+                        if (downsample == "stride" and not is_last)
+                        else (
+                            torch.nn.Upsample(scale_factor=2, mode="nearest")
+                            if downsample == "pooling" and not is_last
+                            else torch.nn.Identity()
+                        ),
                     ]
                 )
             )
-        print(f"Down CNN {sum(p.numel() for p in down_modules.parameters()) / 1000} [k] params")
-
-        final_conv = escnn.nn.SequentialModule(
-            eConditionalResidualBlock1D._conv_block(start_type, start_type, kernel_size=kernel_size),
-            # Equivalent to a linear layer applied timewise
-            eConv1D(in_type=start_type, out_type=self.in_type, kernel_size=1),
-        )
-
-        print(f"Final CNN {sum(p.numel() for p in final_conv.parameters()) / 1000} [k] params")
-
-        self.diffusion_step_encoder = diffusion_step_encoder
-        self.local_cond_encoder = local_cond_encoder
+            current_rep = out_rep
         self.up_modules = up_modules
-        self.down_modules = down_modules
-        self.final_conv = final_conv
 
-        print("number of parameters: %e", sum(p.numel() for p in self.parameters()))
+        first_rep = in_out_reps[0][1]
+        final_norm = _eChannelRMSNorm(first_rep) if normalize else torch.nn.Identity()
+        self.final_conv = torch.nn.Sequential(
+            eConv1d(first_rep, first_rep, kernel_size=kernel_size, padding=kernel_size // 2, **conv_kwargs),
+            final_norm,
+            activation,
+            eConv1d(first_rep, in_rep, kernel_size=1, padding=0, **conv_kwargs),
+        )
 
     def forward(
         self,
-        sample: GeometricTensor,
+        sample: torch.Tensor,
         timestep: torch.Tensor | float | int,
-        local_cond: GeometricTensor = None,
-        film_cond: GeometricTensor = None,
-    ):
-        """Forward pass of the eConditionalUnet1D model.
+        local_cond: torch.Tensor | None = None,
+        film_cond: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Run a forward pass of the equivariant U-Net.
 
         Args:
-            sample (GeometricTensor): The input tensor of shape (B, in_type.size, T).
-            timestep (Union[torch.Tensor, float, int]): The diffusion timestep.
-            local_cond (GeometricTensor, optional): The local conditioning tensor.
-                Defaults to None.
-            film_cond (GeometricTensor, optional): The global conditioning tensor.
-                Defaults to None.
+            sample (torch.Tensor): Input signal shaped ``(B, in_rep.size, L)``.
+            timestep (torch.Tensor | float | int): Diffusion step; scalar or batch, broadcast to ``B``.
+            local_cond (torch.Tensor | None, optional): Local conditioning signal shaped
+                ``(B, local_cond_rep.size, L)`` when provided.
+            film_cond (torch.Tensor | None, optional): Global conditioning vector shaped
+                ``(B, global_cond_rep.size)`` to drive FiLM.
 
         Returns:
-            GeometricTensor: The output tensor of the U-Net.
+            torch.Tensor: Output tensor shaped ``(B, in_rep.size, L)``.
         """
-        assert sample.type == self.in_type, f"Expected input type {self.in_type}, got {sample.type}"
-        device = sample.tensor.device
-        # 1. time
-        timesteps = timestep
-        if not torch.is_tensor(timesteps):
-            # TODO: this requires sync between CPU and GPU. So try to pass timesteps as tensors if you can
-            # raise ValueError("timestep must be a tensor, float, or int.")
-            timesteps = torch.tensor([timesteps], dtype=torch.long, device=device)
-        elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:
-            timesteps = timesteps[None].to(device)
-        # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
-        timesteps = timesteps.expand(sample.shape[0])
+        assert sample.shape[1] == self.in_rep.size, f"Expected channels {self.in_rep.size}, got {sample.shape}"
+        device = sample.device
 
-        film_diff_step_features = self.diffusion_step_encoder(timesteps)
+        t = timestep
+        if not torch.is_tensor(t):
+            t = torch.tensor([timestep], dtype=torch.long, device=device)
+        elif t.ndim == 0:
+            t = t[None].to(device)
+        t = t.expand(sample.shape[0])
 
-        if film_cond is not None:
-            film_feature = torch.cat([film_cond.tensor, film_diff_step_features], axis=-1)
-        else:
-            film_feature = film_diff_step_features
+        film_diff = self.diffusion_step_encoder(t)
+        film_feature = torch.cat([film_cond, film_diff], dim=-1) if film_cond is not None else film_diff
+        assert film_feature.shape[-1] == self.cond_rep.size
 
-        film_feature = self.cond_type(film_feature)
-
-        # encode local features
-        h_local = list()
-        if local_cond is not None:
-            resnet, resnet2 = self.local_cond_encoder
-            x = resnet(local_cond, film_feature)
-            h_local.append(x)  # Local context added to the start of the U-Net
-            x = resnet2(local_cond, film_feature)
-            h_local.append(x)  # Local context added to the end of the U-Net
+        h_local = []
+        if self.local_cond_encoder is not None and local_cond is not None:
+            resnet_a, resnet_b = self.local_cond_encoder
+            x_loc = resnet_a(local_cond, film_feature)
+            h_local.append(x_loc)
+            x_loc = resnet_b(local_cond, film_feature)
+            h_local.append(x_loc)
 
         x = sample
-        h = []  # Intermediate features for skip connections
-        for idx, (resnet, resnet2, downsample) in enumerate(self.down_modules):
-            x = resnet(x, film_feature)
-            if idx == 0 and len(h_local) > 0:
-                x = x + h_local[0]  # Local context added to the start of the U-Net
-            x = resnet2(x, film_feature)
-            h.append(x)
-            x = downsample(x)
+        skips = []
+        for idx, (res1, res2, down) in enumerate(self.down_modules):
+            x = res1(x, film_feature)
+            if idx == 0 and h_local:
+                x = x + h_local[0]
+            x = res2(x, film_feature)
+            skips.append(x)
+            x = down(x)
 
-        for mid_module in self.mid_modules:
-            x = mid_module(x, film_feature)
+        for mid in self.mid_modules:
+            x = mid(x, film_feature)
 
-        for idx, (resnet, resnet2, upsample) in enumerate(self.up_modules):
-            x = resnet.in_type(torch.cat((x.tensor, h.pop().tensor), dim=1))  # Concatenate skip connection features
-            x = resnet(x, film_feature)
-            if idx == (len(self.up_modules) - 1) and len(h_local) > 0:
-                x = x + h_local[1]  # Local context added to the end of the U-Net
-            x = resnet2(x, film_feature)
-            x = upsample(x)
+        for idx, (res1, res2, up) in enumerate(self.up_modules):
+            skip = skips.pop()
+            x = torch.cat([x, skip], dim=1)
+            x = res1(x, film_feature)
+            if idx == len(self.up_modules) - 1 and h_local:
+                x = x + h_local[1]
+            x = res2(x, film_feature)
+            x = up(x)
 
         x = self.final_conv(x)
-
         return x
 
-    def check_equivariance(self, atol=1e-5, rtol=1e-5):  # noqa: D102
-        """Test the equivariance of the module.
+    @torch.no_grad()
+    def check_equivariance(self, batch_size=3, length=5, atol=1e-5, rtol=1e-5):  # noqa: D102
+        """Check equivariance under channel actions of the underlying fiber group."""
+        G = self.in_rep.group
+        device = next(self.parameters()).device
+        dtype = next(self.parameters()).dtype
 
-        This method tests the equivariance of the module by applying a random
-        group element to the input and checking if the output transforms
-        correctly.
+        x = torch.randn(batch_size, self.in_rep.size, length, device=device, dtype=dtype)
+        local_cond = (
+            torch.randn(batch_size, self.local_cond_rep.size, length, device=device, dtype=dtype)
+            if self.local_cond_rep is not None
+            else None
+        )
+        global_cond = (
+            torch.randn(batch_size, self.global_cond_rep.size, device=device, dtype=dtype)
+            if self.global_cond_rep is not None
+            else None
+        )
+        t = torch.tensor(0, dtype=torch.long, device=device)
 
-        Args:
-            atol (float, optional): The absolute tolerance for the check.
-                Defaults to 1e-5.
-            rtol (float, optional): The relative tolerance for the check.
-                Defaults to 1e-5.
+        y = self(x, timestep=t, local_cond=local_cond, film_cond=global_cond)
 
-        Raises:
-            AssertionError: If the equivariance check fails.
-        """
-        import numpy as np
+        for _ in range(10):
+            g = G.sample()
+            rho_in = torch.tensor(self.in_rep(g), dtype=dtype, device=device)
+            gx = torch.einsum("ij,bjl->bil", rho_in, x)
 
-        was_training = self.training
-        self.eval()  # Set the module to evaluation mode to disable batchnorm statistics updates
+            g_local = None
+            if local_cond is not None:
+                rho_local = torch.tensor(self.local_cond_rep(g), dtype=dtype, device=device)
+                g_local = torch.einsum("ij,bjl->bil", rho_local, local_cond)
 
-        B, T = 3, 5
-        x = torch.randn(B, self.in_type.size, *[T] * self.in_type.gspace.dimensionality)
-        x = GeometricTensor(x, self.in_type)
+            g_global = None
+            if global_cond is not None:
+                rho_global = torch.tensor(self.global_cond_rep(g), dtype=dtype, device=device)
+                g_global = torch.einsum("ij,bj->bi", rho_global, global_cond)
 
-        local_cond, global_cond = None, None
-        if self.local_cond_encoder is not None:
-            local_cond = torch.randn(B, self.cond_type.size)
-            local_cond = self.cond_type(local_cond)
+            y_expected = self(gx, timestep=t, local_cond=g_local, film_cond=g_global)
 
-        if self.global_cond_type is not None:
-            global_cond = torch.randn(B, self.global_cond_type.size)
-            global_cond = self.global_cond_type(global_cond)
-
-        t = torch.tensor(0, dtype=torch.long, device=x.tensor.device)  # Assuming a single timestep for testing
-
-        for _ in range(20):
-            g = self.in_type.gspace.fibergroup.sample()
-
-            g_cond = local_cond.transform(g) if self.local_cond_encoder is not None else None
-            g_global_cond = global_cond.transform(g) if self.global_cond_type is not None else None
-            g_x = x.transform(g)
-
-            y = self(sample=x, timestep=t, local_cond=local_cond, film_cond=global_cond)
-            gy = self(sample=g_x, timestep=t, local_cond=g_cond, film_cond=g_global_cond).tensor
-            gy_gt = y.transform(g).tensor
-
-            errs = (gy_gt - gy).detach().numpy()
-            errs = np.abs(errs).reshape(-1)
-
-            t = t + 1
-            assert torch.allclose(gy_gt, gy, atol=atol, rtol=rtol), (
-                'The error found during equivariance check with element "{}" is too high: max = {} '.format(
-                    g, errs.max()
-                )
+            rho_out = torch.tensor(self.out_rep(g), dtype=y.dtype, device=y.device)
+            gy = torch.einsum("ij,bjl->bil", rho_out, y)
+            assert torch.allclose(gy, y_expected, atol=atol, rtol=rtol), (
+                f"Equivariance failed for group element {g} with max error {(gy - y_expected).abs().max().item():.3e}"
             )
-
-        self.train(was_training)  # Restore the training mode if it was previously set
-
-    def evaluate_output_shape(self, input_shape):  # noqa: D102
-        raise NotImplementedError("Output shape evaluation not implemented for this module")
 
 
 if __name__ == "__main__":
     # Example usage
-    import escnn
-
-    from symm_learning.nn import GSpace1D
+    from escnn.group import CyclicGroup
 
     diffusion_step_embed_dim = 32
 
-    G = escnn.group.CyclicGroup(2)
-    gspace = GSpace1D(G)
-    mx, my, mc = 1, 2, 1
-    in_type = FieldType(gspace, [G.regular_representation] * mx)
-    out_type = FieldType(gspace, [G.regular_representation] * my)
-    local_cond_type = None
-    global_cond_type = FieldType(escnn.gspaces.no_base_space(G), [G.regular_representation] * 2)
+    G = CyclicGroup(2)
+    mx, my = 1, 2
+    in_rep = direct_sum([G.regular_representation] * mx)
+    out_rep = direct_sum([G.regular_representation] * my)
+    cond_rep = direct_sum([G.regular_representation] * 2)
 
     print("Testing eConditionalResidualBlock1D ------------------------------------------")
-
     res_block = eConditionalResidualBlock1D(
-        in_type=in_type,
-        out_type=out_type,
-        cond_type=global_cond_type,
+        in_rep=in_rep,
+        out_rep=out_rep,
+        cond_rep=cond_rep,
         kernel_size=3,
         cond_predict_scale=True,
     )
     res_block.check_equivariance(atol=1e-5, rtol=1e-5)
 
     print("\nTesting eConditionalUnet1D ----------------------------------------------------")
-
     model = eConditionalUnet1D(
-        input_type=in_type,
-        local_cond_type=local_cond_type,
-        global_cond_type=global_cond_type,
+        in_rep=in_rep,
+        local_cond_rep=None,
+        global_cond_rep=cond_rep,
         diffusion_step_embed_dim=16,
-        down_dims=[64, 64],
+        down_dims=[64, 128, 256],
         kernel_size=3,
         cond_predict_scale=True,
     )

@@ -88,7 +88,9 @@ class eCondTransformerRegressor(GenCondRegressor):
                 f"Initializing {num_cond_layers} layers of eTransformerEncoderLayer of "
                 f"{sum(p.numel() for p in encoder_layer.parameters()) / 1e6:.2f}M parameters each"
             )
-            self.encoder = torch.nn.TransformerEncoder(encoder_layer=encoder_layer, num_layers=num_cond_layers)
+            self.encoder = torch.nn.TransformerEncoder(
+                encoder_layer=encoder_layer, num_layers=num_cond_layers, enable_nested_tensor=False
+            )
         else:
             hidden_rep = direct_sum([self.embedding_rep] * 4)
             logger.debug(f"Initializing eMLP encoder with hidden representation {hidden_rep}")
