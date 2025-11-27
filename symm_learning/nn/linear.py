@@ -237,7 +237,7 @@ class InvariantBias(torch.nn.Module):
         spectral_bias[self.spectral_trivial_mask] = self.bias_dof
         return spectral_bias
 
-    def reset_parameters(self, scheme="kaiming_uniform"):
+    def reset_parameters(self, scheme="zeros"):
         """Initialize the invariant bias degrees of freedom."""
         if not self.has_bias:
             return
