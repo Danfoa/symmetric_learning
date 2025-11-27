@@ -371,27 +371,21 @@ class eAffine(torch.nn.Module):
         if input.shape[-1] != self.rep_x.size:
             raise ValueError(f"Expected last dimension {self.rep_x.size}, got {input.shape[-1]}")
 
-        # Transition to the irrep-spectral basis
-        x_spectral = torch.einsum("ij,...j->...i", self.Q_inv, input)
-
-        # Obtain the scale and bias in the irrep-spectral basis.
+        # Obtain per-dimension spectral scale; reuse learnable bias directly in original basis.
         if self.learnable:
-            bias_param = None if self.bias_module is not None else self.bias_dof
-            scale_spec, bias_spec = self.get_spectral_scale_and_bias(self.scale_dof, bias_param)
-            leading_dims = input.shape[:-1]
-            scale_spec = scale_spec.broadcast_to(*leading_dims, scale_spec.shape[-1])
-            if bias_spec is not None:
-                bias_spec = bias_spec.broadcast_to(*leading_dims, bias_spec.shape[-1])
+            scale_spec = self.scale_dof[self.irrep_indices]  # (D,)
+            bias_orig = self.bias_module.bias if self.has_bias and self.bias_module is not None else None
         else:
-            scale_spec, bias_spec = self.get_spectral_scale_and_bias(scale_dof, bias_dof, input_shape=input.shape)
+            scale_spec, spectral_bias = self.get_spectral_scale_and_bias(scale_dof, bias_dof, input_shape=input.shape)
+            bias_orig = None
+            if spectral_bias is not None:
+                # Map spectral bias back to original basis: (..., D)
+                bias_orig = torch.einsum("ij,...j->...i", self.Q, spectral_bias)
 
-        # Apply equivariant affine scaling.
-        x_spectral = x_spectral * scale_spec
-        if bias_spec is not None:  # Apply invariant bias.
-            x_spectral = x_spectral + bias_spec
-
-        # Transition back to the original basis.
-        y = torch.einsum("ij,...j->...i", self.Q, x_spectral)
+        # Apply scaling in original basis via Q * diag(scale_spec) * Q_inv. Output shape matches input (..., D).
+        y = torch.einsum("ij,...j,jk,...k->...i", self.Q, scale_spec, self.Q_inv, input)
+        if bias_orig is not None:
+            y = y + bias_orig
         return y
 
     def get_spectral_scale_and_bias(
