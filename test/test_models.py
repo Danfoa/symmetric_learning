@@ -62,7 +62,7 @@ def test_imlp(group: Group, hidden_units: int):  # noqa: D103
 @pytest.mark.parametrize("my", [3])
 def test_cond_res_block(group: Group, mx: int, my: int):  # noqa: D103
     import torch
-    from symm_learning.models.difussion.cond_eunet1d import eConditionalResidualBlock1D
+    from symm_learning.models.difussion.cond_eunet1d import eConditionalResidualBlock1D, eConditionalUnet1D
 
     G = group
     in_rep = direct_sum([G.regular_representation] * mx)
@@ -72,6 +72,25 @@ def test_cond_res_block(group: Group, mx: int, my: int):  # noqa: D103
     layer.eval()
 
     layer.check_equivariance(atol=1e-5, rtol=1e-5)
+
+    # Test U-Net variants (stride and pooling downsampling), with/without local conditioning
+    # local_rep = direct_sum([G.regular_representation] * mx)
+    for downsample, length in (("stride", 5), ("pooling", 4)):
+        unet = eConditionalUnet1D(
+            in_rep=in_rep,
+            local_cond_rep=None,
+            global_cond_rep=cond_rep,
+            diffusion_step_embed_dim=8,
+            down_dims=[in_rep.size, in_rep.size],
+            kernel_size=3,
+            cond_predict_scale=True,
+            activation=torch.nn.ReLU(),
+            normalize=True,
+            downsample=downsample,
+            init_scheme="xavier_uniform",
+        )
+        unet.eval()
+        unet.check_equivariance(batch_size=2, length=length, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize(
