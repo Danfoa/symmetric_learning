@@ -54,7 +54,6 @@ class eRMSNorm(torch.nn.Module):
         in_rep: Representation,
         eps: float = 1e-6,
         equiv_affine: bool = True,
-        bias: bool = True,
         device=None,
         dtype=None,
         init_scheme: Literal["identity", "random"] | None = "identity",
@@ -63,7 +62,7 @@ class eRMSNorm(torch.nn.Module):
         factory_kwargs = {"device": device, "dtype": dtype}
         self.in_rep, self.out_rep = in_rep, in_rep
         if equiv_affine:
-            self.affine = eAffine(in_rep, bias=bias).to(**factory_kwargs)
+            self.affine = eAffine(in_rep, bias=False).to(**factory_kwargs)
             if init_scheme is not None:
                 self.affine.reset_parameters(init_scheme)
         self.eps = eps
