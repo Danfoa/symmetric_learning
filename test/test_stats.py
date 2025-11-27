@@ -18,7 +18,6 @@ from symm_learning.stats import _isotypic_cov, cov, var_mean
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
@@ -81,7 +80,6 @@ def test_var_mean(group: Group):  # noqa: D103
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )

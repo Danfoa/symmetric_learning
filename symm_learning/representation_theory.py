@@ -136,18 +136,20 @@ class GroupHomomorphismBasis(torch.nn.Module):
         r"""Return :math:`W \\in \\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})` from basis coefficients.
 
         Args:
-            w_dof (torch.Tensor): Basis expansion coefficients of shape `(dim,)`.
+            w_dof (torch.Tensor): Basis expansion coefficients of shape `(D,)` or `(B, D)` where D represents the
+            homomorphism dimension and B is a batch/leading dimension.
 
         Returns:
-            torch.Tensor: Dense matrix of shape `(out_rep.size, in_rep.size)`.
+            torch.Tensor: Dense matrix of shape `(out_rep.size, in_rep.size)` or `(B, out_rep.size, in_rep.size)`.
         """
-        assert w_dof.shape == (self.dim,), f"Expected w_dof shape {(self.dim,)}, but got {w_dof.shape}"
+        assert w_dof.shape[-1] == (self.dim), f"Expected w_dof shape (B,{self.dim}), but got {w_dof.shape}"
+        leading_shape = w_dof.shape[:-1]
 
         if self.basis_expansion == "memory_heavy":
             W_flat = torch.matmul(w_dof, self.basis_elements.view(self.dim, -1))  # [out_rep.size * in_rep.size]
-            W = W_flat.view(self.out_rep.size, self.in_rep.size)
+            W = W_flat.view(*leading_shape, self.out_rep.size, self.in_rep.size)
         elif self.basis_expansion == "isotypic_expansion":
-            W = w_dof.new_zeros(self.out_rep.size, self.in_rep.size)
+            W = w_dof.new_zeros(*leading_shape, self.out_rep.size, self.in_rep.size)
             for irrep_id, irrep_metadata in self.iso_blocks.items():
                 m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
                 out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
@@ -155,13 +157,17 @@ class GroupHomomorphismBasis(torch.nn.Module):
                 hom_basis_slice = irrep_metadata["hom_basis_slice"]
 
                 endo_basis_flat = getattr(self, f"endo_basis_flat_{irrep_id}")  # [S_k, d_k * d_k]
-                theta_k = w_dof[hom_basis_slice].view(m_out * m_in, endo_basis_flat.size(0))  # [m_out*m_in, S_k]
+                theta_k = w_dof[..., hom_basis_slice].view(
+                    *leading_shape, m_out * m_in, endo_basis_flat.size(0)
+                )  # [*, m_out*m_in, S_k]
                 # Compute basis expansion for this irrep block
-                coeffs = torch.matmul(theta_k, endo_basis_flat)  # [m_out*m_in, d_k*d_k]
+                coeffs = torch.matmul(theta_k, endo_basis_flat)  # [*, m_out*m_in, d_k*d_k]
                 # [m_out*m_in, d_k*d_k] -> [m_out, m_in, d_k, d_k] -> [m_out, d_k, m_in, d_k] -> [m_out*d_k, m_in*d_k]
-                W[out_slice, in_slice] = (
-                    coeffs.view(m_out, m_in, d_k, d_k).permute(0, 2, 1, 3).reshape(m_out * d_k, m_in * d_k)
+                block = coeffs.view(*leading_shape, m_out, m_in, d_k, d_k)
+                block = block.permute(*range(len(leading_shape)), -4, -2, -3, -1).reshape(
+                    *leading_shape, m_out * d_k, m_in * d_k
                 )
+                W[..., out_slice, in_slice] = block
             W = self.Q_out @ (W @ self.Q_in_inv)
 
         return W
@@ -290,12 +296,41 @@ class GroupHomomorphismBasis(torch.nn.Module):
         return basis_elements
 
     @torch.no_grad()
-    def initialize_params(self, scheme: str = "kaiming_uniform", return_dense: bool = False) -> torch.Tensor:
-        """Return W_iso ~ Hom_G(out, in), initialized per-irrep with Xavier/He."""
-        if return_dense:
-            W_iso = torch.zeros((self.out_rep.size, self.in_rep.size), dtype=torch.get_default_dtype())
+    def initialize_params(
+        self, scheme: str = "kaiming_uniform", return_dense: bool = False, leading_shape: int | tuple | None = None
+    ) -> torch.Tensor:
+        """Sample parameters in ``Hom_G(out, in)`` with optional leading batch dimensions.
+
+        Args:
+            scheme: Initialization scheme (``"xavier_uniform"``, ``"xavier_normal"``, ``"kaiming_normal"``,
+                ``"kaiming_uniform"``).
+            return_dense: If ``True``, return dense weights in the original basis; otherwise return basis expansion
+                coefficients.
+            leading_shape: Optional leading dimensions (e.g., batch size or a tuple of dims). ``None`` yields no leading
+                dims. Examples: ``None`` → ``(dim,)`` / ``(d_out, d_in)``; ``B`` → ``(B, dim)`` / ``(B, d_out, d_in)``.
+
+        Shapes:
+            - return_dense=False → ``(*leading_shape, dim(Hom_G(out_rep, in_rep)))``
+            - return_dense=True  → ``(*leading_shape, out_rep.size, in_rep.size)``
+
+        Returns:
+            torch.Tensor: Initialized parameters with the shapes above.
+        """
+        if leading_shape is None:
+            leading_shape = ()
+        elif isinstance(leading_shape, int):
+            leading_shape = (leading_shape,)
         else:
-            w_dof = torch.zeros((self.dim,))
+            leading_shape = tuple(leading_shape)
+
+        buffer = next(self.buffers(), None)
+        device = buffer.device if buffer is not None else None
+        dtype = buffer.dtype if buffer is not None else torch.get_default_dtype()
+
+        if return_dense:
+            W_iso = torch.zeros((*leading_shape, self.out_rep.size, self.in_rep.size), dtype=dtype, device=device)
+        else:
+            w_dof = torch.zeros((*leading_shape, self.dim), dtype=dtype, device=device)
 
         for _, irrep_metadata in self.iso_blocks.items():
             # for out_slice, in_slice, endo_basis, m_out, m_in, irrep_dim in self.irreps_meta:
@@ -311,34 +346,35 @@ class GroupHomomorphismBasis(torch.nn.Module):
             fan_in = dim_endo_basis * m_in
             fan_out = dim_endo_basis * m_out
             # isotypic_param_shape := (dim_irrep_endomorphism, irep_multiplicity_out, irrep_multiplicity_in)
-            isotypic_param_shape = (dim_endo_basis, m_out, m_in)
+            isotypic_param_shape = (*leading_shape, dim_endo_basis, m_out, m_in)
             if scheme == "xavier_uniform":
                 bound = (6.0 / (fan_in + fan_out)) ** 0.5
-                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
+                theta = torch.empty(isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
             elif scheme == "xavier_normal":
                 std = (2.0 / (fan_in + fan_out)) ** 0.5
-                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
+                theta = torch.empty(isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
             elif scheme in {"kaiming_normal", "he_normal"}:
                 std = (2.0 / fan_in) ** 0.5
-                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
+                theta = torch.empty(isotypic_param_shape, device=device, dtype=dtype).normal_(0.0, std)
             elif scheme in {"kaiming_uniform", "he_uniform"}:
                 bound = (6.0 / fan_in) ** 0.5
-                theta = torch.empty(*isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
+                theta = torch.empty(isotypic_param_shape, device=device, dtype=dtype).uniform_(-bound, bound)
             else:
                 raise ValueError(f"Unknown scheme: {scheme}")
 
             if return_dense:
                 # Expand irrep block (m_out * irrep_dim, m_in * irrep_dim)
-                W_iso[out_slice, in_slice] = torch.einsum("soi,sab->oaib", theta, endo_basis).reshape(
-                    m_out * irrep_dim, m_in * irrep_dim
+                block = torch.einsum("...soi,sab->...oaib", theta, endo_basis).reshape(
+                    *leading_shape, m_out * irrep_dim, m_in * irrep_dim
                 )
+                W_iso[..., out_slice, in_slice] = block
             else:
-                w_dof[hom_basis_slice] = theta.reshape(-1)
+                w_dof[..., hom_basis_slice] = theta.reshape(*leading_shape, -1)
 
         if return_dense:  # Change to original coordinates
             Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=W_iso.dtype, device=W_iso.device)
             Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=W_iso.dtype, device=W_iso.device)
-            return Q_out @ W_iso @ Q_in_inv
+            return torch.einsum("ab,...bc,cd->...ad", Q_out, W_iso, Q_in_inv)
         else:
             return w_dof
 

@@ -3,6 +3,18 @@ from __future__ import annotations
 import torch
 
 
+class _ChannelRMSNorm(torch.nn.Module):
+    """Apply RMSNorm over channel dimension for inputs shaped (B, C, L)."""
+
+    def __init__(self, channels: int, eps: float = 1e-6):
+        super().__init__()
+        self.norm = torch.nn.RMSNorm(channels, eps=eps)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # RMSNorm expects channels on the last dim.
+        return self.norm(x.transpose(1, 2)).transpose(1, 2)
+
+
 class TimeCNNEncoder(torch.nn.Module):
     """1D CNN encoder for inputs of shape (N, in_dim, H).
 
@@ -21,7 +33,7 @@ class TimeCNNEncoder(torch.nn.Module):
       horizon: Input sequence length H.
       activation: Activation module or list (one per block). If a single module is given,
         it is replicated for all blocks.
-      batch_norm: If True, add BatchNorm1d after each convolution.
+      batch_norm: If True, add RMSNorm after each convolution.
       bias: Use bias in conv/linear layers.
       mlp_hidden: Hidden units of the final MLP head (list for deeper heads).
       downsample: "stride" (default) or "pooling"; each block halves H.
@@ -38,12 +50,13 @@ class TimeCNNEncoder(torch.nn.Module):
         out_dim: int,
         hidden_channels: list[int],
         horizon: int,
-        activation: torch.nn.Module | list[torch.nn.Module] = torch.nn.ReLU(),
-        batch_norm: bool = False,
+        activation: torch.nn.Module = torch.nn.ReLU(),
+        normalize: bool = False,
         bias: bool = True,
         mlp_hidden: list[int] = [128],
         downsample: str = "stride",
         append_last_frame: bool = False,
+        init_scheme: str | None = "xavier_uniform",
     ) -> None:
         super().__init__()
         assert hasattr(hidden_channels, "__iter__") and hasattr(hidden_channels, "__len__"), (
@@ -54,38 +67,39 @@ class TimeCNNEncoder(torch.nn.Module):
 
         self.in_dim, self.out_dim = in_dim, out_dim
         self.horizon_in = int(horizon)
-        self.batch_norm = batch_norm
+        self.batch_norm = normalize
         self.bias = bias
         self.downsample = downsample
         self.append_last_frame = append_last_frame
 
-        # Prepare per-block activations (minimal logic)
-        if not isinstance(activation, list):
-            conv_acts = [activation] * len(hidden_channels)
-        else:
-            assert len(activation) == len(hidden_channels), f"{len(activation)} != {len(hidden_channels)}: "
-            conv_acts = activation
-        head_act = conv_acts[-1]
+        conv_act = activation
+        head_act = conv_act
 
         # Build conv feature extractor; kernel=3, padding=1 (time length preserved before downsampling)
         conv_layers = []
         cin = in_dim
         h = self.horizon_in
 
-        for cout, act in zip(hidden_channels, conv_acts):
+        for cout in hidden_channels:
             if self.downsample == "stride":
                 # Conv1d with stride=2 halves time: L_out = floor((L+1)/2) for k=3,p=1
-                conv_layers.append(torch.nn.Conv1d(cin, cout, kernel_size=3, stride=2, padding=1, bias=bias))
-                if batch_norm:
-                    conv_layers.append(torch.nn.BatchNorm1d(cout))
-                conv_layers.append(act)
+                conv = torch.nn.Conv1d(cin, cout, kernel_size=3, stride=2, padding=1, bias=bias)
+                conv_layers.append(conv)
+                if init_scheme is not None:
+                    conv.reset_parameters()
+                if normalize:
+                    conv_layers.append(_ChannelRMSNorm(cout))
+                conv_layers.append(conv_act)
                 h = (h + 1) // 2
             else:  # pooling
                 # Conv stride=1 keeps time, then MaxPool1d(2) halves: floor(L/2)
-                conv_layers.append(torch.nn.Conv1d(cin, cout, kernel_size=3, stride=1, padding=1, bias=bias))
-                if batch_norm:
-                    conv_layers.append(torch.nn.BatchNorm1d(cout))
-                conv_layers.append(act)
+                conv = torch.nn.Conv1d(cin, cout, kernel_size=3, stride=1, padding=1, bias=bias)
+                conv_layers.append(conv)
+                if init_scheme is not None:
+                    conv.reset_parameters()
+                if normalize:
+                    conv_layers.append(_ChannelRMSNorm(cout))
+                conv_layers.append(conv_act)
                 conv_layers.append(torch.nn.MaxPool1d(kernel_size=2, stride=2))
                 h = h // 2
 

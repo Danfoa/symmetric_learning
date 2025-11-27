@@ -73,6 +73,21 @@ def module_memory(module: torch.nn.Module, units: str = "bytes"):
     return trainable / scale, non_trainable / scale
 
 
+def backprop_sanity(module: torch.nn.Module) -> None:
+    """Simple backpropagation sanity check for ``module``."""
+    module.train()
+    optim = torch.optim.SGD(module.parameters(), lr=1e-3)
+    x = torch.randn(16, module.in_rep.size)
+    target = torch.randn(16, module.out_rep.size)
+    optim.zero_grad()
+    y = module(x)
+    loss = torch.nn.functional.mse_loss(y, target)
+    loss.backward()
+    grad_norms = [p.grad.norm().item() for p in module.parameters() if p.grad is not None]
+    assert grad_norms, "Expected at least one gradient to propagate."
+    optim.step()
+
+
 def module_memory_breakdown(module: torch.nn.Module) -> list[dict]:
     """Return a per-tensor memory breakdown for ``module`` (sizes in bytes)."""
 
@@ -150,6 +165,28 @@ def module_device_memory(module: torch.nn.Module, device: str | torch.device | N
 
 def bytes_to_mb(num_bytes: int) -> float:  # noqa: D103
     return num_bytes / (1024**2)
+
+
+def get_spectral_trivial_dims(rep: Representation) -> list[int]:
+    """Return the list of indices of the trivial irreps in the spectral decomposition of ``rep``."""
+    G = rep.group
+    trivial_id = G.trivial_representation.id
+    trivial_spectral_dims = []
+    offset = 0
+    for irrep_id in rep.irreps:
+        if irrep_id == trivial_id:
+            trivial_spectral_dims.append(offset)
+        offset += G.irrep(*irrep_id).size
+
+    return trivial_spectral_dims
+
+
+def get_spectral_trivial_mask(rep: Representation) -> torch.Tensor:
+    """Return a boolean mask selecting the trivial irreps in the spectral decomposition of ``rep``."""
+    trivial_dims = get_spectral_trivial_dims(rep)
+    mask = torch.zeros(rep.size, dtype=torch.bool)
+    mask[trivial_dims] = 1
+    return mask
 
 
 def check_equivariance(

@@ -9,9 +9,12 @@ from escnn.group import Representation
 from torch.nn.utils import parametrize
 
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
-from symm_learning.representation_theory import GroupHomomorphismBasis, direct_sum, isotypic_decomp_rep
+from symm_learning.representation_theory import GroupHomomorphismBasis
+from symm_learning.utils import get_spectral_trivial_mask
 
 logger = logging.getLogger(__name__)
+
+eINIT_SCHEMES = Literal["xavier_normal", "xavier_uniform", "kaiming_normal", "kaiming_uniform"]
 
 
 def impose_linear_equivariance(
@@ -59,11 +62,15 @@ class eLinear(torch.nn.Linear):
     r"""Parameterize a :math:`\mathbb{G}`-equivariant linear map with optional invariant bias.
 
     The layer learns coefficients over :math:`\operatorname{Hom}_G(\text{in}, \text{out})`, synthesizing a dense weight
-    commuting with the supplied representations and, when admissible, a bias in :math:`\mathrm{Fix}_G(\text{out})`.
-    Training rebuilds these tensors every call; evaluation reuses the cached expansion.
+    commuting with the supplied representations. The optional bias is delegated to :class:`InvariantBias`, which caches
+    its expansion in eval mode. The weight is cached after each expansion in eval mode to avoid redundant synthesis.
+
+    Note:
+        This layer can be used as a drop-in replacement for ``torch.nn.Linear``.
 
     Attributes:
         homo_basis (GroupHomomorphismBasis): Handler exposing the equivariant basis and metadata.
+        bias_module (InvariantBias | None): Optional module handling the invariant bias.
     """
 
     def __init__(
@@ -101,69 +108,38 @@ class eLinear(torch.nn.Linear):
             raise ValueError(
                 f"No equivariant linear maps exist between {in_rep} and {out_rep}.\n dim(Hom_G(in_rep, out_rep))=0"
             )
-        # Assert bias vector is feasible given out_rep symmetries
-        trivial_id = self.homo_basis.G.trivial_representation.id
-        can_have_bias = out_rep._irreps_multiplicities.get(trivial_id, 0) > 0
-        self.has_bias = bias and can_have_bias
-        # Register change of basis matrices as buffers
-        dtype = torch.get_default_dtype()
-
         # Register weight parameters (degrees of freedom: dof) and buffers
         self.register_parameter(
-            "weight_dof", torch.nn.Parameter(torch.zeros(self.homo_basis.dim, dtype=dtype), requires_grad=True)
+            "weight_dof",
+            torch.nn.Parameter(torch.zeros(self.homo_basis.dim, dtype=torch.get_default_dtype()), requires_grad=True),
         )
 
-        if self.has_bias:  # Register bias parameters
-            # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
-            m_out_trivial = out_rep._irreps_multiplicities[trivial_id]
-            self.register_parameter("bias_dof", torch.nn.Parameter(torch.zeros(m_out_trivial), requires_grad=True))
-            self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
+        self.bias_module = InvariantBias(out_rep) if bias else None
 
         if init_scheme is not None:
             self.reset_parameters(scheme=init_scheme)
-        self._weight, self._bias = None, None
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
-        """Apply the equivariant map.
-
-        Args:
-            input (torch.Tensor): Tensor whose last dimension equals ``in_rep.size``.
+    def expand_weight(self):
+        r"""Return the dense equivariant weight, caching it outside training.
 
         Returns:
-            torch.Tensor: Output tensor with the same leading shape as ``input`` and last dimension ``out_rep.size``.
-        """
-        W, b = self.expand_weight_and_bias()
-
-        return F.linear(input, W, b)
-
-    def expand_weight_and_bias(self):
-        r"""Return the dense equivariant weight and optional invariant bias.
-
-        Returns:
-            Tuple[torch.Tensor, Optional[torch.Tensor]]: Dense matrix of shape ``(out_rep.size, in_rep.size)`` and the
-            invariant bias (or ``None`` if the trivial irrep is absent).
+            torch.Tensor: Dense matrix of shape ``(out_rep.size, in_rep.size)``.
         """
         W = self.homo_basis(self.weight_dof)  # Recompute linear map
-        bias = None
-        if self.has_bias:  # Recompute bias
-            bias = self._expand_bias()
         self._weight = W
-        self._bias = bias
-        return W, bias
-
-    def _expand_bias(self):
-        trivial_id = self.out_rep.group.trivial_representation.id
-        trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
-        bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
-        return bias
+        return W
 
     @property
-    def weight(self) -> torch.Tensor:  # noqa: D102
-        return self.homo_basis(self.weight_dof)
+    def weight(self) -> torch.Tensor:
+        """Dense equivariant weight; recomputed in train, cached in eval."""
+        if self.training or self._weight is None:
+            return self.expand_weight()
+        return self._weight
 
     @property
-    def bias(self) -> torch.Tensor | None:  # noqa: D102
-        return self._expand_bias() if self.has_bias else None
+    def bias(self) -> torch.Tensor | None:
+        """Invariant bias from :class:`InvariantBias` (``None`` if disabled)."""
+        return self.bias_module.bias if self.bias_module is not None else None
 
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_normal"):
@@ -177,121 +153,290 @@ class eLinear(torch.nn.Linear):
             return super().reset_parameters()
         new_params = self.homo_basis.initialize_params(scheme)
         self.weight_dof.copy_(new_params)
-
-        if self.has_bias:
-            trivial_id = self.out_rep.group.trivial_representation.id
-            m_in_inv = self.in_rep._irreps_multiplicities[trivial_id]
-            m_out_inv = self.out_rep._irreps_multiplicities[trivial_id]
-            fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(torch.empty(m_out_inv, m_in_inv))
-            bound = 1 / torch.math.sqrt(fan_in) if fan_in > 0 else 0
-            torch.nn.init.uniform_(self.bias_dof, -bound, bound)
+        # Update cache
+        self.expand_weight()
+        if self.bias_module is not None:
+            self.bias_module.reset_parameters(scheme=scheme)
 
         logger.debug(f"Reset parameters of linear layer to {scheme}")
 
 
+class InvariantBias(torch.nn.Module):
+    r"""Module parameterizing a learnable :math:`G`-invariant bias.
+
+    For point-group symmetries the bias is constrained to live in the `trivial/invariant` subspace of the input vector
+    space. Therefore this module allocates a trainable parameter of size equal to the multiplicity of the trivial irrep
+    in the input representation.
+
+    If the input representation does not contain the trivial irrep (no trivial/invariant subspace), the module behaves
+    as the identity function.
+
+    Note:
+        The bias is cached after switching to evaluation mode for efficiency.
+    """
+
+    def __init__(self, in_rep: Representation):
+        """Construct the invariant bias module.
+
+        Args:
+            in_rep: Representation of the input space (same as output space).
+        """
+        super().__init__()
+        self.in_rep, self.out_rep = in_rep, in_rep
+
+        G = self.in_rep.group
+        trivial_id = G.trivial_representation.id
+        # Assert invariant vector is possible.
+        self.has_bias = in_rep._irreps_multiplicities.get(trivial_id, 0) > 0
+
+        if not self.has_bias:  # No bias -> No buffer memory consumption
+            return
+
+        dtype = torch.get_default_dtype()
+        # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
+        m_out_trivial = self.in_rep._irreps_multiplicities[trivial_id]
+        self.register_parameter("bias_dof", torch.nn.Parameter(torch.zeros(m_out_trivial), requires_grad=True))
+        self.register_buffer("Qout", torch.tensor(self.in_rep.change_of_basis, dtype=dtype))
+        # Save mask of trivial dimensions in the irrep-spectral basis
+        self.register_buffer("spectral_trivial_mask", get_spectral_trivial_mask(self.in_rep))
+
+        # Cache reference of last computed bias
+        self._bias: torch.Tensor | None = None
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        """Apply the invariant bias.
+
+        Args:
+            input (torch.Tensor): Tensor whose last dimension equals ``in_rep.size``.
+
+        Returns:
+            torch.Tensor: Output tensor with the same shape as ``input``.
+        """
+        if not self.has_bias:
+            return input
+        return input + self.bias
+
+    @property
+    def bias(self):
+        """Invariant bias; recomputed in training, cached otherwise."""
+        # If training, recompute bias; else use cached version
+        if self.training or self._bias is None:
+            return self.expand_bias()
+        return self._bias
+
+    def expand_bias(self):
+        """Expand the learnable parameters into the invariant bias in the original basis."""
+        bias = torch.mv(self.Qout[:, self.spectral_trivial_mask], self.bias_dof)
+        # Update cache
+        self._bias = bias
+        return bias
+
+    def expand_bias_spectral_basis(self):
+        """Return the invariant bias expressed in the irrep-spectral basis."""
+        spectral_bias = torch.zeros(self.in_rep.size, dtype=self.bias_dof.dtype, device=self.bias_dof.device)
+        spectral_bias[self.spectral_trivial_mask] = self.bias_dof
+        return spectral_bias
+
+    def reset_parameters(self, scheme="zeros"):
+        """Initialize the invariant bias degrees of freedom."""
+        if not self.has_bias:
+            return
+        if scheme == "zeros":
+            torch.nn.init.zeros_(self.bias_dof)
+
+        trivial_id = self.in_rep.group.trivial_representation.id
+        m = self.in_rep._irreps_multiplicities[trivial_id]
+        fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(torch.empty(m, m))
+        bound = 1 / torch.math.sqrt(fan_in) if fan_in > 0 else 0
+        torch.nn.init.uniform_(self.bias_dof, -bound, bound)
+
+        self._bias = None  # Clear cache
+
+    def eval(self):
+        """Refresh the cached bias and switch to evaluation mode."""
+        # Update cache.
+        self.expand_bias()
+        return super().eval()
+
+
 class eAffine(torch.nn.Module):
-    r"""Applies a symmetry-preserving affine transformation y = x * alpha + beta to the input x.
+    r"""Symmetry-preserving affine map :math:`y = \alpha \odot x + \beta`.
 
-    The affine transformation for a given input :math:`x \in \mathcal{X} \subseteq \mathbb{R}^{D_x}` is defined as:
+    The scale :math:`\alpha` is constant within each irrep block and the bias :math:`\beta`
+    lives only in the invariant subspace. When ``learnable=True`` these degrees of freedom are
+    stored as trainable parameters. When ``learnable=False`` they must be provided to
+    :meth:`forward` as ``scale_dof`` (length ``n_irreps``) and, if enabled, ``bias_dof``
+    (length ``#trivial``), allowing external FiLM-style modulation.
 
-    .. math::
-        \mathbf{y} = \mathbf{x} \cdot \alpha + \beta
-
-    such that
-
-    .. math::
-        \rho_{\mathcal{X}}(g) \mathbf{y} = (\rho_{\mathcal{X}}(g) \mathbf{x}) \cdot \alpha + \beta \quad \forall g \in G
-
-    Where :math:`\mathcal{X}` is a symmetric vector space with group representation
-    :math:`\rho_{\mathcal{X}}: G \to \mathbb{GL}(D_x)`, and :math:`\alpha \in \mathbb{R}^{D_x}`,
-    :math:`\beta \in \mathbb{R}^{D_x}` are symmetry constrained learnable vectors.
+    Note:
+        TODO: This module can be implemented without transitioning to the spectral basis, which can improve efficiency
+        dramatically.
 
     Args:
-        in_rep: the :class:`escnn.group.Representation` group representation of the input feature space.
-        bias: a boolean value that when set to ``True``, this module has a learnable bias vector
-            in the invariant subspace of the input representation Default: ``True``
+        in_rep: :class:`escnn.group.Representation` describing the input/output space.
+        bias: include invariant biases when the trivial irrep is present. Default: ``True``.
+        learnable: if ``False``, no parameters are registered and ``scale_dof``/``bias_dof`` must
+            be passed at call time. Default: ``True``.
+        init_scheme: initialization for the learnable DoFs (``"identity"`` or ``"random"``). Set
+            to ``None`` to skip init (e.g. when loading weights). Ignored when ``learnable=False``.
 
     Shape:
-        - Input: of shape `(..., D)` where :math:`D` is the dimension of the input type.
-        - Output: of shape `(..., D)`
+        - Input: ``(..., D)`` with ``D = in_rep.size``.
+        - ``scale_dof`` (optional): ``(..., num_scale_dof)`` where ``n_irreps`` is the number of irreps in ``in_rep``.
+        - ``bias_dof`` (optional): ``(..., num_bias_dof)`` when ``bias=True``.
+        - Output: ``(..., D)``.
+
+    Attributes:
+        num_scale_dof (int): Expected length of ``scale_dof`` (one per irrep).
+        num_bias_dof (int): Expected length of ``bias_dof`` when an invariant subspace is present.
     """
 
     def __init__(
         self,
         in_rep: Representation,
         bias: bool = True,
+        learnable: bool = True,
         init_scheme: Literal["identity", "random"] | None = "identity",
     ):
         super().__init__()
         self.in_rep, self.out_rep = in_rep, in_rep
+        self.learnable = learnable
 
         self.rep_x = in_rep
         G = self.rep_x.group
-        default_dtype = torch.get_default_dtype()
-        self.register_buffer("Q", torch.tensor(self.rep_x.change_of_basis, dtype=default_dtype))
-        self.register_buffer("Q_inv", torch.tensor(self.rep_x.change_of_basis_inv, dtype=default_dtype))
+        dtype = torch.get_default_dtype()
 
-        # Symmetry-preserving scaling implies scaling each irreducible subspace uniformly.
+        # Common metadata --------------------------------------------------------------------------
+        self.register_buffer("Q", torch.tensor(self.rep_x.change_of_basis, dtype=dtype))
+        self.register_buffer("Q_inv", torch.tensor(self.rep_x.change_of_basis_inv, dtype=dtype))
+        # Buffers needed to map per-irrep scale to full spectral scale
         irrep_dims_list = [G.irrep(*irrep_id).size for irrep_id in self.rep_x.irreps]
         irrep_dims = torch.tensor(irrep_dims_list, dtype=torch.long)
-        n_scale_params = len(irrep_dims_list)
-        self.register_parameter("scale_dof", torch.nn.Parameter(torch.ones(n_scale_params, dtype=default_dtype)))
+        self._num_scale_dof = len(irrep_dims_list)
         self.register_buffer(
             "irrep_indices", torch.repeat_interleave(torch.arange(len(irrep_dims), dtype=torch.long), irrep_dims)
         )
 
-        has_invariant_subspace = G.trivial_representation.id in self.rep_x.irreps
-        self.has_bias = bias and has_invariant_subspace
-        if self.has_bias:
-            is_trivial_irrep = torch.tensor(
-                [irrep_id == G.trivial_representation.id for irrep_id in self.rep_x.irreps], dtype=torch.bool
-            )
-            n_bias_params = int(is_trivial_irrep.sum().item())
-            self.register_parameter("bias_dof", torch.nn.Parameter(torch.zeros(n_bias_params, dtype=default_dtype)))
-            dim_to_param = torch.full((self.rep_x.size,), -1, dtype=torch.long)
+        trivial_id = G.trivial_representation.id
+        self.has_bias = bias and trivial_id in self.rep_x._irreps_multiplicities
+        self._num_bias_dof = 0
+        self.bias_module = None
+        if self.has_bias and self.learnable:
+            # Reuse invariant-bias helper (stores bias_dof and spectral mask)
+            self.bias_module = InvariantBias(self.rep_x)
+            self._num_bias_dof = self.bias_module.bias_dof.numel()
+            # Convenience handle so callers expecting ``bias_dof`` still find it.
+            self.bias_dof = self.bias_module.bias_dof
+        elif self.has_bias:
+            trivial_mask = torch.zeros(self.rep_x.size, dtype=torch.bool)
             offset = 0
-            bias_idx = 0
-            for is_trivial, dim in zip(is_trivial_irrep.tolist(), irrep_dims_list):
-                if is_trivial:
-                    dim_to_param[offset : offset + dim] = bias_idx
-                    bias_idx += 1
-                offset += dim
-            self.register_buffer("bias_dim_to_param", dim_to_param)
+            for irrep_id in self.rep_x.irreps:
+                if irrep_id == trivial_id:
+                    trivial_mask[offset] = 1
+                    self._num_bias_dof += 1
+                offset += G.irrep(*irrep_id).size
+            self.register_buffer("trivial_subspace_mask", trivial_mask)
+
+        # Mode-specific parameters -----------------------------------------------------------------
+        if self.learnable:
+            self.register_parameter("scale_dof", torch.nn.Parameter(torch.ones(self.num_scale_dof, dtype=dtype)))
+            if self.has_bias and self.bias_module is None:
+                self.register_parameter("bias_dof", torch.nn.Parameter(torch.zeros(self.num_bias_dof, dtype=dtype)))
+            elif self.has_bias:
+                # bias handled by bias_module; keep attribute for API compatibility
+                self.bias_dof = self.bias_module.bias_dof
+            else:
+                self.register_parameter("bias_dof", None)
 
         if init_scheme is not None:
             self.reset_parameters(scheme=init_scheme)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Applies the affine transformation; works for any input with last dim ``D``."""
-        if x.shape[-1] != self.rep_x.size:
-            raise ValueError(f"Expected last dimension {self.rep_x.size}, got {x.shape[-1]}")
+    def forward(
+        self,
+        input: torch.Tensor,
+        scale_dof: torch.Tensor | None = None,
+        bias_dof: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Apply the equivariant affine transform.
 
-        x_spectral = torch.einsum("ij,...j->...i", self.Q_inv, x)
+        When ``learnable=False`` ``scale_dof`` (and ``bias_dof`` if ``bias=True``) must be provided.
 
-        scale_spec, bias_spec = self.spectral_parameters(device=x_spectral.device, dtype=x_spectral.dtype)
-        x_spectral = x_spectral * scale_spec.view(*([1] * (x_spectral.ndim - 1)), -1)
+        Args:
+            input: tensor whose last dimension matches ``in_rep.size``.
+            scale_dof: optional per-irrep scaling degrees of freedom (length ``num_scale_dof``). Required when
+                ``learnable=False`` with leading dims matching ``input.shape[:-1]``.
+            bias_dof: optional bias degrees of freedom for the invariant irreps (length ``num_bias_dof``). Required
+                when ``learnable=False`` and ``bias=True`` with leading dims matching ``input.shape[:-1]``.
+        """
+        if input.shape[-1] != self.rep_x.size:
+            raise ValueError(f"Expected last dimension {self.rep_x.size}, got {input.shape[-1]}")
 
-        if bias_spec is not None:
-            x_spectral = x_spectral + bias_spec.view(*([1] * (x_spectral.ndim - 1)), -1)
+        # Obtain per-dimension spectral scale; reuse learnable bias directly in original basis.
+        if self.learnable:
+            scale_spec = self.scale_dof[self.irrep_indices]  # (D,)
+            bias_orig = self.bias_module.bias if self.has_bias and self.bias_module is not None else None
+        else:
+            scale_spec, spectral_bias = self.broadcast_spectral_scale_and_bias(
+                scale_dof, bias_dof, input_shape=input.shape
+            )
+            bias_orig = None
+            if spectral_bias is not None:
+                # Map spectral bias back to original basis: (..., D)
+                bias_orig = torch.einsum("ij,...j->...i", self.Q, spectral_bias)
 
-        y = torch.einsum("ij,...j->...i", self.Q, x_spectral)
+        # Apply scaling in original basis via Q * diag(scale_spec) * Q_inv. Output shape matches input (..., D).
+        y = torch.einsum("ij,...j,jk,...k->...i", self.Q, scale_spec, self.Q_inv, input)
+        if bias_orig is not None:
+            y = y + bias_orig
         return y
 
-    def spectral_parameters(self, device=None, dtype=None):
-        """Return per-dimension spectral scale and bias vectors."""
-        scale = self.scale_dof[self.irrep_indices].to(device=device, dtype=dtype or self.scale_dof.dtype)
-        bias = None
-        if self.has_bias and self.bias_dof.numel() > 0:
-            bias_index = self.bias_dim_to_param
-            valid = bias_index >= 0
-            if valid.any():
-                bias = torch.zeros(
-                    self.rep_x.size, device=scale.device if device is None else device, dtype=dtype or scale.dtype
+    def broadcast_spectral_scale_and_bias(
+        self,
+        scale_dof: torch.Tensor,
+        bias_dof: torch.Tensor | None = None,
+        input_shape: torch.Size | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        """Return spectral scale and bias from provided DoFs.
+
+        Args:
+            scale_dof: Per-irrep scale coefficients shaped ``(..., num_scale_dof)``.
+            bias_dof: Invariant-bias coefficients shaped ``(..., num_bias_dof)`` when ``bias=True``.
+            input_shape: Shape of the input tensor when ``learnable=False``. Used to validate DoF shapes.
+
+        Returns:
+            spectral_scale: Spectral scale tensor shaped ``(..., rep_x.size)``.
+            spectral_bias: Spectral bias tensor shaped ``(..., rep_x.size)`` or ``None`` when ``bias=False``.
+        """
+        input_shape = () if input_shape is None else input_shape[:-1]
+
+        if scale_dof is None or scale_dof.shape != (*input_shape, self._num_scale_dof):
+            raise ValueError(
+                f"Expected scale_dof shape {(*input_shape, self._num_scale_dof)}, got "
+                f"{scale_dof.shape if scale_dof is not None else None}"
+            )
+
+        # Broadcast scale per irrep subspace to each irrep subspace dimension.
+        spectral_scale = scale_dof[..., self.irrep_indices]
+        spectral_bias = None
+
+        if self.has_bias:
+            # Use provided bias DoFs when passed (external control), otherwise fall back to learnable helper.
+            if bias_dof is None and self.bias_module is not None:
+                bias_dof = self.bias_module.bias_dof
+            if bias_dof is None or bias_dof.shape != (*input_shape, self._num_bias_dof):
+                raise ValueError(
+                    f"Expected bias_dof shape {(*input_shape, self._num_bias_dof)}, got "
+                    f"{bias_dof.shape if bias_dof is not None else None}"
                 )
-                bias_vals = self.bias_dof.to(device=bias.device, dtype=bias.dtype)
-                bias_index = bias_index.to(bias.device)
-                bias[valid] = bias_vals[bias_index[valid]]
-        return scale, bias
+
+            if self.bias_module is not None:
+                # Learnable bias: use helper to expand into spectral basis
+                spectral_bias = self.bias_module.expand_bias_spectral_basis()
+            else:
+                spectral_bias = bias_dof.new_zeros(*bias_dof.shape[:-1], self.rep_x.size)
+                spectral_bias[..., self.trivial_subspace_mask] = bias_dof
+
+        return spectral_scale, spectral_bias
 
     def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:
         """Initialize spectral scale/bias DoFs.
@@ -300,58 +445,32 @@ class eAffine(torch.nn.Module):
             scheme: ``"identity"`` sets all scales to one and bias to zero; ``"random"`` samples both
                 uniformly in ``[-1, 1]``. Set to ``None`` when loading checkpoints to skip reinit.
         """
+        if not self.learnable:
+            return
         if scheme == "identity":
             torch.nn.init.ones_(self.scale_dof)
-            if self.has_bias and self.bias_dof is not None:
+            if self.has_bias and self.bias_module is not None and self.bias_module.bias_dof is not None:
+                torch.nn.init.zeros_(self.bias_module.bias_dof)
+            elif self.has_bias and self.bias_dof is not None:
                 torch.nn.init.zeros_(self.bias_dof)
         elif scheme == "random":
             torch.nn.init.uniform_(self.scale_dof, -1, 1)
-            if self.has_bias and self.bias_dof is not None:
+            if self.has_bias and self.bias_module is not None and self.bias_module.bias_dof is not None:
+                torch.nn.init.uniform_(self.bias_module.bias_dof, -1, 1)
+            elif self.has_bias and self.bias_dof is not None:
                 torch.nn.init.uniform_(self.bias_dof, -1, 1)
         else:
             raise NotImplementedError(f"Init scheme {scheme} not implemented")
 
     def extra_repr(self) -> str:  # noqa: D102
-        return f"in_rep{self.in_rep} bias={self.has_bias}"
+        return f"bias={self.has_bias} learnable={self.learnable} \nin_rep={self.in_rep}"
 
+    @property
+    def num_scale_dof(self) -> int:
+        """Number of per-irrep scaling degrees of freedom (length of ``scale_dof``)."""
+        return self._num_scale_dof
 
-if __name__ == "__main__":
-    from escnn.group import CyclicGroup, DihedralGroup, Icosahedral
-    from escnn.nn import Linear
-    from numpy import set_printoptions
-
-    from symm_learning.utils import describe_memory
-
-    set_printoptions(precision=2, suppress=True)
-
-    from symm_learning.utils import bytes_to_mb, check_equivariance, module_memory_breakdown
-
-    G = CyclicGroup(10)
-    # G = Icosahedral()
-    m_in, m_out = 5, 1
-    bias = False
-    in_rep = direct_sum([G.regular_representation] * m_in)
-    out_rep = direct_sum([G.regular_representation] * m_out)
-
-    baseline_layer = torch.nn.Linear(in_rep.size, out_rep.size, bias=bias)
-    describe_memory("torch.nn.Linear baseline", baseline_layer)
-
-    def backprop_sanity(module: torch.nn.Module, label: str):  # noqa: D103
-        module.train()
-        optim = torch.optim.SGD(module.parameters(), lr=1e-3)
-        x = torch.randn(64, module.in_rep.size)
-        target = torch.randn(64, module.out_rep.size)
-        optim.zero_grad()
-        y = module(x)
-        loss = F.mse_loss(y, target)
-        loss.backward()
-        optim.step()
-        grad_norm = sum((p.grad.norm().item() for p in module.parameters() if p.grad is not None))
-        print(f"{label} backprop test passed (grad norm {grad_norm:.4f})")
-
-    for basis_expansion in ["isotypic_expansion", "memory_heavy"]:
-        layer = eLinear(in_rep, out_rep, bias=bias, basis_expansion_scheme=basis_expansion)
-        describe_memory(f"eLinear ({basis_expansion})", layer)
-        check_equivariance(layer, atol=1e-5, rtol=1e-5)
-        print(f"eLinear with basis expansion '{basis_expansion}' equivariant test passed.")
-        backprop_sanity(layer, f"eLinear with basis expansion '{basis_expansion}'")
+    @property
+    def num_bias_dof(self) -> int:
+        """Number of bias degrees of freedom (length of ``bias_dof``) for invariant irreps."""
+        return self._num_bias_dof

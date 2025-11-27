@@ -3,454 +3,263 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-import escnn
-import escnn.nn.init
-import numpy as np
 import torch
-import torch.nn.functional as F
-from escnn.gspaces import no_base_space
-from escnn.nn import EquivariantModule, FieldType, GeometricTensor
-from escnn.nn.modules.basismanager import BlocksBasisExpansion
+from escnn.group import Representation
 
-from symm_learning.representation_theory import isotypic_decomp_rep
+from symm_learning.nn.linear import eINIT_SCHEMES
+from symm_learning.representation_theory import GroupHomomorphismBasis
 
 log = logging.getLogger(__name__)
 
 
-class eConv1D(EquivariantModule):
-    r"""One-dimensional :math:`\mathbb{G}`-equivariant convolution.
+class eConv1d(torch.nn.Conv1d):
+    r"""Channel-equivariant 1D convolution.
 
-    This layer applies a standard 1D convolution (see
-    `torch.nn.Conv1d <https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>`_)
-    to geometric tensors by ensuring the convolution kernel :math:`K` of shape
-    ``(out_type.size, in_type.size, kernel_size)`` is constrained to be constructed
-    from interwiners between the input and output representations, such that
-    :math:`K[:, :, i] \in \mathrm{Hom}_{\mathbb{G}}(\mathcal{V}_{\text{in}}, \mathcal{V}_{\text{out}})`
-
-    For the usual convolution hyper-parameters (stride, padding,
-    dilation, etc.) this class follows exactly the semantics of
-    :class:`torch.nn.Conv1d`; please refer to the PyTorch docs for
-    details.
-
-    Args:
-        in_type (:class:`escnn.nn.FieldType`)
-            Field type of the input tensor. Must have :class:`GSpace1D` as its ``gspace``.
-            Input tensors should be of shape ``(batch_dim, in_type.size, H)``, where ``H``
-            is the 1D/time dimension.
-        out_type : :class:`escnn.nn.FieldType`
-            Field type of the output tensor. Must have the same ``gspace`` as ``in_type``.
-            Output tensors will be of shape ``(batch_dim, out_type.size, H_out)``.
-        kernel_size : ``int``, default=3
-            Temporal receptive field :math:`h`.
-        stride : ``int``, default=1
-        padding : ``int``, default=0
-        dilation : ``int``, default=1
-        bias : ``bool``, default=True
-        padding_mode : ``str``, default="zeros"
-            Passed through to :func:`torch.nn.functional.conv1d`.
-        basisexpansion : ``Literal["blocks"]``, default="blocks"
-            Basis-construction strategy. Currently only ``"blocks"`` (ESCNN's
-            block-matrix algorithm) is implemented.
-        recompute : ``bool``, default=False
-            Whether to rebuild the kernel basis at every forward pass
-            (useful for debugging; slow).
-        initialize : ``bool``, default=True
-            If ``True``, the free parameters are initialised with the
-            generalised He scheme implemented in ``escnn.nn.init``.
-        device : ``torch.device``, optional
-        dtype : ``torch.dtype``, optional
-
-    Example:
-    ---------
-    >>> from escnn.group import DihedralGroup
-    >>> from escnn.nn import FieldType
-    >>> from symm_learning.nn import eConv1D, GSpace1D
-    >>> G = DihedralGroup(10)
-    >>> # Custom (hacky) 1D G-space needed to use `GeometricTensor`
-    >>> gspace = GSpace1D(G)  # Note G does not act on points in the 1D space.
-    >>> in_type = FieldType(gspace, [G.regular_representation])
-    >>> out_type = FieldType(gspace, [G.regular_representation] * 2)
-    >>> H, kernel_size, batch_size = 10, 3, 5
-    >>> # Inputs to Conv1D/eConv1D are of shape (B, in_type.size, T) where B is the batch size, C is the number of channels and T is the time dimension.
-    >>> x = in_type(torch.randn(batch_size, in_type.size, H))
-    >>> # Instance of eConv1D
-    >>> conv_layer = eConv1D(in_type, out_type, kernel_size=3, stride=1, padding=0, bias=True)
-    >>> # Forward pass
-    >>> y = conv_layer(x)  # (B, out_type.size, H_out)
-    >>> # After training you can export this `EquivariantModule` to a `torch.nn.Module` by:
-    >>> conv1D = conv_layer.export()
-
-    Shape
-    ------
-    - Input: ``(B, in_type.size, H)``
-    - Output: ``(B, out_type.size, H_out)``, where ``H_out`` is computed as in
-      `torch.nn.Conv1d <https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>`_.
-    """  # noqa: E501
-
-    def __init__(
-        self,
-        in_type: FieldType,
-        out_type: FieldType,
-        kernel_size: int = 3,
-        stride=1,
-        padding=0,
-        dilation=1,
-        bias=True,
-        padding_mode="zeros",
-        # ESCNN-specific parameters
-        basisexpansion: Literal["blocks"] = "blocks",
-        recompute: bool = False,
-        initialize: bool = True,
-        # PyTorch-specific parameters
-        device=None,
-        dtype=None,
-    ):
-        super().__init__()
-        assert in_type.gspace == out_type.gspace and isinstance(in_type.gspace, GSpace1D)
-        # Assert that hyperparameters are valid for a 1D convolution layer
-        assert isinstance(kernel_size, int) and kernel_size > 0, "kernel_size must be a positive integer"
-        assert isinstance(stride, int) and stride > 0, "stride must be a positive integer"
-        assert isinstance(padding, int) and padding >= 0, "padding must be a non-negative integer"
-        assert isinstance(dilation, int) and dilation > 0, "dilation must be a positive integer"
-        self.in_type = in_type
-        self.out_type = out_type
-
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
-        self.dilation = dilation
-        self.padding_mode = padding_mode
-        self.bias = bias
-        self.basisexpansion_type = basisexpansion
-        self.device, self.dtype = device, dtype
-
-        # Compute the basis of equivariant kernels. Given that the convolution kernel if of shape:
-        # K: (out_channels, in_channels, kernel_size), we exploit the fact that each K[:, :, i] is
-        # constrained to be a group homophorphism between the input and output representations.
-        # Hence we use escnn to compute the basis of homomorphisms and use this for each i.
-        if self.basisexpansion_type == "blocks":  # Inefficient but easy implementation as reuses ESCNN code
-            space = no_base_space(in_type.fibergroup)
-            self._basisexpansion = BlocksBasisExpansion(
-                in_type.representations,
-                out_type.representations,
-                basis_generator=space.build_fiber_intertwiner_basis,
-                points=np.zeros((1, 1)),  # Not used
-                recompute=recompute,
-            )
-            # Free parameters are `kernel_size` * `dim(End_G(in_space, out_space))`
-            # print("Intertwiner basis dimension:", self._basisexpansion.dimension())
-            self.weights = torch.nn.Parameter(
-                torch.zeros(self._basisexpansion.dimension() * kernel_size), requires_grad=True
-            ).to(
-                device=device,
-                dtype=dtype,
-            )
-
-            filter_size = (out_type.size, in_type.size, kernel_size)
-            self.register_buffer("kernel", torch.zeros(*filter_size))
-            if initialize:
-                # by default, the weights are initialized with a generalized form of He's weight initialization
-                for i in range(kernel_size):
-                    escnn.nn.init.generalized_he_init(
-                        self.weights.data[i * self._dim_interwiner_basis : (i + 1) * self._dim_interwiner_basis],
-                        self._basisexpansion,
-                    )
-
-        else:
-            raise ValueError('Basis Expansion algorithm "%s" not recognized' % basisexpansion)
-
-        if self.bias:
-            rep_out = isotypic_decomp_rep(self.out_type.representation)
-            G = rep_out.group
-            has_trivial_irrep = G.trivial_representation.id in rep_out.attributes["isotypic_reps"]
-
-            if not has_trivial_irrep:
-                self.bias = False  # Bias only lives in the Invariant isotypic subspace.
-                log.info(
-                    f"Conv1D layer {self} initiated with bias=True, but the output type {self.out_type} is centered"
-                    "by construction. Setting bias=False."
-                )
-            else:
-                inv_subspace_rep = rep_out.attributes["isotypic_reps"][G.trivial_representation.id]
-                # Free DoF of the bias vector.
-                self.bias_weights = torch.nn.Parameter(
-                    torch.zeros(inv_subspace_rep.size, dtype=torch.float32), requires_grad=True
-                )
-                inv_subspace_dims = rep_out.attributes["isotypic_subspace_dims"][G.trivial_representation.id]
-                # Compute the map from the free DoF of the bias vector to the full bias vector.
-                Q_invariant = torch.tensor(rep_out.change_of_basis[:, inv_subspace_dims], dtype=torch.float32)
-                assert Q_invariant.shape == (self.out_type.size, inv_subspace_rep.size)
-                self.register_buffer("Q_invariant", Q_invariant)
-
-    def forward(self, input: GeometricTensor) -> GeometricTensor:
-        """Forward pass of the 1D convolution layer."""
-        assert input.type == self.in_type, "Input type does not match the layer's input type"
-        assert len(input.shape) == 3, "Input tensor must be 3D (batch, channels, time)"
-
-        # Shape: (out_channels, in_channels, kernel_size)
-        kernel = self.expand_kernel()
-        bias = self.expand_bias() if self.bias else None
-
-        x = input.tensor
-        y = F.conv1d(
-            input=x,
-            weight=kernel,
-            bias=bias,
-            stride=self.stride,
-            padding=self.padding,
-            dilation=self.dilation,
-            groups=1,  # No groups supported.
-        )
-        return self.out_type(y)
-
-    def expand_kernel(self) -> torch.Tensor:
-        """Kernel of the convolution layer of shape (out_channels, in_channels, kernel_size)."""
-        kernel = []
-        for i in range(self.kernel_size):
-            # Extract the weights for the current kernel
-            kernel.append(
-                self._basisexpansion(
-                    self.weights[i * self._dim_interwiner_basis : (i + 1) * self._dim_interwiner_basis]
-                )
-            )
-        self.kernel.data = torch.cat(kernel, dim=-1)
-        return self.kernel
-
-    def expand_bias(self) -> torch.Tensor:
-        """Expand the bias vector to the full bias vector."""
-        if not self.bias:
-            raise ValueError("Bias is not enabled for this layer.")
-        # Shape: (out_channels,)
-        return self.Q_invariant @ self.bias_weights
-
-    def evaluate_output_shape(self, input_shape) -> tuple[int, ...]:
-        """Calculate the output shape of the convolution layer."""
-        b, _, H = input_shape
-        return (b, self.out_type.size, self.dim_after_conv(H))
-
-    def dim_after_conv(self, input_dim: int) -> int:
-        """Calculate the output dimension after the convolution."""
-        return (input_dim + 2 * self.padding - self.dilation * (self.kernel_size - 1) - 1) // self.stride + 1
-
-    def check_equivariance(self, atol=1e-5, rtol=1e-5):
-        """Check the equivariance of the convolution layer."""
-        c = self.in_type.size
-        B, H = 10, 50
-        x = torch.randn(B, c, H)
-        x = GeometricTensor(x, self.in_type)
-
-        errors = []
-
-        # for el in self.out_type.testing_elements:
-        rep_Y = self.out_type.representation
-        for _ in range(20):
-            g = self.in_type.gspace.fibergroup.sample()
-
-            gx = x.transform(g)
-            y = self(x).tensor.detach().numpy()
-            gy = self(gx).tensor.detach().numpy()
-
-            gy_gt = np.einsum("ij,bjt->bit", rep_Y(g), y)
-            errs = gy - gy_gt
-            errs = np.abs(errs).reshape(-1)
-
-            assert np.allclose(gy, gy_gt, atol=atol, rtol=rtol), (
-                'The error found during equivariance check with element "{}" is too high: '
-                "max = {}, mean = {} var ={}".format(g, errs.max(), errs.mean(), errs.var())
-            )
-
-            errors.append((g, errs.mean()))
-
-        return errors
-
-    @property
-    def _dim_interwiner_basis(self):
-        """Dimension of the fiber intertwiner basis."""
-        return self._basisexpansion.dimension()
-
-    def extra_repr(self):  # noqa: D102
-        H = 100
-        _, _, H_out = self.evaluate_output_shape((1, self.in_type.size, H))
-        diff = H - H_out
-        return (
-            f"{self.in_type.fibergroup}-equivariant Conv1D layer\n"
-            f"in_type={self.in_type}, in_shape=(B, {self.in_type.size}, H) \n"
-            f"out_type={self.out_type}, out_shape=(B, {self.out_type.size}, H - {diff:d}) \n"
-            f"kernel_size={self.kernel_size} stride={self.stride}, padding={self.padding}, "
-            f"dilation={self.dilation}, bias={self.bias}"
-        )
-
-    def export(self) -> torch.nn.Conv1d:
-        """Exporting to a torch.nn.Conv1d"""
-        conv1D = torch.nn.Conv1d(
-            in_channels=self.in_type.size,
-            out_channels=self.out_type.size,
-            kernel_size=self.kernel_size,
-            stride=self.stride,
-            padding=self.padding,
-            dilation=self.dilation,
-            bias=self.bias,
-            padding_mode=self.padding_mode,
-        ).to(device=self.device, dtype=self.dtype)
-
-        conv1D.weight.data = self.expand_kernel().data
-        if self.bias:
-            conv1D.bias.data = self.expand_bias()
-        conv1D.eval()
-
-        return conv1D
-
-
-class eConvTranspose1D(eConv1D):
-    r"""One-dimensional **G-equivariant** transposed convolution."""
-
-    def __init__(
-        self,
-        in_type: FieldType,
-        out_type: FieldType,
-        output_padding: int = 0,
-        **conv1d_kwargs,
-    ):
-        super().__init__(
-            in_type=in_type,
-            out_type=out_type,
-            **conv1d_kwargs,
-        )
-        self.output_padding = output_padding
-
-    def forward(self, input: GeometricTensor) -> GeometricTensor:
-        """Forward pass of the transposed 1D convolution layer."""
-        assert input.type == self.in_type, "Input type does not match the layer's input type"
-        assert len(input.shape) == 3, "Input tensor must be 3D (batch, channels, time)"
-
-        # Shape: (out_channels, in_channels, kernel_size)
-        kernel = self.expand_kernel()
-        kernel = kernel.permute(1, 0, 2)  # Transpose to (in_channels, out_channels, kernel_size)
-        bias = self.expand_bias() if self.bias else None
-
-        y = input.tensor
-        x = F.conv_transpose1d(
-            input=y,
-            weight=kernel,
-            bias=bias,
-            output_padding=self.output_padding,
-            stride=self.stride,
-            padding=self.padding,
-            dilation=self.dilation,
-            groups=1,  # No groups supported.
-        )
-        return self.out_type(x)
-
-    def dim_after_conv(self, input_dim: tuple[int, ...]) -> tuple[int, ...]:
-        """Calculate the output dimension after the transposed convolution."""
-        H_out = (
-            (input_dim - 1) * self.stride
-            - 2 * self.padding
-            + self.dilation * (self.kernel_size - 1)
-            + self.output_padding
-            + 1
-        )
-        return H_out
-
-    def extra_repr(self):  # noqa: D102
-        msg = super().extra_repr()
-        msg.replace("Conv1D", "ConvTranspose1D")
-        msg += f", output_padding={self.output_padding}"
-        return msg
-
-    def export(self) -> torch.nn.ConvTranspose1d:
-        """Exporting to a torch.nn.ConvTranspose1d"""
-        conv_transpose1D = torch.nn.ConvTranspose1d(
-            in_channels=self.in_type.size,
-            out_channels=self.out_type.size,
-            kernel_size=self.kernel_size,
-            stride=self.stride,
-            padding=self.padding,
-            dilation=self.dilation,
-            output_padding=self.output_padding,
-            bias=self.bias,
-            padding_mode=self.padding_mode,
-        ).to(device=self.device, dtype=self.dtype)
-
-        conv_transpose1D.weight.data = self.expand_kernel().data.permute(1, 0, 2)
-        if self.bias:
-            conv_transpose1D.bias.data = self.expand_bias()
-        conv_transpose1D.eval()
-
-        return conv_transpose1D
-
-
-class GSpace1D(escnn.gspaces.GSpace):
-    """Hacky solution to use GeometricTensor with time as a homogenous space.
-
-    Note in ESCNN the group is thought to act on points in the space and on the "fibers" (e.g. the channels).
-    Here the fibergroup is assumed to be any finite symmetry group and hence we do not consider the action on points of
-    the gspace, since for a 1D space the only well-defined left orthogonal action is the trivial and reflection actions.
-
-    Hence in general consider the use of the modules using this GSpace instance as having two symmetry groups:
-    1. The group acting on the fibers (e.g. channels) of the input
-    2. The group acting on the time dimension, which is trivial in this case or reflection (not implemented yet).
-
-    .. warning::
-        This is a hacky solution and should be used with care. Do not rely on escnn standard functionality.
-
+    Matches :class:`torch.nn.Conv1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—while
+    constraining each kernel slice to lie in :math:`\operatorname{Hom}_G(\text{in\_rep}, \text{out\_rep})`. Kernel DoF
+    are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias exists only if
+    the trivial irrep appears in ``out_rep``.
     """
 
-    def __init__(self, fibergroup: escnn.group.Group, name: str = "GSpace1D"):
-        super().__init__(fibergroup=fibergroup, name=name, dimensionality=1)
+    def __init__(
+        self,
+        in_rep: Representation,
+        out_rep: Representation,
+        kernel_size: int = 3,
+        basis_expansion: Literal["isotypic_expansion", "memory_heavy"] = "isotypic_expansion",
+        init_scheme: eINIT_SCHEMES = "xavier_uniform",
+        **conv1d_kwargs,
+    ):
+        r"""Initialize the constrained convolution.
 
-    def _basis_generator(self, in_repr, out_repr, **kwargs):
-        raise NotImplementedError("Sines and cosines")
+        Args:
+            in_rep (Representation): Channel representation describing input transformation.
+            out_rep (Representation): Channel representation describing output transformation.
+            kernel_size (int, optional): Spatial kernel size. Defaults to 3.
+            basis_expansion (Literal, optional): Basis realization strategy for :class:`GroupHomomorphismBasis`.
+            init_scheme (eINIT_SCHEMES, optional): Initialization passed to
+                :meth:`GroupHomomorphismBasis.initialize_params`. Defaults to ``"xavier_uniform"``.
+            **conv1d_kwargs: Standard :class:`torch.nn.Conv1d` arguments (stride, padding, bias, etc.).
+        """
+        assert in_rep.group == out_rep.group, f"Incompatible group: {in_rep.group} and {out_rep.group}"
+
+        if "groups" in conv1d_kwargs:
+            assert conv1d_kwargs["groups"] == 1, "`groups`>1 are not supported in eConv1D"
+
+        super().__init__(in_channels=in_rep.size, out_channels=out_rep.size, kernel_size=kernel_size, **conv1d_kwargs)
+        dtype = conv1d_kwargs.get("dtype", torch.get_default_dtype())
+        # Delete linear unconstrained module parameters
+        self.register_parameter("weight", None)
+        self.register_parameter("bias", None)
+        # Instanciate the handler of the basis of Hom_G(in_rep, out_rep)
+        self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion)
+        self.in_rep, self.out_rep = self.homo_basis.in_rep, self.homo_basis.out_rep
+        if self.homo_basis.dim == 0:
+            raise ValueError(
+                f"No equivariant linear maps exist between {in_rep} and {out_rep}.\n dim(Hom_G(in_rep, out_rep))=0"
+            )
+        # Weight is a tensor of shape (out_rep.size, in_rep.size, kernel_size), hence:
+        self.register_parameter(
+            "weight_dof",
+            torch.nn.Parameter(torch.zeros(kernel_size, self.homo_basis.dim, dtype=dtype), requires_grad=True),
+        )
+
+        # Assert bias vector is feasible given out_rep symmetries
+        bias = conv1d_kwargs.get("bias", True)
+        trivial_id = self.homo_basis.G.trivial_representation.id
+        can_have_bias = out_rep._irreps_multiplicities.get(trivial_id, 0) > 0
+        self.has_bias = bias and can_have_bias
+        if self.has_bias:  # Register bias parameters
+            # Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep
+            m_out_trivial = out_rep._irreps_multiplicities[trivial_id]
+            self.register_parameter(
+                "bias_dof", torch.nn.Parameter(torch.zeros(m_out_trivial, dtype=dtype), requires_grad=True)
+            )
+            self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
+
+        if init_scheme is not None:
+            self.reset_parameters(scheme=init_scheme)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:  # noqa: D102
+        """Apply the constrained 1D convolution on channel-last dimension."""
+        assert input.shape[-2] == self.in_rep.size, (
+            f"Expected input of shape (..., {self.in_rep.size}, H) got {input.shape}"
+        )
+        return super().forward(input)
 
     @property
-    def basespace_action(self) -> escnn.group.Representation:  # noqa: D102
-        return self.fibergroup.trivial_representation
+    def weight(self) -> torch.Tensor:  # noqa: D102
+        """Dense kernel of shape ``(out_channels, in_channels, kernel_size)``."""
+        W = self.homo_basis(self.weight_dof)  # (kernel_size, out_rep.size, in_rep.size)
+        return W.permute(1, 2, 0)  # (out_rep.size, in_rep.size, kernel_size)
 
-    def restrict(self, id):  # noqa: D102
-        raise NotImplementedError("Cannot restrict a 1D GSpace")
+    @property
+    def bias(self) -> torch.Tensor | None:  # noqa: D102
+        """Expanded invariant bias or ``None`` when not admissible."""
+        return self._expand_bias() if self.has_bias else None
+
+    @torch.no_grad()
+    def reset_parameters(self, scheme: eINIT_SCHEMES = "xavier_normal"):
+        """Reset trainable parameters using the chosen initialization scheme."""
+        if not hasattr(self, "homo_basis"):  # First call on torch.nn.Conv1d init
+            return super().reset_parameters()
+        new_params = self.homo_basis.initialize_params(scheme=scheme, leading_shape=self.kernel_size)
+        self.weight_dof.copy_(new_params)
+
+        if self.has_bias:
+            trivial_id = self.out_rep.group.trivial_representation.id
+            m_in_inv = self.in_rep._irreps_multiplicities[trivial_id]
+            m_out_inv = self.out_rep._irreps_multiplicities[trivial_id]
+            fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(torch.empty(m_out_inv, m_in_inv))
+            bound = 1 / torch.math.sqrt(fan_in) if fan_in > 0 else 0
+            torch.nn.init.uniform_(self.bias_dof, -bound, bound)
+
+    @torch.no_grad()
+    def check_equivariance(self, atol=1e-5, rtol=1e-5):
+        """Check equivariance under channel actions of the underlying fiber group."""
+        G = self.in_rep.group
+        B, L = 10, 30
+        x = torch.randn(B, self.in_rep.size, L, device=self.weight_dof.device, dtype=self.weight_dof.dtype)
+        y = self(x)
+
+        for _ in range(10):
+            g = G.sample()
+            rho_in = torch.tensor(self.in_rep(g), dtype=x.dtype, device=x.device)
+            rho_out = torch.tensor(self.out_rep(g), dtype=y.dtype, device=y.device)
+            gx = torch.einsum("ij,bjl->bil", rho_in, x)
+            y_expected = self(gx)
+            gy = torch.einsum("ij,bjl->bil", rho_out, y)
+            assert torch.allclose(gy, y_expected, atol=atol, rtol=rtol), (
+                f"Equivariance failed for group element {g} with max error {(gy - y_expected).abs().max().item():.3e}"
+            )
+
+    def _expand_bias(self):
+        """Expand bias degrees of freedom into the original basis."""
+        trivial_id = self.out_rep.group.trivial_representation.id
+        trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
+        bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
+        return bias
 
 
-if __name__ == "__main__":
-    # Example usage
-    from escnn.group import DihedralGroup
+class eConvTranspose1d(torch.nn.ConvTranspose1d):
+    r"""Channel-equivariant transposed 1D convolution.
 
-    G = DihedralGroup(10)
-    gspace = GSpace1D(G)
-    in_type = FieldType(gspace, [G.regular_representation])
-    out_type = FieldType(gspace, [G.regular_representation] * 2)
+    Matches :class:`torch.nn.ConvTranspose1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—
+    while constraining each kernel slice to lie in :math:`\operatorname{Hom}_G(\text{in\_rep}, \text{out\_rep})`. Kernel
+    DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias exists only
+    if the trivial irrep appears in ``out_rep``.
+    """
 
-    time = 10
-    kernel_size = 3
-    batch_size = 30
-    x = torch.randn(batch_size, in_type.size, time)
-    x = in_type(x)
+    def __init__(
+        self,
+        in_rep: Representation,
+        out_rep: Representation,
+        kernel_size: int = 3,
+        basis_expansion: Literal["isotypic_expansion", "memory_heavy"] = "isotypic_expansion",
+        init_scheme: eINIT_SCHEMES = "xavier_uniform",
+        **conv1d_kwargs,
+    ):
+        r"""Initialize the constrained transposed convolution.
 
-    conv_layer = eConv1D(in_type, out_type, kernel_size=3, stride=1, padding=0, bias=True)
-    print(conv_layer)
-    print("Weights shape:", conv_layer.weights.shape)
-    print("Kernel shape:", conv_layer.kernel.shape)
+        Args:
+            in_rep (Representation): Channel representation describing input transformation.
+            out_rep (Representation): Channel representation describing output transformation.
+            kernel_size (int, optional): Spatial kernel size. Defaults to 3.
+            basis_expansion (Literal, optional): Basis realization strategy for :class:`GroupHomomorphismBasis`.
+            init_scheme (eINIT_SCHEMES, optional): Initialization passed to
+                :meth:`GroupHomomorphismBasis.initialize_params`. Defaults to ``"xavier_uniform"``.
+            **conv1d_kwargs: Standard :class:`torch.nn.ConvTranspose1d` arguments (stride, padding, bias, etc.).
+        """
+        assert in_rep.group == out_rep.group, f"Incompatible group: {in_rep.group} and {out_rep.group}"
+        if "groups" in conv1d_kwargs:
+            assert conv1d_kwargs["groups"] == 1, "`groups`>1 are not supported in eConvTranspose1d"
 
-    y = conv_layer(x)  # (B, out_type.size, H_out)
-    assert y.shape == conv_layer.evaluate_output_shape(x.shape)
-    print("Input shape:", x.shape)
-    print("Output shape:", y.shape)
+        super().__init__(in_channels=in_rep.size, out_channels=out_rep.size, kernel_size=kernel_size, **conv1d_kwargs)
+        dtype = conv1d_kwargs.get("dtype", torch.get_default_dtype())
+        self.register_parameter("weight", None)
+        self.register_parameter("bias", None)
 
-    loss = torch.nn.functional.mse_loss(y.tensor, torch.randn_like(y.tensor))
-    loss.backward()
+        self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion)
+        self.in_rep, self.out_rep = self.homo_basis.in_rep, self.homo_basis.out_rep
+        if self.homo_basis.dim == 0:
+            raise ValueError(
+                f"No equivariant linear maps exist between {in_rep} and {out_rep}.\n dim(Hom_G(in_rep, out_rep))=0"
+            )
+        self.register_parameter(
+            "weight_dof",
+            torch.nn.Parameter(torch.zeros(kernel_size, self.homo_basis.dim, dtype=dtype), requires_grad=True),
+        )
 
-    conv_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+        bias = conv1d_kwargs.get("bias", True)
+        trivial_id = self.homo_basis.G.trivial_representation.id
+        can_have_bias = out_rep._irreps_multiplicities.get(trivial_id, 0) > 0
+        self.has_bias = bias and can_have_bias
+        if self.has_bias:
+            m_out_trivial = out_rep._irreps_multiplicities[trivial_id]
+            self.register_parameter(
+                "bias_dof", torch.nn.Parameter(torch.zeros(m_out_trivial, dtype=dtype), requires_grad=True)
+            )
+            self.register_buffer("Qout", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
 
-    conv_transpose_layer = eConvTranspose1D(in_type=out_type, out_type=in_type, kernel_size=kernel_size, bias=False)
+        if init_scheme is not None:
+            self.reset_parameters(scheme=init_scheme)
 
-    conv_transpose_layer.check_equivariance(atol=1e-5, rtol=1e-5)
+    def forward(self, input: torch.Tensor) -> torch.Tensor:  # noqa: D102
+        """Apply the constrained transposed 1D convolution on channel dimension."""
+        assert input.shape[-2] == self.in_rep.size, (
+            f"Expected input of shape (..., {self.in_rep.size}, H > 0) got {input.shape}"
+        )
+        return super().forward(input)
 
-    y = out_type(torch.randn(batch_size, out_type.size, time))
-    x = conv_transpose_layer(y).tensor
-    x_torch = conv_transpose_layer.export()(y.tensor)
-    assert torch.allclose(x, x_torch, atol=1e-5, rtol=1e-5)
+    @property
+    def weight(self) -> torch.Tensor:  # noqa: D102
+        """Dense kernel of shape ``(in_channels, out_channels, kernel_size)``."""
+        W = self.homo_basis(self.weight_dof)  # (kernel_size, out_rep.size, in_rep.size)
+        return W.permute(2, 1, 0)  # (in_rep.size, out_rep.size, kernel_size)
 
-    y = out_type(torch.randn(batch_size, out_type.size, time))
-    x = conv_transpose_layer(y)
-    assert x.shape == conv_transpose_layer.evaluate_output_shape(y.shape)
-    print("Transposed input shape:", y.shape)
-    print("Transposed output shape:", x.shape)
+    @property
+    def bias(self) -> torch.Tensor | None:  # noqa: D102
+        """Expanded invariant bias or ``None`` when not admissible."""
+        return self._expand_bias() if self.has_bias else None
+
+    def _expand_bias(self):
+        """Expand bias degrees of freedom into the original basis."""
+        trivial_id = self.out_rep.group.trivial_representation.id
+        trivial_indices = self.homo_basis.iso_blocks[trivial_id]["out_slice"]
+        bias = torch.mv(self.Qout[:, trivial_indices], self.bias_dof)
+        return bias
+
+    @torch.no_grad()
+    def reset_parameters(self, scheme: eINIT_SCHEMES = "xavier_normal"):
+        """Reset trainable parameters using the chosen initialization scheme."""
+        if not hasattr(self, "homo_basis"):  # First call on torch.nn.ConvTranspose1d init
+            return super().reset_parameters()
+        new_params = self.homo_basis.initialize_params(scheme=scheme, leading_shape=self.kernel_size)
+        self.weight_dof.copy_(new_params)
+
+        if self.has_bias:
+            trivial_id = self.out_rep.group.trivial_representation.id
+            m_in_inv = self.in_rep._irreps_multiplicities[trivial_id]
+            m_out_inv = self.out_rep._irreps_multiplicities[trivial_id]
+            fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(torch.empty(m_out_inv, m_in_inv))
+            bound = 1 / torch.math.sqrt(fan_in) if fan_in > 0 else 0
+            torch.nn.init.uniform_(self.bias_dof, -bound, bound)
+
+    @torch.no_grad()
+    def check_equivariance(self, atol: float = 1e-5, rtol: float = 1e-5):
+        """Check equivariance under channel actions of the underlying group."""
+        G = self.in_rep.group
+        B, L = 10, 30
+        x = torch.randn(B, self.in_rep.size, L, device=self.weight_dof.device, dtype=self.weight_dof.dtype)
+        y = self(x)
+
+        for _ in range(10):
+            g = G.sample()
+            rho_in = torch.tensor(self.in_rep(g), dtype=x.dtype, device=x.device)
+            rho_out = torch.tensor(self.out_rep(g), dtype=y.dtype, device=y.device)
+            gx = torch.einsum("ij,bjl->bil", rho_in, x)
+            y_expected = self(gx)
+            gy = torch.einsum("ij,bjl->bil", rho_out, y)
+            assert torch.allclose(gy, y_expected, atol=atol, rtol=rtol), (
+                f"Equivariance failed for group element {g} with max error {(gy - y_expected).abs().max().item():.3e}"
+            )

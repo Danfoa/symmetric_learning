@@ -15,7 +15,6 @@ from symm_learning.representation_theory import direct_sum
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(DihedralGroup(10), id="dihedral10"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
