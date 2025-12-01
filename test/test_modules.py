@@ -167,27 +167,79 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
     backprop_sanity(layer)
 
-    # Eval: mutate params but cached weight should be returned.
+    # Eval cache: mutating DoFs should not change returned weight while cache is valid.
     layer.eval()
     w_cached = layer.weight.clone()
     layer.weight_dof.data.add_(torch.randn_like(layer.weight_dof))
-    assert torch.allclose(layer.weight, w_cached), "Eval should reuse cached weight"
+    assert torch.allclose(layer.weight, w_cached), "Eval should reuse cached weight even if DoFs change"
 
-    # Train: recompute weight, so cache and output should change.
+    # Train cache invalidation: training should recompute weight.
     layer.train()
     w_train = layer.weight
-    assert not torch.allclose(w_train, w_cached), "Train should recompute weight"
+    assert not torch.allclose(w_train, w_cached), "Train should recompute weight and differ from cached eval weight"
 
-    # Back to eval: new cache should match training weight.
+    # Eval refresh: after training, eval should cache the latest weight.
     layer.eval()
     w_refreshed = layer.weight
-    assert torch.allclose(w_refreshed, w_train), "Eval after train should cache refreshed weight"
+    assert torch.allclose(w_refreshed, w_train), "Eval should cache the latest training weight"
 
-    # Explicit call to expand_weight should refresh cache.
+    # Manual expansion: explicit expand_weight should refresh cache and update value.
     layer.weight_dof.data.add_(torch.randn_like(layer.weight_dof))
     layer.expand_weight()
     w_expanded = layer.weight
-    assert not torch.allclose(w_expanded, w_refreshed), "Explicit expand_weight should refresh cache"
+    assert not torch.allclose(w_expanded, w_refreshed), "Explicit expand_weight should refresh cache and change value"
+
+    # Double backward safety: separate backward passes should work without retaining the graph.
+    layer.train()
+    for _ in range(2):
+        layer.zero_grad(set_to_none=True)
+        fx = layer(torch.randn(3, in_rep.size))
+        loss = fx.pow(2).mean()
+        loss.backward()
+        assert layer.weight_dof.grad is not None, "Grad should populate on each backward pass"
+
+    # Dtype move: moving to float64 should invalidate cache and refresh on access.
+    layer_double = layer.to(dtype=torch.float64)
+    layer_double.eval()
+    w_double = layer_double.weight
+    assert w_double.dtype == torch.float64, "Weight cache should follow dtype changes"
+
+    # Backward hook: gradients should mark cache dirty and eval should recompute after an optimizer-like step.
+    layer_double.train()
+    for _ in range(2):
+        layer_double.zero_grad(set_to_none=True)
+        x = torch.randn(2, in_rep.size, dtype=torch.float64)
+        out = layer_double(x)
+        out.sum().backward()
+        assert layer_double._weight_cache_dirty is True, "Backward hook should mark weight cache dirty"
+    with torch.no_grad():
+        layer_double.weight_dof.add_(layer_double.weight_dof.grad, alpha=-0.1)
+    layer_double.eval()
+    w_after_step = layer_double.weight
+    assert w_after_step.dtype == torch.float64, "Eval weight should stay in float64 after recompute"
+    assert not torch.allclose(w_after_step, w_double), "Weight should change after applying gradient step"
+
+    if torch.cuda.is_available():
+        layer_cuda = layer.to("cuda")
+        layer_cuda.eval()
+        w_cuda = layer_cuda.weight
+        assert w_cuda.device.type == "cuda", "Weight cache should move to CUDA device"
+
+        layer_cuda.train()
+        for _ in range(2):
+            layer_cuda.zero_grad(set_to_none=True)
+            x_cuda = torch.randn(2, in_rep.size, device=w_cuda.device, dtype=w_cuda.dtype)
+            out = layer_cuda(x_cuda)
+            out.sum().backward()
+            assert layer_cuda._weight_cache_dirty is True, "Backward on CUDA should mark cache dirty"
+        with torch.no_grad():
+            layer_cuda.weight_dof.add_(layer_cuda.weight_dof.grad, alpha=-0.1)
+        layer_cuda.eval()
+        w_cuda_refreshed = layer_cuda.weight
+        assert w_cuda_refreshed.device.type == "cuda", "Refreshed weight should remain on CUDA"
+        assert not torch.allclose(w_cuda_refreshed.cpu(), w_cuda.cpu()), (
+            "CUDA cache refresh should update value after gradient step"
+        )
 
 
 @pytest.mark.parametrize(
@@ -211,30 +263,85 @@ def test_bias(group: Group, mx: int):
     check_equivariance(bias_layer, atol=1e-5, rtol=1e-5)
     backprop_sanity(bias_layer)
 
-    # Cache is refreshed on eval and reused while staying in eval mode.
+    # Eval cache: refreshed on eval and reused while staying in eval mode.
     x = torch.randn(4, in_rep.size)
     bias_layer.bias_dof.data.fill_(1.0)
     bias_layer.eval()  # recompute cache after modifying bias_dof
     cached_bias = bias_layer._bias.clone()
     y_eval = bias_layer(x)
-    assert torch.allclose(y_eval, x + cached_bias)
+    assert torch.allclose(y_eval, x + cached_bias), "Eval output should include cached bias"
     bias_layer.bias_dof.data.fill_(3.0)
     y_eval_cached = bias_layer(x)
-    assert torch.allclose(y_eval_cached, y_eval)  # should reuse cached bias
-    assert torch.allclose(bias_layer._bias, cached_bias)
+    assert torch.allclose(y_eval_cached, y_eval), "Eval should reuse cached bias despite DoF change"
+    assert torch.allclose(bias_layer._bias, cached_bias), "Cached bias tensor should stay unchanged in eval"
 
-    # Switching to train recomputes with the latest bias_dof, then eval caches again.
+    # Train recompute: training should use latest DoFs, then eval should cache that bias.
     bias_layer.train()
     bias_layer.bias_dof.data.fill_(2.0)
     y_train = bias_layer(x)
-    assert not torch.allclose(y_train, y_eval)
+    assert not torch.allclose(y_train, y_eval), "Train output should reflect updated DoFs"
 
     bias_layer.eval()  # cache current bias
     updated_cached = bias_layer._bias.clone()
     bias_layer.bias_dof.data.fill_(4.0)
     y_eval_after = bias_layer(x)
-    assert torch.allclose(y_eval_after, x + updated_cached)
-    assert torch.allclose(bias_layer._bias, updated_cached)
+    assert torch.allclose(y_eval_after, x + updated_cached), "Eval should reuse freshly cached bias"
+    assert torch.allclose(bias_layer._bias, updated_cached), "Cached bias should match latest eval expansion"
+
+    # Double backward safety: two passes should succeed without graph retention errors.
+    bias_layer.train()
+    for _ in range(2):
+        bias_layer.zero_grad(set_to_none=True)
+        x_fw = torch.randn(3, in_rep.size)
+        out = bias_layer(x_fw)
+        out.sum().backward()
+        if bias_layer.has_bias:
+            assert bias_layer.bias_dof.grad is not None, "Bias DoF grad should populate each backward"
+
+    # Dtype move: moving to float64 should invalidate cache and refresh on access.
+    bias_layer_double = bias_layer.to(dtype=torch.float64)
+    bias_layer_double.eval()
+    bias_double = bias_layer_double.bias
+    assert bias_double is not None, "Bias tensor should exist after dtype move"
+    assert bias_double.dtype == torch.float64, "Bias cache should follow dtype changes"
+
+    # Backward hook dirties cache; eval recomputes after parameter updates.
+    bias_layer_double.train()
+    for _ in range(2):
+        bias_layer_double.zero_grad(set_to_none=True)
+        x_double = torch.randn(2, in_rep.size, dtype=torch.float64)
+        out = bias_layer_double(x_double)
+        out.sum().backward()
+        assert bias_layer_double._bias_cache_dirty is True, "Backward hook should mark bias cache dirty"
+    with torch.no_grad():
+        bias_layer_double.bias_dof.add_(bias_layer_double.bias_dof.grad, alpha=-0.2)
+    bias_layer_double.eval()
+    refreshed_bias = bias_layer_double.bias
+    assert refreshed_bias.dtype == torch.float64, "Refreshed bias should respect dtype move"
+    assert not torch.allclose(refreshed_bias, bias_double), "Bias should update after gradient step"
+
+    if torch.cuda.is_available():
+        bias_layer_cuda = bias_layer.to("cuda")
+        bias_layer_cuda.eval()
+        bias_cuda = bias_layer_cuda.bias
+        assert bias_cuda is not None, "Bias tensor should exist on CUDA"
+        assert bias_cuda.device.type == "cuda", "Bias cache should move to CUDA"
+
+        bias_layer_cuda.train()
+        for _ in range(2):
+            bias_layer_cuda.zero_grad(set_to_none=True)
+            x_cuda = torch.randn(2, in_rep.size, device=bias_cuda.device, dtype=bias_cuda.dtype)
+            out = bias_layer_cuda(x_cuda)
+            out.sum().backward()
+            assert bias_layer_cuda._bias_cache_dirty is True, "Backward on CUDA should mark bias cache dirty"
+        with torch.no_grad():
+            bias_layer_cuda.bias_dof.add_(bias_layer_cuda.bias_dof.grad, alpha=-0.2)
+        bias_layer_cuda.eval()
+        refreshed_bias_cuda = bias_layer_cuda.bias
+        assert refreshed_bias_cuda.device.type == "cuda", "Refreshed bias should remain on CUDA"
+        assert not torch.allclose(refreshed_bias_cuda.cpu(), bias_cuda.cpu()), (
+            "CUDA cache refresh should update bias value after gradient step"
+        )
 
 
 # @pytest.mark.parametrize(

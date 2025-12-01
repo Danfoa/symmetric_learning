@@ -101,6 +101,8 @@ class eLinear(torch.nn.Linear):
         # Delete linear unconstrained module parameters
         self.register_parameter("weight", None)
         self.register_parameter("bias", None)
+        self.register_buffer("_weight", None, persistent=False)
+        self._weight_cache_dirty = True
         # Instanciate the handler of the basis of Hom_G(in_rep, out_rep)
         self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion=basis_expansion_scheme)
         self.in_rep, self.out_rep = self.homo_basis.in_rep, self.homo_basis.out_rep
@@ -116,6 +118,9 @@ class eLinear(torch.nn.Linear):
 
         self.bias_module = InvariantBias(out_rep) if bias else None
 
+        # Register backward hook to flag caches stale/invalid whenever grads are produced.
+        self.weight_dof.register_hook(self._mark_weight_cache_dirty)
+
         if init_scheme is not None:
             self.reset_parameters(scheme=init_scheme)
 
@@ -127,12 +132,13 @@ class eLinear(torch.nn.Linear):
         """
         W = self.homo_basis(self.weight_dof)  # Recompute linear map
         self._weight = W
+        self._weight_cache_dirty = False
         return W
 
     @property
     def weight(self) -> torch.Tensor:
         """Dense equivariant weight; recomputed in train, cached in eval."""
-        if self.training or self._weight is None:
+        if self.training or self._weight is None or self._weight_cache_dirty:
             return self.expand_weight()
         return self._weight
 
@@ -159,6 +165,39 @@ class eLinear(torch.nn.Linear):
             self.bias_module.reset_parameters(scheme=scheme)
 
         logger.debug(f"Reset parameters of linear layer to {scheme}")
+
+    def _mark_weight_cache_dirty(self, grad: torch.Tensor) -> torch.Tensor:
+        self._weight_cache_dirty = True
+        return grad
+
+    def invalidate_cache(self) -> None:
+        """Clear cached expansions and mark them stale."""
+        self._weight = None
+        self._weight_cache_dirty = True
+        if self.bias_module is not None:
+            self.bias_module.invalidate_cache()
+
+    def _refresh_eval_cache(self) -> None:
+        """Ensure eval-mode caches are materialized."""
+        if self._weight is None or self._weight_cache_dirty:
+            self.expand_weight()
+        if self.bias_module is not None:
+            self.bias_module.refresh_eval_cache()
+
+    def _apply(self, fn):
+        super()._apply(fn)
+        self.invalidate_cache()
+        return self
+
+    def eval(self):  # noqa: D102
+        super().eval()
+        self._refresh_eval_cache()
+        return self
+
+    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        result = super().load_state_dict(state_dict, strict)
+        self.invalidate_cache()
+        return result
 
 
 class InvariantBias(torch.nn.Module):
@@ -189,6 +228,9 @@ class InvariantBias(torch.nn.Module):
         # Assert invariant vector is possible.
         self.has_bias = in_rep._irreps_multiplicities.get(trivial_id, 0) > 0
 
+        self.register_buffer("_bias", None, persistent=False)
+        self._bias_cache_dirty = False
+
         if not self.has_bias:  # No bias -> No buffer memory consumption
             return
 
@@ -201,7 +243,8 @@ class InvariantBias(torch.nn.Module):
         self.register_buffer("spectral_trivial_mask", get_spectral_trivial_mask(self.in_rep))
 
         # Cache reference of last computed bias
-        self._bias: torch.Tensor | None = None
+        self._bias_cache_dirty = True
+        self.bias_dof.register_hook(self._mark_bias_cache_dirty)
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         """Apply the invariant bias.
@@ -219,8 +262,10 @@ class InvariantBias(torch.nn.Module):
     @property
     def bias(self):
         """Invariant bias; recomputed in training, cached otherwise."""
+        if not self.has_bias:
+            return None
         # If training, recompute bias; else use cached version
-        if self.training or self._bias is None:
+        if self.training or self._bias is None or self._bias_cache_dirty:
             return self.expand_bias()
         return self._bias
 
@@ -229,6 +274,7 @@ class InvariantBias(torch.nn.Module):
         bias = torch.mv(self.Qout[:, self.spectral_trivial_mask], self.bias_dof)
         # Update cache
         self._bias = bias
+        self._bias_cache_dirty = False
         return bias
 
     def expand_bias_spectral_basis(self):
@@ -250,13 +296,41 @@ class InvariantBias(torch.nn.Module):
         bound = 1 / torch.math.sqrt(fan_in) if fan_in > 0 else 0
         torch.nn.init.uniform_(self.bias_dof, -bound, bound)
 
-        self._bias = None  # Clear cache
+        self.invalidate_cache()
 
     def eval(self):
         """Refresh the cached bias and switch to evaluation mode."""
-        # Update cache.
-        self.expand_bias()
-        return super().eval()
+        super().eval()
+        self.refresh_eval_cache()
+        return self
+
+    def _mark_bias_cache_dirty(self, grad: torch.Tensor) -> torch.Tensor:
+        self._bias_cache_dirty = True
+        return grad
+
+    def invalidate_cache(self) -> None:
+        """Clear cached bias so it is recomputed on next use."""
+        if not self.has_bias:
+            return
+        self._bias = None
+        self._bias_cache_dirty = True
+
+    def refresh_eval_cache(self) -> None:
+        """Ensure eval-mode cache is populated."""
+        if not self.has_bias:
+            return
+        if self._bias is None or self._bias_cache_dirty:
+            self.expand_bias()
+
+    def _apply(self, fn):
+        super()._apply(fn)
+        self.invalidate_cache()
+        return self
+
+    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        result = super().load_state_dict(state_dict, strict)
+        self.invalidate_cache()
+        return result
 
 
 class eAffine(torch.nn.Module):
