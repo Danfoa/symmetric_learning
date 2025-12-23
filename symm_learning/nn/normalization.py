@@ -367,3 +367,102 @@ class eBatchNorm1d(EquivariantModule):
         bn.train(False)
         bn.eval()
         return bn
+
+
+if __name__ == "__main__":
+    import sys
+    import types
+    from pathlib import Path
+
+    from escnn.group import CyclicGroup, Icosahedral
+
+    repo_root = Path(__file__).resolve().parents[2]
+    test_dir = repo_root / "test"
+    sys.path.insert(0, str(repo_root))
+    test_pkg = sys.modules.get("test")
+    test_paths = [str(path) for path in getattr(test_pkg, "__path__", [])] if test_pkg else []
+    if str(test_dir) not in test_paths:
+        test_pkg = types.ModuleType("test")
+        test_pkg.__path__ = [str(test_dir)]
+        sys.modules["test"] = test_pkg
+
+    from symm_learning.utils import bytes_to_mb, module_device_memory, module_memory
+    from test.utils import benchmark, benchmark_eval_forward
+
+    # G = CyclicGroup(2)
+    G = Icosahedral()
+    m = 2
+    eps = 1e-6
+    in_rep = direct_sum([G.regular_representation] * m)
+
+    rms_norm = torch.nn.RMSNorm(in_rep.size, eps=eps, elementwise_affine=True)
+    eq_rms_norm = eRMSNorm(in_rep, eps=eps, equiv_affine=True)
+
+    batch_size = 1024
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    rms_norm = rms_norm.to(device)
+    eq_rms_norm = eq_rms_norm.to(device)
+    print(f"Device: {device}")
+
+    x = torch.randn(batch_size, in_rep.size, device=device)
+
+    def run_forward(mod):  # noqa: D103
+        return mod(x)
+
+    modules_to_benchmark = [
+        ("RMSNorm", rms_norm),
+        ("eRMSNorm", eq_rms_norm),
+    ]
+
+    results = []
+    for name, module in modules_to_benchmark:
+
+        def forward_fn(mod=module):  # noqa: D103
+            return run_forward(mod)
+
+        train_mem, non_train_mem = module_memory(module)
+        gpu_alloc, gpu_peak = module_device_memory(module)
+        eval_fwd_mean, eval_fwd_std = benchmark_eval_forward(module, forward_fn)
+        (fwd_mean, fwd_std), (bwd_mean, bwd_std) = benchmark(module, forward_fn)
+        results.append(
+            {
+                "name": name,
+                "fwd_eval_mean": eval_fwd_mean,
+                "fwd_eval_std": eval_fwd_std,
+                "fwd_mean": fwd_mean,
+                "fwd_std": fwd_std,
+                "bwd_mean": bwd_mean,
+                "bwd_std": bwd_std,
+                "total_time": fwd_mean + bwd_mean,
+                "train_mem": train_mem,
+                "non_train_mem": non_train_mem,
+                "gpu_mem": gpu_alloc,
+                "gpu_peak": gpu_peak,
+            }
+        )
+
+    name_width = 20
+    header = (
+        f"{'Layer':<{name_width}} {'Forward eval (ms)':>18} {'Forward (ms)':>18} {'Backward (ms)':>18} "
+        f"{'Total (ms)':>15} "
+        f"{'Trainable MB':>15} {'Non-train MB':>15} {'Total MB':>12} {'GPU Alloc MB':>15} {'GPU Peak MB':>15}"
+    )
+    separator = "-" * len(header)
+    print(f"\nBenchmark results per {batch_size}-sample batch")
+    print(separator)
+    print(header)
+    print(separator)
+    for res in results:
+        fwd_eval_str = f"{res['fwd_eval_mean']:.3f} +/- {res['fwd_eval_std']:.3f}"
+        fwd_str = f"{res['fwd_mean']:.3f} +/- {res['fwd_std']:.3f}"
+        bwd_str = f"{res['bwd_mean']:.3f} +/- {res['bwd_std']:.3f}"
+        total_mb = res["train_mem"] + res["non_train_mem"]
+        gpu_alloc_mb = bytes_to_mb(res["gpu_mem"])
+        gpu_peak_mb = bytes_to_mb(res["gpu_peak"])
+        print(
+            f"{res['name']:<{name_width}} {fwd_eval_str:>18} {fwd_str:>18} {bwd_str:>18} "
+            f"{res['total_time']:>15.3f} {bytes_to_mb(res['train_mem']):>15.3f} "
+            f"{bytes_to_mb(res['non_train_mem']):>15.3f} {bytes_to_mb(total_mb):>12.3f} "
+            f"{gpu_alloc_mb:>15.3f} {gpu_peak_mb:>15.3f}"
+        )
+    print(separator)

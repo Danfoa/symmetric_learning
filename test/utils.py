@@ -114,7 +114,7 @@ def benchmark_eval_forward(
         fwd_start = torch.cuda.Event(enable_timing=True)
         fwd_end = torch.cuda.Event(enable_timing=True)
 
-    with torch.inference_mode():
+    with torch.no_grad():
         for i in range(iters + warmup):
             if use_cuda:
                 fwd_start.record()

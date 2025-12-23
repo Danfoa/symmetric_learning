@@ -78,13 +78,15 @@ class eTransformerEncoderLayer(torch.nn.Module):
 
         if norm_module == "layernorm":
             norm_cls = eLayerNorm
+            norm_kwargs = {"bias": bias} | factory_kwargs
         elif norm_module == "rmsnorm":
             norm_cls = eRMSNorm
+            norm_kwargs = factory_kwargs
         else:
             raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
 
-        self.norm1 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
-        self.norm2 = norm_cls(self.out_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        self.norm1 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, **norm_kwargs)
+        self.norm2 = norm_cls(self.out_rep, eps=layer_norm_eps, equiv_affine=True, **norm_kwargs)
 
         self.norm_first = norm_first
         self.batch_first = batch_first
@@ -234,13 +236,15 @@ class eTransformerDecoderLayer(torch.nn.Module):
         self.norm_first = norm_first
         if norm_module == "layernorm":
             norm_cls = eLayerNorm
+            norm_kwargs = {"bias": bias} | factory_kwargs
         elif norm_module == "rmsnorm":
             norm_cls = eRMSNorm
+            norm_kwargs = factory_kwargs
         else:
             raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
-        self.norm1 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
-        self.norm2 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
-        self.norm3 = norm_cls(self.out_rep, eps=layer_norm_eps, equiv_affine=True, bias=bias, **factory_kwargs)
+        self.norm1 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, **norm_kwargs)
+        self.norm2 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, **norm_kwargs)
+        self.norm3 = norm_cls(self.out_rep, eps=layer_norm_eps, equiv_affine=True, **norm_kwargs)
 
         self.dropout1 = torch.nn.Dropout(dropout)
         self.dropout2 = torch.nn.Dropout(dropout)
@@ -440,12 +444,32 @@ def _get_activation_fn(activation: str) -> Callable[[Tensor], Tensor]:
 
 if __name__ == "__main__":
     import logging
+    import sys
+    import types
+    from pathlib import Path
 
     # logging.basicConfig(level=logging.DEBUG)
     from escnn.group import CyclicGroup, DihedralGroup, Icosahedral
 
+    repo_root = Path(__file__).resolve().parents[3]
+    test_dir = repo_root / "test"
+    sys.path.insert(0, str(repo_root))
+    test_pkg = sys.modules.get("test")
+    test_paths = [str(path) for path in getattr(test_pkg, "__path__", [])] if test_pkg else []
+    if str(test_dir) not in test_paths:
+        test_pkg = types.ModuleType("test")
+        test_pkg.__path__ = [str(test_dir)]
+        sys.modules["test"] = test_pkg
+
     from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
-    from symm_learning.utils import check_equivariance, describe_memory
+    from symm_learning.utils import (
+        bytes_to_mb,
+        check_equivariance,
+        describe_memory,
+        module_device_memory,
+        module_memory,
+    )
+    from test.utils import benchmark, benchmark_eval_forward
 
     G = CyclicGroup(2)
     m = 2
@@ -549,3 +573,154 @@ if __name__ == "__main__":
         check_decoder_stack(decoder_stack, in_rep, depth=depth, atol=1e-3, rtol=1e-3)
         print(f"Decoder stack depth={depth} equivariance test passed")
     print("Decoder equivariance test passed")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.set_float32_matmul_precision("high")
+    print(f"\nBenchmarking on device: {device}")
+
+    fastpath_prev = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+
+    batch_size = 256
+    src_len = 16
+    tgt_len = 16
+    mem_len = 16
+    iters = 200
+    warmup = 50
+
+    requested_dim_feedforward = in_rep.size * 4
+    effective_dim_feedforward = max(1, ceil(requested_dim_feedforward / in_rep.group.order())) * in_rep.group.order()
+
+    bench_encoder_kwargs = dict(
+        in_rep=in_rep,
+        nhead=1,
+        dim_feedforward=requested_dim_feedforward,
+        dropout=0.1,
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+        norm_module="rmsnorm",
+        bias=True,
+    )
+    bench_decoder_kwargs = dict(
+        in_rep=in_rep,
+        nhead=1,
+        dim_feedforward=requested_dim_feedforward,
+        dropout=0.1,
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+        norm_module="rmsnorm",
+        bias=True,
+    )
+
+    src = torch.randn(batch_size, src_len, in_rep.size, device=device)
+    tgt = torch.randn(batch_size, tgt_len, in_rep.size, device=device)
+    mem = torch.randn(batch_size, mem_len, in_rep.size, device=device)
+
+    encoder_modules = [
+        ("eTransformer Encoder", eTransformerEncoderLayer(**bench_encoder_kwargs).to(device)),
+        (
+            "Torch Encoder",
+            torch.nn.TransformerEncoderLayer(
+                d_model=in_rep.size,
+                nhead=bench_encoder_kwargs["nhead"],
+                dim_feedforward=effective_dim_feedforward,
+                dropout=bench_encoder_kwargs["dropout"],
+                activation=bench_encoder_kwargs["activation"],
+                batch_first=bench_encoder_kwargs["batch_first"],
+                norm_first=bench_encoder_kwargs["norm_first"],
+                bias=bench_encoder_kwargs["bias"],
+            ).to(device),
+        ),
+    ]
+    decoder_modules = [
+        ("eTransformer Decoder", eTransformerDecoderLayer(**bench_decoder_kwargs).to(device)),
+        (
+            "Torch Decoder",
+            torch.nn.TransformerDecoderLayer(
+                d_model=in_rep.size,
+                nhead=bench_decoder_kwargs["nhead"],
+                dim_feedforward=effective_dim_feedforward,
+                dropout=bench_decoder_kwargs["dropout"],
+                activation=bench_decoder_kwargs["activation"],
+                batch_first=bench_decoder_kwargs["batch_first"],
+                norm_first=bench_decoder_kwargs["norm_first"],
+                bias=bench_decoder_kwargs["bias"],
+            ).to(device),
+        ),
+    ]
+
+    def print_benchmark_table(title: str, results: list[dict], name_width: int) -> None:  # noqa: D103
+        header = (
+            f"{'Layer':<{name_width}} {'Forward eval (ms)':>18} {'Forward (ms)':>18} {'Backward (ms)':>18} "
+            f"{'Total (ms)':>15} {'Trainable MB':>15} {'Non-train MB':>15} {'Total MB':>12} "
+            f"{'GPU Alloc MB':>15} {'GPU Peak MB':>15}"
+        )
+        separator = "-" * len(header)
+        print(f"\n{title}")
+        print(separator)
+        print(header)
+        print(separator)
+        for res in results:
+            fwd_eval_str = f"{res['fwd_eval_mean']:.3f} +/- {res['fwd_eval_std']:.3f}"
+            fwd_str = f"{res['fwd_mean']:.3f} +/- {res['fwd_std']:.3f}"
+            bwd_str = f"{res['bwd_mean']:.3f} +/- {res['bwd_std']:.3f}"
+            total_mb = res["train_mem"] + res["non_train_mem"]
+            gpu_alloc_mb = bytes_to_mb(res["gpu_mem"])
+            gpu_peak_mb = bytes_to_mb(res["gpu_peak"])
+            print(
+                f"{res['name']:<{name_width}} {fwd_eval_str:>18} {fwd_str:>18} {bwd_str:>18} "
+                f"{res['total_time']:>15.3f} {bytes_to_mb(res['train_mem']):>15.3f} "
+                f"{bytes_to_mb(res['non_train_mem']):>15.3f} {bytes_to_mb(total_mb):>12.3f} "
+                f"{gpu_alloc_mb:>15.3f} {gpu_peak_mb:>15.3f}"
+            )
+        print(separator)
+
+    def benchmark_modules(  # noqa: D103
+        title: str,
+        modules: list[tuple[str, torch.nn.Module]],
+        forward_fn_builder: Callable[[torch.nn.Module], torch.Tensor],
+    ) -> None:
+        results = []
+        for name, module in modules:
+
+            def forward_fn(mod=module):  # noqa: D103
+                return forward_fn_builder(mod)
+
+            train_mem, non_train_mem = module_memory(module)
+            gpu_alloc, gpu_peak = module_device_memory(module, device=device)
+            eval_fwd_mean, eval_fwd_std = benchmark_eval_forward(module, forward_fn, iters=iters, warmup=warmup)
+            (fwd_mean, fwd_std), (bwd_mean, bwd_std) = benchmark(module, forward_fn, iters=iters, warmup=warmup)
+            results.append(
+                {
+                    "name": name,
+                    "fwd_eval_mean": eval_fwd_mean,
+                    "fwd_eval_std": eval_fwd_std,
+                    "fwd_mean": fwd_mean,
+                    "fwd_std": fwd_std,
+                    "bwd_mean": bwd_mean,
+                    "bwd_std": bwd_std,
+                    "total_time": fwd_mean + bwd_mean,
+                    "train_mem": train_mem,
+                    "non_train_mem": non_train_mem,
+                    "gpu_mem": gpu_alloc,
+                    "gpu_peak": gpu_peak,
+                }
+            )
+
+        name_width = max(22, max(len(res["name"]) for res in results) + 2)
+        print_benchmark_table(title, results, name_width)
+
+    benchmark_modules(
+        title=f"Encoder layer benchmark per batch={batch_size}, seq_len={src_len}",
+        modules=encoder_modules,
+        forward_fn_builder=lambda mod: mod(src),
+    )
+    benchmark_modules(
+        title=f"Decoder layer benchmark per batch={batch_size}, tgt_len={tgt_len}, mem_len={mem_len}",
+        modules=decoder_modules,
+        forward_fn_builder=lambda mod: mod(tgt, mem),
+    )
+
+    torch.backends.mha.set_fastpath_enabled(fastpath_prev)
