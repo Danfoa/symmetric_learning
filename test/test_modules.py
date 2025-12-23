@@ -249,6 +249,33 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
+@pytest.mark.parametrize("mx", [3])
+@pytest.mark.parametrize("my", [2])
+@pytest.mark.parametrize("basis_expansion_scheme", ["memory_heavy", "isotypic_expansion"])
+@pytest.mark.parametrize("bias", [True, False])
+def test_parametrizations(group: Group, mx: int, my: int, basis_expansion_scheme: str, bias: bool):
+    import torch
+
+    from symm_learning.nn.linear import impose_linear_equivariance
+
+    G = group
+    in_rep = direct_sum([G.regular_representation] * mx)
+    out_rep = direct_sum([G.regular_representation] * my)
+
+    layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
+    impose_linear_equivariance(lin=layer, in_rep=in_rep, out_rep=out_rep, basis_expansion_scheme=basis_expansion_scheme)
+
+    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    backprop_sanity(layer)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 @pytest.mark.parametrize("mx", [2])
 def test_bias(group: Group, mx: int):
     import torch

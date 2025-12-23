@@ -30,14 +30,55 @@ class InvariantConstraint(torch.nn.Module):
         super().__init__()
         self.rep = rep
         self.register_buffer("inv_projector", invariant_orthogonal_projector(rep))
+        self.register_buffer("_bias", None, persistent=False)
+        self._cached_input_id = None
+        self._cached_input_version = None
+
+    def _cache_is_valid(self, b: torch.Tensor) -> bool:
+        if self._bias is None:
+            return False
+        if id(b) != self._cached_input_id:
+            return False
+        version = getattr(b, "_version", None)
+        return version is not None and version == self._cached_input_version
+
+    def _update_cache(self, b: torch.Tensor, bias: torch.Tensor) -> None:
+        version = getattr(b, "_version", None)
+        if version is None:
+            self.invalidate_cache()
+            return
+        self._bias = bias
+        self._cached_input_id = id(b)
+        self._cached_input_version = version
 
     def forward(self, b: torch.Tensor) -> torch.Tensor:
         """Project b onto the invariant subspace using the precomputed projector."""
-        return torch.mv(self.inv_projector, b)
+        if not self.training and self._cache_is_valid(b):
+            return self._bias
+        bias = torch.mv(self.inv_projector, b)
+        if not self.training:
+            self._update_cache(b, bias)
+        return bias
 
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a parameter tensor whose projection equals ``tensor``."""
         return tensor
+
+    def invalidate_cache(self) -> None:
+        """Clear cached projection so it is recomputed on next use."""
+        self._bias = None
+        self._cached_input_id = None
+        self._cached_input_version = None
+
+    def _apply(self, fn):
+        super()._apply(fn)
+        self.invalidate_cache()
+        return self
+
+    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        result = super().load_state_dict(state_dict, strict)
+        self.invalidate_cache()
+        return result
 
 
 class CommutingConstraint(torch.nn.Module):
@@ -82,20 +123,76 @@ class CommutingConstraint(torch.nn.Module):
         self.homo_basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion=basis_expansion)
         self.in_rep = self.homo_basis.in_rep
         self.out_rep = self.homo_basis.out_rep
+        self.register_buffer("_weight", None, persistent=False)
+        self._cached_input_id = None
+        self._cached_input_version = None
+
+    def _cache_is_valid(self, W: torch.Tensor) -> bool:
+        if self._weight is None:
+            return False
+        if id(W) != self._cached_input_id:
+            return False
+        version = getattr(W, "_version", None)
+        return version is not None and version == self._cached_input_version
+
+    def _update_cache(self, W: torch.Tensor, W_proj: torch.Tensor) -> None:
+        version = getattr(W, "_version", None)
+        if version is None:
+            self.invalidate_cache()
+            return
+        self._weight = W_proj
+        self._cached_input_id = id(W)
+        self._cached_input_version = version
 
     def forward(self, W: torch.Tensor) -> torch.Tensor:
         """Project W onto Hom_G(out_rep, in_rep)."""
-        return self.homo_basis.orthogonal_projection(W)
+        if not self.training and self._cache_is_valid(W):
+            return self._weight
+        W_proj = self.homo_basis.orthogonal_projection(W)
+        if not self.training:
+            self._update_cache(W, W_proj)
+        return W_proj
 
     def right_inverse(self, tensor: torch.Tensor) -> torch.Tensor:
         """Return a pre-image for the parametrization (identity for now)."""
         return tensor
 
+    def invalidate_cache(self) -> None:
+        """Clear cached projection so it is recomputed on next use."""
+        self._weight = None
+        self._cached_input_id = None
+        self._cached_input_version = None
+
+    def _apply(self, fn):
+        super()._apply(fn)
+        self.invalidate_cache()
+        return self
+
+    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        result = super().load_state_dict(state_dict, strict)
+        self.invalidate_cache()
+        return result
+
 
 if __name__ == "__main__":
+    import sys
+    import types
+    from pathlib import Path
+
     from escnn.group import CyclicGroup, Icosahedral
 
+    repo_root = Path(__file__).resolve().parents[2]
+    test_dir = repo_root / "test"
+    sys.path.insert(0, str(repo_root))
+    test_pkg = sys.modules.get("test")
+    test_paths = [str(path) for path in getattr(test_pkg, "__path__", [])] if test_pkg else []
+    if str(test_dir) not in test_paths:
+        test_pkg = types.ModuleType("test")
+        test_pkg.__path__ = [str(test_dir)]
+        sys.modules["test"] = test_pkg
+
     from symm_learning.nn.linear import eLinear, impose_linear_equivariance
+    from test.utils import benchmark, benchmark_eval_forward
 
     # G = CyclicGroup(2)
     G = Icosahedral()
@@ -157,48 +254,10 @@ if __name__ == "__main__":
     escnn_layer = escnn_layer.to(device)
     print(f"Device: {device}")
 
-    import time
-
-    def benchmark(module, x, iters=1000, warmup=50):
-        """Benchmark a module and return independent forward/backward timings (in ms)."""
-        torch.cuda.synchronize()
-        fwd_start = torch.cuda.Event(enable_timing=True)
-        fwd_end = torch.cuda.Event(enable_timing=True)
-        bwd_start = torch.cuda.Event(enable_timing=True)
-        bwd_end = torch.cuda.Event(enable_timing=True)
-
-        optim = torch.optim.SGD(module.parameters(), lr=0.00001)
-        forward_times, backward_times = [], []
-
-        for i in range(iters + warmup):
-            optim.zero_grad()
-
-            fwd_start.record()
-            y = module(in_type(x)).tensor if isinstance(module, escnn.nn.Linear) else module(x)
-            fwd_end.record()
-
-            loss = y.pow(2).mean()
-
-            bwd_start.record()
-            loss.backward()
-            bwd_end.record()
-            optim.step()
-
-            torch.cuda.synchronize()
-
-            if i >= warmup:
-                forward_times.append(fwd_start.elapsed_time(fwd_end))
-                backward_times.append(bwd_start.elapsed_time(bwd_end))
-
-        fwd_stats = torch.tensor(forward_times)
-        bwd_stats = torch.tensor(backward_times)
-        forward_mean = float(fwd_stats.mean().item())
-        forward_std = float(fwd_stats.std(unbiased=False).item())
-        backward_mean = float(bwd_stats.mean().item())
-        backward_std = float(bwd_stats.std(unbiased=False).item())
-        return (forward_mean, forward_std), (backward_mean, backward_std)
-
     x = torch.randn(batch_size, in_rep.size, device=device)
+
+    def run_forward(mod):  # noqa: D103
+        return mod(in_type(x)).tensor if isinstance(mod, escnn.nn.Linear) else mod(x)
 
     modules_to_benchmark = [
         ("Standard", standad_layer),
@@ -211,12 +270,19 @@ if __name__ == "__main__":
 
     results = []
     for name, module in modules_to_benchmark:
+
+        def forward_fn(mod=module):  # noqa: D103
+            return run_forward(mod)
+
         train_mem, non_train_mem = module_memory(module)
         gpu_alloc, gpu_peak = module_device_memory(module)
-        (fwd_mean, fwd_std), (bwd_mean, bwd_std) = benchmark(module, x)
+        eval_fwd_mean, eval_fwd_std = benchmark_eval_forward(module, forward_fn)
+        (fwd_mean, fwd_std), (bwd_mean, bwd_std) = benchmark(module, forward_fn)
         results.append(
             {
                 "name": name,
+                "fwd_eval_mean": eval_fwd_mean,
+                "fwd_eval_std": eval_fwd_std,
                 "fwd_mean": fwd_mean,
                 "fwd_std": fwd_std,
                 "bwd_mean": bwd_mean,
@@ -231,7 +297,8 @@ if __name__ == "__main__":
 
     name_width = 20
     header = (
-        f"{'Layer':<{name_width}} {'Forward (ms)':>18} {'Backward (ms)':>18} {'Total (ms)':>15} "
+        f"{'Layer':<{name_width}} {'Forward eval (ms)':>18} {'Forward (ms)':>18} {'Backward (ms)':>18} "
+        f"{'Total (ms)':>15} "
         f"{'Trainable MB':>15} {'Non-train MB':>15} {'Total MB':>12} {'GPU Alloc MB':>15} {'GPU Peak MB':>15}"
     )
     separator = "-" * len(header)
@@ -240,13 +307,14 @@ if __name__ == "__main__":
     print(header)
     print(separator)
     for res in results:
+        fwd_eval_str = f"{res['fwd_eval_mean']:.3f} ± {res['fwd_eval_std']:.3f}"
         fwd_str = f"{res['fwd_mean']:.3f} ± {res['fwd_std']:.3f}"
         bwd_str = f"{res['bwd_mean']:.3f} ± {res['bwd_std']:.3f}"
         total_mb = res["train_mem"] + res["non_train_mem"]
         gpu_alloc_mb = bytes_to_mb(res["gpu_mem"])
         gpu_peak_mb = bytes_to_mb(res["gpu_peak"])
         print(
-            f"{res['name']:<{name_width}} {fwd_str:>18} {bwd_str:>18} "
+            f"{res['name']:<{name_width}} {fwd_eval_str:>18} {fwd_str:>18} {bwd_str:>18} "
             f"{res['total_time']:>15.3f} {bytes_to_mb(res['train_mem']):>15.3f} "
             f"{bytes_to_mb(res['non_train_mem']):>15.3f} {bytes_to_mb(total_mb):>12.3f} "
             f"{gpu_alloc_mb:>15.3f} {gpu_peak_mb:>15.3f}"
