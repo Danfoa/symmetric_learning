@@ -422,6 +422,11 @@ class eAffine(torch.nn.Module):
             else:
                 self.register_parameter("bias_dof", None)
 
+        self.register_buffer("_affine", None, persistent=False)
+        self._affine_cache_dirty = True
+        if self.learnable:
+            self.scale_dof.register_hook(self._mark_affine_cache_dirty)
+
         if init_scheme is not None:
             self.reset_parameters(scheme=init_scheme)
 
@@ -447,8 +452,16 @@ class eAffine(torch.nn.Module):
 
         # Obtain per-dimension spectral scale; reuse learnable bias directly in original basis.
         if self.learnable:
-            scale_spec = self.scale_dof[self.irrep_indices]  # (D,)
             bias_orig = self.bias_module.bias if self.has_bias and self.bias_module is not None else None
+            if not self.training:
+                affine = self._affine
+                if affine is None or self._affine_cache_dirty:
+                    affine = self.expand_affine()
+                y = torch.einsum("ij,...j->...i", affine, input)
+                if bias_orig is not None:
+                    y = y + bias_orig
+                return y  # Use cached matrix.
+            scale_spec = self.scale_dof[self.irrep_indices]  # (D,)
         else:
             scale_spec, spectral_bias = self.broadcast_spectral_scale_and_bias(
                 scale_dof, bias_dof, input_shape=input.shape
@@ -463,6 +476,14 @@ class eAffine(torch.nn.Module):
         if bias_orig is not None:
             y = y + bias_orig
         return y
+
+    def expand_affine(self) -> torch.Tensor:
+        """Expand the per-irrep scales into an affine matrix in the original basis."""
+        scale_spec = self.scale_dof[self.irrep_indices]
+        affine = (self.Q * scale_spec) @ self.Q_inv
+        self._affine = affine
+        self._affine_cache_dirty = False
+        return affine
 
     def broadcast_spectral_scale_and_bias(
         self,
@@ -535,9 +556,44 @@ class eAffine(torch.nn.Module):
                 torch.nn.init.uniform_(self.bias_dof, -1, 1)
         else:
             raise NotImplementedError(f"Init scheme {scheme} not implemented")
+        self.invalidate_cache()
 
     def extra_repr(self) -> str:  # noqa: D102
         return f"bias={self.has_bias} learnable={self.learnable} \nin_rep={self.in_rep}"
+
+    def _mark_affine_cache_dirty(self, grad: torch.Tensor) -> torch.Tensor:
+        self._affine_cache_dirty = True
+        return grad
+
+    def invalidate_cache(self) -> None:
+        """Clear cached affine map so it is recomputed on next use."""
+        self._affine = None
+        self._affine_cache_dirty = True
+        if self.bias_module is not None:
+            self.bias_module.invalidate_cache()
+
+    def _refresh_eval_cache(self) -> None:
+        if not self.learnable:
+            return
+        if self._affine is None or self._affine_cache_dirty:
+            self.expand_affine()
+        if self.bias_module is not None:
+            self.bias_module.refresh_eval_cache()
+
+    def _apply(self, fn):
+        super()._apply(fn)
+        self.invalidate_cache()
+        return self
+
+    def eval(self):  # noqa: D102
+        super().eval()
+        self._refresh_eval_cache()
+        return self
+
+    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        result = super().load_state_dict(state_dict, strict)
+        self.invalidate_cache()
+        return result
 
     @property
     def num_scale_dof(self) -> int:

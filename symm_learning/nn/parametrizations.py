@@ -191,7 +191,7 @@ if __name__ == "__main__":
         test_pkg.__path__ = [str(test_dir)]
         sys.modules["test"] = test_pkg
 
-    from symm_learning.nn.linear import eLinear, impose_linear_equivariance
+    from symm_learning.nn.linear import eAffine, eLinear, impose_linear_equivariance
     from test.utils import benchmark, benchmark_eval_forward
 
     # G = CyclicGroup(2)
@@ -239,6 +239,7 @@ if __name__ == "__main__":
     standad_layer = torch.nn.Linear(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
     eq_layer_iso = eLinear(in_rep, out_rep, bias=bias, basis_expansion_scheme="isotypic_expansion")
     eq_layer_heavy = eLinear(in_rep, out_rep, bias=bias, basis_expansion_scheme="memory_heavy")
+    e_affine = eAffine(in_rep, bias=bias)
 
     in_type = FieldType(no_base_space(G), [in_rep])
     out_type = FieldType(no_base_space(G), [out_rep])
@@ -251,6 +252,7 @@ if __name__ == "__main__":
     eq_layer_heavy = eq_layer_heavy.to(device)
     eq_layer_proj_heavy = eq_layer_proj_heavy.to(device)
     eq_layer_proj_iso = eq_layer_proj_iso.to(device)
+    e_affine = e_affine.to(device)
     escnn_layer = escnn_layer.to(device)
     print(f"Device: {device}")
 
@@ -265,6 +267,7 @@ if __name__ == "__main__":
         ("eLinear (heavy)", eq_layer_heavy),
         ("Linear Proj (iso)", eq_layer_proj_iso),
         ("Linear Proj (heavy)", eq_layer_proj_heavy),
+        ("eAffine", e_affine),
         ("escnn", escnn_layer),
     ]
 
