@@ -178,8 +178,21 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
     w_train = layer.weight
     assert not torch.allclose(w_train, w_cached), "Train should recompute weight and differ from cached eval weight"
 
-    # Eval refresh: after training, eval should cache the latest weight.
+    # Consistency check: output in eval mode (fast inference) should match output in train
+    # mode with same weights.
+    # Create a random input
+    x_input = torch.randn(10, in_rep.size)
+    # Forward in train mode
+    y_train = layer(x_input)
+    # Switch to eval mode -> should cache the current training weight
     layer.eval()
+    y_eval = layer(x_input)
+    assert torch.allclose(y_train, y_eval, atol=1e-5, rtol=1e-5), (
+        "Output in eval mode (fast inference) must match output in train mode with updated weights"
+    )
+
+    # Eval refresh: after training, eval should cache the latest weight.
+    # layer.eval() # Already in eval
     w_refreshed = layer.weight
     assert torch.allclose(w_refreshed, w_train), "Eval should cache the latest training weight"
 
@@ -446,6 +459,29 @@ def test_affine(group: Group, mx: int, bias: bool, learnable: bool):
     if learnable:
         y = affine(x)
         check_equivariance(affine, atol=1e-5, rtol=1e-5)
+
+        # Consistency check for fast inference
+        # 1. Update weights with some arbitrary loss
+        affine.train()
+        target = torch.randn_like(y)
+        loss = torch.nn.functional.mse_loss(y, target)
+        loss.backward()
+        with torch.no_grad():
+            for p in affine.parameters():
+                p -= 0.1 * p.grad
+
+        # 2. Forward in train mode with updated weights
+        affine.zero_grad()
+        y_train = affine(x)
+
+        # 3. Forward in eval mode -> should use cached expanded parameters equivalent to updated weights
+        affine.eval()
+        y_eval = affine(x)
+
+        assert torch.allclose(y_train, y_eval, atol=1e-5, rtol=1e-5), (
+            "eAffine output in eval mode (fast inference) must match output in train mode with updated weights"
+        )
+
     else:
         scale = torch.full((batch_size, affine.num_scale_dof), 2.0)
         bias_dof = torch.full((batch_size, affine.num_bias_dof), 0.25) if bias and affine.num_bias_dof > 0 else None
