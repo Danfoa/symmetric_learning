@@ -189,10 +189,13 @@ class eLinear(torch.nn.Linear):
         self.invalidate_cache()
         return self
 
-    def eval(self):  # noqa: D102
-        super().eval()
-        self._refresh_eval_cache()
-        return self
+    def train(self, mode: bool = True):  # noqa: D102
+        result = super().train(mode)
+        if mode:  # Switching to train mode - invalidate cache
+            self.invalidate_cache()
+        else:  # Switching to eval mode - refresh cache
+            self._refresh_eval_cache()
+        return result
 
     def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
         result = super().load_state_dict(state_dict, strict)
@@ -298,11 +301,14 @@ class InvariantBias(torch.nn.Module):
 
         self.invalidate_cache()
 
-    def eval(self):
-        """Refresh the cached bias and switch to evaluation mode."""
-        super().eval()
-        self.refresh_eval_cache()
-        return self
+    def train(self, mode: bool = True):
+        """Switch between training and evaluation modes, managing cache appropriately."""
+        result = super().train(mode)
+        if mode:  # Switching to train mode - invalidate cache
+            self.invalidate_cache()
+        else:  # Switching to eval mode - refresh cache
+            self.refresh_eval_cache()
+        return result
 
     def _mark_bias_cache_dirty(self, grad: torch.Tensor) -> torch.Tensor:
         self._bias_cache_dirty = True
@@ -585,10 +591,13 @@ class eAffine(torch.nn.Module):
         self.invalidate_cache()
         return self
 
-    def eval(self):  # noqa: D102
-        super().eval()
-        self._refresh_eval_cache()
-        return self
+    def train(self, mode: bool = True):  # noqa: D102
+        result = super().train(mode)
+        if mode:  # Switching to train mode - invalidate cache
+            self.invalidate_cache()
+        else:  # Switching to eval mode - refresh cache
+            self._refresh_eval_cache()
+        return result
 
     def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
         result = super().load_state_dict(state_dict, strict)

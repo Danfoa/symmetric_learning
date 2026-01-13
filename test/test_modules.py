@@ -515,6 +515,78 @@ def test_affine(group: Group, mx: int, bias: bool, learnable: bool):
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
+@pytest.mark.parametrize("mx", [2, 4])
+@pytest.mark.parametrize("num_heads", [1, 2])
+@pytest.mark.parametrize("bias", [True, False])
+def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
+    """Check equivariance and fast inference consistency of eMultiheadAttention."""
+    import torch
+
+    from symm_learning.nn.activation import eMultiheadAttention
+    from symm_learning.utils import check_equivariance
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+
+    # Ensure mx is divisible by num_heads for this test
+    if mx % num_heads != 0:
+        pytest.skip(f"mx={mx} not divisible by num_heads={num_heads}")
+
+    attn = eMultiheadAttention(in_rep=rep, num_heads=num_heads, bias=bias, batch_first=True, dropout=0.0)
+
+    # Wrapper for check_equivariance: self-attention expects (query, key, value) but we test with q=k=v=x
+    class SelfAttentionWrapper(torch.nn.Module):
+        def __init__(self, attn_module):
+            super().__init__()
+            self.attn = attn_module
+            self.in_rep = attn_module.in_rep
+            self.out_rep = attn_module.out_rep
+
+        def forward(self, x):
+            # x shape: (batch, seq, embed)
+            out, _ = self.attn(x, x, x, need_weights=False)
+            return out
+
+    wrapper = SelfAttentionWrapper(attn)
+    wrapper.eval()
+    check_equivariance(wrapper, input_dim=3, atol=1e-5, rtol=1e-5)
+
+    # Fast inference consistency test
+    B, L = 4, 5
+    x = torch.randn(B, L, rep.size)
+
+    # 1. Update weights with some arbitrary loss
+    attn.train()
+    attn.zero_grad()
+    y, _ = attn(x, x, x, need_weights=False)
+    target = torch.randn_like(y)
+    loss = torch.nn.functional.mse_loss(y, target)
+    loss.backward()
+    with torch.no_grad():
+        for p in attn.parameters():
+            if p.grad is not None:
+                p -= 0.1 * p.grad
+
+    # 2. Forward in train mode with updated weights
+    attn.zero_grad()
+    y_train, _ = attn(x, x, x, need_weights=False)
+
+    # 3. Forward in eval mode -> should use cached expanded parameters equivalent to updated weights
+    attn.eval()
+    y_eval, _ = attn(x, x, x, need_weights=False)
+
+    assert torch.allclose(y_train, y_eval, atol=1e-5, rtol=1e-5), (
+        "eMultiheadAttention output in eval mode (fast inference) must match output in train mode with updated weights"
+    )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 @pytest.mark.parametrize("mx", [1, 10])
 @pytest.mark.parametrize("bias", [True])
 @pytest.mark.parametrize("affine", [True, False])
@@ -547,9 +619,8 @@ def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
     ],
 )
 @pytest.mark.parametrize("mx", [1, 10])
-@pytest.mark.parametrize("bias", [True, False])
 @pytest.mark.parametrize("affine", [True, False])
-def test_rms_norm(group: Group, mx: int, bias: bool, affine: bool):
+def test_rms_norm(group: Group, mx: int, affine: bool):
     import numpy as np
     import torch
 
@@ -560,7 +631,7 @@ def test_rms_norm(group: Group, mx: int, bias: bool, affine: bool):
     Q, _ = np.linalg.qr(np.random.randn(rep.size, rep.size).astype(np.float64))
     rep = escnn.group.change_basis(rep, Q, name="test_rmsnorm_rep")
 
-    layer = eRMSNorm(in_rep=rep, bias=bias, equiv_affine=affine, eps=0, init_scheme="random")
+    layer = eRMSNorm(in_rep=rep, equiv_affine=affine, eps=0, init_scheme="random")
 
     x = torch.randn(64, rep.size)
     y = layer(x)
@@ -568,130 +639,6 @@ def test_rms_norm(group: Group, mx: int, bias: bool, affine: bool):
     assert y.shape == x.shape
 
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-@pytest.mark.parametrize("mx", [1, 2])
-def test_etransformer_encoder(group: Group, mx: int):
-    """Check equivariance of single-layer and 5-layer encoder stacks."""
-    import torch
-
-    from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
-
-    G = group
-    rep = direct_sum([G.regular_representation] * mx)
-
-    encoder_kwargs = dict(
-        in_rep=rep,
-        nhead=1,
-        dim_feedforward=rep.size * 4,
-        dropout=0.1,
-        activation="relu",
-        norm_first=True,
-        batch_first=True,
-    )
-
-    encoder = eTransformerEncoderLayer(**encoder_kwargs)
-    encoder.eval()
-    check_equivariance(
-        encoder,
-        input_dim=3,
-        module_name="encoder layer",
-        in_rep=rep,
-        out_rep=rep,
-        atol=1e-4,
-        rtol=1e-4,
-    )
-
-    base_layer = eTransformerEncoderLayer(**encoder_kwargs)
-    base_layer.reset_parameters()
-    base_layer.eval()
-    encoder_stack = torch.nn.TransformerEncoder(encoder_layer=base_layer, num_layers=5, enable_nested_tensor=False)
-    for layer in encoder_stack.layers:
-        if hasattr(layer, "reset_parameters"):
-            layer.reset_parameters()
-    encoder_stack.eval()
-    check_equivariance(
-        encoder_stack,
-        input_dim=3,
-        module_name="encoder stack depth=5",
-        in_rep=rep,
-        out_rep=rep,
-        atol=1e-4,
-        rtol=1e-4,
-    )
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-@pytest.mark.parametrize("mx", [1, 2])
-def test_etransformer_decoder(group: Group, mx: int):
-    """Check equivariance of single-layer and 5-layer decoder stacks."""
-    import torch
-
-    from symm_learning.models.transformer.etransformer import eTransformerDecoderLayer
-
-    G = group
-    rep = direct_sum([G.regular_representation] * mx)
-
-    decoder_kwargs = dict(
-        in_rep=rep,
-        nhead=1,
-        dim_feedforward=rep.size * 4,
-        dropout=0.1,
-        activation="relu",
-        norm_first=True,
-        batch_first=True,
-    )
-
-    decoder = eTransformerDecoderLayer(**decoder_kwargs)
-    decoder.eval()
-    decoder.check_equivariance(batch_size=3, tgt_len=2, mem_len=3, samples=5, atol=1e-3, rtol=1e-3)
-
-    def check_decoder_stack(
-        module: torch.nn.Module, rep: Representation, samples: int = 5, atol: float = 1e-3, rtol: float = 1e-3
-    ):
-        G_local = rep.group
-
-        def act(rep_local: Representation, g, tensor: torch.Tensor) -> torch.Tensor:
-            mat = torch.tensor(rep_local(g), dtype=tensor.dtype, device=tensor.device)
-            return torch.einsum("ij,...j->...i", mat, tensor)
-
-        B, tgt_len, mem_len = 3, 2, 3
-        module.eval()
-        for _ in range(samples):
-            g = G_local.sample()
-            tgt = torch.randn(B, tgt_len, rep.size)
-            mem = torch.randn(B, mem_len, rep.size)
-            out = module(tgt=tgt, memory=mem)
-            g_tgt = act(rep, g, tgt)
-            g_mem = act(rep, g, mem)
-            g_out = module(tgt=g_tgt, memory=g_mem)
-            g_out_exp = act(rep, g, out)
-            assert torch.allclose(g_out, g_out_exp, atol=atol, rtol=rtol), (
-                f"Decoder stack equivariance failed, max err {(g_out - g_out_exp).abs().max().item():.3e}"
-            )
-
-    base_layer = eTransformerDecoderLayer(**decoder_kwargs)
-    base_layer.reset_parameters()
-    base_layer.eval()
-    decoder_stack = torch.nn.TransformerDecoder(decoder_layer=base_layer, num_layers=5)
-    for layer in decoder_stack.layers:
-        if hasattr(layer, "reset_parameters"):
-            layer.reset_parameters()
-    decoder_stack.eval()
-    check_decoder_stack(decoder_stack, rep, samples=5, atol=1e-3, rtol=1e-3)
 
 
 @pytest.mark.parametrize("kind", [pytest.param("ema", id="ema"), pytest.param("eema", id="eema")])

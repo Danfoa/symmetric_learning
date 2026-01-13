@@ -79,6 +79,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
         if norm_module == "layernorm":
             norm_cls = eLayerNorm
             norm_kwargs = {"bias": bias} | factory_kwargs
+            raise ValueError("eLayerNorm is numerically unstable. Use eRMSNorm instead for now.")
         elif norm_module == "rmsnorm":
             norm_cls = eRMSNorm
             norm_kwargs = factory_kwargs
