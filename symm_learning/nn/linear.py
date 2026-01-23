@@ -32,19 +32,20 @@ def impose_linear_equivariance(
         \rho_{\text{out}}(g) W = W \rho_{\text{in}}(g) \quad \forall g \in G
 
     If the layer has a bias term, it is constrained to be invariant:
+
     .. math::
         \rho_{\text{out}}(g) b = b \quad \forall g \in G
 
     Parameters
     ----------
-    lin : torch.nn.Module
+    lin : :class:`~torch.nn.Module`
         The linear layer to impose equivariance on. Must have 'weight' and optionally 'bias' attributes.
-    in_rep : escnn.group.Representation
+    in_rep : :class:`~escnn.group.Representation`
         The input representation of the layer.
-    out_rep : escnn.group.Representation
+    out_rep : :class:`~escnn.group.Representation`
         The output representation of the layer.
     basis_expansion_scheme : str
-        Basis expansion strategy for the commuting constraint (``\"memory_heavy\"`` or ``\"isotypic_expansion\"``).
+        Basis expansion strategy for the commuting constraint (``"memory_heavy"`` or ``"isotypic_expansion"``).
     """
     assert isinstance(lin, torch.nn.Module), f"lin must be a torch.nn.Module, got {type(lin)}"
     # Add attributes to the layer for later reference
@@ -69,8 +70,9 @@ class eLinear(torch.nn.Linear):
         This layer can be used as a drop-in replacement for ``torch.nn.Linear``.
 
     Attributes:
-        homo_basis (GroupHomomorphismBasis): Handler exposing the equivariant basis and metadata.
-        bias_module (InvariantBias | None): Optional module handling the invariant bias.
+        homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Handler exposing the
+        equivariant basis and metadata.
+        bias_module (:class:`InvariantBias` | None): Optional module handling the invariant bias.
     """
 
     def __init__(

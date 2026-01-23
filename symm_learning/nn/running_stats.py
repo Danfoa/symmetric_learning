@@ -51,12 +51,12 @@ class EMAStats(torch.nn.Module):
         - Output: Same as inputs (data is not transformed).
 
     Attributes:
-        running_mean_x (torch.Tensor): Running mean of x. Shape: :math:`(D_x,)`.
-        running_mean_y (torch.Tensor): Running mean of y. Shape: :math:`(D_y,)`.
-        running_cov_xx (torch.Tensor): Running covariance of x. Shape: :math:`(D_x, D_x)`.
-        running_cov_yy (torch.Tensor): Running covariance of y. Shape: :math:`(D_y, D_y)`.
-        running_cov_xy (torch.Tensor): Running cross-covariance. Shape: :math:`(D_x, D_y)`.
-        num_batches_tracked (torch.Tensor): Number of batches processed.
+        running_mean_x (:class:`~torch.Tensor`): Running mean of x. Shape: :math:`(D_x,)`.
+        running_mean_y (:class:`~torch.Tensor`): Running mean of y. Shape: :math:`(D_y,)`.
+        running_cov_xx (:class:`~torch.Tensor`): Running covariance of x. Shape: :math:`(D_x, D_x)`.
+        running_cov_yy (:class:`~torch.Tensor`): Running covariance of y. Shape: :math:`(D_y, D_y)`.
+        running_cov_xy (:class:`~torch.Tensor`): Running cross-covariance. Shape: :math:`(D_x, D_y)`.
+        num_batches_tracked (:class:`~torch.Tensor`): Number of batches processed.
 
     Example:
         >>> stats = EMAStats(num_features_x=10, num_features_y=5, momentum=0.1)
@@ -216,8 +216,8 @@ class eEMAStats(EMAStats):
     It uses symmetry-aware mean and covariance computations from :mod:`symm_learning.stats`.
 
     Args:
-        in_type_x (escnn.nn.FieldType): The field type defining input x's group representation.
-        in_type_y (escnn.nn.FieldType): The field type defining input y's group representation.
+        in_type_x (:class:`~escnn.nn.FieldType`): The field type defining input x's group representation.
+        in_type_y (:class:`~escnn.nn.FieldType`): The field type defining input y's group representation.
             If None, uses same as in_type_x.
         momentum (float, optional): Momentum factor for exponential moving average. Default: 0.1.
         eps (float, optional): Small constant for numerical stability. Default: 1e-6.
