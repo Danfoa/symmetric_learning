@@ -62,7 +62,7 @@ def test_imlp(group: Group, hidden_units: int):  # noqa: D103
 @pytest.mark.parametrize("my", [3])
 def test_cond_res_block(group: Group, mx: int, my: int):  # noqa: D103
     import torch
-    from symm_learning.models.difussion.cond_eunet1d import eConditionalResidualBlock1D, eConditionalUnet1D
+    from symm_learning.models.diffusion.cond_eunet1d import eConditionalResidualBlock1D, eConditionalUnet1D
 
     G = group
     in_rep = direct_sum([G.regular_representation] * mx)
@@ -150,7 +150,7 @@ def test_econd_transformer_regressor(
     num_attention_heads: int,
 ):
     """Port equivariance checks from eCondTransformerRegressor __main__ into pytest."""
-    from symm_learning.models.difussion.econd_transformer_regressor import eCondTransformerRegressor
+    from symm_learning.models.diffusion.econd_transformer_regressor import eCondTransformerRegressor
 
     G = group
     in_rep = direct_sum([G.regular_representation] * m)
@@ -371,7 +371,7 @@ def test_etransformer_decoder(group: Group, mx: int, num_heads: int, num_layers:
 @pytest.mark.parametrize("cond_layers", [0, 1])
 def test_econd_transformer_regressor(group: Group, m: int, num_attention_heads: int, cond_layers: int):
     """Check fast inference consistency of eCondTransformerRegressor."""
-    from symm_learning.models.difussion.econd_transformer_regressor import eCondTransformerRegressor
+    from symm_learning.models.diffusion.econd_transformer_regressor import eCondTransformerRegressor
 
     G = group
     in_rep = direct_sum([G.regular_representation] * m)

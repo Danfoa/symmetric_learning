@@ -6,7 +6,7 @@ from typing import Iterable
 import torch
 from escnn.group import Representation
 
-from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 from symm_learning.nn import IrrepSubspaceNormPooling, eAffine, eConv1d, eConvTranspose1d, eRMSNorm
 from symm_learning.representation_theory import direct_sum
 

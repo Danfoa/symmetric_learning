@@ -10,8 +10,8 @@ from escnn.group import Representation
 
 import symm_learning
 from symm_learning.linalg import invariant_orthogonal_projector
-from symm_learning.models.difussion.cond_transformer_regressor import GenCondRegressor
-from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.models.diffusion.cond_transformer_regressor import GenCondRegressor
+from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import module_memory
 

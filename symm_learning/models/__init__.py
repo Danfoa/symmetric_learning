@@ -1,7 +1,7 @@
 """TODO"""
 
-from .difussion.cond_transformer_regressor import CondTransformerRegressor
-from .difussion.econd_transformer_regressor import eCondTransformerRegressor
+from .diffusion.cond_transformer_regressor import CondTransformerRegressor
+from .diffusion.econd_transformer_regressor import eCondTransformerRegressor
 from .emlp import MLP, eMLP, iMLP
 from .time_cnn.cnn_encoder import TimeCNNEncoder
 from .time_cnn.ecnn_encoder import eTimeCNNEncoder

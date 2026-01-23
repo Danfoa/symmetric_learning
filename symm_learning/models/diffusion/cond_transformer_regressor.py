@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Union
 
 import torch
 
-from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 
 logger = logging.getLogger(__name__)
 

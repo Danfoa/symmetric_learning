@@ -24,7 +24,7 @@ class ConditionalUnet1D(nn.Module):
     """A 1D/Time Unet architecture for predicting the score vector: `∇log(P(y | x))`.
 
     This model is intended to take a given sample y and to predict the conditional
-    probability P(y | x) score functional `∇log(P(y | x))`, which can be used in score-based difussion process
+    probability P(y | x) score functional `∇log(P(y | x))`, which can be used in score-based diffusion process
     to compute a new sample `y' = y + ∇log(P(y | x))` featuring higher likelihood given the conditional probability
     distribution.
 
