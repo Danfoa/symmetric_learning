@@ -22,7 +22,6 @@ __all__ = [
     "EMAStats",
     "eEMAStats",
     "eLinear",
-    "eAffine",
     "eLayerNorm",
     "eRMSNorm",
 ]

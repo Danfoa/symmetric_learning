@@ -24,6 +24,9 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.intersphinx",
+    "sphinx_autodoc_typehints",
     # 'numpydoc',
 ]
 
@@ -34,7 +37,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "renku"
+html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 
 
@@ -44,3 +47,6 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable/", None),
     "escnn": ("https://quva-lab.github.io/escnn/", None),
 }
+
+autoclass_content = "both"
+autodoc_typehints = "description"

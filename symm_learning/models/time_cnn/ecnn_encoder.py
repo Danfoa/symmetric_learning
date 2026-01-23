@@ -49,6 +49,22 @@ class eTimeCNNEncoder(torch.nn.Module):
         append_last_frame: bool = False,
         init_scheme: str | None = "xavier_uniform",
     ) -> None:
+        """Create an equivariant time-series CNN encoder.
+
+        Args:
+            in_rep: Input representation defining the group action on the input channels.
+            out_rep: Output representation. If it contains only trivial irreps, an :class:`iMLP` head is used;
+                otherwise an :class:`eMLP` head is used.
+            hidden_channels: List of output channel counts for each convolution block.
+            time_horizon: Length of the input time series (number of frames).
+            activation: Non-linearity applied after every convolution block.
+            batch_norm: Whether to include channel-wise RMS normalization.
+            bias: Whether to include bias in convolutions and linear heads.
+            mlp_hidden: Hidden layer widths for the final MLP head.
+            downsample: Downsampling strategy, either ``'stride'`` (stride-2 conv) or ``'pooling'`` (max pool).
+            append_last_frame: Whether to concatenate the last frame of the input to the encoding before the head.
+            init_scheme: Initialization scheme for equivariant layers.
+        """
         super().__init__()
         assert len(hidden_channels) > 0, "At least one conv block is required"
         assert downsample in {"stride", "pooling"}, "downsample must be 'stride' or 'pooling'"

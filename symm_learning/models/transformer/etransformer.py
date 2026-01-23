@@ -45,6 +45,23 @@ class eTransformerEncoderLayer(torch.nn.Module):
         dtype=None,
         init_scheme: str | None = "xavier_uniform",
     ) -> None:
+        """Create an equivariant Transformer encoder layer.
+
+        Args:
+            in_rep: Input representation.
+            nhead: Number of attention heads.
+            dim_feedforward: Hidden dimension of the feedforward network.
+            dropout: Dropout probability.
+            activation: Activation function (``'relu'`` or ``'gelu'``).
+            layer_norm_eps: Epsilon for layer normalization.
+            batch_first: If ``True``, input/output shape is ``(B, T, D)``.
+            norm_first: If ``True``, apply normalization before attention/feedforward.
+            norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
+            bias: Whether to use bias in linear layers.
+            device: Tensor device.
+            dtype: Tensor dtype.
+            init_scheme: Initialization scheme for equivariant layers.
+        """
         super().__init__()
         if dim_feedforward <= 0:
             raise ValueError(f"dim_feedforward must be positive, got {dim_feedforward}")
@@ -196,6 +213,23 @@ class eTransformerDecoderLayer(torch.nn.Module):
         dtype=None,
         init_scheme: str | None = "xavier_uniform",
     ) -> None:
+        """Create an equivariant Transformer decoder layer.
+
+        Args:
+            in_rep: Input representation.
+            nhead: Number of attention heads.
+            dim_feedforward: Hidden dimension of the feedforward network.
+            dropout: Dropout probability.
+            activation: Activation function (``'relu'`` or ``'gelu'``).
+            layer_norm_eps: Epsilon for layer normalization.
+            batch_first: If ``True``, input/output shape is ``(B, T, D)``.
+            norm_first: If ``True``, apply normalization before attention/feedforward.
+            norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
+            bias: Whether to use bias in linear layers.
+            device: Tensor device.
+            dtype: Tensor dtype.
+            init_scheme: Initialization scheme for equivariant layers.
+        """
         super().__init__()
         if dim_feedforward <= 0:
             raise ValueError(f"dim_feedforward must be positive, got {dim_feedforward}")

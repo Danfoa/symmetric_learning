@@ -22,7 +22,7 @@ class InvariantConstraint(torch.nn.Module):
             dimension ``rep.size``.
         inv_projector (torch.Tensor): Orthogonal projector of shape
             ``(rep.size, rep.size)`` onto the fixed subspace
-            :math:`\\mathrm{Fix}(\\rho)`.
+            :math:`\mathrm{Fix}(\rho)`.
     """
 
     def __init__(self, rep: Representation):
@@ -95,23 +95,23 @@ class CommutingConstraint(torch.nn.Module):
     Attributes:
         homo_basis (GroupHomomorphismBasis): Basis generator carrying the
             isotypic decomposition and block metadata for
-            :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
+            :math:`\operatorname{Hom}_\mathbb{G}(V_{\text{in}}, V_{\text{out}})`.
         in_rep / out_rep (Representation): Cached references to the isotypic
             versions of the supplied representations.
 
     Every pair of matching isotypic subspaces (one from ``in_rep``, one from
-    ``out_rep``) inherits the same irreducible type :math:`\\bar\\rho_k`.
+    ``out_rep``) inherits the same irreducible type :math:`\bar\rho_k`.
     Inside that block, any equivariant map factors as
 
     .. math::
-        A_{i,j}^{(k)} = \\sum_{b \\in \\mathbb{B}_k} \\Theta^{(k)}_{b,\,i,j} \\,\\Psi_k(b),
+        A_{i,j}^{(k)} = \sum_{b \in \mathbb{B}_k} \Theta^{(k)}_{b,\,i,j} \,\Psi_k(b),
 
-    where :math:`\\Psi_k(b)` spans :math:`\\mathrm{End}_G(\\bar\\rho_k)` and
-    :math:`\\Theta^{(k)}_{b,\,i,j} = \\langle A_{i,j}^{(k)}, \\Psi_k(b) \\rangle /
-    \\|\\Psi_k(b)\\|^2`. The combinatorics over multiplicity indices is captured
+    where :math:`\Psi_k(b)` spans :math:`\mathrm{End}_G(\bar\rho_k)` and
+    :math:`\Theta^{(k)}_{b,\,i,j} = \langle A_{i,j}^{(k)}, \Psi_k(b) \rangle /
+    \|\Psi_k(b)\|^2`. The combinatorics over multiplicity indices is captured
     by Kronecker-factoring these basis endomorphisms with canonical ``E_{ij}``
     selectors. Implementation detail: we prebuild all
-    :math:`E_{ij} \\otimes \\Psi_k(b)` blocks once, stack them into a tall
+    :math:`E_{ij} \otimes \Psi_k(b)` blocks once, stack them into a tall
     matrix, and perform the whole projection as two batched GEMV operations—one
     to gather all Frobenius inner products, one to reconstruct the projected
     weight. This keeps the projection GPU-friendly while matching the orthogonal
@@ -145,7 +145,7 @@ class CommutingConstraint(torch.nn.Module):
         self._cached_input_version = version
 
     def forward(self, W: torch.Tensor) -> torch.Tensor:
-        """Project W onto Hom_G(out_rep, in_rep)."""
+        r"""Project W onto :math:`\operatorname{Hom}_\mathbb{G}(\text{out\_rep}, \text{in\_rep})`."""
         if not self.training and self._cache_is_valid(W):
             return self._weight
         W_proj = self.homo_basis.orthogonal_projection(W)

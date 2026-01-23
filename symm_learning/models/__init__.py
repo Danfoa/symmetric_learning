@@ -1,4 +1,11 @@
-"""TODO"""
+"""Models package containing various equivariant and standard neural network architectures.
+
+This package includes implementations of:
+- Equivariant MLPs (eMLP) and Invariant MLPs (iMLP)
+- Time-series CNN encoders (eTimeCNNEncoder)
+- Equivariant Transformer layers (eTransformerEncoderLayer, eTransformerDecoderLayer)
+- Conditional Transformer Regressors (eCondTransformerRegressor)
+"""
 
 from .diffusion.cond_transformer_regressor import CondTransformerRegressor
 from .diffusion.econd_transformer_regressor import eCondTransformerRegressor

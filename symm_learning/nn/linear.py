@@ -62,9 +62,10 @@ def impose_linear_equivariance(
 class eLinear(torch.nn.Linear):
     r"""Parameterize a :math:`\mathbb{G}`-equivariant linear map with optional invariant bias.
 
-    The layer learns coefficients over :math:`\operatorname{Hom}_G(\text{in}, \text{out})`, synthesizing a dense weight
-    commuting with the supplied representations. The optional bias is delegated to :class:`InvariantBias`, which caches
-    its expansion in eval mode. The weight is cached after each expansion in eval mode to avoid redundant synthesis.
+    The layer learns coefficients over :math:`\operatorname{Hom}_\mathbb{G}(\text{in}, \text{out})`, synthesizing a
+    dense weight commuting with the supplied representations. The optional bias is delegated to :class:`InvariantBias`,
+    which caches its expansion in eval mode. The weight is cached after each expansion in eval mode to avoid redundant
+    synthesis.
 
     Note:
         This layer can be used as a drop-in replacement for ``torch.nn.Linear``.
@@ -351,7 +352,8 @@ class eAffine(torch.nn.Module):
     (length ``#trivial``), allowing external FiLM-style modulation.
 
     Note:
-        TODO: This module can be implemented without transitioning to the spectral basis, which can improve efficiency
+    Note:
+        This module can be implemented without transitioning to the spectral basis, which can improve efficiency
         dramatically.
 
     Args:

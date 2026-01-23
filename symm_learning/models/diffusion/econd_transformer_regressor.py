@@ -44,6 +44,26 @@ class eCondTransformerRegressor(GenCondRegressor):
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         init_scheme: str = "xavier_uniform",
     ) -> None:
+        """Create an equivariant conditional transformer regressor.
+
+        Args:
+            in_rep: Representation of the input tokens.
+            cond_rep: Representation of the conditioning tokens.
+            out_rep: Output representation. Defaults to ``in_rep`` if ``None``.
+            in_horizon: Maximum length of the input sequence.
+            cond_horizon: Maximum length of the conditioning sequence.
+            num_layers: Number of transformer decoder layers in the main generation trunk.
+            num_attention_heads: Number of attention heads in transformer layers.
+            embedding_dim: Dimension of the regular representation embedding space.
+                Must be a multiple of the group order.
+            p_drop_emb: Dropout probability for embeddings.
+            p_drop_attn: Dropout probability inside attention blocks.
+            causal_attn: Whether to mask future tokens (causal masking).
+            num_cond_layers: Number of transformer encoder layers for processing conditioning tokens.
+                If 0, an eMLP is used instead.
+            norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
+            init_scheme: Initialization scheme for equivariant layers.
+        """
         out_rep = out_rep or in_rep
         super().__init__(in_rep.size, out_rep.size, cond_rep.size)
 

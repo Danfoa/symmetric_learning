@@ -16,9 +16,9 @@ class eConv1d(torch.nn.Conv1d):
     r"""Channel-equivariant 1D convolution.
 
     Matches :class:`torch.nn.Conv1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—while
-    constraining each kernel slice to lie in :math:`\operatorname{Hom}_G(\text{in\_rep}, \text{out\_rep})`. Kernel DoF
-    are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias exists only if
-    the trivial irrep appears in ``out_rep``.
+    constraining each kernel slice to lie in :math:`\operatorname{Hom}_\mathbb{G}(\text{in\_rep}, \text{out\_rep})`.
+    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias
+    exists only if the trivial irrep appears in ``out_rep``.
     """
 
     def __init__(
@@ -145,9 +145,10 @@ class eConvTranspose1d(torch.nn.ConvTranspose1d):
     r"""Channel-equivariant transposed 1D convolution.
 
     Matches :class:`torch.nn.ConvTranspose1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—
-    while constraining each kernel slice to lie in :math:`\operatorname{Hom}_G(\text{in\_rep}, \text{out\_rep})`. Kernel
-    DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias exists only
-    if the trivial irrep appears in ``out_rep``.
+    while constraining each kernel slice to lie in
+    :math:`\operatorname{Hom}_\mathbb{G}(\text{in\_rep}, \text{out\_rep})`. Kernel DoF are stored as
+    ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias exists only if the trivial
+    irrep appears in ``out_rep``.
     """
 
     def __init__(

@@ -21,7 +21,7 @@ _cache_ = {}
 
 
 class GroupHomomorphismBasis(torch.nn.Module):
-    r"""Handle bases of :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})` and related operations.
+    r"""Handle bases of :math:`\operatorname{Hom}_\mathbb{G}(V_{\text{in}}, V_{\text{out}})` and related operations.
 
     This module can (1) synthesize equivariant linear maps from basis coefficients and (2) orthogonally project dense
     matrices onto the equivariant subspace, with the computation strategy governed by ``basis_expansion``.
@@ -33,22 +33,25 @@ class GroupHomomorphismBasis(torch.nn.Module):
         basis_expansion (str): Strategy (`"memory_heavy"` or `"isotypic_expansion"`) controlling storage/perf trade-offs
         common_irreps (List[Tuple]): Irrep identifiers present in both `in_rep` and `out_rep`.
         iso_blocks (Dict[Tuple, Dict[str, Any]]): Per-irrep metadata for irreps shared by `in_rep`/`out_rep`, keys:
+
             - ``out_slice`` / ``in_slice``: slice selecting the isotypic coordinates in out/in reps.
             - ``mul_out`` / ``mul_in``: multiplicities of the irrep in out/in reps.
             - ``irrep_dim``: Dimension of the irreducible representation  ``d_k``.
             - ``endomorphism_basis``: basis of ``End_G(irrep_k)`` for the irrep of type k, of shape ``(S_k, d_k, d_k)``.
             - ``dim_hom_basis``: Dimension of the homomorphism between isotypic spaces of type k. That is
-                ``dim(Hom_G(V_k^{in}, V_k^{out})) = m_out * m_in * S_k``.
+              :math:`\dim(\operatorname{Hom}_\mathbb{G}(V_k^{in}, V_k^{out})) = m_{out} \cdot m_{in} \cdot S_k`.
             - ``hom_basis_slice``: slice containing the degrees of freedom associated to
-                ``dim(Hom_G(V_k^{in}, V_k^{out}))`` from a vector of shape `(dim(Hom_G(in_rep, out_rep)),)`.
-        If ``basis_expansion == "memory_heavy"``:
-            basis_elements (torch.Tensor): Full dense basis stack `(dim, out_rep.size, in_rep.size)` when memory-heavy.
-            basis_norm_sq (torch.Tensor): Squared Frobenius norms of basis elements when memory-heavy.
-        If ``basis_expansion == "isotypic_expansion"``:
-            endo_basis_flat_* (torch.Tensor): Per-irrep flattened endomorphism bases `(S_k, d_k*d_k)` when
-                ``basis_expansion='isotypic_expansion'``.
-            endo_basis_norm_sq_* (torch.Tensor): Per-irrep squared norms of the flattened endomorphism bases.
-            Q_in_inv / Q_out (torch.Tensor): Change-of-basis matrices cached as buffers for isotypic expansion.
+              :math:`\dim(\operatorname{Hom}_\mathbb{G}(V_k^{in}, V_k^{out}))` from a vector of shape
+              :math:`(\dim(\operatorname{Hom}_\mathbb{G}(in\_rep, out\_rep)),)`.
+        basis_elements (torch.Tensor): Full dense basis stack `(dim, out_rep.size, in_rep.size)` when
+            ``basis_expansion="memory_heavy"``.
+        basis_norm_sq (torch.Tensor): Squared Frobenius norms of basis elements when ``basis_expansion="memory_heavy"``.
+        endo_basis_flat_* (torch.Tensor): Per-irrep flattened endomorphism bases `(S_k, d_k*d_k)` when
+            ``basis_expansion="isotypic_expansion"``.
+        endo_basis_norm_sq_* (torch.Tensor): Per-irrep squared norms of the flattened endomorphism bases with isotypic
+            expansion.
+        Q_in_inv (torch.Tensor): Change-of-basis matrix :math:`Q_{in}^{-1}` cached as buffer for isotypic expansion.
+        Q_out (torch.Tensor): Change-of-basis matrix :math:`Q_{out}` cached as buffer for isotypic expansion.
     """
 
     def __init__(
@@ -133,7 +136,7 @@ class GroupHomomorphismBasis(torch.nn.Module):
             raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
 
     def forward(self, w_dof: torch.Tensor) -> torch.Tensor:
-        r"""Return :math:`W \\in \\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})` from basis coefficients.
+        r"""Return :math:`W \\in \\operatorname{Hom}_\mathbb{G}(V_{\\text{in}}, V_{\\text{out}})` from basis coeffs.
 
         Args:
             w_dof (torch.Tensor): Basis expansion coefficients of shape `(D,)` or `(B, D)` where D represents the
@@ -173,7 +176,7 @@ class GroupHomomorphismBasis(torch.nn.Module):
         return W
 
     def orthogonal_projection(self, W: torch.Tensor) -> torch.Tensor:
-        r"""Project a dense matrix onto :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
+        r"""Project a dense matrix onto :math:`\\operatorname{Hom}_\mathbb{G}(V_{\\text{in}}, V_{\\text{out}})`.
 
         Args:
             W (torch.Tensor): Weight matrix of shape ``(..., out_rep.size, in_rep.size)`` in the original basis.
@@ -240,7 +243,7 @@ class GroupHomomorphismBasis(torch.nn.Module):
 
     @torch.no_grad()
     def _build_fullsize_homomorphism_basis(self):
-        r"""Construct the basis of :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
+        r"""Construct the basis of :math:`\\operatorname{Hom}_\mathbb{G}(V_{\\text{in}}, V_{\\text{out}})`.
 
         Returns:
             basis_elements (torch.Tensor): Stack of homomorphism basis elements of shape
