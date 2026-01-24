@@ -74,25 +74,19 @@ def test_change2disentangled(group: Group):  # noqa: D103
 @pytest.mark.parametrize("mx", [3])
 @pytest.mark.parametrize("my", [3, 5])
 def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
-    """Check the EquivMultivariateNormal layer is G-invariant."""
+    """Check the eMultivariateNormal layer is G-invariant."""
     import torch
 
-    from symm_learning.nn import EquivMultivariateNormal, _EquivMultivariateNormal
+    from symm_learning.nn import eMultivariateNormal
+    from symm_learning.representation_theory import direct_sum
 
     G = group
-    x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * mx)
-    y_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * my)
+    rep_x = direct_sum([G.regular_representation] * mx)
+    rep_y = direct_sum([G.regular_representation] * my)
 
-    rep_x = x_type.representation
-    G = rep_x.group
-
-    e_normal = EquivMultivariateNormal(y_type, diagonal=True)
+    e_normal = eMultivariateNormal(out_rep=rep_y, diagonal=True)
 
     e_normal.check_equivariance(atol=1e-6, rtol=1e-6)
-
-    # Test that the exported torch module is also equivariant
-    torch_e_normal: _EquivMultivariateNormal = e_normal.export()
-    torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-6, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
