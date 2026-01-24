@@ -1,32 +1,15 @@
 linear
 ======
 
-.. automodule:: symm_learning.nn.linear
-   :no-members:
-   :no-inherited-members:
 
-impose_linear_equivariance
---------------------------
+.. currentmodule:: symm_learning.nn.linear
 
-.. autofunction:: symm_learning.nn.linear.impose_linear_equivariance
 
-eLinear
--------
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
 
-.. autoclass:: symm_learning.nn.linear.eLinear
-   :members:
-   :show-inheritance:
-
-eAffine
--------
-
-.. autoclass:: symm_learning.nn.linear.eAffine
-   :members:
-   :show-inheritance:
-
-InvariantBias
--------------
-
-.. autoclass:: symm_learning.nn.linear.InvariantBias
-   :members:
-   :show-inheritance:
+   impose_linear_equivariance
+   eLinear
+   eAffine
+   InvariantBias

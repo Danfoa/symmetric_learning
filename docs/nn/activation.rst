@@ -1,13 +1,12 @@
 activation
 ==========
 
-.. automodule:: symm_learning.nn.activation
-   :no-members:
-   :no-inherited-members:
 
-eMultiheadAttention
--------------------
+.. currentmodule:: symm_learning.nn.activation
 
-.. autoclass:: symm_learning.nn.activation.eMultiheadAttention
-   :members:
-   :show-inheritance:
+
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
+
+   eMultiheadAttention

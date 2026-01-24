@@ -1,25 +1,32 @@
-.. Symmetric Learning documentation master file, created by
-   sphinx-quickstart on Wed Jun 25 18:00:45 2025.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. Symmetric Learning documentation master file
 
-Symmetric Learning documentation
-================================
+Symmetric Learning
+==================
 
-Lightweight python package for doing geometric deep learning using ESCNN. This package simply holds:
+**Symmetric Learning** is a machine learning library tailored to optimization problems featuring symmetry priors. It provides equivariant neural network modules, models, and utilities for leveraging group symmetries in data.
 
-- Generic equivariant torch models and modules that are not present in ESCNN.
-- Linear algebra utilities when working with symmetric vector spaces.
-- Statistics utilities for symmetric random variables.
+Key Features
+------------
 
+- **Neural Network Modules** (`nn`): Equivariant layers including linear, convolutional, normalization, and attention modules that respect group symmetries.
+- **Models** (`models`): Ready-to-use architectures like equivariant MLPs, Transformers, and CNN encoders for time-series and structured data.
+- **Linear Algebra** (`linalg`): Utilities for symmetric vector spaces—least squares, invariant projections, and isotypic decompositions.
+- **Statistics** (`stats`): Functions for computing statistics (mean, variance, covariance) of symmetric random variables.
+- **Representation Theory** (`representation_theory`): Tools for working with group representations, homomorphism bases, and irreducible decompositions.
+
+Installation
+------------
+
+.. code-block:: bash
+
+    pip install symm-learning
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :hidden:
+   :caption: Navigation
 
-   linalg
-   nn
-   models
-   stats
-   representation_theory
+   Home <self>
+   examples
+   reference
 

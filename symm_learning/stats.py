@@ -1,4 +1,19 @@
-"""Statistics utilities for symmetric random variables with known group representations."""
+"""Symmetric Learning - Statistics Utilities.
+
+Functions for computing statistics of symmetric random variables that respect group
+symmetry constraints.
+
+Functions
+---------
+mean
+    Compute the mean projected onto the G-invariant subspace.
+var
+    Compute variance respecting symmetry structure.
+var_mean
+    Compute variance and mean together efficiently.
+cov
+    Compute covariance between symmetric random variables.
+"""
 
 from __future__ import annotations
 

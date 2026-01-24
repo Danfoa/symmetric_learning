@@ -1,3 +1,34 @@
+"""Symmetric Learning - Representation Theory Utilities.
+
+Tools for working with group representations, homomorphism bases, and irreducible
+decompositions. These utilities support the construction of equivariant neural network
+layers and the analysis of symmetric vector spaces.
+
+Classes
+-------
+GroupHomomorphismBasis
+    Handle bases of equivariant linear maps between representation spaces.
+
+Functions
+---------
+isotypic_decomp_rep
+    Decompose a representation into isotypic components.
+direct_sum
+    Direct sum of representations.
+field_type_to_isotypic_basis
+    Convert ESCNN field types to isotypic basis.
+permutation_matrix
+    Construct permutation matrices from group elements.
+irreps_stats
+    Statistics about irreducible representations in a representation.
+escnn_representation_form_mapping
+    Map between ESCNN representation forms.
+is_complex_irreducible
+    Check if a representation is complex irreducible.
+decompose_representation
+    Full decomposition of a representation into irreducibles.
+"""
+
 from __future__ import annotations
 
 import functools

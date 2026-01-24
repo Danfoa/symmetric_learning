@@ -1,5 +1,12 @@
 distributions
 =============
 
-.. automodule:: symm_learning.nn.distributions
-   :members:
+
+.. currentmodule:: symm_learning.nn.distributions
+
+
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
+
+   eMultivariateNormal

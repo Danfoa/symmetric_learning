@@ -1,20 +1,13 @@
 parametrizations
 ================
 
-.. automodule:: symm_learning.nn.parametrizations
-   :no-members:
-   :no-inherited-members:
 
-CommutingConstraint
--------------------
+.. currentmodule:: symm_learning.nn.parametrizations
 
-.. autoclass:: symm_learning.nn.parametrizations.CommutingConstraint
-   :members:
-   :show-inheritance:
 
-InvariantConstraint
--------------------
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
 
-.. autoclass:: symm_learning.nn.parametrizations.InvariantConstraint
-   :members:
-   :show-inheritance:
+   CommutingConstraint
+   InvariantConstraint

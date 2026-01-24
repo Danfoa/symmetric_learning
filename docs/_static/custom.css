@@ -1,0 +1,12 @@
+/* Custom CSS for Symmetric Learning Documentation */
+
+/* Widen the "On this page" sidebar */
+.bd-sidebar-secondary {
+    max-width: 320px;
+    min-width: 200px;
+}
+
+/* Ensure TOC items don't wrap awkwardly */
+.bd-sidebar-secondary .toc-entry {
+    word-break: break-word;
+}

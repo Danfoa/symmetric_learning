@@ -1,5 +1,13 @@
 conv
 ====
 
-.. automodule:: symm_learning.nn.conv
-   :members:
+
+.. currentmodule:: symm_learning.nn.conv
+
+
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
+
+   eConv1d
+   eConvTranspose1d

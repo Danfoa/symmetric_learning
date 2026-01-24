@@ -1,5 +1,12 @@
 pooling
 =======
 
-.. automodule:: symm_learning.nn.pooling
-   :members:
+
+.. currentmodule:: symm_learning.nn.pooling
+
+
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
+
+   IrrepSubspaceNormPooling
