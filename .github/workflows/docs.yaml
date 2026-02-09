@@ -44,49 +44,58 @@ jobs:
           path: gh-pages
           fetch-depth: 0
 
-      - name: Sync built docs into gh-pages tree
-        run: |
-          set -eux
-          BRANCH="${GITHUB_REF_NAME}"
-          if [ "$BRANCH" = "main" ]; then
-            # Stable docs at project root
-            rsync -a --delete docs/_build/html/ gh-pages/
-          else
-            # Branch docs under /<branch>/
-            mkdir -p "gh-pages/${BRANCH}"
-            rsync -a --delete docs/_build/html/ "gh-pages/${BRANCH}/"
-            # If stable docs were never published yet, keep root URL alive.
-            if [ ! -f gh-pages/index.html ]; then
-              printf '%s\n' \
-                '<!doctype html>' \
-                '<html lang="en">' \
-                '  <head>' \
-                '    <meta charset="utf-8">' \
-                '    <meta http-equiv="refresh" content="0; url=./devel/">' \
-                '    <title>Symmetric Learning Docs</title>' \
-                '  </head>' \
-                '  <body>' \
-                '    <p>Redirecting to <a href="./devel/">devel documentation</a>...</p>' \
-                '  </body>' \
-                '</html>' > gh-pages/index.html
-            fi
-          fi
-          touch gh-pages/.nojekyll
-
       - name: Commit and push gh-pages
         working-directory: gh-pages
         run: |
-          set -eux
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain)" ]; then
+          set -euxo pipefail
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin gh-pages
+            git checkout -B gh-pages origin/gh-pages
+
+            BRANCH="${GITHUB_REF_NAME}"
+            if [ "$BRANCH" = "main" ]; then
+              # Stable docs at project root, while keeping branch sub-sites alive.
+              rsync -a --delete \
+                --exclude '.git/' \
+                --exclude '.nojekyll' \
+                --exclude 'devel/' \
+                ../docs/_build/html/ ./
+            else
+              # Branch docs under /<branch>/ (e.g. /devel/).
+              mkdir -p "${BRANCH}"
+              rsync -a --delete ../docs/_build/html/ "${BRANCH}/"
+              # If stable docs were never published yet, keep root URL alive.
+              if [ ! -f index.html ]; then
+                printf '%s\n' \
+                  '<!doctype html>' \
+                  '<html lang="en">' \
+                  '  <head>' \
+                  '    <meta charset="utf-8">' \
+                  '    <meta http-equiv="refresh" content="0; url=./devel/">' \
+                  '    <title>Symmetric Learning Docs</title>' \
+                  '  </head>' \
+                  '  <body>' \
+                  '    <p>Redirecting to <a href="./devel/">devel documentation</a>...</p>' \
+                  '  </body>' \
+                  '</html>' > index.html
+              fi
+            fi
+            touch .nojekyll
+
+            if [ -z "$(git status --porcelain)" ]; then
+              echo "No documentation changes to publish."
+              exit 0
+            fi
+
             git add -A
             git commit -m "docs: update ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
-            # Remote gh-pages may have moved since checkout; rebase to avoid
-            # non-fast-forward push failures.
-            git fetch origin gh-pages
-            git rebase origin/gh-pages
-            git push origin HEAD:gh-pages
-          else
-            echo "No documentation changes to publish."
-          fi
+            if git push origin HEAD:gh-pages; then
+              exit 0
+            fi
+            echo "Push failed on attempt ${attempt}; retrying..."
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish docs after 5 attempts."
+          exit 1

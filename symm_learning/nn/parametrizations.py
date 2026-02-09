@@ -23,10 +23,18 @@ class InvariantConstraint(torch.nn.Module):
     by applying :math:`\mathbf{P}_{\mathrm{inv}}` from
     :func:`~symm_learning.linalg.invariant_orthogonal_projector`.
 
+    Note:
+        Runtime behavior depends on mode.
+        In training mode (``model.train()``), the projection is recomputed each forward pass.
+        In inference mode (``model.eval()``), the projected output is cached for the same unchanged input tensor
+        (same object identity and version counter), which is faster.
+        With the cache active, the operation is equivalent to a symmetry-agnostic fixed linear map
+        :math:`\mathbf{b}\mapsto\mathbf{P}_{\mathrm{inv}}\mathbf{b}`.
+
     Attributes:
         rep (:class:`~escnn.group.Representation`): Representation :math:`\rho` whose action defines invariance,
             dimension ``rep.size``.
-        inv_projector (:class:`torch.Tensor`): Orthogonal projector of shape
+        inv_projector (:class:`~torch.Tensor`): Orthogonal projector of shape
             ``(rep.size, rep.size)`` onto the fixed subspace
             :math:`\mathrm{Fix}(\rho)`.
     """
@@ -82,6 +90,7 @@ class InvariantConstraint(torch.nn.Module):
         return self
 
     def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        """Load parameters and clear cached projected bias."""
         result = super().load_state_dict(state_dict, strict)
         self.invalidate_cache()
         return result
@@ -109,6 +118,14 @@ class CommutingConstraint(torch.nn.Module):
             size ``out_rep.size``.
         basis_expansion (:class:`str`, optional): Strategy used to realize the basis
             (``"memory_heavy"`` or ``"isotypic_expansion"``).
+
+    Note:
+        Runtime behavior depends on mode.
+        In training mode (``model.train()``), the projection is recomputed each forward pass.
+        In inference mode (``model.eval()``), the projected matrix is cached for the same unchanged input tensor
+        (same object identity and version counter), which is faster.
+        With the cache active, as a parametrization of :class:`~torch.nn.Linear`, the forward path is equivalent to
+        a symmetry-agnostic standard linear layer with a fixed projected dense weight.
 
     Attributes:
         homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Basis generator carrying the
@@ -145,14 +162,14 @@ class CommutingConstraint(torch.nn.Module):
         self._cached_input_version = version
 
     def forward(self, W: torch.Tensor) -> torch.Tensor:
-        r"""Project :math:`\mathbf{W}` onto space of equivariant linear maps`.
+        r"""Project :math:`\mathbf{W}` onto the space of equivariant linear maps.
 
         Args:
-            W (:class:`torch.Tensor`): Dense matrix
+            W (:class:`~torch.Tensor`): Dense matrix
                 :math:`\mathbf{W}\in\mathbb{R}^{D_{\mathrm{out}}\times D_{\mathrm{in}}}`.
 
         Returns:
-            :class:`torch.Tensor`: Frobenius-orthogonal projection
+            :class:`~torch.Tensor`: Frobenius-orthogonal projection
             :math:`\Pi_{\mathrm{Hom}}(\mathbf{W})`, which satisfies
             :math:`\rho_{\mathrm{out}}(g)\Pi_{\mathrm{Hom}}(\mathbf{W})=\Pi_{\mathrm{Hom}}(\mathbf{W})\rho_{\mathrm{in}}(g)`
             for all :math:`g\in\mathbb{G}`.
@@ -180,6 +197,7 @@ class CommutingConstraint(torch.nn.Module):
         return self
 
     def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        """Load parameters and clear cached projected weight."""
         result = super().load_state_dict(state_dict, strict)
         self.invalidate_cache()
         return result

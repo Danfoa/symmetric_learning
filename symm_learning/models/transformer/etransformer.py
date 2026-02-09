@@ -3,12 +3,11 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from math import ceil
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import torch
 import torch.nn.functional as F
 from escnn.group import Representation
-from torch import Tensor
 
 # from torch.nn import Transformer
 from symm_learning.nn.activation import eMultiheadAttention
@@ -22,8 +21,9 @@ logger = logging.getLogger(__name__)
 class eTransformerEncoderLayer(torch.nn.Module):
     r"""Equivariant Transformer encoder layer with the same API as ``torch.nn.TransformerEncoderLayer``.
 
-    Applies :class:`eMultiheadAttention` followed by an equivariant feed-forward block
-    built from :class:`eLinear` layers and :class:`eLayerNorm`, mirroring PyTorch’s ordering
+    Applies :class:`~symm_learning.nn.activation.eMultiheadAttention` followed by an equivariant feed-forward block
+    built from :class:`~symm_learning.nn.linear.eLinear` layers and
+    :class:`~symm_learning.nn.normalization.eLayerNorm`, mirroring PyTorch’s ordering
     (pre- or post-norm) while constraining every linear map to commute with the group action.
 
     The layer defines:
@@ -49,7 +49,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
         nhead: int,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
+        activation: str | Callable[[torch.Tensor], torch.Tensor] = F.relu,
         layer_norm_eps: float = 1e-5,
         batch_first: bool = True,
         norm_first: bool = True,
@@ -132,11 +132,11 @@ class eTransformerEncoderLayer(torch.nn.Module):
 
     def forward(
         self,
-        src: Tensor,
-        src_mask: Tensor = None,
-        src_key_padding_mask: Tensor = None,
+        src: torch.Tensor,
+        src_mask: torch.Tensor | None = None,
+        src_key_padding_mask: torch.Tensor | None = None,
         is_causal: bool = False,
-    ) -> Tensor:
+    ) -> torch.Tensor:
         r"""Pass the input through the equivariant encoder layer.
 
         Args:
@@ -173,8 +173,12 @@ class eTransformerEncoderLayer(torch.nn.Module):
         return x
 
     def _self_attention_block(
-        self, x: Tensor, attn_mask: Tensor = None, key_padding_mask: Tensor = None, is_causal: bool = False
-    ) -> Tensor:
+        self,
+        x: torch.Tensor,
+        attn_mask: torch.Tensor | None = None,
+        key_padding_mask: torch.Tensor | None = None,
+        is_causal: bool = False,
+    ) -> torch.Tensor:
         x = self.self_attn(
             x,
             x,
@@ -186,7 +190,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
         )[0]
         return self.dropout1(x)
 
-    def _feed_forward_block(self, x: Tensor) -> Tensor:
+    def _feed_forward_block(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
         return self.dropout2(x)
 
@@ -205,7 +209,8 @@ class eTransformerDecoderLayer(torch.nn.Module):
     r"""Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
 
     Combines an equivariant self-attention block, an equivariant cross-attention block,
-    and the same eLinear/eLayerNorm feed-forward structure used by the encoder so every
+    and the same :class:`~symm_learning.nn.linear.eLinear`/
+    :class:`~symm_learning.nn.normalization.eLayerNorm` feed-forward structure used by the encoder so every
     submodule commutes with the group action while keeping PyTorch’s runtime logic intact.
 
     The layer defines:
@@ -230,7 +235,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
         nhead: int,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        activation: Union[str, Callable[[Tensor], Tensor]] = F.relu,
+        activation: str | Callable[[torch.Tensor], torch.Tensor] = F.relu,
         layer_norm_eps: float = 1e-5,
         batch_first: bool = True,
         norm_first: bool = True,
@@ -322,15 +327,15 @@ class eTransformerDecoderLayer(torch.nn.Module):
 
     def forward(
         self,
-        tgt: Tensor,
-        memory: Tensor,
-        tgt_mask: Optional[Tensor] = None,
-        memory_mask: Optional[Tensor] = None,
-        tgt_key_padding_mask: Optional[Tensor] = None,
-        memory_key_padding_mask: Optional[Tensor] = None,
+        tgt: torch.Tensor,
+        memory: torch.Tensor,
+        tgt_mask: torch.Tensor | None = None,
+        memory_mask: torch.Tensor | None = None,
+        tgt_key_padding_mask: torch.Tensor | None = None,
+        memory_key_padding_mask: torch.Tensor | None = None,
         tgt_is_causal: bool = False,
         memory_is_causal: bool = False,
-    ) -> Tensor:
+    ) -> torch.Tensor:
         r"""Pass the input through the equivariant decoder layer.
 
         Args:
@@ -397,11 +402,11 @@ class eTransformerDecoderLayer(torch.nn.Module):
 
     def _self_attention_block(
         self,
-        x: Tensor,
-        attn_mask: Optional[Tensor] = None,
-        key_padding_mask: Optional[Tensor] = None,
+        x: torch.Tensor,
+        attn_mask: torch.Tensor | None = None,
+        key_padding_mask: torch.Tensor | None = None,
         is_causal: bool = False,
-    ) -> Tensor:
+    ) -> torch.Tensor:
         x = self.self_attn(
             x,
             x,
@@ -415,12 +420,12 @@ class eTransformerDecoderLayer(torch.nn.Module):
 
     def _multihead_attention_block(
         self,
-        x: Tensor,
-        mem: Tensor,
-        attn_mask: Optional[Tensor] = None,
-        key_padding_mask: Optional[Tensor] = None,
+        x: torch.Tensor,
+        mem: torch.Tensor,
+        attn_mask: torch.Tensor | None = None,
+        key_padding_mask: torch.Tensor | None = None,
         is_causal: bool = False,
-    ) -> Tensor:
+    ) -> torch.Tensor:
         x = self.cross_attn(
             x,
             mem,
@@ -432,7 +437,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
         )[0]
         return self.dropout2(x)
 
-    def _feed_forward_block(self, x: Tensor) -> Tensor:
+    def _feed_forward_block(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
         return self.dropout3(x)
 
@@ -463,7 +468,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
         G = self.in_rep.group
         device = next(self.parameters()).device
 
-        def act(rep: Representation, g, tensor: Tensor) -> Tensor:
+        def act(rep: Representation, g, tensor: torch.Tensor) -> torch.Tensor:
             mat = torch.tensor(rep(g), dtype=tensor.dtype, device=device)
             return torch.einsum("ij,...j->...i", mat, tensor)
 
@@ -496,7 +501,7 @@ class eTransformerDecoderLayer(torch.nn.Module):
             )
 
 
-def _get_activation_fn(activation: str) -> Callable[[Tensor], Tensor]:
+def _get_activation_fn(activation: str) -> Callable[[torch.Tensor], torch.Tensor]:
     if activation == "relu":
         return F.relu
     if activation == "gelu":
@@ -603,7 +608,7 @@ if __name__ == "__main__":
     def check_decoder_stack(module: torch.nn.Module, rep: Representation, depth: int, atol=1e-4, rtol=1e-4):  # noqa: D103
         G = rep.group
 
-        def act(rep: Representation, g, tensor: Tensor) -> Tensor:
+        def act(rep: Representation, g, tensor: torch.Tensor) -> torch.Tensor:
             mat = torch.tensor(rep(g), dtype=tensor.dtype, device=tensor.device)
             return torch.einsum("ij,...j->...i", mat, tensor)
 

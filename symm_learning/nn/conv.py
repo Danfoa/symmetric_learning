@@ -25,8 +25,9 @@ class eConv1d(torch.nn.Conv1d):
 
     where :math:`*` denotes convolution, and :math:`\mathbf{b}` is an invariant bias.
 
-    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias
-    exists only if the trivial irrep appears in ``out_rep``.
+    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via
+    :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`; bias exists only if the trivial irrep appears
+    in ``out_rep``.
     """
 
     def __init__(
@@ -48,7 +49,7 @@ class eConv1d(torch.nn.Conv1d):
             kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.
             basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for
                 :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.
-            init_scheme (:class:`~symm_learning.nn.linear.eINIT_SCHEMES`, optional): Initialization passed to
+            init_scheme (``eINIT_SCHEMES``, optional): Initialization passed to
                 :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to
                 ``"xavier_uniform"``.
             **conv1d_kwargs: Standard :class:`torch.nn.Conv1d` arguments (stride, padding, bias, etc.).
@@ -167,8 +168,9 @@ class eConvTranspose1d(torch.nn.ConvTranspose1d):
 
     where :math:`*` denotes transposed convolution.
 
-    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias
-    exists only if the trivial irrep appears in ``out_rep``.
+    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via
+    :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`; bias exists only if the trivial irrep appears
+    in ``out_rep``.
     """
 
     def __init__(
@@ -190,7 +192,7 @@ class eConvTranspose1d(torch.nn.ConvTranspose1d):
             kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.
             basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for
                 :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.
-            init_scheme (:class:`~symm_learning.nn.linear.eINIT_SCHEMES`, optional): Initialization passed to
+            init_scheme (``eINIT_SCHEMES``, optional): Initialization passed to
                 :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to
                 ``"xavier_uniform"``.
             **conv1d_kwargs: Standard :class:`torch.nn.ConvTranspose1d` arguments (stride, padding, bias, etc.).

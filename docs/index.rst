@@ -18,6 +18,8 @@
    </p>
 
 **Symmetric Learning** is a torch-based machine learning library tailored to optimization problems featuring symmetry priors. It provides equivariant neural network modules, models, and utilities for leveraging group symmetries in data.
+
+
 Installation
 ------------
 

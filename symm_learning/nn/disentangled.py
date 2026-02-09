@@ -61,11 +61,11 @@ class Change2DisentangledBasis(torch.nn.Module):
         """Apply the basis change to isotypic coordinates.
 
         Args:
-            x (:class:`torch.Tensor`): Input whose last dimension equals ``in_rep.size``; arbitrary leading dimensions
+            x (:class:`~torch.Tensor`): Input whose last dimension equals ``in_rep.size``; arbitrary leading dimensions
                 allowed.
 
         Returns:
-            :class:`torch.Tensor`: Tensor with the same leading shape and last dimension ``out_rep.size``
+            :class:`~torch.Tensor`: Tensor with the same leading shape and last dimension ``out_rep.size``
             (same as ``in_rep``), expressed in the isotypic basis. If the input is already in that basis,
             the tensor is returned unchanged.
         """

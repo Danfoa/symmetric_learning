@@ -73,16 +73,20 @@ class eLinear(torch.nn.Linear):
     .. math::
         \rho_{\text{out}}(g) \mathbf{b} = \mathbf{b} \quad \forall g \in \mathbb{G}
 
-    The optional bias is delegated to :class:`InvariantBias`, which caches its expansion in eval mode. The weight is
-    cached after each expansion in eval mode to avoid redundant synthesis.
-
     Note:
-        This layer can be used as a drop-in replacement for ``torch.nn.Linear``.
+        Runtime behavior depends on mode.
+        In training mode (``model.train()``), the constrained dense tensors are recomputed every forward pass, which
+        is correct for gradient updates but slower.
+        In inference mode (``model.eval()``), the expanded dense weight (and optional invariant bias) are cached and
+        reused until parameters change or :meth:`invalidate_cache` is called, which is faster.
+        With the cache active, :meth:`forward` is computationally equivalent to a symmetry-agnostic
+        :class:`~torch.nn.Linear` with fixed dense ``weight`` and ``bias``.
 
     Attributes:
         homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Handler exposing the
             equivariant basis and metadata.
-        bias_module (:class:`InvariantBias` | None): Optional module handling the invariant bias.
+        bias_module (:class:`~symm_learning.nn.linear.InvariantBias` | None): Optional module handling the invariant
+            bias.
     """
 
     def __init__(
@@ -204,6 +208,7 @@ class eLinear(torch.nn.Linear):
         return self
 
     def train(self, mode: bool = True):  # noqa: D102
+        """Switch mode and keep cached expanded tensors consistent."""
         result = super().train(mode)
         if mode:  # Switching to train mode - invalidate cache
             self.invalidate_cache()
@@ -212,6 +217,7 @@ class eLinear(torch.nn.Linear):
         return result
 
     def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        """Load parameters and invalidate cached expanded tensors."""
         result = super().load_state_dict(state_dict, strict)
         self.invalidate_cache()
         return result
@@ -228,7 +234,20 @@ class InvariantBias(torch.nn.Module):
     as the identity function.
 
     Note:
-        The bias is cached after switching to evaluation mode for efficiency.
+        Runtime behavior depends on mode.
+        In training mode (``model.train()``), the invariant bias is recomputed each forward pass.
+        In inference mode (``model.eval()``), the expanded invariant bias is cached and reused until ``bias_dof``
+        changes or :meth:`invalidate_cache` is called, which is faster.
+        With the cache active, the forward path is the same computation as the standard symmetry-agnostic bias add
+        ``input + b`` with fixed ``b``.
+
+    Attributes:
+        in_rep (:class:`~escnn.group.Representation`): Representation defining the symmetry action on
+            :math:`\mathcal{X}`.
+        out_rep (:class:`~escnn.group.Representation`): Same as ``in_rep`` (bias acts in the same space).
+        has_bias (:class:`bool`): ``True`` iff the trivial irrep is present and a learnable invariant bias exists.
+        bias_dof (:class:`~torch.nn.Parameter`): Learnable trivial-subspace coefficients (present only if
+            ``has_bias=True``).
     """
 
     def __init__(self, in_rep: Representation):
@@ -268,10 +287,10 @@ class InvariantBias(torch.nn.Module):
         """Apply the invariant bias.
 
         Args:
-            input (torch.Tensor): Tensor whose last dimension equals ``in_rep.size``.
+            input (:class:`~torch.Tensor`): Tensor whose last dimension equals ``in_rep.size``.
 
         Returns:
-            torch.Tensor: Output tensor with the same shape as ``input``.
+            :class:`~torch.Tensor`: Output tensor with the same shape as ``input``.
         """
         if not self.has_bias:
             return input
@@ -349,6 +368,7 @@ class InvariantBias(torch.nn.Module):
         return self
 
     def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        """Load parameters and invalidate cached expanded bias."""
         result = super().load_state_dict(state_dict, strict)
         self.invalidate_cache()
         return result
@@ -383,10 +403,6 @@ class eAffine(torch.nn.Module):
     When ``learnable=True`` these DoFs are trainable parameters. When ``learnable=False``,
     ``scale_dof`` and ``bias_dof`` are provided at call-time (FiLM style).
 
-    Note:
-        This module can be implemented without transitioning to the spectral basis, which can improve efficiency
-        dramatically.
-
     Args:
         in_rep: :class:`~escnn.group.Representation` describing the input/output space :math:`\rho_{\text{in}}`.
         bias: include invariant biases when the trivial irrep is present. Default: ``True``.
@@ -401,10 +417,22 @@ class eAffine(torch.nn.Module):
         - ``bias_dof`` (optional): ``(..., num_bias_dof)`` when ``bias=True``.
         - Output: ``(..., D)``.
 
+    Note:
+        Runtime behavior depends on mode.
+        In training mode (``model.train()``), the affine map is recomputed each forward pass.
+        In inference mode (``model.eval()``) and with ``learnable=True``, the dense affine map
+        :math:`\mathbf{Q}\mathbf{D}_{\alpha}\mathbf{Q}^T` (and optional invariant bias) is cached and reused until
+        parameters change or :meth:`invalidate_cache` is called, which is faster.
+        Unlike :class:`~symm_learning.nn.linear.eLinear`, this module is not a strict symmetry-agnostic drop-in
+        affine block, because parameters are irrep-structured and may also be provided externally
+        (FiLM-style via ``scale_dof``/``bias_dof``).
+
     Attributes:
-        homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Handler exposing the
-        equivariant basis and metadata.
-        bias_module (:class:`InvariantBias` | None): Optional module handling the invariant bias.
+        rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}` of the feature space.
+        Q (:class:`~torch.Tensor`): Change-of-basis matrix to the irrep-spectral basis.
+        Q_inv (:class:`~torch.Tensor`): Inverse change-of-basis matrix from irrep-spectral basis.
+        bias_module (:class:`~symm_learning.nn.linear.InvariantBias` | None): Optional module handling the invariant
+            bias.
     """
 
     def __init__(
@@ -541,8 +569,9 @@ class eAffine(torch.nn.Module):
             input_shape: Shape of the input tensor when ``learnable=False``. Used to validate DoF shapes.
 
         Returns:
-            spectral_scale: Spectral scale tensor shaped ``(..., rep_x.size)``.
-            spectral_bias: Spectral bias tensor shaped ``(..., rep_x.size)`` or ``None`` when ``bias=False``.
+            tuple[torch.Tensor, torch.Tensor | None]: Pair ``(spectral_scale, spectral_bias)`` where
+            ``spectral_scale`` is shaped ``(..., rep_x.size)`` and ``spectral_bias`` is shaped
+            ``(..., rep_x.size)`` (or ``None`` when ``bias=False``).
         """
         input_shape = () if input_shape is None else input_shape[:-1]
 
@@ -628,6 +657,7 @@ class eAffine(torch.nn.Module):
         return self
 
     def train(self, mode: bool = True):  # noqa: D102
+        """Switch mode and keep cached affine expansion consistent."""
         result = super().train(mode)
         if mode:  # Switching to train mode - invalidate cache
             self.invalidate_cache()
@@ -636,6 +666,7 @@ class eAffine(torch.nn.Module):
         return result
 
     def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
+        """Load parameters and invalidate cached affine expansion."""
         result = super().load_state_dict(state_dict, strict)
         self.invalidate_cache()
         return result

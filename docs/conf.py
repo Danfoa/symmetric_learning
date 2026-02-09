@@ -45,6 +45,10 @@ extensions = [
     # 'numpydoc',
 ]
 
+# Generate autosummary stub pages at build time (and overwrite stale ones).
+autosummary_generate = True
+autosummary_generate_overwrite = True
+
 # Keep math rendering stable across Sphinx versions by pinning MathJax explicitly.
 # This preserves the classic MathJax v3 TeX-style look.
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
@@ -62,6 +66,10 @@ html_favicon = "media/logo_v1_without_text.svg"
 html_title = f"{project} v{version} Docs [{docs_branch}]"
 
 add_module_names = False
+# Keep object entries in page TOCs, but show unqualified method/function names
+# (e.g. ``forward()`` instead of ``eCondTransformerRegressor.forward()``).
+toc_object_entries = True
+toc_object_entries_show_parents = "hide"
 
 
 html_theme_options = {
@@ -92,6 +100,9 @@ html_theme_options = {
 }
 
 html_css_files = ["custom.css"]
+html_context = {
+    "default_mode": "light",
+}
 
 
 # Intersphinx configuration
@@ -104,8 +115,22 @@ intersphinx_mapping = {
 
 autoclass_content = "both"
 autodoc_typehints = "description"
+autodoc_inherit_docstrings = False
 autodoc_default_options = {
     "members": True,
     "inherited-members": False,
     "show-inheritance": True,
 }
+
+# Keep nitpicky mode useful for project-internal links while avoiding noisy false positives
+# for third-party symbols that rely on intersphinx availability.
+nitpick_ignore_regex = [
+    ("py:class", r"^(torch|torch\.nn|torch\.distributions|escnn|numpy|np)\..*"),
+    ("py:class", r"^abc\..*"),
+    ("py:class", r"^collections\.abc\..*"),
+    ("py:class", r"^optional$"),
+    ("py:data", r"^typing\..*"),
+    ("py:class", r"^typing\..*"),
+    ("py:func", r"^torch\..*"),
+    ("py:meth", r"^torch\..*"),
+]

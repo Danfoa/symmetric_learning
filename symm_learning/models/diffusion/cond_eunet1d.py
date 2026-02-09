@@ -105,11 +105,14 @@ class eConditionalResidualBlock1D(torch.nn.Module):
         """Apply two equivariant conv blocks with FiLM modulation and a residual connection.
 
         Args:
-            x (torch.Tensor): Input of shape ``(B, in_rep.size, L)`` where ``B`` is batch and ``L`` is sequence length.
-            cond (torch.Tensor): Conditioning tensor of shape ``(B, cond_rep.size)`` used to predict FiLM parameters.
+            x (:class:`~torch.Tensor`): Input of shape ``(B, in_rep.size, L)`` where ``B`` is batch and ``L`` is
+                sequence length.
+            cond (:class:`~torch.Tensor`): Conditioning tensor of shape ``(B, cond_rep.size)`` used to predict FiLM
+                parameters.
 
         Returns:
-            torch.Tensor: Output tensor of shape ``(B, out_rep.size, L)`` after modulation and residual addition.
+            :class:`~torch.Tensor`: Output tensor of shape ``(B, out_rep.size, L)`` after modulation and residual
+                addition.
         """
         assert x.shape[1] == self.in_rep.size, f"Expected channel dim {self.in_rep.size}, got {x.shape}"
         assert cond.shape[-1] == self.cond_rep.size, f"Cond dim mismatch {cond.shape}"
@@ -371,7 +374,7 @@ class eConditionalUnet1D(torch.nn.Module):
         """Run a forward pass of the equivariant U-Net.
 
         Args:
-            sample (torch.Tensor): Input signal shaped ``(B, in_rep.size, L)``.
+            sample (:class:`~torch.Tensor`): Input signal shaped ``(B, in_rep.size, L)``.
             timestep (torch.Tensor | float | int): Diffusion step; scalar or batch, broadcast to ``B``.
             local_cond (torch.Tensor | None, optional): Local conditioning signal shaped
                 ``(B, local_cond_rep.size, L)`` when provided.
@@ -379,7 +382,7 @@ class eConditionalUnet1D(torch.nn.Module):
                 ``(B, global_cond_rep.size)`` to drive FiLM.
 
         Returns:
-            torch.Tensor: Output tensor shaped ``(B, in_rep.size, L)``.
+            :class:`~torch.Tensor`: Output tensor shaped ``(B, in_rep.size, L)``.
         """
         assert sample.shape[1] == self.in_rep.size, f"Expected channels {self.in_rep.size}, got {sample.shape}"
         device = sample.device
