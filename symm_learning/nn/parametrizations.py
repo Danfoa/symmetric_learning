@@ -145,7 +145,18 @@ class CommutingConstraint(torch.nn.Module):
         self._cached_input_version = version
 
     def forward(self, W: torch.Tensor) -> torch.Tensor:
-        r"""Project :math:`\mathbf{W}`onto subspace of equivariant linear maps"""
+        r"""Project :math:`\mathbf{W}` onto space of equivariant linear maps`.
+
+        Args:
+            W (:class:`torch.Tensor`): Dense matrix
+                :math:`\mathbf{W}\in\mathbb{R}^{D_{\mathrm{out}}\times D_{\mathrm{in}}}`.
+
+        Returns:
+            :class:`torch.Tensor`: Frobenius-orthogonal projection
+            :math:`\Pi_{\mathrm{Hom}}(\mathbf{W})`, which satisfies
+            :math:`\rho_{\mathrm{out}}(g)\Pi_{\mathrm{Hom}}(\mathbf{W})=\Pi_{\mathrm{Hom}}(\mathbf{W})\rho_{\mathrm{in}}(g)`
+            for all :math:`g\in\mathbb{G}`.
+        """
         if not self.training and self._cache_is_valid(W):
             return self._weight
         W_proj = self.homo_basis.orthogonal_projection(W)

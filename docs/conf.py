@@ -21,6 +21,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath(".."))
+docs_branch = os.environ.get("DOCS_BRANCH", os.environ.get("GITHUB_REF_NAME", "local"))
+docs_banner = f"v{version} - {docs_branch}"
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -42,12 +44,13 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
-html_title = f"{project} v{version} Docs"
+html_title = f"{project} v{version} Docs [{docs_branch}]"
 
 add_module_names = False
 
 
 html_theme_options = {
+    "announcement": f"<strong>{docs_banner}</strong>",
     "icon_links": [
         {
             "name": "GitHub",

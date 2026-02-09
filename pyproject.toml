@@ -23,12 +23,12 @@ dev = [
   "pytest-xdist",
   "ruff",
   "pre-commit",
-  "sphinx-autobuild",
-  "renku-sphinx-theme",
+  "sphinx-autobuild; python_version >= '3.11'",
+  "sphinx>=8; python_version >= '3.11'",
+  "sphinx-autodoc-typehints; python_version >= '3.11'",
+  "pydata-sphinx-theme; python_version >= '3.11'",
   "tqdm",
 ]
-
-docs = ["renku-sphinx-theme"]
 
 # Develop dependencies
 

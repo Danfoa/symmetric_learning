@@ -26,7 +26,10 @@ pip install -e .
 
 ## Documentation
 
-Released documentation is available at the [official documentation site](https://danfoa.github.io/symmetric_learning/).
+Documentation is published per branch:
+
+- `main` (stable): [https://danfoa.github.io/symmetric_learning/](https://danfoa.github.io/symmetric_learning/)
+- `devel`: [https://danfoa.github.io/symmetric_learning/devel/](https://danfoa.github.io/symmetric_learning/devel/)
 
 ## Citation
 
