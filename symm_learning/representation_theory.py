@@ -16,7 +16,7 @@ isotypic_decomp_rep
 direct_sum
     Direct sum of representations.
 field_type_to_isotypic_basis
-    Convert ESCNN field types to isotypic basis.
+    Convert representations to an isotypic basis.
 permutation_matrix
     Construct permutation matrices from group elements.
 irreps_stats
@@ -40,7 +40,6 @@ from typing import Callable, Dict, List, Union
 import numpy as np
 import torch
 from escnn.group import Group, GroupElement, Representation
-from escnn.nn import FieldType
 from scipy.linalg import block_diag
 
 from symm_learning.utils import CallableDict
@@ -552,16 +551,18 @@ def direct_sum(reps: List[Representation], name: str = None, change_of_basis: np
     return out_rep
 
 
-def field_type_to_isotypic_basis(field_type: FieldType):
-    """Returns a new field type in a disentangled basis ignoring change of basis."""
-    rep = field_type.representation
-    # Organize the irreps such that we get: rep_ordered_irreps := Q (⊕_k (⊕_i^mk irrep_k)) Q^T
-    rep_ordered_irreps = isotypic_decomp_rep(rep)
-    # Get dictionary of irrep_id: (⊕_i^mk irrep_k)
-    iso_subspaces_reps = rep_ordered_irreps.attributes["isotypic_reps"]
-    # Define a field type composed of the representations of each isotypic subspace
-    new_field_type = FieldType(gspace=field_type.gspace, representations=list(iso_subspaces_reps.values()))
-    return new_field_type
+def field_type_to_isotypic_basis(rep_or_field: Representation) -> Representation:
+    """Return the representation expressed in an isotypic basis.
+
+    Accepts a :class:`~escnn.group.Representation` or a legacy object carrying a
+    ``representation`` attribute (e.g., a FieldType).
+    """
+    rep = rep_or_field
+    if not isinstance(rep_or_field, Representation):
+        rep = getattr(rep_or_field, "representation", None)
+    if not isinstance(rep, Representation):
+        raise TypeError("Expected a Representation or an object with a 'representation' attribute.")
+    return isotypic_decomp_rep(rep)
 
 
 def permutation_matrix(oneline_notation):

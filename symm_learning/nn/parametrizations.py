@@ -1,11 +1,8 @@
 import copy
 import logging
 
-import escnn
 import torch
 from escnn.group import Representation
-from escnn.gspaces import no_base_space
-from escnn.nn import FieldType
 
 from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import GroupHomomorphismBasis, direct_sum
@@ -179,7 +176,10 @@ if __name__ == "__main__":
     import types
     from pathlib import Path
 
+    import escnn
     from escnn.group import CyclicGroup, Icosahedral
+    from escnn.gspaces import no_base_space
+    from escnn.nn import FieldType
 
     repo_root = Path(__file__).resolve().parents[2]
     test_dir = repo_root / "test"
