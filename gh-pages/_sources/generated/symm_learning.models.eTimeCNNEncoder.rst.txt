@@ -1,0 +1,9 @@
+﻿eTimeCNNEncoder
+===============
+
+.. currentmodule:: symm_learning.models
+
+.. autoclass:: eTimeCNNEncoder
+   :members:
+   :show-inheritance:
+   :inherited-members:
