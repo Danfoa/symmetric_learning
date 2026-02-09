@@ -1,0 +1,736 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>symm_learning.nn.conv &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e564c319" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/conv';</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.4.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">symm_learning.nn.conv</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for symm_learning.nn.conv</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.linear</span><span class="w"> </span><span class="kn">import</span> <span class="n">eINIT_SCHEMES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroupHomomorphismBasis</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="eConv1d">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConv1d.html#symm_learning.nn.conv.eConv1d">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">eConv1d</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Channel-equivariant 1D convolution.</span>
+
+<span class="sd">    Matches :class:`torch.nn.Conv1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—while</span>
+<span class="sd">    constraining each kernel slice to lie in :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`.</span>
+
+<span class="sd">    The layer satisfies the equivariance constraint:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \rho_{\text{out}}(g) \mathbf{y}_t = \mathbf{W} * (\rho_{\text{in}}(g) \mathbf{x})_t + \mathbf{b}</span>
+
+<span class="sd">    where :math:`*` denotes convolution, and :math:`\mathbf{b}` is an invariant bias.</span>
+
+<span class="sd">    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias</span>
+<span class="sd">    exists only if the trivial irrep appears in ``out_rep``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">out_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">basis_expansion</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">,</span> <span class="s2">&quot;memory_heavy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">eINIT_SCHEMES</span> <span class="o">=</span> <span class="s2">&quot;xavier_uniform&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">conv1d_kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize the constrained convolution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            in_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{in}}` describing</span>
+<span class="sd">                input transformation.</span>
+<span class="sd">            out_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{out}}` describing</span>
+<span class="sd">                output transformation.</span>
+<span class="sd">            kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.</span>
+<span class="sd">            basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for</span>
+<span class="sd">                :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.</span>
+<span class="sd">            init_scheme (:class:`~symm_learning.nn.linear.eINIT_SCHEMES`, optional): Initialization passed to</span>
+<span class="sd">                :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to</span>
+<span class="sd">                ``&quot;xavier_uniform&quot;``.</span>
+<span class="sd">            **conv1d_kwargs: Standard :class:`torch.nn.Conv1d` arguments (stride, padding, bias, etc.).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Incompatible group: </span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;groups&quot;</span> <span class="ow">in</span> <span class="n">conv1d_kwargs</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">conv1d_kwargs</span><span class="p">[</span><span class="s2">&quot;groups&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;`groups`&gt;1 are not supported in eConv1D&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span> <span class="o">**</span><span class="n">conv1d_kwargs</span><span class="p">)</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">conv1d_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_default_dtype</span><span class="p">())</span>
+        <span class="c1"># Delete linear unconstrained module parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># Instanciate the handler of the basis of Hom_G(in_rep, out_rep)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">out_rep</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;No equivariant linear maps exist between </span><span class="si">{</span><span class="n">in_rep</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">out_rep</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2"> dim(Hom_G(in_rep, out_rep))=0&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># Weight is a tensor of shape (out_rep.size, in_rep.size, kernel_size), hence:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span>
+            <span class="s2">&quot;weight_dof&quot;</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">kernel_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Assert bias vector is feasible given out_rep symmetries</span>
+        <span class="n">bias</span> <span class="o">=</span> <span class="n">conv1d_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">trivial_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">trivial_representation</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">can_have_bias</span> <span class="o">=</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">trivial_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span> <span class="o">=</span> <span class="n">bias</span> <span class="ow">and</span> <span class="n">can_have_bias</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="p">:</span>  <span class="c1"># Register bias parameters</span>
+            <span class="c1"># Number of bias trainable parameters are equal to the output multiplicity of the trivial irrep</span>
+            <span class="n">m_out_trivial</span> <span class="o">=</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span>
+                <span class="s2">&quot;bias_dof&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">m_out_trivial</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;Qout&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">init_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span>
+
+<div class="viewcode-block" id="eConv1d.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConv1d.html#symm_learning.nn.conv.eConv1d.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the constrained 1D convolution on channel-last dimension.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Expected input of shape (..., </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, H) got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">weight</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dense kernel of shape ``(out_channels, in_channels, kernel_size)``.&quot;&quot;&quot;</span>
+        <span class="n">W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="p">)</span>  <span class="c1"># (kernel_size, out_rep.size, in_rep.size)</span>
+        <span class="k">return</span> <span class="n">W</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># (out_rep.size, in_rep.size, kernel_size)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bias</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expanded invariant bias or ``None`` when not admissible.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_bias</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span> <span class="k">else</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="eConv1d.reset_parameters">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConv1d.html#symm_learning.nn.conv.eConv1d.reset_parameters">[docs]</a>
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">eINIT_SCHEMES</span> <span class="o">=</span> <span class="s2">&quot;xavier_normal&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset trainable parameters using the chosen initialization scheme.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;homo_basis&quot;</span><span class="p">):</span>  <span class="c1"># First call on torch.nn.Conv1d init</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+        <span class="n">new_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">initialize_params</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">,</span> <span class="n">leading_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">new_params</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="p">:</span>
+            <span class="n">trivial_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">trivial_representation</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">m_in_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">]</span>
+            <span class="n">m_out_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">]</span>
+            <span class="n">fan_in</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">_calculate_fan_in_and_fan_out</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">m_out_inv</span><span class="p">,</span> <span class="n">m_in_inv</span><span class="p">))</span>
+            <span class="n">bound</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">fan_in</span><span class="p">)</span> <span class="k">if</span> <span class="n">fan_in</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">uniform_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias_dof</span><span class="p">,</span> <span class="o">-</span><span class="n">bound</span><span class="p">,</span> <span class="n">bound</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="eConv1d.check_equivariance">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConv1d.html#symm_learning.nn.conv.eConv1d.check_equivariance">[docs]</a>
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_equivariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check equivariance under channel actions of the underlying fiber group.&quot;&quot;&quot;</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+            <span class="n">rho_in</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">rho_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">gx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_in</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+            <span class="n">y_expected</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">gx</span><span class="p">)</span>
+            <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_out</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">gy</span><span class="p">,</span> <span class="n">y_expected</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Equivariance failed for group element </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2"> with max error </span><span class="si">{</span><span class="p">(</span><span class="n">gy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y_expected</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_expand_bias</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expand bias degrees of freedom into the original basis.&quot;&quot;&quot;</span>
+        <span class="n">trivial_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">trivial_representation</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">trivial_indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">iso_blocks</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">][</span><span class="s2">&quot;out_slice&quot;</span><span class="p">]</span>
+        <span class="n">bias</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Qout</span><span class="p">[:,</span> <span class="n">trivial_indices</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_dof</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bias</span></div>
+
+
+
+<div class="viewcode-block" id="eConvTranspose1d">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConvTranspose1d.html#symm_learning.nn.conv.eConvTranspose1d">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">eConvTranspose1d</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ConvTranspose1d</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Channel-equivariant transposed 1D convolution.</span>
+
+<span class="sd">    Matches :class:`torch.nn.ConvTranspose1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—</span>
+<span class="sd">    while constraining each kernel slice to lie in</span>
+<span class="sd">    :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`.</span>
+
+<span class="sd">    The layer satisfies the equivariance constraint:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \rho_{\text{out}}(g) \mathbf{y}_t = \mathbf{W}^T * (\rho_{\text{in}}(g) \mathbf{x})_t + \mathbf{b}</span>
+
+<span class="sd">    where :math:`*` denotes transposed convolution.</span>
+
+<span class="sd">    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias</span>
+<span class="sd">    exists only if the trivial irrep appears in ``out_rep``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">out_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">basis_expansion</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">,</span> <span class="s2">&quot;memory_heavy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">eINIT_SCHEMES</span> <span class="o">=</span> <span class="s2">&quot;xavier_uniform&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">conv1d_kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize the constrained transposed convolution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            in_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{in}}` describing</span>
+<span class="sd">                input transformation.</span>
+<span class="sd">            out_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{out}}` describing</span>
+<span class="sd">                output transformation.</span>
+<span class="sd">            kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.</span>
+<span class="sd">            basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for</span>
+<span class="sd">                :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.</span>
+<span class="sd">            init_scheme (:class:`~symm_learning.nn.linear.eINIT_SCHEMES`, optional): Initialization passed to</span>
+<span class="sd">                :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to</span>
+<span class="sd">                ``&quot;xavier_uniform&quot;``.</span>
+<span class="sd">            **conv1d_kwargs: Standard :class:`torch.nn.ConvTranspose1d` arguments (stride, padding, bias, etc.).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Incompatible group: </span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;groups&quot;</span> <span class="ow">in</span> <span class="n">conv1d_kwargs</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">conv1d_kwargs</span><span class="p">[</span><span class="s2">&quot;groups&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;`groups`&gt;1 are not supported in eConvTranspose1d&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span> <span class="o">**</span><span class="n">conv1d_kwargs</span><span class="p">)</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">conv1d_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_default_dtype</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">out_rep</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;No equivariant linear maps exist between </span><span class="si">{</span><span class="n">in_rep</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">out_rep</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2"> dim(Hom_G(in_rep, out_rep))=0&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span>
+            <span class="s2">&quot;weight_dof&quot;</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">kernel_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">bias</span> <span class="o">=</span> <span class="n">conv1d_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">trivial_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">trivial_representation</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">can_have_bias</span> <span class="o">=</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">trivial_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span> <span class="o">=</span> <span class="n">bias</span> <span class="ow">and</span> <span class="n">can_have_bias</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="p">:</span>
+            <span class="n">m_out_trivial</span> <span class="o">=</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span>
+                <span class="s2">&quot;bias_dof&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">m_out_trivial</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;Qout&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">init_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span>
+
+<div class="viewcode-block" id="eConvTranspose1d.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConvTranspose1d.html#symm_learning.nn.conv.eConvTranspose1d.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the constrained transposed 1D convolution on channel dimension.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Expected input of shape (..., </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, H &gt; 0) got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">weight</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dense kernel of shape ``(in_channels, out_channels, kernel_size)``.&quot;&quot;&quot;</span>
+        <span class="n">W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="p">)</span>  <span class="c1"># (kernel_size, out_rep.size, in_rep.size)</span>
+        <span class="k">return</span> <span class="n">W</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># (in_rep.size, out_rep.size, kernel_size)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bias</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expanded invariant bias or ``None`` when not admissible.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_bias</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_expand_bias</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expand bias degrees of freedom into the original basis.&quot;&quot;&quot;</span>
+        <span class="n">trivial_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">trivial_representation</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">trivial_indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">iso_blocks</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">][</span><span class="s2">&quot;out_slice&quot;</span><span class="p">]</span>
+        <span class="n">bias</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Qout</span><span class="p">[:,</span> <span class="n">trivial_indices</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_dof</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bias</span>
+
+<div class="viewcode-block" id="eConvTranspose1d.reset_parameters">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConvTranspose1d.html#symm_learning.nn.conv.eConvTranspose1d.reset_parameters">[docs]</a>
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">eINIT_SCHEMES</span> <span class="o">=</span> <span class="s2">&quot;xavier_normal&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset trainable parameters using the chosen initialization scheme.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;homo_basis&quot;</span><span class="p">):</span>  <span class="c1"># First call on torch.nn.ConvTranspose1d init</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+        <span class="n">new_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">initialize_params</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">,</span> <span class="n">leading_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">new_params</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="p">:</span>
+            <span class="n">trivial_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">trivial_representation</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">m_in_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">]</span>
+            <span class="n">m_out_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">trivial_id</span><span class="p">]</span>
+            <span class="n">fan_in</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">_calculate_fan_in_and_fan_out</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">m_out_inv</span><span class="p">,</span> <span class="n">m_in_inv</span><span class="p">))</span>
+            <span class="n">bound</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">fan_in</span><span class="p">)</span> <span class="k">if</span> <span class="n">fan_in</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">uniform_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias_dof</span><span class="p">,</span> <span class="o">-</span><span class="n">bound</span><span class="p">,</span> <span class="n">bound</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="eConvTranspose1d.check_equivariance">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.conv.eConvTranspose1d.html#symm_learning.nn.conv.eConvTranspose1d.check_equivariance">[docs]</a>
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_equivariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check equivariance under channel actions of the underlying group.&quot;&quot;&quot;</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight_dof</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+            <span class="n">rho_in</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">rho_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">gx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_in</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+            <span class="n">y_expected</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">gx</span><span class="p">)</span>
+            <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_out</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">gy</span><span class="p">,</span> <span class="n">y_expected</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Equivariance failed for group element </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2"> with max error </span><span class="si">{</span><span class="p">(</span><span class="n">gy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y_expected</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Daniel Felipe Ordoñez Apraez.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

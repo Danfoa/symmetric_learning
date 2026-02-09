@@ -1,0 +1,876 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>symm_learning.nn.normalization &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e564c319" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/normalization';</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.4.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">symm_learning.nn.normalization</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for symm_learning.nn.normalization</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">symm_learning.stats</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">irrep_radii</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.linear</span><span class="w"> </span><span class="kn">import</span> <span class="n">eAffine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">direct_sum</span>
+
+
+<div class="viewcode-block" id="eRMSNorm">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eRMSNorm.html#symm_learning.nn.normalization.eRMSNorm">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">eRMSNorm</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Root-mean-square normalization with :math:`\mathbb{G}`-equivariant affine map.</span>
+
+<span class="sd">    For :math:`\mathbf{x}\in\mathcal{X}` with :math:`D=\dim(\rho_{\mathcal{X}})`, define</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \hat{\mathbf{x}} = \frac{\mathbf{x}}{\sqrt{\frac{1}{D} \|\mathbf{x}\|^2 + \varepsilon}}, \qquad</span>
+<span class="sd">        \mathbf{y} = \alpha \odot \hat{\mathbf{x}} + \mathbf{\beta}</span>
+
+<span class="sd">    where the second step is implemented by :class:`~symm_learning.nn.linear.eAffine`</span>
+<span class="sd">    (per-irrep scaling and optional invariant bias).</span>
+
+<span class="sd">    Equivariance:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \operatorname{eRMSNorm}(\rho_{\mathcal{X}}(g)\mathbf{x})</span>
+<span class="sd">        = \rho_{\mathcal{X}}(g)\operatorname{eRMSNorm}(\mathbf{x}),</span>
+<span class="sd">        \quad \forall g\in\mathbb{G},</span>
+
+<span class="sd">    because the RMS factor is invariant and :class:`eAffine` commutes with :math:`\rho_{\mathcal{X}}`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        in_rep (:class:`~escnn.group.Representation`): Description of the feature space :math:`\rho_{\text{in}}`.</span>
+<span class="sd">        eps (:class:`float`): Numerical stabilizer added inside the RMS computation.</span>
+<span class="sd">        equiv_affine (:class:`bool`): If ``True``, apply a symmetry-preserving :class:`eAffine` after normalization.</span>
+<span class="sd">        device, dtype: Optional tensor factory kwargs passed to the affine parameters.</span>
+<span class="sd">        init_scheme (:class:`typing.Literal`[&quot;identity&quot;, &quot;random&quot;] | :class:`None`): Initialization scheme forwarded to</span>
+<span class="sd">            :meth:`eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful when loading checkpoints).</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - Input: ``(..., in_rep.size)``</span>
+<span class="sd">        - Output: same shape</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The normalization factor is a single scalar per sample, so the operation commutes with any</span>
+<span class="sd">        matrix representing the group action defined by ``in_rep``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+        <span class="n">equiv_affine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;identity&quot;</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;identity&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">in_rep</span>
+        <span class="k">if</span> <span class="n">equiv_affine</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="n">eAffine</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">init_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">init_scheme</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalized_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,)</span>
+
+        <span class="k">if</span> <span class="n">init_scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">init_scheme</span><span class="p">)</span>
+
+<div class="viewcode-block" id="eRMSNorm.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eRMSNorm.html#symm_learning.nn.normalization.eRMSNorm.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Normalize by a single RMS scalar and (optionally) apply equivariant affine.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input: Tensor shaped ``(..., in_rep.size)``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tensor with identical shape, RMS-normalized and possibly transformed by :class:`eAffine`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected (...,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">rms_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="n">normalized</span> <span class="o">=</span> <span class="nb">input</span> <span class="o">/</span> <span class="n">rms_input</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;affine&quot;</span><span class="p">):</span>
+            <span class="n">normalized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">normalized</span></div>
+
+
+<div class="viewcode-block" id="eRMSNorm.reset_parameters">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eRMSNorm.html#symm_learning.nn.normalization.eRMSNorm.reset_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;identity&quot;</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;identity&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;(Re)initialize the optional affine transform using the provided scheme.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;affine&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="eLayerNorm">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eLayerNorm.html#symm_learning.nn.normalization.eLayerNorm">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">eLayerNorm</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant Layer Normalization.</span>
+
+<span class="sd">    Given :math:`\mathbf{x}\in\mathcal{X}`, we first move to the irrep-spectral basis</span>
+<span class="sd">    :math:`\hat{\mathbf{x}} = \mathbf{Q}^{-1}\mathbf{x}`, compute one variance scalar per irreducible block</span>
+<span class="sd">    via :func:`~symm_learning.linalg.irrep_radii`,</span>
+<span class="sd">    and normalize each block uniformly:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \hat{\mathbf{y}} = \frac{\hat{\mathbf{x}}}{\sqrt{\mathbf{\sigma}^{2} + \varepsilon}}, \qquad</span>
+<span class="sd">        \mathbf{y} = Q\hat{\mathbf{y}}.</span>
+
+<span class="sd">    The layer is equivariant:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \rho_{\text{in}}(g) \mathbf{y} = \text{LayerNorm}(\rho_{\text{in}}(g) \mathbf{x})</span>
+
+<span class="sd">    since the statistics are computed per irreducible subspace (which are preserved by the group action).</span>
+
+<span class="sd">    When ``equiv_affine=True`` the learnable affine step is performed directly in the spectral basis</span>
+<span class="sd">    using the per-irrep scale/bias provided by :class:`~symm_learning.nn.linear.eAffine`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        in_rep (:class:`~escnn.group.Representation`): description of the feature space :math:`\rho_{\text{in}}`.</span>
+<span class="sd">        eps (:class:`float`): numerical stabilizer added to each variance.</span>
+<span class="sd">        equiv_affine (:class:`bool`): if ``True``, applies an :class:`eAffine` in spectral space.</span>
+<span class="sd">        bias (:class:`bool`): whether the affine term includes invariant biases (only used if ``equiv_affine``).</span>
+<span class="sd">        device, dtype: optional tensor factory kwargs.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This layer appears to generate numerical instability when used in equivariant transformer blocks.</span>
+<span class="sd">        Use eRMSNorm instead in such cases.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Symmetry-preserving LayerNorm:</span>
+
+<span class="sd">    .. math:: \mathbf{y} = Q ( (Q^{-1} \mathbf{x}) \odot \alpha + \mathbf{\beta} )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+        <span class="n">equiv_affine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;identity&quot;</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;identity&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">in_rep</span>
+
+        <span class="c1"># We require to transition to/from the irrep-spectral basis to compute the normalization and affine transform</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">get_default_dtype</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;Q_inv&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">get_default_dtype</span><span class="p">()))</span>
+
+        <span class="c1"># Only works for (..., in_rep.size) inputs with normalization over the last dimension</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalized_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">equiv_affine</span> <span class="o">=</span> <span class="n">equiv_affine</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">irrep_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">irreps</span><span class="p">],</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;irrep_dims&quot;</span><span class="p">,</span> <span class="n">dims</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;irrep_indices&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">),</span> <span class="n">dims</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">equiv_affine</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="n">eAffine</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">init_scheme</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;identity&quot;</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;identity&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">equiv_affine</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
+
+<div class="viewcode-block" id="eLayerNorm.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eLayerNorm.html#symm_learning.nn.normalization.eLayerNorm.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Normalize per irreducible block and (optionally) apply the spectral affine transform.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected (...,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">radii</span> <span class="o">=</span> <span class="n">irrep_radii</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">rep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">)</span>  <span class="c1"># (..., num_irreps)</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">irrep_dims</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">radii</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">radii</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">var_irreps</span> <span class="o">=</span> <span class="n">radii</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">dims</span>
+        <span class="n">var_broadcasted</span> <span class="o">=</span> <span class="n">var_irreps</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irrep_indices</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">var_irreps</span><span class="o">.</span><span class="n">device</span><span class="p">)]</span>
+
+        <span class="n">x_spec</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Q_inv</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span>
+        <span class="n">x_spec</span> <span class="o">=</span> <span class="n">x_spec</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var_broadcasted</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">equiv_affine</span><span class="p">:</span>
+            <span class="n">spectral_scale</span><span class="p">,</span> <span class="n">spectral_bias</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">broadcast_spectral_scale_and_bias</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">scale_dof</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">bias_dof</span>
+            <span class="p">)</span>
+            <span class="n">x_spec</span> <span class="o">=</span> <span class="n">x_spec</span> <span class="o">*</span> <span class="n">spectral_scale</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_spec</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">spectral_bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">x_spec</span> <span class="o">=</span> <span class="n">x_spec</span> <span class="o">+</span> <span class="n">spectral_bias</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_spec</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">normalized</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Q</span><span class="p">,</span> <span class="n">x_spec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">normalized</span></div>
+
+
+<div class="viewcode-block" id="eLayerNorm.extra_repr">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eLayerNorm.html#symm_learning.nn.normalization.eLayerNorm.extra_repr">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{normalized_shape}</span><span class="s2">, eps=</span><span class="si">{eps}</span><span class="s2">, affine=</span><span class="si">{equiv_affine}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="eBatchNorm1d">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">eBatchNorm1d</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Symmetry-aware Batch Normalization over the representation dimension.</span>
+
+<span class="sd">    The mean and variance are computed with :func:`~symm_learning.stats.var_mean`,</span>
+<span class="sd">    enforcing that each irreducible subspace shares a single variance scalar. The</span>
+<span class="sd">    optional affine parameters are implemented via :class:`eAffine` to preserve</span>
+<span class="sd">    equivariance.</span>
+
+<span class="sd">    The layer satisfies:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \rho_{\text{in}}(g) \mathbf{y} = \text{BatchNorm}(\rho_{\text{in}}(g) \mathbf{x})</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` describing the feature</span>
+<span class="sd">            space.</span>
+<span class="sd">        eps: Numerical stabilizer added to the variance.</span>
+<span class="sd">        momentum: Momentum for exponential moving averages.</span>
+<span class="sd">        affine: If ``True``, apply a symmetry-preserving affine transform.</span>
+<span class="sd">        track_running_stats: If ``True``, keep running mean/variance buffers.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - Input: ``(..., in_rep.size)``</span>
+<span class="sd">        - Output: same shape</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
+        <span class="n">momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">affine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_running_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">Representation</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;in_rep must be a Representation, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">in_rep</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span> <span class="o">=</span> <span class="n">in_rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">in_rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="o">=</span> <span class="n">momentum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="n">affine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span> <span class="o">=</span> <span class="n">track_running_stats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span> <span class="o">=</span> <span class="n">in_rep</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_mean&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_var&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;num_batches_tracked&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affine_transform</span> <span class="o">=</span> <span class="n">eAffine</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="eBatchNorm1d.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected (..., </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">x_flat</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">var_batch</span><span class="p">,</span> <span class="n">mean_batch</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">var_mean</span><span class="p">(</span><span class="n">x_flat</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="p">)</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">mean_batch</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="p">)</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">var_batch</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">mean</span><span class="p">,</span> <span class="n">var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mean</span><span class="p">,</span> <span class="n">var</span> <span class="o">=</span> <span class="n">mean_batch</span><span class="p">,</span> <span class="n">var_batch</span>
+
+        <span class="n">view_shape</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">view_shape</span><span class="p">)</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">view_shape</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine_transform</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate_output_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+        <span class="k">return</span> <span class="n">input_shape</span>
+
+<div class="viewcode-block" id="eBatchNorm1d.extra_repr">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d.extra_repr">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;in_rep: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="si">}</span><span class="s2">, affine: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="si">}</span><span class="s2">, track_running_stats: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;eps: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="si">}</span><span class="s2">, momentum: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="eBatchNorm1d.check_equivariance">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d.check_equivariance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_equivariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check equivariance using random group elements.&quot;&quot;&quot;</span>
+        <span class="n">was_training</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">50</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="c1"># Warm up running statistics</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+        <span class="n">x_batch</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">g</span> <span class="o">==</span> <span class="n">G</span><span class="o">.</span><span class="n">identity</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">rho_g</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x_batch</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x_batch</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">gx_batch</span> <span class="o">=</span> <span class="n">x_batch</span> <span class="o">@</span> <span class="n">rho_g</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="n">var</span><span class="p">,</span> <span class="n">mean</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">var_mean</span><span class="p">(</span><span class="n">x_batch</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">)</span>
+            <span class="n">g_var</span><span class="p">,</span> <span class="n">g_mean</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">var_mean</span><span class="p">(</span><span class="n">gx_batch</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">)</span>
+
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">g_mean</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Mean </span><span class="si">{</span><span class="n">mean</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">g_mean</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">g_var</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Var </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">g_var</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x_batch</span><span class="p">)</span>
+            <span class="n">g_y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">gx_batch</span><span class="p">)</span>
+            <span class="n">g_y_gt</span> <span class="o">=</span> <span class="n">y</span> <span class="o">@</span> <span class="n">rho_g</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">g_y</span><span class="p">,</span> <span class="n">g_y_gt</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Output </span><span class="si">{</span><span class="n">g_y</span><span class="si">}</span><span class="s2"> does not match the expected output </span><span class="si">{</span><span class="n">g_y_gt</span><span class="si">}</span><span class="s2"> for group element </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">was_training</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+</div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">CyclicGroup</span><span class="p">,</span> <span class="n">Icosahedral</span>
+
+    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">test_dir</span> <span class="o">=</span> <span class="n">repo_root</span> <span class="o">/</span> <span class="s2">&quot;test&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">repo_root</span><span class="p">))</span>
+    <span class="n">test_pkg</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+    <span class="n">test_paths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">test_pkg</span><span class="p">,</span> <span class="s2">&quot;__path__&quot;</span><span class="p">,</span> <span class="p">[])]</span> <span class="k">if</span> <span class="n">test_pkg</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">test_dir</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">test_paths</span><span class="p">:</span>
+        <span class="n">test_pkg</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+        <span class="n">test_pkg</span><span class="o">.</span><span class="n">__path__</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">test_dir</span><span class="p">)]</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_pkg</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">bytes_to_mb</span><span class="p">,</span> <span class="n">module_device_memory</span><span class="p">,</span> <span class="n">module_memory</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">test.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">benchmark</span><span class="p">,</span> <span class="n">benchmark_eval_forward</span>
+
+    <span class="c1"># G = CyclicGroup(2)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">Icosahedral</span><span class="p">()</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-6</span>
+    <span class="n">in_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="p">)</span>
+
+    <span class="n">rms_norm</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">RMSNorm</span><span class="p">(</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span> <span class="n">elementwise_affine</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">eq_rms_norm</span> <span class="o">=</span> <span class="n">eRMSNorm</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span> <span class="n">equiv_affine</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">1024</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+    <span class="n">rms_norm</span> <span class="o">=</span> <span class="n">rms_norm</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">eq_rms_norm</span> <span class="o">=</span> <span class="n">eq_rms_norm</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device: </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_forward</span><span class="p">(</span><span class="n">mod</span><span class="p">):</span>  <span class="c1"># noqa: D103</span>
+        <span class="k">return</span> <span class="n">mod</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">modules_to_benchmark</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;RMSNorm&quot;</span><span class="p">,</span> <span class="n">rms_norm</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;eRMSNorm&quot;</span><span class="p">,</span> <span class="n">eq_rms_norm</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">modules_to_benchmark</span><span class="p">:</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">forward_fn</span><span class="p">(</span><span class="n">mod</span><span class="o">=</span><span class="n">module</span><span class="p">):</span>  <span class="c1"># noqa: D103</span>
+            <span class="k">return</span> <span class="n">run_forward</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+        <span class="n">train_mem</span><span class="p">,</span> <span class="n">non_train_mem</span> <span class="o">=</span> <span class="n">module_memory</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="n">gpu_alloc</span><span class="p">,</span> <span class="n">gpu_peak</span> <span class="o">=</span> <span class="n">module_device_memory</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="n">eval_fwd_mean</span><span class="p">,</span> <span class="n">eval_fwd_std</span> <span class="o">=</span> <span class="n">benchmark_eval_forward</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">forward_fn</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">fwd_mean</span><span class="p">,</span> <span class="n">fwd_std</span><span class="p">),</span> <span class="p">(</span><span class="n">bwd_mean</span><span class="p">,</span> <span class="n">bwd_std</span><span class="p">)</span> <span class="o">=</span> <span class="n">benchmark</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">forward_fn</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;fwd_eval_mean&quot;</span><span class="p">:</span> <span class="n">eval_fwd_mean</span><span class="p">,</span>
+                <span class="s2">&quot;fwd_eval_std&quot;</span><span class="p">:</span> <span class="n">eval_fwd_std</span><span class="p">,</span>
+                <span class="s2">&quot;fwd_mean&quot;</span><span class="p">:</span> <span class="n">fwd_mean</span><span class="p">,</span>
+                <span class="s2">&quot;fwd_std&quot;</span><span class="p">:</span> <span class="n">fwd_std</span><span class="p">,</span>
+                <span class="s2">&quot;bwd_mean&quot;</span><span class="p">:</span> <span class="n">bwd_mean</span><span class="p">,</span>
+                <span class="s2">&quot;bwd_std&quot;</span><span class="p">:</span> <span class="n">bwd_std</span><span class="p">,</span>
+                <span class="s2">&quot;total_time&quot;</span><span class="p">:</span> <span class="n">fwd_mean</span> <span class="o">+</span> <span class="n">bwd_mean</span><span class="p">,</span>
+                <span class="s2">&quot;train_mem&quot;</span><span class="p">:</span> <span class="n">train_mem</span><span class="p">,</span>
+                <span class="s2">&quot;non_train_mem&quot;</span><span class="p">:</span> <span class="n">non_train_mem</span><span class="p">,</span>
+                <span class="s2">&quot;gpu_mem&quot;</span><span class="p">:</span> <span class="n">gpu_alloc</span><span class="p">,</span>
+                <span class="s2">&quot;gpu_peak&quot;</span><span class="p">:</span> <span class="n">gpu_peak</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="n">name_width</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Layer&#39;</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">name_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Forward eval (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Forward (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Backward (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Total (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Trainable MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Non-train MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Total MB&#39;</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;GPU Alloc MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;GPU Peak MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="n">separator</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Benchmark results per </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">-sample batch&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">fwd_eval_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_eval_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> +/- </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_eval_std&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">fwd_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> +/- </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_std&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">bwd_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;bwd_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> +/- </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;bwd_std&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">total_mb</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;train_mem&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;non_train_mem&quot;</span><span class="p">]</span>
+        <span class="n">gpu_alloc_mb</span> <span class="o">=</span> <span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;gpu_mem&quot;</span><span class="p">])</span>
+        <span class="n">gpu_peak_mb</span> <span class="o">=</span> <span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;gpu_peak&quot;</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">name_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="n">fwd_eval_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">fwd_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bwd_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;total_time&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;train_mem&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;non_train_mem&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">total_mb</span><span class="p">)</span><span class="si">:</span><span class="s2">&gt;12.3f</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">gpu_alloc_mb</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpu_peak_mb</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Daniel Felipe Ordoñez Apraez.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
