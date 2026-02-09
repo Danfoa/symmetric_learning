@@ -35,6 +35,10 @@ extensions = [
     # 'numpydoc',
 ]
 
+# Keep math rendering stable across Sphinx versions by pinning MathJax explicitly.
+# This preserves the classic MathJax v3 TeX-style look.
+mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
@@ -43,14 +47,19 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "pydata_sphinx_theme"
-html_static_path = ["_static"]
+html_static_path = ["_static", "media"]
+html_favicon = "media/logo_v1_without_text.svg"
 html_title = f"{project} v{version} Docs [{docs_branch}]"
 
 add_module_names = False
 
 
 html_theme_options = {
-    "announcement": f"<strong>{docs_banner}</strong>",
+    "logo": {
+        "image_light": "logo_v1_with_text.svg",
+        "image_dark": "logo_v1_without_text_dark_background.svg",
+        "text": docs_banner,
+    },
     "icon_links": [
         {
             "name": "GitHub",
@@ -60,7 +69,11 @@ html_theme_options = {
     ],
     "navbar_start": ["navbar-logo"],
     "navbar_center": ["navbar-nav"],
-    "navbar_align": "content",
+    "navbar_end": ["search-button", "theme-switcher", "navbar-icon-links"],
+    "navbar_persistent": [],
+    "navbar_align": "left",
+    "header_links_before_dropdown": 5,
+    "header_dropdown_text": "More",
     "collapse_navigation": True,
     "show_nav_level": 1,
     "navigation_depth": 4,

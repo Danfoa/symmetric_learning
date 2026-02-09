@@ -61,11 +61,16 @@ jobs:
       - name: Commit and push gh-pages
         working-directory: gh-pages
         run: |
+          set -eux
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             git commit -m "docs: update ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
+            # Remote gh-pages may have moved since checkout; rebase to avoid
+            # non-fast-forward push failures.
+            git fetch origin gh-pages
+            git rebase origin/gh-pages
             git push origin HEAD:gh-pages
           else
             echo "No documentation changes to publish."

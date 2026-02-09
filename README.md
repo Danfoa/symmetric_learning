@@ -1,8 +1,22 @@
-# Symmetric Learning
+<!-- # Symmetric Learning -->
 
-[![PyPI version](https://img.shields.io/pypi/v/symm-learning.svg?logo=pypi)](https://pypi.org/project/symm-learning/)
-[![Python Version](https://img.shields.io/badge/python-3.8%20--%203.12-blue?logo=pypy&logoColor=white)](https://github.com/Danfoa/symmetric_learning/actions/workflows/tests.yaml)
-[![Docs](https://img.shields.io/github/actions/workflow/status/Danfoa/symmetric_learning/docs.yaml?branch=main&logo=readthedocs&logoColor=white&label=Docs)](https://danfoa.github.io/symmetric_learning/)
+<p align="center">
+  <img src="docs/media/logo_v1_without_text_dark_background.svg" alt="Symmetric Learning logo" width="520">
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/symm-learning/">
+    <img src="https://img.shields.io/pypi/v/symm-learning.svg?logo=pypi" alt="PyPI version">
+  </a>
+  <a href="https://github.com/Danfoa/symmetric_learning/actions/workflows/tests.yaml">
+    <img src="https://img.shields.io/badge/python-3.8%20--%203.12-blue?logo=pypy&logoColor=white" alt="Python Version">
+  </a>
+  <a href="https://danfoa.github.io/symmetric_learning/">
+    <img src="https://img.shields.io/github/actions/workflow/status/Danfoa/symmetric_learning/docs.yaml?branch=main&logo=readthedocs&logoColor=white&label=Docs" alt="Docs">
+  </a>
+</p>
+
+_________________________
 
 **Symmetric Learning** is a torch-based machine learning library tailored to optimization problems featuring symmetry priors. It provides equivariant neural network modules, models, and utilities for leveraging group symmetries in data.
 
