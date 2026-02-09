@@ -3,5 +3,15 @@
 normalization
 =============
 
-.. automodule:: symm_learning.nn.normalization
-   :members:
+.. currentmodule:: symm_learning.nn.normalization
+
+
+
+
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
+
+   eBatchNorm1d
+   eLayerNorm
+   eRMSNorm

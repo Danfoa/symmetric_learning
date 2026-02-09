@@ -49,6 +49,23 @@ class eMultiheadAttention(torch.nn.MultiheadAttention):
         dtype=None,
         init_scheme: str | None = "xavier_normal",
     ) -> None:
+        r"""Initialize the equivariant multihead attention.
+
+        Args:
+            in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` of the input/output
+                space.
+            num_heads (:class:`int`): Number of parallel attention heads.
+            dropout (:class:`float`): Dropout probability on attention weights. Default: 0.0.
+            bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.
+            batch_first (:class:`bool`): If ``True``, then the input and output tensors are provided as
+                (batch, seq, feature). Default: ``False``.
+            add_bias_kv (:class:`bool`): **Not supported**. Must be ``False``.
+            add_zero_attn (:class:`bool`): **Not supported**. Must be ``False``.
+            device (:class:`torch.device`, optional): Parameter factory options.
+            dtype (:class:`torch.dtype`, optional): Parameter factory options.
+            init_scheme (:class:`str` | :class:`None`, optional): Initialization scheme for the equivariant linear
+                layers. Default: ``"xavier_normal"``.
+        """
         if num_heads <= 0:
             raise ValueError(f"num_heads must be positive, got {num_heads}")
         if add_bias_kv:

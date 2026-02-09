@@ -1,4 +1,19 @@
-"""Statistics utilities for symmetric random variables with known group representations."""
+"""Symmetric Learning - Statistics Utilities.
+
+Functions for computing statistics of symmetric random variables that respect group
+symmetry constraints.
+
+Functions
+---------
+mean
+    Compute the mean projected onto the G-invariant subspace.
+var
+    Compute variance respecting symmetry structure.
+var_mean
+    Compute variance and mean together efficiently.
+cov
+    Compute covariance between symmetric random variables.
+"""
 
 from __future__ import annotations
 
@@ -12,22 +27,59 @@ from symm_learning.representation_theory import isotypic_decomp_rep
 
 
 def mean(x: Tensor, rep_x: Representation) -> Tensor:
-    """Compute the mean of a symmetric random variable.
+    r"""Estimate the :math:`\mathbb{G}`-invariant mean of a random variable.
+
+    Let :math:`\mathbf{X}: \Omega \to \mathcal{X}` be a random variable taking values in the symmetric vector space
+    :math:`\mathcal{X}`, with group representation :math:`\rho_{\mathcal{X}}:\mathbb{G}\to\mathrm{GL}(\mathcal{X})`,
+    and marginal density :math:`\mathbb{P}_{\mathbf{X}}`.
+    Under the assumption that this marginal is invariant under the group action
+    (i.e., a point and all its symmetric points have equal likelihood under the marginal), formally:
+
+    .. math::
+        \mathbb{P}_{\mathbf{X}}(\mathbf{x})
+        = \mathbb{P}_{\mathbf{X}}\!\left(\rho_{\mathcal{X}}(g)\mathbf{x}\right),
+        \quad \forall \mathbf{x}\in\mathcal{X},\ \forall g\in\mathbb{G},
+
+    the true mean satisfies
+
+    .. math::
+        \mathbb{E}[\mathbf{X}] = \rho_{\mathcal{X}}(g)\,\mathbb{E}[\mathbf{X}], \quad \forall g\in\mathbb{G},
+
+    hence :math:`\mathbb{E}[\mathbf{X}] \in \mathcal{X}^{\text{inv}}`.
+
+    Implementation:
+    from samples :math:`\{\mathbf{x}^{(n)}\}_{n=1}^N`, we first compute the empirical mean
+
+    .. math::
+        \widehat{\mathbb{E}}[\mathbf{X}] = \frac{1}{N}\sum_{n=1}^N \mathbf{x}^{(n)},
+
+    and then project it onto the invariant subspace:
+
+    .. math::
+        \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{X}]
+        = \mathbf{P}_{\mathrm{inv}}\,\widehat{\mathbb{E}}[\mathbf{X}],
+        \quad
+        \mathbf{P}_{\mathrm{inv}} = \mathbf{Q}\mathbf{S}\mathbf{Q}^T,
+
+    where :math:`\mathbf{S}` selects trivial-irrep coordinates in the irrep-spectral basis.
+    (see :func:`~symm_learning.linalg.invariant_orthogonal_projector`).
+    Under the repository's canonical isotypic ordering, this corresponds to the first isotypic block when present.
 
     Args:
-        x: (:class:`torch.Tensor`) of shape :math:`(N, D_x)` containing the observations of the symmetric random
-        variable
-        rep_x: (:class:`~escnn.group.Representation`) representation of the symmetric random variable.
+        x: (:class:`torch.Tensor`) samples of :math:`\mathbf{X}` with shape :math:`(N,D_x)` or
+            :math:`(N,D_x,T)`; when a time axis is present it is folded into the sample axis.
+        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}` on :math:`\mathcal{X}`.
 
     Returns:
-        (:class:`torch.Tensor`): Mean of the symmetric random variable.
-        The mean is restricted to be in the trivial/G-invariant subspace of the symmetric vector space.
+        (:class:`torch.Tensor`): Invariant mean vector in :math:`\mathcal{X}`.
 
     Shape:
-        - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
-          the symmetric random variable, and T is the sequence length (if applicable).
-        - **Output**: The mean has shape :math:`(D_x,)`. If a sequence is provided (T dimension),
-          the shape is :math:`(D_x, T)`.
+        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.
+        - **Output**: :math:`(D_x,)`.
+
+    Note:
+        For repeated calls with the same representation object ``rep_x``, this function caches
+        :math:`\mathbf{P}_{\mathrm{inv}}` in ``rep_x.attributes["invariant_orthogonal_projector"]``.
     """
     assert x.ndim in (2, 3), f"Expected x to be a 2D or 3D tensor, got {x.ndim}D tensor"
 
@@ -46,25 +98,79 @@ def mean(x: Tensor, rep_x: Representation) -> Tensor:
 
 
 def var(x: Tensor, rep_x: Representation, center: Tensor = None) -> Tensor:
-    """Compute the variance of a symmetric random variable.
+    r"""Estimate the symmetry-constrained variance of :math:`\mathbf{X}:\Omega\to\mathcal{X}`.
+
+    Let :math:`\mathbf{X}: \Omega \to \mathcal{X}` be a random variable taking values in the symmetric vector space
+    :math:`\mathcal{X}`, with group representation :math:`\rho_{\mathcal{X}}:\mathbb{G}\to\mathrm{GL}(\mathcal{X})`,
+    and marginal density :math:`\mathbb{P}_{\mathbf{X}}`.
+    Under the assumption that this marginal is invariant under the group action
+    (i.e., a point and all its symmetric points have equal likelihood under the marginal), formally:
+
+    .. math::
+        \mathbb{P}_{\mathbf{X}}(\mathbf{x})
+        = \mathbb{P}_{\mathbf{X}}\!\left(\rho_{\mathcal{X}}(g)\mathbf{x}\right),
+        \quad \forall \mathbf{x}\in\mathcal{X},\ \forall g\in\mathbb{G},
+
+    the true variance in the irrep-spectral basis
+    (:func:`~symm_learning.representation_theory.isotypic_decomp_rep`) is constant within each irreducible copy:
+
+    .. math::
+        \operatorname{Var}(\hat{\mathbf{X}}_{k,i,1})
+        = \cdots =
+        \operatorname{Var}(\hat{\mathbf{X}}_{k,i,d_k})
+        = \sigma^2_{k,i}.
+
+    Implementation:
+    given samples :math:`\{\mathbf{x}^{(n)}\}_{n=1}^{N}`, we compute:
+
+    1. Centering (using provided center or :func:`mean`):
+
+    .. math::
+        \widehat{\boldsymbol{\mu}} =
+        \begin{cases}
+        \texttt{center}, & \text{if provided} \\
+        \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{X}], & \text{otherwise}
+        \end{cases}
+
+    2. Empirical spectral variance:
+
+    .. math::
+        \hat{\mathbf{x}}^{(n)} = \mathbf{Q}^{T}(\mathbf{x}^{(n)}-\widehat{\boldsymbol{\mu}}),\qquad
+        \widehat{v}_{j} = \frac{1}{N-1}\sum_{n=1}^{N}\left(\hat{x}^{(n)}_{j}\right)^2.
+
+    3. Irrep-wise averaging for each copy :math:`(k,i)`:
+
+    .. math::
+        \widehat{\sigma}^{2}_{k,i}
+        = \frac{1}{d_k}\sum_{r=1}^{d_k}\widehat{v}_{k,i,r},
+        \qquad
+        \widehat{v}_{k,i,1}=\cdots=\widehat{v}_{k,i,d_k}:=\widehat{\sigma}^{2}_{k,i}.
+
+    4. Mapping back to the original basis:
+
+    .. math::
+        \widehat{\operatorname{Var}}(\mathbf{X}) = \mathbf{Q}^{\odot 2}\,\widehat{\mathbf{v}},
+
+    where :math:`\mathbf{Q}^{\odot 2}` is the elementwise square of :math:`\mathbf{Q}` and
+    :math:`\widehat{\mathbf{v}}` denotes the broadcast spectral variance vector after step 3.
 
     Args:
-        x: (:class:`torch.Tensor`) of shape :math:`(N, D_x)` containing the observations of the symmetric random
-        variable
-        rep_x: (:class:`~escnn.group.Representation`) representation of the symmetric random variable.
+        x: (:class:`torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`;
+            the optional time axis is folded into samples.
+        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.
         center: (:class:`torch.Tensor`, optional) Center for variance computation. If None, computes the mean.
 
     Returns:
-        (:class:`torch.Tensor`): Variance of the symmetric random variable.
-        The variance is constrained such that in the irrep-spectral basis, each G-irreducible subspace
-        (i.e., each subspace associated with an irrep) has the same variance in all dimensions of that subspace.
+        (:class:`torch.Tensor`): Variance vector in the original basis, consistent with the irrep-wise constraint above.
 
     Shape:
-        - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
-          the symmetric random variable, and T is the sequence length (if applicable).
-        - **center**: :math:`(D_x,)` or :math:`(D_x, T)` if provided.
-        - **Output**: The variance has shape :math:`(D_x,)`. If a sequence is provided (T dimension),
-          the shape is :math:`(D_x, T)`.
+        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.
+        - **center**: :math:`(D_x,)` if provided.
+        - **Output**: :math:`(D_x,)`.
+
+    Note:
+        For repeated calls with the same representation object ``rep_x``, this function caches and reuses:
+        ``Q_inv``, ``Q_squared``, ``irrep_dims``, and ``irrep_indices`` in ``rep_x.attributes``.
     """
     assert x.ndim in (2, 3), f"Expected x to be a 2D or 3D tensor, got {x.ndim}D tensor"
 
@@ -127,24 +233,23 @@ def var(x: Tensor, rep_x: Representation, center: Tensor = None) -> Tensor:
 
 
 def var_mean(x: Tensor, rep_x: Representation):
-    """Compute the mean and variance of a symmetric random variable.
+    r"""Compute :func:`var` and :func:`mean` under symmetry constraints.
 
     Args:
-        x: (:class:`torch.Tensor`) of shape :math:`(N, D_x)` containing the observations of the symmetric random
-        variable
-        rep_x: (:class:`~escnn.group.Representation`) representation of the symmetric random variable.
+        x: (:class:`torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`.
+        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.
 
     Returns:
-        (:class:`torch.Tensor`, :class:`torch.Tensor`): Mean and variance of the symmetric random variable.
-        The mean is restricted to be in the trivial/G-invariant subspace of the symmetric vector space.
-        The variance is constrained such that in the irrep-spectral basis, each G-irreducible subspace
-        (i.e., each subspace associated with an irrep) has the same variance in all dimensions of that subspace.
+        (:class:`torch.Tensor`, :class:`torch.Tensor`): Tuple ``(var, mean)`` where mean is projected to
+        :math:`\mathcal{X}^{\text{inv}}` and variance satisfies irrep-wise isotropy in spectral basis.
 
     Shape:
-        - **x**: :math:`(N, D_x)` or :math:`(N, D_x, T)` where N is the number of samples, D_x is the dimension of
-          the symmetric random variable, and T is the sequence length (if applicable).
-        - **Output**: A tuple containing the variance and the mean. The variance has shape :math:`(D_x,)` and the mean
-          has shape :math:`(D_x,)`. If a sequence is provided (T dimension), the shapes are :math:`(D_x, T)`.
+        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.
+        - **Output**: ``(var, mean)`` both with shape :math:`(D_x,)`.
+
+    Note:
+        This function reuses the same caches as :func:`mean` and :func:`var` when called repeatedly with the
+        same representation object ``rep_x``.
     """
     # Compute mean first
     mean_result = mean(x, rep_x)
@@ -163,9 +268,9 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
     :math:`G`-equivariant linear map factorises as
 
     .. math::
-        \operatorname{Cov}(X,Y)
-        \;=\;\mathbf Z_{XY}\otimes \mathbf I_d,  \qquad
-        \mathbf Z_{XY}\in\mathbb R^{m_y\times m_x}.
+        \operatorname{Cov}(\mathbf{X}, \mathbf{Y})
+        \;=\;\mathbf{Z}_{XY}\otimes \mathbf{I}_d,  \qquad
+        \mathbf{Z}_{XY}\in\mathbb{R}^{m_y\times m_x}.
 
     We estimate the free matrix :math:`\mathbf Z_{XY}` by
 
@@ -173,7 +278,7 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
     2. **reshaping** the data so that each copy of the irrep becomes one
        “channel” of length *d·N*;
     3. **projecting** every :math:`d\times d` block onto the orthogonal basis
-       of :math:`\mathrm{End}_G(\rho_k)` via Frobenius inner products (see
+       of :math:`\mathrm{End}_{\mathbb{G}}(\rho_k)` via Frobenius inner products (see
        `arXiv:2505.19809 <https://arxiv.org/abs/2505.19809>`_);
     4. rebuilding the block matrix that respects the constraint above.
 
@@ -182,13 +287,13 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
 
 
     Args:
-        x (Tensor): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.
-        rep_x (escnn.group.Representation): isotypic representation
+        x (:class:`torch.Tensor`): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.
+        rep_x (:class:`~escnn.group.Representation`): isotypic representation
             containing exactly one irrep type.
-        y (Tensor, optional): shape :math:`(N,\; m_y d)` —
+        y (:class:`torch.Tensor`, optional): shape :math:`(N,\; m_y d)` —
             samples drawn from ``rep_y``.  If *None*, computes the
             auto-covariance of *x*.
-        rep_y (escnn.group.Representation, optional): isotypic
+        rep_y (:class:`~escnn.group.Representation`, optional): isotypic
             representation matching the irrep of ``rep_x``; ignored when
             *y* is *None*.
 
@@ -249,7 +354,11 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
 def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
     r"""Compute the covariance between two symmetric random variables.
 
-    The covariance of r.v. can be computed from the orthogonal projections of the r.v. to each isotypic subspace.
+    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` with representations
+    :math:`\rho_{\mathcal{X}}`, :math:`\rho_{\mathcal{Y}}`. The covariance is computed via the
+    :ref:`isotypic decomposition <isotypic-decomposition-example>`
+    from :func:`~symm_learning.representation_theory.isotypic_decomp_rep`.
+    Covariance contributions between different isotypic types are zero in the constrained model.
     Hence, in the disentangled/isotypic basis the covariance can be computed in block-diagonal form:
 
     .. math::
@@ -270,19 +379,24 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
     :math:`\mathbb{B}_k` of the irreducible representation of type *k*.
 
     Args:
-        x (Tensor): Realizations of a random variable :math:`X`.
-        y (Tensor): Realizations of a random variable :math:`Y`.
-        rep_x (Representation): The representation acting on the symmetric vector spaces :math:`\mathcal{X}`.
-        rep_y (Representation): The representation acting on the symmetric vector spaces :math:`\mathcal{Y}`.
+        x (:class:`torch.Tensor`): Realizations of a random variable :math:`X`.
+        y (:class:`torch.Tensor`): Realizations of a random variable :math:`Y`.
+        rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}`.
+        rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}`.
 
     Returns:
-        Tensor: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.
+        :class:`torch.Tensor`: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.
 
     Shape:
-        X: :math:`(N, D_x)` where :math:`D_x` is the dimension of the random variable X.
-        Y: :math:`(N, D_y)` where :math:`D_y` is the dimension of the random variable Y.
+        - **x**: :math:`(N, D_x)` where :math:`D_x` is the dimension of the random variable :math:`\mathbf{X}`.
+        - **y**: :math:`(N, D_y)` where :math:`D_y` is the dimension of the random variable :math:`\mathbf{Y}`.
 
-        Output: :math:`(D_y, D_x)`
+        - **Output**: :math:`(D_y, D_x)`
+
+    Note:
+        This function calls :func:`~symm_learning.representation_theory.isotypic_decomp_rep`, which caches
+        decompositions in the group representation registry. Repeated calls with the same representations reuse
+        cached decompositions.
     """
     # assert X.shape[0] == Y.shape[0], "Expected equal number of samples in X and Y"
     assert x.shape[1] == rep_x.size, f"Expected X shape (N, {rep_x.size}), got {x.shape}"

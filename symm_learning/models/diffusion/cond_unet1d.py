@@ -21,12 +21,21 @@ logger = logging.getLogger(__name__)
 
 
 class ConditionalUnet1D(nn.Module):
-    """A 1D/Time Unet architecture for predicting the score vector: `∇log(P(y | x))`.
+    r"""A 1D/Time U-Net for predicting conditional score/velocity fields.
 
-    This model is intended to take a given sample y and to predict the conditional
-    probability P(y | x) score functional `∇log(P(y | x))`, which can be used in score-based difussion process
-    to compute a new sample `y' = y + ∇log(P(y | x))` featuring higher likelihood given the conditional probability
-    distribution.
+    The model defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}:
+        \mathbb{R}^{d_x \times L} \times \mathbb{R}^{d_{\mathrm{local}}}
+        \times \mathbb{R}^{d_{\mathrm{global}}} \times \mathbb{R}
+        \to \mathbb{R}^{d_x \times L}.
+
+    It can be used to parameterize score-like or velocity-like targets in conditional
+    diffusion/flow pipelines, e.g. :math:`\nabla \log \mathbb{P}(Y\mid X)`.
+
+    This baseline model is unconstrained with respect to group actions (no explicit
+    equivariance/invariance constraints are imposed).
 
     The influence of x in the diffusion process is captured via `local` and `global` conditioning of the Unet
     architecture.
@@ -38,14 +47,16 @@ class ConditionalUnet1D(nn.Module):
         modulation.
 
     Args:
-        input_dim (int): The dimension of the input data.
-        local_cond_dim (int, optional): The dimension of the local conditioning vector. Defaults to None.
-        global_cond_dim (int, optional): The dimension of the global conditioning vector. Defaults to None.
-        diffusion_step_embed_dim (int, optional): The dimension of the diffusion step embedding. Defaults to 256.
-        down_dims (list, optional): A list of dimensions for the downsampling path. Defaults to [256, 512, 1024].
-        kernel_size (int, optional): The size of the convolutional kernel. Defaults to 3.
-        n_groups (int, optional): The number of groups for GroupNorm. Defaults to 8.
-        cond_predict_scale (bool, optional): Whether to predict the scale for conditioning. Defaults to False.
+        input_dim (:class:`int`): The dimension of the input data.
+        local_cond_dim (:class:`int`, optional): The dimension of the local conditioning vector. Defaults to None.
+        global_cond_dim (:class:`int`, optional): The dimension of the global conditioning vector. Defaults to None.
+        diffusion_step_embed_dim (:class:`int`, optional): The dimension of the diffusion step embedding. Defaults to
+            256.
+        down_dims (:class:`list`, optional): A list of dimensions for the downsampling path. Defaults to
+            [256, 512, 1024].
+        kernel_size (:class:`int`, optional): The size of the convolutional kernel. Defaults to 3.
+        n_groups (:class:`int`, optional): The number of groups for GroupNorm. Defaults to 8.
+        cond_predict_scale (:class:`bool`, optional): Whether to predict the scale for conditioning. Defaults to False.
     """
 
     def __init__(
@@ -182,16 +193,16 @@ class ConditionalUnet1D(nn.Module):
         """Forward pass of the Conditional Unet 1D model.
 
         Args:
-            sample (torch.Tensor): The input tensor of shape (B, input_dim, T).
-            timestep (Union[torch.Tensor, float, int]): The diffusion timestep.
-            local_cond (torch.Tensor, optional): The local conditioning tensor of shape (B, local_cond_dim).
+            sample (:class:`torch.Tensor`): The input tensor of shape (B, input_dim, T).
+            timestep (:class:`torch.Tensor` | :class:`float` | :class:`int`): The diffusion timestep.
+            local_cond (:class:`torch.Tensor`, optional): The local conditioning tensor of shape (B, local_cond_dim).
                 Defaults to None.
-            film_cond (torch.Tensor, optional): The global conditioning tensor of shape (B, film_cond_dim).
+            film_cond (:class:`torch.Tensor`, optional): The global conditioning tensor of shape (B, film_cond_dim).
                 Defaults to None.
-            **kwargs: Additional keyword arguments.
+            kwargs: Additional keyword arguments reserved for API compatibility.
 
         Returns:
-            torch.Tensor: The output tensor of shape (B, input_dim, T).
+            :class:`torch.Tensor`: The output tensor of shape (B, input_dim, T).
         """
         # 1. time
         timesteps = timestep
@@ -260,7 +271,7 @@ class SinusoidalPosEmb(nn.Module):
     sine and cosine functions, effectively encoding the position `x` across the embedding dimension.
 
     Args:
-        dim (int): The dimension of the embedding.
+        dim (:class:`int`): The dimension of the embedding.
     """
 
     def __init__(self, dim):
@@ -281,7 +292,7 @@ class Downsample1d(nn.Module):
     """Downsampling layer for 1D data.
 
     Args:
-        dim (int): The number of input and output channels.
+        dim (:class:`int`): The number of input and output channels.
     """
 
     def __init__(self, dim):
@@ -296,7 +307,7 @@ class Upsample1d(nn.Module):
     """Upsampling layer for 1D data.
 
     Args:
-        dim (int): The number of input and output channels.
+        dim (:class:`int`): The number of input and output channels.
     """
 
     def __init__(self, dim):
@@ -311,9 +322,9 @@ class Conv1dBlock(nn.Module):
     """A 1D convolutional block with GroupNorm and Mish activation.
 
     Args:
-        inp_channels (int): The number of input channels.
-        out_channels (int): The number of output channels.
-        kernel_size (int): The size of the convolutional kernel.
+        inp_channels (:class:`int`): The number of input channels.
+        out_channels (:class:`int`): The number of output channels.
+        kernel_size (:class:`int`): The size of the convolutional kernel.
         n_groups (int, optional): The number of groups for GroupNorm. Defaults to 8.
     """
 
@@ -338,12 +349,12 @@ class ConditionalResidualBlock1D(nn.Module):
     predict scale and bias parameters or just bias, depending on the `cond_predict_scale` flag.
 
     Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        cond_dim (int): Dimension of the conditioning vector.
-        kernel_size (int, optional): Size of the convolutional kernel. Defaults to 3.
-        n_groups (int, optional): Number of groups for GroupNorm. Defaults to 8.
-        cond_predict_scale (bool, optional): If True, conditioning predicts both scale and bias.
+        in_channels (:class:`int`): Number of input channels.
+        out_channels (:class:`int`): Number of output channels.
+        cond_dim (:class:`int`): Dimension of the conditioning vector.
+        kernel_size (:class:`int`, optional): Size of the convolutional kernel. Defaults to 3.
+        n_groups (:class:`int`, optional): Number of groups for GroupNorm. Defaults to 8.
+        cond_predict_scale (:class:`bool`, optional): If True, conditioning predicts both scale and bias.
             If False, conditioning only predicts bias. Defaults to False.
     """
 
@@ -373,11 +384,11 @@ class ConditionalResidualBlock1D(nn.Module):
         """Forward pass of the conditional residual block.
 
         Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, in_channels, horizon).
-            cond (torch.Tensor): Conditioning vector of shape (batch_size, cond_dim).
+            x (:class:`torch.Tensor`): Input tensor of shape (batch_size, in_channels, horizon).
+            cond (:class:`torch.Tensor`): Conditioning vector of shape (batch_size, cond_dim).
 
         Returns:
-            torch.Tensor: Output tensor of shape (batch_size, out_channels, horizon).
+            :class:`torch.Tensor`: Output tensor of shape (batch_size, out_channels, horizon).
         """
         out = self.blocks[0](x)
         embed = self.cond_encoder(cond)

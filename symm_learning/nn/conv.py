@@ -16,9 +16,17 @@ class eConv1d(torch.nn.Conv1d):
     r"""Channel-equivariant 1D convolution.
 
     Matches :class:`torch.nn.Conv1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—while
-    constraining each kernel slice to lie in :math:`\operatorname{Hom}_G(\text{in\_rep}, \text{out\_rep})`. Kernel DoF
-    are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias exists only if
-    the trivial irrep appears in ``out_rep``.
+    constraining each kernel slice to lie in :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`.
+
+    The layer satisfies the equivariance constraint:
+
+    .. math::
+        \rho_{\text{out}}(g) \mathbf{y}_t = \mathbf{W} * (\rho_{\text{in}}(g) \mathbf{x})_t + \mathbf{b}
+
+    where :math:`*` denotes convolution, and :math:`\mathbf{b}` is an invariant bias.
+
+    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias
+    exists only if the trivial irrep appears in ``out_rep``.
     """
 
     def __init__(
@@ -33,12 +41,16 @@ class eConv1d(torch.nn.Conv1d):
         r"""Initialize the constrained convolution.
 
         Args:
-            in_rep (Representation): Channel representation describing input transformation.
-            out_rep (Representation): Channel representation describing output transformation.
-            kernel_size (int, optional): Spatial kernel size. Defaults to 3.
-            basis_expansion (Literal, optional): Basis realization strategy for :class:`GroupHomomorphismBasis`.
-            init_scheme (eINIT_SCHEMES, optional): Initialization passed to
-                :meth:`GroupHomomorphismBasis.initialize_params`. Defaults to ``"xavier_uniform"``.
+            in_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{in}}` describing
+                input transformation.
+            out_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{out}}` describing
+                output transformation.
+            kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.
+            basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for
+                :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.
+            init_scheme (:class:`~symm_learning.nn.linear.eINIT_SCHEMES`, optional): Initialization passed to
+                :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to
+                ``"xavier_uniform"``.
             **conv1d_kwargs: Standard :class:`torch.nn.Conv1d` arguments (stride, padding, bias, etc.).
         """
         assert in_rep.group == out_rep.group, f"Incompatible group: {in_rep.group} and {out_rep.group}"
@@ -145,9 +157,18 @@ class eConvTranspose1d(torch.nn.ConvTranspose1d):
     r"""Channel-equivariant transposed 1D convolution.
 
     Matches :class:`torch.nn.ConvTranspose1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—
-    while constraining each kernel slice to lie in :math:`\operatorname{Hom}_G(\text{in\_rep}, \text{out\_rep})`. Kernel
-    DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias exists only
-    if the trivial irrep appears in ``out_rep``.
+    while constraining each kernel slice to lie in
+    :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`.
+
+    The layer satisfies the equivariance constraint:
+
+    .. math::
+        \rho_{\text{out}}(g) \mathbf{y}_t = \mathbf{W}^T * (\rho_{\text{in}}(g) \mathbf{x})_t + \mathbf{b}
+
+    where :math:`*` denotes transposed convolution.
+
+    Kernel DoF are stored as ``(kernel_size, dim(Hom_G))`` and expanded via :class:`GroupHomomorphismBasis`; bias
+    exists only if the trivial irrep appears in ``out_rep``.
     """
 
     def __init__(
@@ -162,12 +183,16 @@ class eConvTranspose1d(torch.nn.ConvTranspose1d):
         r"""Initialize the constrained transposed convolution.
 
         Args:
-            in_rep (Representation): Channel representation describing input transformation.
-            out_rep (Representation): Channel representation describing output transformation.
-            kernel_size (int, optional): Spatial kernel size. Defaults to 3.
-            basis_expansion (Literal, optional): Basis realization strategy for :class:`GroupHomomorphismBasis`.
-            init_scheme (eINIT_SCHEMES, optional): Initialization passed to
-                :meth:`GroupHomomorphismBasis.initialize_params`. Defaults to ``"xavier_uniform"``.
+            in_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{in}}` describing
+                input transformation.
+            out_rep (:class:`~escnn.group.Representation`): Channel representation :math:`\rho_{\text{out}}` describing
+                output transformation.
+            kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.
+            basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for
+                :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.
+            init_scheme (:class:`~symm_learning.nn.linear.eINIT_SCHEMES`, optional): Initialization passed to
+                :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to
+                ``"xavier_uniform"``.
             **conv1d_kwargs: Standard :class:`torch.nn.ConvTranspose1d` arguments (stride, padding, bias, etc.).
         """
         assert in_rep.group == out_rep.group, f"Incompatible group: {in_rep.group} and {out_rep.group}"

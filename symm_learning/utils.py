@@ -37,18 +37,14 @@ def _tensor_bytes(t: torch.Tensor) -> int:
 def module_memory(module: torch.nn.Module, units: str = "bytes"):
     """Return trainable/non-trainable parameter memory for ``module``.
 
-    Parameters
-    ----------
-    module : torch.nn.Module
-        Module whose parameter memory footprint is inspected.
-    units : {"bytes", "kib", "mib", "gib"}, optional
-        Output units. ``kib``/``mib``/``gib`` are binary kilo/mega/gigabytes (powers of 1024).
-        Default is raw bytes.
+    Args:
+        module (:class:`torch.nn.Module`): Module whose parameter memory footprint is inspected.
+        units (:class:`str`, optional): Output units. One of ``"bytes"``, ``"kib"``, ``"mib"``, ``"gib"``.
+             Default is raw bytes.
 
     Returns:
-    -------
-    Tuple[float, float]
-        Memory in the selected units stored in parameters that require gradients, and frozen parameters plus buffers.
+        :class:`tuple` [:class:`float`, :class:`float`]: Memory in the selected units stored in parameters that
+            require gradients, and frozen parameters plus buffers.
     """
     unit_scale = {
         "bytes": 1,

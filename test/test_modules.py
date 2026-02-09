@@ -6,7 +6,6 @@ from copy import deepcopy
 import escnn
 import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
-from escnn.nn import FieldType
 
 from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.representation_theory import direct_sum
@@ -74,25 +73,19 @@ def test_change2disentangled(group: Group):  # noqa: D103
 @pytest.mark.parametrize("mx", [3])
 @pytest.mark.parametrize("my", [3, 5])
 def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
-    """Check the EquivMultivariateNormal layer is G-invariant."""
+    """Check the eMultivariateNormal layer is G-invariant."""
     import torch
 
-    from symm_learning.nn import EquivMultivariateNormal, _EquivMultivariateNormal
+    from symm_learning.nn import eMultivariateNormal
+    from symm_learning.representation_theory import direct_sum
 
     G = group
-    x_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * mx)
-    y_type = FieldType(escnn.gspaces.no_base_space(G), representations=[G.regular_representation] * my)
+    rep_x = direct_sum([G.regular_representation] * mx)
+    rep_y = direct_sum([G.regular_representation] * my)
 
-    rep_x = x_type.representation
-    G = rep_x.group
-
-    e_normal = EquivMultivariateNormal(y_type, diagonal=True)
+    e_normal = eMultivariateNormal(out_rep=rep_y, diagonal=True)
 
     e_normal.check_equivariance(atol=1e-6, rtol=1e-6)
-
-    # Test that the exported torch module is also equivariant
-    torch_e_normal: _EquivMultivariateNormal = e_normal.export()
-    torch_e_normal.check_equivariance(in_type=e_normal.in_type, y_type=y_type, atol=1e-6, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -645,7 +638,6 @@ def test_rms_norm(group: Group, mx: int, affine: bool):
 def test_ema_stats_core(kind: str):
     """Minimal smoke test for EMAStats and eEMAStats."""
     import torch
-    from escnn.gspaces import no_base_space
 
     if kind == "ema":
         stats = EMAStats(dim_x=3, dim_y=2, momentum=0.2)
@@ -660,17 +652,16 @@ def test_ema_stats_core(kind: str):
 
     else:
         G = CyclicGroup(3)
-        gspace = no_base_space(G)
-        field = FieldType(gspace, [G.regular_representation])
-        stats = eEMAStats(x_type=field, y_type=field, momentum=0.2)
-        raw_x = torch.randn(8, field.size)
-        raw_y = torch.randn(8, field.size)
+        rep = G.regular_representation
+        stats = eEMAStats(x_rep=rep, y_rep=rep, momentum=0.2)
+        raw_x = torch.randn(8, rep.size)
+        raw_y = torch.randn(8, rep.size)
 
         def prepare(x_tensor: torch.Tensor, y_tensor: torch.Tensor):
-            return field(x_tensor), field(y_tensor)
+            return x_tensor, y_tensor
 
         def extract(output):
-            return output.tensor
+            return output
 
     # Train: outputs unchanged, stats update once
     stats.train()

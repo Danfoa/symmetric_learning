@@ -1,11 +1,8 @@
 import copy
 import logging
 
-import escnn
 import torch
 from escnn.group import Representation
-from escnn.gspaces import no_base_space
-from escnn.nn import FieldType
 
 from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.representation_theory import GroupHomomorphismBasis, direct_sum
@@ -15,14 +12,23 @@ logger = logging.getLogger(__name__)
 
 
 class InvariantConstraint(torch.nn.Module):
-    r"""Project affine parameters onto the invariant subspace of a representation.
+    r"""Orthogonally project vectors onto :math:`\mathrm{Fix}(\rho)`.
+
+    For representation :math:`\rho_{\mathcal{X}}`, this parametrization enforces
+
+    .. math::
+        \mathbf{b} \in \mathrm{Fix}(\rho_{\mathcal{X}})
+        = \{\mathbf{v}\in\mathcal{X}: \rho_{\mathcal{X}}(g)\mathbf{v}=\mathbf{v},\ \forall g\in\mathbb{G}\},
+
+    by applying :math:`\mathbf{P}_{\mathrm{inv}}` from
+    :func:`~symm_learning.linalg.invariant_orthogonal_projector`.
 
     Attributes:
-        rep (Representation): Representation whose action defines invariance,
+        rep (:class:`~escnn.group.Representation`): Representation :math:`\rho` whose action defines invariance,
             dimension ``rep.size``.
-        inv_projector (torch.Tensor): Orthogonal projector of shape
+        inv_projector (:class:`torch.Tensor`): Orthogonal projector of shape
             ``(rep.size, rep.size)`` onto the fixed subspace
-            :math:`\\mathrm{Fix}(\\rho)`.
+            :math:`\mathrm{Fix}(\rho)`.
     """
 
     def __init__(self, rep: Representation):
@@ -82,40 +88,34 @@ class InvariantConstraint(torch.nn.Module):
 
 
 class CommutingConstraint(torch.nn.Module):
-    r"""Equivariant weight parametrization via isotypic-basis projection.
+    r"""Orthogonal projection onto :math:`\operatorname{Hom}_{\mathbb{G}}(\rho_{\text{in}},\rho_{\text{out}})`.
+
+    For a dense weight :math:`\mathbf{W}\in\mathbb{R}^{D_{\text{out}}\times D_{\text{in}}}`, this module returns
+    :math:`\Pi_{\mathrm{Hom}}(\mathbf{W})`, the Frobenius-orthogonal projection onto
+
+    .. math::
+        \operatorname{Hom}_{\mathbb{G}}(\rho_{\text{in}},\rho_{\text{out}})
+        = \{\mathbf{A}: \rho_{\text{out}}(g)\mathbf{A}=\mathbf{A}\rho_{\text{in}}(g),\ \forall g\in\mathbb{G}\}.
+
+    The basis and projection are handled by
+    :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`, using the
+    :ref:`isotypic decomposition <isotypic-decomposition-example>`
+    (:func:`~symm_learning.representation_theory.isotypic_decomp_rep`) blockwise.
 
     Args:
-        in_rep (:class:`~escnn.group.Representation`): Input representation of
+        in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}` of
             size ``in_rep.size``.
-        out_rep (:class:`~escnn.group.Representation`): Output representation of
+        out_rep (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\text{out}}` of
             size ``out_rep.size``.
-        basis_expansion (str, optional): Strategy used to realize the basis
+        basis_expansion (:class:`str`, optional): Strategy used to realize the basis
             (``"memory_heavy"`` or ``"isotypic_expansion"``).
 
     Attributes:
-        homo_basis (GroupHomomorphismBasis): Basis generator carrying the
-            isotypic decomposition and block metadata for
-            :math:`\\operatorname{Hom}_G(V_{\\text{in}}, V_{\\text{out}})`.
-        in_rep / out_rep (Representation): Cached references to the isotypic
+        homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Basis generator carrying the
+            :ref:`isotypic decomposition <isotypic-decomposition-example>` and block metadata for
+            :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`.
+        in_rep / out_rep (:class:`~escnn.group.Representation`): Cached references to the isotypic
             versions of the supplied representations.
-
-    Every pair of matching isotypic subspaces (one from ``in_rep``, one from
-    ``out_rep``) inherits the same irreducible type :math:`\\bar\\rho_k`.
-    Inside that block, any equivariant map factors as
-
-    .. math::
-        A_{i,j}^{(k)} = \\sum_{b \\in \\mathbb{B}_k} \\Theta^{(k)}_{b,\,i,j} \\,\\Psi_k(b),
-
-    where :math:`\\Psi_k(b)` spans :math:`\\mathrm{End}_G(\\bar\\rho_k)` and
-    :math:`\\Theta^{(k)}_{b,\,i,j} = \\langle A_{i,j}^{(k)}, \\Psi_k(b) \\rangle /
-    \\|\\Psi_k(b)\\|^2`. The combinatorics over multiplicity indices is captured
-    by Kronecker-factoring these basis endomorphisms with canonical ``E_{ij}``
-    selectors. Implementation detail: we prebuild all
-    :math:`E_{ij} \\otimes \\Psi_k(b)` blocks once, stack them into a tall
-    matrix, and perform the whole projection as two batched GEMV operations—one
-    to gather all Frobenius inner products, one to reconstruct the projected
-    weight. This keeps the projection GPU-friendly while matching the orthogonal
-    projection defined by Proposition H.13.
     """
 
     def __init__(self, in_rep: Representation, out_rep: Representation, basis_expansion: str = "isotypic_expansion"):
@@ -145,7 +145,7 @@ class CommutingConstraint(torch.nn.Module):
         self._cached_input_version = version
 
     def forward(self, W: torch.Tensor) -> torch.Tensor:
-        """Project W onto Hom_G(out_rep, in_rep)."""
+        r"""Project :math:`\mathbf{W}`onto subspace of equivariant linear maps"""
         if not self.training and self._cache_is_valid(W):
             return self._weight
         W_proj = self.homo_basis.orthogonal_projection(W)
@@ -179,7 +179,10 @@ if __name__ == "__main__":
     import types
     from pathlib import Path
 
+    import escnn
     from escnn.group import CyclicGroup, Icosahedral
+    from escnn.gspaces import no_base_space
+    from escnn.nn import FieldType
 
     repo_root = Path(__file__).resolve().parents[2]
     test_dir = repo_root / "test"

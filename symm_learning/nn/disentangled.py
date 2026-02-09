@@ -8,15 +8,34 @@ from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
 
 
 class Change2DisentangledBasis(torch.nn.Module):
-    """Change the basis of a representation to its isotypic (disentangled) form.
+    r"""Map features to the isotypic/irrep-spectral basis.
 
-    Given an input representation, this layer applies the pre-computed change of basis that groups irreducible
-    components of the same type together. The transformation is linear and can optionally be made learnable.
+    For :math:`\mathbf{x}\in\mathcal{X}` with representation :math:`\rho_{\mathcal{X}}`, this module applies
+    :math:`\mathbf{Q}^{-1}` from :func:`~symm_learning.representation_theory.isotypic_decomp_rep`:
+
+    .. math::
+        \hat{\mathbf{x}} = \mathbf{Q}^{-1}\mathbf{x},
+        \qquad
+        \rho_{\mathcal{X}} = \mathbf{Q}\left(
+        \bigoplus_{k\in[1,n_{\text{iso}}]}
+        \bigoplus_{i\in[1,n_k]}
+        \hat{\rho}_k
+        \right)\mathbf{Q}^T.
+
+    Hence, coordinates in ``out_rep`` are grouped by isotypic subspace (same irrep type contiguous).
+    The map is linear and :math:`\mathbb{G}`-equivariant:
+
+    .. math::
+        \hat{\rho}_{\mathcal{X}}(g)\,\hat{\mathbf{x}}
+        = \mathbf{Q}^{-1}\rho_{\mathcal{X}}(g)\mathbf{x},
+        \quad
+        \hat{\rho}_{\mathcal{X}}(g) = \mathbf{Q}^{-1}\rho_{\mathcal{X}}(g)\mathbf{Q}.
 
     Args:
-        in_rep (Representation): Representation describing the input feature space.
-        learnable (bool, optional): If ``True``, the change-of-basis matrix is a trainable parameter. Defaults to
-            ``False``.
+        in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` describing the input
+            feature space.
+        learnable (:class:`bool`, optional): If ``True``, the change-of-basis matrix is a trainable parameter.
+            Defaults to ``False``.
     """
 
     def __init__(self, in_rep: Representation, learnable: bool = False):
@@ -39,15 +58,16 @@ class Change2DisentangledBasis(torch.nn.Module):
             self.register_buffer("Qin2iso", Qin2iso)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply the change of basis to the disentangled (isotypic) basis.
+        """Apply the basis change to isotypic coordinates.
 
         Args:
-            x (torch.Tensor): Input whose last dimension equals ``in_rep.size``; arbitrary leading dimensions allowed.
+            x (:class:`torch.Tensor`): Input whose last dimension equals ``in_rep.size``; arbitrary leading dimensions
+                allowed.
 
         Returns:
-            torch.Tensor: Tensor with the same leading shape and last dimension ``out_rep.size`` (same as ``in_rep``)
-                expressed in the isotypic basis. If the input is already in that basis, the tensor is returned
-                unchanged.
+            :class:`torch.Tensor`: Tensor with the same leading shape and last dimension ``out_rep.size``
+            (same as ``in_rep``), expressed in the isotypic basis. If the input is already in that basis,
+            the tensor is returned unchanged.
         """
         assert x.shape[-1] == self.in_rep.size, f"Expected input shape (..., {self.in_rep.size}), got {x.shape}"
         if self._is_in_iso_basis:

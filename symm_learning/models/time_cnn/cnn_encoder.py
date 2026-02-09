@@ -16,15 +16,19 @@ class _ChannelRMSNorm(torch.nn.Module):
 
 
 class TimeCNNEncoder(torch.nn.Module):
-    """1D CNN encoder for inputs of shape (N, in_dim, H).
+    r"""1D CNN baseline encoder for inputs of shape ``(N, in_dim, H)``.
 
     The model applies a stack of 1D conv blocks over time. Each block halves the time
     horizon using either stride-2 convolution or max-pooling. The final feature map of
     shape (N, C_L, H_out) is flattened and passed to a 1-hidden-layer MLP head.
 
-    Convolutional features are time-translation equivariant; flattening preserves this
-    up to a fixed permutation under shifts. The optional concatenation of the last input
-    frame and the final MLP can break output equivariance.
+    The encoder defines:
+
+    .. math::
+      \mathbf{f}_{\mathbf{\theta}}: \mathbb{R}^{d_{\mathrm{in}}\times H} \to \mathbb{R}^{d_{\mathrm{out}}}.
+
+    This class does not impose group-equivariance constraints on channel transforms.
+    It is an unconstrained baseline.
 
     Args:
       in_dim: Input channel dimension.

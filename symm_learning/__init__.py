@@ -1,7 +1,21 @@
-"""Top-level package for symm_learning.
+"""Symmetric Learning - Machine Learning with Symmetry Priors.
 
-This file makes the package a regular (non-namespace) package so editors like
-VS Code / Pylance can statically resolve symbols for go-to-definition.
+**Symmetric Learning** is a machine learning library tailored to optimization problems
+featuring symmetry priors. It provides equivariant neural network modules, models, and
+utilities for leveraging group symmetries in data.
+
+Modules
+-------
+nn
+    Equivariant neural network layers (linear, conv, normalization, attention).
+models
+    Complete architectures (eMLP, eTransformer, eTimeCNNEncoder).
+linalg
+    Linear algebra utilities for symmetric vector spaces.
+stats
+    Statistics for symmetric random variables.
+representation_theory
+    Tools for group representations and irreducible decompositions.
 """
 
 import logging

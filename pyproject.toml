@@ -4,12 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "symm-learning"
-version = "0.2.46"
+version = "0.4.1"
 
-description = "Torch modules and utilities of equivariant/invariant learning"
+description = "Library of torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.8"
-authors = [{ name = "Daniel Ordoñez", email = "daniels.ordonez@gmail.com" }]
+authors = [
+  { name = "Daniel Felipe Ordoñez Apraez", email = "daniels.ordonez@gmail.com" },
+]
 # Dependencies ___________________________________________________________________________________________________
 dependencies = ["torch", "escnn"]
 

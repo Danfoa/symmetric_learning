@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import torch
-from escnn.nn import FieldType, GeometricTensor
+from escnn.group import Representation
 
 import symm_learning.stats
 
@@ -12,29 +12,29 @@ class EMAStats(torch.nn.Module):
     This module tracks running statistics of two input tensors using exponential moving
     averages without transforming the data. It computes and maintains estimates of:
 
-    - :math:`\\mu_x`: Mean of input tensor x
-    - :math:`\\mu_y`: Mean of input tensor y
-    - :math:`\\Sigma_{xx}`: Covariance matrix of x
-    - :math:`\\Sigma_{yy}`: Covariance matrix of y
-    - :math:`\\Sigma_{xy}`: Cross-covariance matrix between x and y
+    - :math:`\mu_x`: Mean of input tensor x
+    - :math:`\mu_y`: Mean of input tensor y
+    - :math:`\Sigma_{xx}`: Covariance matrix of x
+    - :math:`\Sigma_{yy}`: Covariance matrix of y
+    - :math:`\Sigma_{xy}`: Cross-covariance matrix between x and y
 
     **Mathematical Formulation:**
 
     The exponential moving average update rule for any statistic :math:`S` is:
 
     .. math::
-        S_{\\text{running}} = (1 - \\alpha) \\cdot S_{\\text{running}} + \\alpha \\cdot S_{\\text{batch}}
+        S_{\text{running}} = (1 - \alpha) \cdot S_{\text{running}} + \alpha \cdot S_{\text{batch}}
 
-    where :math:`\\alpha` is the momentum parameter and :math:`S_{\\text{batch}}` is the
+    where :math:`\alpha` is the momentum parameter and :math:`S_{\text{batch}}` is the
     statistic computed from the current batch.
 
     **Covariance Computation:**
 
     For tensors of shape :math:`(N, D)`:
 
-    - Mean: :math:`\\mu = \\mathbb{E}[x]` computed over batch dimension
-    - Covariance: :math:`\\Sigma = \\mathbb{E}[(x - \\mu)(x - \\mu)^T]`
-    - Cross-covariance: :math:`\\Sigma_{xy} = \\mathbb{E}[(x - \\mu_x)(y - \\mu_y)^T]`
+    - Mean: :math:`\mu = \mathbb{E}[x]` computed over batch dimension
+    - Covariance: :math:`\Sigma = \mathbb{E}[(x - \mu)(x - \mu)^T]`
+    - Cross-covariance: :math:`\Sigma_{xy} = \mathbb{E}[(x - \mu_x)(y - \mu_y)^T]`
 
     Args:
         num_features_x: Number of features in input tensor x.
@@ -51,12 +51,12 @@ class EMAStats(torch.nn.Module):
         - Output: Same as inputs (data is not transformed).
 
     Attributes:
-        running_mean_x (torch.Tensor): Running mean of x. Shape: :math:`(D_x,)`.
-        running_mean_y (torch.Tensor): Running mean of y. Shape: :math:`(D_y,)`.
-        running_cov_xx (torch.Tensor): Running covariance of x. Shape: :math:`(D_x, D_x)`.
-        running_cov_yy (torch.Tensor): Running covariance of y. Shape: :math:`(D_y, D_y)`.
-        running_cov_xy (torch.Tensor): Running cross-covariance. Shape: :math:`(D_x, D_y)`.
-        num_batches_tracked (torch.Tensor): Number of batches processed.
+        running_mean_x (:class:`~torch.Tensor`): Running mean of x. Shape: :math:`(D_x,)`.
+        running_mean_y (:class:`~torch.Tensor`): Running mean of y. Shape: :math:`(D_y,)`.
+        running_cov_xx (:class:`~torch.Tensor`): Running covariance of x. Shape: :math:`(D_x, D_x)`.
+        running_cov_yy (:class:`~torch.Tensor`): Running covariance of y. Shape: :math:`(D_y, D_y)`.
+        running_cov_xy (:class:`~torch.Tensor`): Running cross-covariance. Shape: :math:`(D_x, D_y)`.
+        num_batches_tracked (:class:`~torch.Tensor`): Number of batches processed.
 
     Example:
         >>> stats = EMAStats(num_features_x=10, num_features_y=5, momentum=0.1)
@@ -216,48 +216,52 @@ class eEMAStats(EMAStats):
     It uses symmetry-aware mean and covariance computations from :mod:`symm_learning.stats`.
 
     Args:
-        in_type_x (escnn.nn.FieldType): The field type defining input x's group representation.
-        in_type_y (escnn.nn.FieldType): The field type defining input y's group representation.
-            If None, uses same as in_type_x.
+        x_rep (:class:`~escnn.group.Representation`): Representation defining input x's group action.
+        y_rep (:class:`~escnn.group.Representation`): Representation defining input y's group action.
+            If None, uses ``x_rep``.
         momentum (float, optional): Momentum factor for exponential moving average. Default: 0.1.
         eps (float, optional): Small constant for numerical stability. Default: 1e-6.
         center_with_running_mean (bool, optional): If True, center covariance computation
             using running means instead of batch means (except for first batch). Default: True.
 
     Shape:
-        - Input x: :class:`escnn.nn.GeometricTensor` with tensor shape :math:`(N, D_x)`
-        - Input y: :class:`escnn.nn.GeometricTensor` with tensor shape :math:`(N, D_y)`
+        - Input x: ``(N, D_x)``
+        - Input y: ``(N, D_y)``
         - Output: Same as inputs (data is not transformed)
 
     Example:
-        >>> stats = eEMAStats(in_type_x=in_type_x, in_type_y=in_type_y, momentum=0.1)
-        >>> x_out, y_out = stats(x_geom, y_geom)  # Same tensors, updated statistics
+        >>> stats = eEMAStats(x_rep=rep_x, y_rep=rep_y, momentum=0.1)
+        >>> x_out, y_out = stats(x, y)  # Same tensors, updated statistics
         >>> standard_stats = stats.export()  # Export to standard EMAStats
     """
 
     def __init__(
         self,
-        x_type: FieldType,
-        y_type: FieldType | None = None,
+        x_rep: Representation,
+        y_rep: Representation | None = None,
         momentum: float = 0.1,
         eps: float = 1e-6,
         center_with_running_mean: bool = True,
     ):
-        # Store field types and representations
-        self.x_type = x_type
-        self.y_type = y_type if y_type is not None else x_type
+        if not isinstance(x_rep, Representation):
+            raise TypeError(f"x_rep must be a Representation, got {type(x_rep)}")
+        if y_rep is not None and not isinstance(y_rep, Representation):
+            raise TypeError(f"y_rep must be a Representation, got {type(y_rep)}")
+        # Store representations
+        self.x_rep = x_rep
+        self.y_rep = y_rep if y_rep is not None else x_rep
 
         # Ensure groups match
-        assert self.x_type.fibergroup == self.y_type.fibergroup, "in_type_x and in_type_y must share the same group"
+        assert self.x_rep.group == self.y_rep.group, "x_rep and y_rep must share the same group"
 
         # Store representations for stats computation
-        self._rep_x = self.x_type.representation
-        self._rep_y = self.y_type.representation
+        self._rep_x = self.x_rep
+        self._rep_y = self.y_rep
 
-        # Initialize EMAStats with the field type sizes
+        # Initialize EMAStats with the representation sizes
         super().__init__(
-            dim_x=self.x_type.size,
-            dim_y=self.y_type.size,
+            dim_x=self.x_rep.size,
+            dim_y=self.y_rep.size,
             momentum=momentum,
             eps=eps,
             center_with_running_mean=center_with_running_mean,
@@ -303,24 +307,22 @@ class eEMAStats(EMAStats):
 
         return mean_x, mean_y, cov_xx, cov_yy, cov_xy
 
-    def forward(self, x: GeometricTensor, y: GeometricTensor) -> tuple[GeometricTensor, GeometricTensor]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Update running statistics and return inputs unchanged.
 
         Args:
-            x: Input GeometricTensor x with type in_type_x.
-            y: Input GeometricTensor y with type in_type_y.
+            x: Input tensor x with representation ``x_rep``.
+            y: Input tensor y with representation ``y_rep``.
 
         Returns:
             Tuple (x, y) - inputs are returned unchanged.
         """
-        assert x.type == self.x_type, f"Input x type {x.type} does not match expected type {self.x_type}."
-        assert y.type == self.y_type, f"Input y type {y.type} does not match expected type {self.y_type}."
+        assert x.shape[-1] == self.x_rep.size, f"Expected x.shape[-1]={self.x_rep.size}, got {x.shape}"
+        assert y.shape[-1] == self.y_rep.size, f"Expected y.shape[-1]={self.y_rep.size}, got {y.shape}"
 
         # Apply EMAStats forward to the tensor data
-        x_out_tensor, y_out_tensor = super().forward(x.tensor, y.tensor)
-
-        # Return as GeometricTensors (should be identical to inputs)
-        return self.x_type(x_out_tensor), self.y_type(y_out_tensor)
+        x_out_tensor, y_out_tensor = super().forward(x, y)
+        return x_out_tensor, y_out_tensor
 
     def export(self) -> EMAStats:
         """Export to a standard EMAStats layer."""

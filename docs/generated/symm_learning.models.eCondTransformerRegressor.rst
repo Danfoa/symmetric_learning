@@ -1,0 +1,9 @@
+﻿eCondTransformerRegressor
+=========================
+
+.. currentmodule:: symm_learning.models
+
+.. autoclass:: eCondTransformerRegressor
+   :members:
+   :show-inheritance:
+   :inherited-members:

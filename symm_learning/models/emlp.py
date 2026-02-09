@@ -14,12 +14,24 @@ logger = logging.getLogger(__name__)
 
 
 class eMLP(torch.nn.Module):
-    """Equivariant MLP composed of :class:`~symm_learning.nn.linear.eLinear` layers.
+    r"""Equivariant MLP composed of :class:`~symm_learning.nn.linear.eLinear` layers.
 
     The network preserves the action of the underlying group on every layer by
     constructing hidden representations from the group regular representation
     (or a user-provided base representation) repeated as needed to reach the
     requested width.
+
+    The network defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}: \mathcal{X} \to \mathcal{Y}.
+
+    Functional equivariance constraint:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{x})
+        = \rho_{\mathcal{Y}}(g)\mathbf{f}_{\mathbf{\theta}}(\mathbf{x})
+        \quad \forall g\in\mathbb{G}.
     """
 
     def __init__(
@@ -33,17 +45,19 @@ class eMLP(torch.nn.Module):
         hidden_rep: Representation | None = None,
         init_scheme: str | None = "xavier_normal",
     ) -> None:
-        """Create an equivariant MLP.
+        r"""Create an equivariant MLP.
 
         Args:
-            in_rep: Input representation defining the group action on the input.
-            out_rep: Output representation; must belong to the same group as ``in_rep``.
+            in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}` defining the
+                group action on the input.
+            out_rep (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\text{out}}`; must belong
+                to the same group as ``in_rep``.
             hidden_units: Width of each hidden layer (number of representation copies).
             activation: Non-linearity inserted after every hidden layer.
             dropout: Dropout probability applied after activations; ``0.0`` disables it.
             bias: Whether to include a bias term in equivariant linear layers.
-            hidden_rep: Base representation used to build hidden layers. Defaults to the
-                regular representation when ``None``.
+            hidden_rep (:class:`~escnn.group.Representation`, optional): Base representation used to build hidden
+                layers. Defaults to the regular representation when ``None``.
             init_scheme: Parameter initialization scheme passed to :class:`eLinear`.
         """
         super().__init__()
@@ -106,7 +120,20 @@ class eMLP(torch.nn.Module):
 
 
 class iMLP(torch.nn.Module):
-    """G-invariant MLP built from an equivariant backbone and invariant head."""
+    r"""Invariant MLP built from an equivariant backbone and invariant pooling.
+
+    The network defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}: \mathcal{X} \to \mathcal{Y}^{\text{inv}}.
+
+    Functional invariance constraint:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{x})
+        = \mathbf{f}_{\mathbf{\theta}}(\mathbf{x})
+        \quad \forall g\in\mathbb{G}.
+    """
 
     def __init__(
         self,
@@ -119,14 +146,15 @@ class iMLP(torch.nn.Module):
         hidden_rep: Representation | None = None,
         init_scheme: str | None = "xavier_normal",
     ):
-        """Create a group-invariant MLP.
+        r"""Create a group-invariant MLP.
 
         The model first applies an equivariant MLP to extract group-aware
         features, pools them into the trivial representation, and finishes with
         an unconstrained linear head to produce invariant outputs.
 
         Args:
-            in_rep: Input representation defining the group action on the input.
+            in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}` defining the
+                group action on the input.
             out_dim: Dimension of the invariant output vector.
             hidden_units: Width of each hidden layer in the equivariant backbone.
             activation: Non-linearity inserted after every hidden layer and after the backbone.
@@ -199,7 +227,15 @@ def _hidden_representation(base: Representation, target_dim: int) -> Representat
 
 
 class MLP(torch.nn.Module):
-    """Standard baseline MLP."""
+    r"""Standard baseline MLP with no symmetry constraints.
+
+    The network defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}: \mathbb{R}^{d_{\mathrm{in}}} \to \mathbb{R}^{d_{\mathrm{out}}}.
+
+    No equivariance or invariance constraints are imposed.
+    """
 
     def __init__(
         self,

@@ -1,0 +1,9 @@
+﻿eRMSNorm
+========
+
+.. currentmodule:: symm_learning.nn.normalization
+
+.. autoclass:: eRMSNorm
+   :members:
+   :show-inheritance:
+   :inherited-members:

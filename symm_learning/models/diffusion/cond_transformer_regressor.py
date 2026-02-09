@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Union
 
 import torch
 
-from symm_learning.models.difussion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 
 logger = logging.getLogger(__name__)
 
@@ -19,23 +19,33 @@ class GenCondRegressor(torch.nn.Module, ABC):
     enables sampling from the conditional probability distribution:
 
     .. math::
-        \\mathbb{P}(X | Z)
+        \mathbb{P}(X \mid Z)
 
-    Where :math:`X = [x_0,...,x_{T_x}] \\in (\R^{d_x})^{T_x}` is the input/data sample composed of a
-    trajectory of :math:`T_x` points in a `d_x`-dimensional space, and
-    :math:`Z = [z_0,...,z_{T_z}] \\in (\R^{d_z})^{T_z}` is the conditioning/observation variable composed
-    of `T_z` points in a `d_z`-dimensional space.
+    Let :math:`\mathcal{X}=\mathbb{R}^{d_x}`, :math:`\mathcal{Z}=\mathbb{R}^{d_z}`, and
+    :math:`\mathcal{Y}=\mathbb{R}^{d_v}`.
+    Where :math:`X = [x_0,\ldots,x_{T_x}] \in \mathcal{X}^{T_x}` is the input/data sample composed of a
+    trajectory of :math:`T_x` points, and :math:`Z = [z_0,\ldots,z_{T_z}] \in \mathcal{Z}^{T_z}` is the
+    conditioning/observation variable composed of :math:`T_z` points.
 
-    The module parameterizes a conditional vector-valued regression function:
+    The module parameterizes a conditional vector-valued regression map:
 
     .. math::
-        V_k = f\_\\theta(X_k, Z, k)
+        \mathbf{f}_{\mathbf{\theta}}: \mathcal{X}^{T_x} \times \mathcal{Z}^{T_z} \times \mathbb{R}
+        \to \mathcal{Y}^{T_x},
+
+    with
+
+    .. math::
+        V_k = \mathbf{f}_{\mathbf{\theta}}(X_k, Z, k).
 
     Where :math:`k` denotes the inference-time optimization timestep (i.e., the step of the flow-matching/diffusion)
-    process, :math:`X_k` is the noisy version of the data sample at step `k`, and :math:`V_k \in (\R^{d_v})^{T_x}` is
-    the target regression vector-valued variable. For diffusion models :math:`V_k` typically corresponds to the score
-    functional of :math:`\\mathbb{P}_k( X | Z )`, while for flow-matching models it typically corresponds to the
-    flow-matching velocity vector field.
+    process, :math:`X_k` is the noisy version of the data sample at step `k`, and
+    :math:`V_k \in (\mathbb{R}^{d_v})^{T_x}` is the target regression vector-valued variable.
+    For diffusion models :math:`V_k` typically corresponds to the score functional of
+    :math:`\mathbb{P}_k(X \mid Z)`, while for flow-matching models it typically corresponds
+    to the flow-matching velocity vector field.
+
+    This abstract base class does not impose equivariance/invariance constraints by itself.
     """
 
     def __init__(self, in_dim: int, out_dim: int, cond_dim: int):
@@ -49,16 +59,15 @@ class GenCondRegressor(torch.nn.Module, ABC):
         r"""Forward pass of the generative conditional regressor.
 
         Args:
-            X (torch.Tensor): The input/data sample composed of a trajectory of `T_x` points in a `d_x`-dimensional
-                space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
-            opt_step (Union[torch.Tensor, float, int]): The optimization step(s) `k` at which to evaluate the
-                regressor. Can be a single scalar or a tensor of shape `(B,)`.
-            Z (torch.Tensor): The conditioning/observation variable composed of `T_z` points in a `d_z`-dimensional
-            space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
-
+            X (:class:`torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a
+                `d_x`-dimensional space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
+            opt_step (:class:`torch.Tensor` | :class:`float` | :class:`int`): The optimization step(s) `k` at which to
+                evaluate the regressor. Can be a single scalar or a tensor of shape `(B,)`.
+            Z (:class:`torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a
+                `d_z`-dimensional space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
 
         Returns:
-            torch.Tensor: The output regression variable of shape `(B, T_x, d_v)`.
+            :class:`torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
         """
         pass
 
@@ -66,7 +75,8 @@ class GenCondRegressor(torch.nn.Module, ABC):
 class CondTransformerRegressor(GenCondRegressor):
     r"""Transformer-based generative conditional regressor.
 
-    The module parameterizes :math:`f_\theta(X_k, Z, k)` with a stack of Transformer blocks. The input trajectory
+    The module parameterizes :math:`\mathbf{f}_{\mathbf{\theta}}(X_k, Z, k)` with a stack of Transformer blocks.
+    The input trajectory
     :math:`X_k` is first projected into an embedding space and interpreted as the target (`tgt`) sequence of a standard
     :class:`torch.nn.TransformerDecoder`. Conditioning information is packed into the decoder `memory` stream:
 
@@ -80,19 +90,28 @@ class CondTransformerRegressor(GenCondRegressor):
     from the conditioning memory, enabling the model to fuse optimisation step, observations, and trajectory features at
     every layer.
 
+    The model map is:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}:
+        \mathbb{R}^{d_x \times T_x} \times \mathbb{R}^{d_z \times T_z} \times \mathbb{R}
+        \to \mathbb{R}^{d_v \times T_x}.
+
+    This is an unconstrained baseline model (no explicit group-equivariance constraint).
+
     Args:
-        in_dim (int): Dimensionality of each element in :math:`X`.
-        out_dim (int): Dimensionality of the regressed vector field.
-        cond_dim (int): Dimensionality of each conditioning element in :math:`Z`.
-        in_horizon (int): Maximum length of :math:`X`.
-        cond_horizon (int): Maximum length of :math:`Z` (excluding the optimization-step token).
-        num_layers (int): Number of Transformer decoder layers.
-        num_attention_heads (int): Number of attention heads in Multi-Head Attention blocks.
-        embedding_dim (int): Dimensionality of token embeddings.
-        p_drop_emb (float): Dropout applied to embeddings.
-        p_drop_attn (float): Dropout applied inside attention blocks.
-        causal_attn (bool): Whether to use causal attention in self-attention and cross-attention layers.
-        num_cond_layers (int): Number of encoder layers dedicated to conditioning tokens.
+        in_dim (:class:`int`): Dimensionality of each element in :math:`X`.
+        out_dim (:class:`int`): Dimensionality of the regressed vector field.
+        cond_dim (:class:`int`): Dimensionality of each conditioning element in :math:`Z`.
+        in_horizon (:class:`int`): Maximum length of :math:`X`.
+        cond_horizon (:class:`int`): Maximum length of :math:`Z` (excluding the optimization-step token).
+        num_layers (:class:`int`): Number of Transformer decoder layers.
+        num_attention_heads (:class:`int`): Number of attention heads in Multi-Head Attention blocks.
+        embedding_dim (:class:`int`): Dimensionality of token embeddings.
+        p_drop_emb (:class:`float`): Dropout applied to embeddings.
+        p_drop_attn (:class:`float`): Dropout applied inside attention blocks.
+        causal_attn (:class:`bool`): Whether to use causal attention in self-attention and cross-attention layers.
+        num_cond_layers (:class:`int`): Number of encoder layers dedicated to conditioning tokens.
     """
 
     def __init__(
@@ -289,7 +308,7 @@ class CondTransformerRegressor(GenCondRegressor):
         return optim_groups
 
     def configure_optimizers(
-        self, learning_rate: float = 1e-4, weight_decay: float = 1e-3, betas: Tuple[float, float] = (0.9, 0.95)
+        self, learning_rate: float = 1e-4, weight_decay: float = 1e-3, betas: tuple[float, float] = (0.9, 0.95)
     ):
         """Creates optimizer groups separating out parameters to apply weight decay to and those that don't."""
         optim_groups = self.get_optim_groups(weight_decay=weight_decay)
@@ -300,15 +319,15 @@ class CondTransformerRegressor(GenCondRegressor):
         r"""Forward pass of the conditional transformer regressor, approximating V_k = f(X_k, Z, k).
 
         Args:
-            X (torch.Tensor): The input/data sample composed of a trajectory of `T_x` points in a `d_x`-dimensional
-                space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
-            opt_step (Union[torch.Tensor, float, int]): The optimization timestep(s) `k` at which to evaluate the
-                regressor. Can be a single scalar or a tensor of shape `(B,)`.
-            Z (torch.Tensor): The conditioning/observation variable composed of `T_z` points in a `d_z`-dimensional
-            space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
+            X (:class:`torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a
+                `d_x`-dimensional space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
+            opt_step (:class:`torch.Tensor` | :class:`float` | :class:`int`): The optimization timestep(s) `k` at which
+                to evaluate the regressor. Can be a single scalar or a tensor of shape `(B,)`.
+            Z (:class:`torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a
+                `d_z`-dimensional space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
 
         Returns:
-            torch.Tensor: The output regression variable of shape `(B, T_x, d_v)`.
+            :class:`torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
         """
         # assert X.shape[1] <= self.in_horizon, f"Input horizon {X.shape[1]} larger than {self.in_horizon}"
         # assert Z.shape[1] <= self.cond_horizon - 1, f"Cond horizon {Z.shape[1]} larger than {self.cond_horizon - 1}"
