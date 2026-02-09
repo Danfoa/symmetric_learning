@@ -193,16 +193,16 @@ class ConditionalUnet1D(nn.Module):
         """Forward pass of the Conditional Unet 1D model.
 
         Args:
-            sample (:class:`torch.Tensor`): The input tensor of shape (B, input_dim, T).
-            timestep (:class:`torch.Tensor` | :class:`float` | :class:`int`): The diffusion timestep.
-            local_cond (:class:`torch.Tensor`, optional): The local conditioning tensor of shape (B, local_cond_dim).
+            sample (:class:`~torch.Tensor`): The input tensor of shape (B, input_dim, T).
+            timestep (:class:`~torch.Tensor` | :class:`float` | :class:`int`): The diffusion timestep.
+            local_cond (:class:`~torch.Tensor`, optional): The local conditioning tensor of shape (B, local_cond_dim).
                 Defaults to None.
-            film_cond (:class:`torch.Tensor`, optional): The global conditioning tensor of shape (B, film_cond_dim).
+            film_cond (:class:`~torch.Tensor`, optional): The global conditioning tensor of shape (B, film_cond_dim).
                 Defaults to None.
             kwargs: Additional keyword arguments reserved for API compatibility.
 
         Returns:
-            :class:`torch.Tensor`: The output tensor of shape (B, input_dim, T).
+            :class:`~torch.Tensor`: The output tensor of shape (B, input_dim, T).
         """
         # 1. time
         timesteps = timestep
@@ -384,11 +384,11 @@ class ConditionalResidualBlock1D(nn.Module):
         """Forward pass of the conditional residual block.
 
         Args:
-            x (:class:`torch.Tensor`): Input tensor of shape (batch_size, in_channels, horizon).
-            cond (:class:`torch.Tensor`): Conditioning vector of shape (batch_size, cond_dim).
+            x (:class:`~torch.Tensor`): Input tensor of shape (batch_size, in_channels, horizon).
+            cond (:class:`~torch.Tensor`): Conditioning vector of shape (batch_size, cond_dim).
 
         Returns:
-            :class:`torch.Tensor`: Output tensor of shape (batch_size, out_channels, horizon).
+            :class:`~torch.Tensor`: Output tensor of shape (batch_size, out_channels, horizon).
         """
         out = self.blocks[0](x)
         embed = self.cond_encoder(cond)

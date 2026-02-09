@@ -22,7 +22,6 @@ Icosahedral example, see
    GroupHomomorphismBasis
    isotypic_decomp_rep
    direct_sum
-   field_type_to_isotypic_basis
 
    permutation_matrix
    irreps_stats

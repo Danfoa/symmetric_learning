@@ -59,15 +59,15 @@ class GenCondRegressor(torch.nn.Module, ABC):
         r"""Forward pass of the generative conditional regressor.
 
         Args:
-            X (:class:`torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a
+            X (:class:`~torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a
                 `d_x`-dimensional space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
-            opt_step (:class:`torch.Tensor` | :class:`float` | :class:`int`): The optimization step(s) `k` at which to
+            opt_step (:class:`~torch.Tensor` | :class:`float` | :class:`int`): The optimization step(s) `k` at which to
                 evaluate the regressor. Can be a single scalar or a tensor of shape `(B,)`.
-            Z (:class:`torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a
+            Z (:class:`~torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a
                 `d_z`-dimensional space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
 
         Returns:
-            :class:`torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
+            :class:`~torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
         """
         pass
 
@@ -319,15 +319,15 @@ class CondTransformerRegressor(GenCondRegressor):
         r"""Forward pass of the conditional transformer regressor, approximating V_k = f(X_k, Z, k).
 
         Args:
-            X (:class:`torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a
+            X (:class:`~torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a
                 `d_x`-dimensional space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
-            opt_step (:class:`torch.Tensor` | :class:`float` | :class:`int`): The optimization timestep(s) `k` at which
+            opt_step (:class:`~torch.Tensor` | :class:`float` | :class:`int`): The optimization timestep(s) `k` at which
                 to evaluate the regressor. Can be a single scalar or a tensor of shape `(B,)`.
-            Z (:class:`torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a
+            Z (:class:`~torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a
                 `d_z`-dimensional space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
 
         Returns:
-            :class:`torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
+            :class:`~torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
         """
         # assert X.shape[1] <= self.in_horizon, f"Input horizon {X.shape[1]} larger than {self.in_horizon}"
         # assert Z.shape[1] <= self.cond_horizon - 1, f"Cond horizon {Z.shape[1]} larger than {self.cond_horizon - 1}"

@@ -39,11 +39,11 @@ class IrrepSubspaceNormPooling(torch.nn.Module):
         """Compute one invariant radius per irreducible copy.
 
         Args:
-            x (:class:`torch.Tensor`): Input with trailing dimension ``in_rep.size``; any leading batch/time dims are
+            x (:class:`~torch.Tensor`): Input with trailing dimension ``in_rep.size``; any leading batch/time dims are
                 accepted.
 
         Returns:
-            :class:`torch.Tensor`: Tensor with same leading shape as ``x`` and last dim ``out_rep.size`` containing one
+            :class:`~torch.Tensor`: Tensor with same leading shape as ``x`` and last dim ``out_rep.size`` containing one
                 Euclidean norm per irrep block (trivial features).
         """
         assert x.shape[-1] == self.in_rep.size, f"Expected input shape (..., {self.in_rep.size}), but got {x.shape}"

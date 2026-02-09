@@ -66,12 +66,12 @@ def mean(x: Tensor, rep_x: Representation) -> Tensor:
     Under the repository's canonical isotypic ordering, this corresponds to the first isotypic block when present.
 
     Args:
-        x: (:class:`torch.Tensor`) samples of :math:`\mathbf{X}` with shape :math:`(N,D_x)` or
+        x: (:class:`~torch.Tensor`) samples of :math:`\mathbf{X}` with shape :math:`(N,D_x)` or
             :math:`(N,D_x,T)`; when a time axis is present it is folded into the sample axis.
         rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}` on :math:`\mathcal{X}`.
 
     Returns:
-        (:class:`torch.Tensor`): Invariant mean vector in :math:`\mathcal{X}`.
+        (:class:`~torch.Tensor`): Invariant mean vector in :math:`\mathcal{X}`.
 
     Shape:
         - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.
@@ -155,13 +155,14 @@ def var(x: Tensor, rep_x: Representation, center: Tensor = None) -> Tensor:
     :math:`\widehat{\mathbf{v}}` denotes the broadcast spectral variance vector after step 3.
 
     Args:
-        x: (:class:`torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`;
+        x: (:class:`~torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`;
             the optional time axis is folded into samples.
         rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.
-        center: (:class:`torch.Tensor`, optional) Center for variance computation. If None, computes the mean.
+        center: (:class:`~torch.Tensor`, optional) Center for variance computation. If None, computes the mean.
 
     Returns:
-        (:class:`torch.Tensor`): Variance vector in the original basis, consistent with the irrep-wise constraint above.
+        (:class:`~torch.Tensor`): Variance vector in the original basis, consistent with
+            the irrep-wise constraint above.
 
     Shape:
         - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.
@@ -236,11 +237,11 @@ def var_mean(x: Tensor, rep_x: Representation):
     r"""Compute :func:`var` and :func:`mean` under symmetry constraints.
 
     Args:
-        x: (:class:`torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`.
+        x: (:class:`~torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`.
         rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.
 
     Returns:
-        (:class:`torch.Tensor`, :class:`torch.Tensor`): Tuple ``(var, mean)`` where mean is projected to
+        (:class:`~torch.Tensor`, :class:`~torch.Tensor`): Tuple ``(var, mean)`` where mean is projected to
         :math:`\mathcal{X}^{\text{inv}}` and variance satisfies irrep-wise isotropy in spectral basis.
 
     Shape:
@@ -287,10 +288,10 @@ def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Rep
 
 
     Args:
-        x (:class:`torch.Tensor`): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.
+        x (:class:`~torch.Tensor`): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.
         rep_x (:class:`~escnn.group.Representation`): isotypic representation
             containing exactly one irrep type.
-        y (:class:`torch.Tensor`, optional): shape :math:`(N,\; m_y d)` —
+        y (:class:`~torch.Tensor`, optional): shape :math:`(N,\; m_y d)` —
             samples drawn from ``rep_y``.  If *None*, computes the
             auto-covariance of *x*.
         rep_y (:class:`~escnn.group.Representation`, optional): isotypic
@@ -379,13 +380,13 @@ def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
     :math:`\mathbb{B}_k` of the irreducible representation of type *k*.
 
     Args:
-        x (:class:`torch.Tensor`): Realizations of a random variable :math:`X`.
-        y (:class:`torch.Tensor`): Realizations of a random variable :math:`Y`.
+        x (:class:`~torch.Tensor`): Realizations of a random variable :math:`X`.
+        y (:class:`~torch.Tensor`): Realizations of a random variable :math:`Y`.
         rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}`.
         rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}`.
 
     Returns:
-        :class:`torch.Tensor`: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.
+        :class:`~torch.Tensor`: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.
 
     Shape:
         - **x**: :math:`(N, D_x)` where :math:`D_x` is the dimension of the random variable :math:`\mathbf{X}`.

@@ -1,9 +1,0 @@
-﻿TimeCNNEncoder
-==============
-
-.. currentmodule:: symm_learning.models
-
-.. autoclass:: TimeCNNEncoder
-   :members:
-   :show-inheritance:
-   :inherited-members:

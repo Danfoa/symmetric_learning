@@ -20,5 +20,6 @@ A collection of equivariant neural network architectures.
    TimeCNNEncoder
    eTransformerEncoderLayer
    eTransformerDecoderLayer
+   GenCondRegressor
    eCondTransformerRegressor
    CondTransformerRegressor

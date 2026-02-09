@@ -58,7 +58,8 @@ class eMLP(torch.nn.Module):
             bias: Whether to include a bias term in equivariant linear layers.
             hidden_rep (:class:`~escnn.group.Representation`, optional): Base representation used to build hidden
                 layers. Defaults to the regular representation when ``None``.
-            init_scheme: Parameter initialization scheme passed to :class:`eLinear`.
+            init_scheme: Parameter initialization scheme passed to
+                :class:`~symm_learning.nn.linear.eLinear`.
         """
         super().__init__()
         if len(hidden_units) == 0:
@@ -112,7 +113,7 @@ class eMLP(torch.nn.Module):
 
     @torch.no_grad()
     def reset_parameters(self, scheme: str = "xavier_normal") -> None:
-        """Reinitialize all :class:`eLinear` layers with the provided scheme."""
+        """Reinitialize all :class:`~symm_learning.nn.linear.eLinear` layers with the provided scheme."""
         for module in self.net:
             if isinstance(module, eLinear):
                 module.reset_parameters(scheme)
@@ -162,7 +163,8 @@ class iMLP(torch.nn.Module):
             bias: Whether to include biases in the backbone and head.
             hidden_rep: Base representation used to build hidden layers. Defaults to the
                 regular representation when ``None``.
-            init_scheme: Parameter initialization scheme passed to :class:`eLinear`.
+            init_scheme: Parameter initialization scheme passed to
+                :class:`~symm_learning.nn.linear.eLinear`.
         """
         super().__init__()
         assert isinstance(hidden_units, list) and len(hidden_units) > 0, (
@@ -207,7 +209,7 @@ class iMLP(torch.nn.Module):
 
     @torch.no_grad()
     def reset_parameters(self, scheme: str = "xavier_normal") -> None:
-        """Reinitialize all :class:`eLinear` layers with the provided scheme."""
+        """Reinitialize all :class:`~symm_learning.nn.linear.eLinear` layers with the provided scheme."""
         self.emlp_backbone.reset_parameters(scheme)
         # Initialize the unconstraine head
         if scheme == "xavier_normal":

@@ -105,16 +105,17 @@ class eMultivariateNormal(torch.nn.Module):
         self.in_rep = direct_sum([out_rep, rep_cov_dof])
 
     def forward(self, input: torch.Tensor) -> MultivariateNormal:
-        r"""Build :class:`torch.distributions.MultivariateNormal` from equivariant DoFs.
+        r"""Build :class:`~torch.distributions.multivariate_normal.MultivariateNormal` from equivariant DoFs.
 
         Args:
-            input (:class:`torch.Tensor`): Tensor of shape ``(..., in_rep.size)`` containing the mean and log-variance
+            input (:class:`~torch.Tensor`): Tensor of shape ``(..., in_rep.size)`` containing the mean and log-variance
                 parameters. The first ``out_rep.size`` elements are the mean, and the remaining ``n_cov_params``
                 elements are the log-variances.
 
         Returns:
-            :class:`torch.distributions.MultivariateNormal`: Gaussian with mean in :math:`\mathcal{Y}` and diagonal
-            covariance satisfying the constraints described in :class:`eMultivariateNormal`.
+            :class:`~torch.distributions.multivariate_normal.MultivariateNormal`: Gaussian with mean in
+            :math:`\mathcal{Y}` and diagonal covariance satisfying the constraints described in
+            :class:`eMultivariateNormal`.
         """
         if input.shape[-1] != self.in_rep.size:
             raise ValueError(f"Expected last dimension {self.in_rep.size}, got {input.shape[-1]}")

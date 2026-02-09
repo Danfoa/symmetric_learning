@@ -31,15 +31,18 @@ class eRMSNorm(torch.nn.Module):
         = \rho_{\mathcal{X}}(g)\operatorname{eRMSNorm}(\mathbf{x}),
         \quad \forall g\in\mathbb{G},
 
-    because the RMS factor is invariant and :class:`eAffine` commutes with :math:`\rho_{\mathcal{X}}`.
+    because the RMS factor is invariant and :class:`~symm_learning.nn.linear.eAffine` commutes with
+    :math:`\rho_{\mathcal{X}}`.
 
     Args:
         in_rep (:class:`~escnn.group.Representation`): Description of the feature space :math:`\rho_{\text{in}}`.
         eps (:class:`float`): Numerical stabilizer added inside the RMS computation.
-        equiv_affine (:class:`bool`): If ``True``, apply a symmetry-preserving :class:`eAffine` after normalization.
+        equiv_affine (:class:`bool`): If ``True``, apply a symmetry-preserving
+            :class:`~symm_learning.nn.linear.eAffine` after normalization.
         device, dtype: Optional tensor factory kwargs passed to the affine parameters.
-        init_scheme (:class:`typing.Literal`["identity", "random"] | :class:`None`): Initialization scheme forwarded to
-            :meth:`eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful when loading checkpoints).
+        init_scheme (Literal["identity", "random"] | None): Initialization scheme forwarded to
+            :meth:`~symm_learning.nn.linear.eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful
+            when loading checkpoints).
 
     Shape:
         - Input: ``(..., in_rep.size)``
@@ -79,7 +82,8 @@ class eRMSNorm(torch.nn.Module):
             input: Tensor shaped ``(..., in_rep.size)``.
 
         Returns:
-            Tensor with identical shape, RMS-normalized and possibly transformed by :class:`eAffine`.
+            Tensor with identical shape, RMS-normalized and possibly transformed by
+            :class:`~symm_learning.nn.linear.eAffine`.
         """
         assert input.shape[-1] == self.in_rep.size, f"Expected (...,{self.in_rep.size}), got {input.shape}"
         rms_input = torch.sqrt(self.eps + torch.mean(input.pow(2), dim=-1, keepdim=True))
@@ -119,7 +123,8 @@ class eLayerNorm(torch.nn.Module):
     Args:
         in_rep (:class:`~escnn.group.Representation`): description of the feature space :math:`\rho_{\text{in}}`.
         eps (:class:`float`): numerical stabilizer added to each variance.
-        equiv_affine (:class:`bool`): if ``True``, applies an :class:`eAffine` in spectral space.
+        equiv_affine (:class:`bool`): if ``True``, applies an :class:`~symm_learning.nn.linear.eAffine` in spectral
+            space.
         bias (:class:`bool`): whether the affine term includes invariant biases (only used if ``equiv_affine``).
         device, dtype: optional tensor factory kwargs.
 
@@ -202,7 +207,7 @@ class eBatchNorm1d(torch.nn.Module):
 
     The mean and variance are computed with :func:`~symm_learning.stats.var_mean`,
     enforcing that each irreducible subspace shares a single variance scalar. The
-    optional affine parameters are implemented via :class:`eAffine` to preserve
+    optional affine parameters are implemented via :class:`~symm_learning.nn.linear.eAffine` to preserve
     equivariance.
 
     The layer satisfies:
@@ -251,6 +256,7 @@ class eBatchNorm1d(torch.nn.Module):
             self.affine_transform = eAffine(in_rep, bias=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D102
+        """Normalize using symmetry-constrained batch statistics and optional equivariant affine map."""
         assert x.shape[-1] == self.in_rep.size, f"Expected (..., {self.in_rep.size}), got {x.shape}"
 
         x_flat = x.reshape(-1, self.in_rep.size)

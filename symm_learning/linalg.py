@@ -18,10 +18,9 @@ isotypic_signal2irreducible_subspaces
 import numpy as np
 import torch
 from escnn.group import Representation
-from torch import Tensor
 
 
-def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
+def isotypic_signal2irreducible_subspaces(x: torch.Tensor, rep_x: Representation):
     r"""Flatten an isotypic signal into its irreducible-subspace coordinates.
 
     This function assumes :math:`\mathcal{X}` is a single isotypic subspace of type :math:`k`, i.e.
@@ -37,11 +36,11 @@ def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
         \mathbf{z}[:, i] = [x_{1,i,1}, \ldots, x_{1,i,d_k}, x_{2,i,1}, \ldots, x_{n,i,d_k}]^\top.
 
     Args:
-        x (:class:`torch.Tensor`): Shape :math:`(n, n_k \cdot d_k)`.
+        x (:class:`~torch.Tensor`): Shape :math:`(n, n_k \cdot d_k)`.
         rep_x (:class:`~escnn.group.Representation`): Representation in isotypic basis with a single active irrep type.
 
     Returns:
-        Tensor: Flattened irreducible-subspace signal of shape :math:`(n \cdot d_k, n_k)`.
+        :class:`~torch.Tensor`: Flattened irreducible-subspace signal of shape :math:`(n \cdot d_k, n_k)`.
 
     Shape:
         :math:`(n \cdot d_k, n_k)`.
@@ -57,7 +56,7 @@ def isotypic_signal2irreducible_subspaces(x: Tensor, rep_x: Representation):
     return Z
 
 
-def irrep_radii(x: Tensor, rep: Representation) -> Tensor:
+def irrep_radii(x: torch.Tensor, rep: Representation) -> torch.Tensor:
     r"""Compute Euclidean radii for all irreducible-subspace features.
 
     Let :math:`\rho_{\mathcal{X}}` be the (possibly decomposable) representation of a vector space
@@ -79,12 +78,12 @@ def irrep_radii(x: Tensor, rep: Representation) -> Tensor:
         r_{k,i} = \lVert \hat{\mathbf{x}}_{k,i} \rVert_2.
 
     Args:
-        x: (:class:`torch.Tensor`) of shape :math:`(..., D)` describing vectors transforming according to ``rep``.
+        x: (:class:`~torch.Tensor`) of shape :math:`(..., D)` describing vectors transforming according to ``rep``.
         rep: (:class:`~escnn.group.Representation`) acting on the last dimension of ``x``.
 
     Returns:
-        (:class:`torch.Tensor`): Radii of shape :math:`(..., N)` where :math:`N=\texttt{len(rep.irreps)}`. The output
-        order follows :attr:`rep.irreps` (one radius per irreducible copy in the decomposition).
+        (:class:`~torch.Tensor`): Radii of shape :math:`(..., N)` where :math:`N=\texttt{len(rep.irreps)}`. The output
+        order follows ``rep.irreps`` (one radius per irreducible copy in the decomposition).
 
     Shape:
         - **Input** ``x``: :math:`(..., D)` with :math:`D=\dim(\rho_{\mathcal{X}})`.
@@ -120,7 +119,7 @@ def irrep_radii(x: Tensor, rep: Representation) -> Tensor:
     return radii
 
 
-def lstsq(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
+def lstsq(x: torch.Tensor, y: torch.Tensor, rep_x: Representation, rep_y: Representation):
     r"""Computes a solution to the least squares problem of a system of linear equations with equivariance constraints.
 
     The :math:`\mathbb{G}`-equivariant least squares problem to the linear system of equations
@@ -139,9 +138,9 @@ def lstsq(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
     representations of :math:`\mathbb{G}`.
 
     Args:
-        x (:class:`torch.Tensor`): Realizations of the random variable :math:`\mathbf{X}` with shape
+        x (:class:`~torch.Tensor`): Realizations of the random variable :math:`\mathbf{X}` with shape
             :math:`(N, D_x)`, where :math:`N` is the number of samples.
-        y (:class:`torch.Tensor`):
+        y (:class:`~torch.Tensor`):
             Realizations of the random variable :math:`\mathbf{Y}` with shape :math:`(N, D_y)`.
         rep_x (:class:`~escnn.group.Representation`):
             Representation :math:`\rho_{\mathcal{X}}` acting on the vector space :math:`\mathcal{X}`.
@@ -149,7 +148,7 @@ def lstsq(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
             Representation :math:`\rho_{\mathcal{Y}}` acting on the vector space :math:`\mathcal{Y}`.
 
     Returns:
-        :class:`torch.Tensor`:
+        :class:`~torch.Tensor`:
             A :math:`(D_y \times D_x)` matrix :math:`\mathbf{A}` satisfying the :math:`\mathbb{G}`-equivariance
             constraint and minimizing :math:`\|\mathbf{Y} - \mathbf{A}\,\mathbf{X}\|^2`.
 
@@ -210,7 +209,7 @@ def lstsq(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
     return A
 
 
-def invariant_orthogonal_projector(rep_x: Representation) -> Tensor:
+def invariant_orthogonal_projector(rep_x: Representation) -> torch.Tensor:
     r"""Computes the orthogonal projection to the invariant subspace.
 
     The input representation :math:`\rho_{\mathcal{X}}: \mathbb{G} \mapsto \mathbb{G}\mathbb{L}(\mathcal{X})` is
@@ -250,14 +249,15 @@ def invariant_orthogonal_projector(rep_x: Representation) -> Tensor:
         = \mathbf{P}_{\mathrm{inv}} \quad \forall g\in\mathbb{G}.
 
     Args:
-        rep_x (:class:`~escnn.group.Representation`): The representation for which the orthogonal projection to the
-        invariant subspace is computed.
+        rep_x (:class:`~escnn.group.Representation`): The representation for which the orthogonal projection
+            to the invariant subspace is computed.
 
     Returns:
-        :class:`torch.Tensor`: The orthogonal projection matrix to the invariant subspace,
+        :class:`~torch.Tensor`: The orthogonal projection matrix to the invariant subspace,
         :math:`\mathbf{Q} \mathbf{S} \mathbf{Q}^T`.
     """
-    Qx_T, Qx = Tensor(rep_x.change_of_basis_inv), Tensor(rep_x.change_of_basis)
+    Qx_T = torch.as_tensor(rep_x.change_of_basis_inv)
+    Qx = torch.as_tensor(rep_x.change_of_basis)
 
     # S is an indicator of which dimension (in the irrep-spectral basis) is associated with a trivial irrep
     S = torch.zeros((rep_x.size, rep_x.size))
@@ -277,7 +277,11 @@ def invariant_orthogonal_projector(rep_x: Representation) -> Tensor:
     return inv_projector
 
 
-def _project_to_irrep_endomorphism_basis(A: Tensor, rep_x: Representation, rep_y: Representation) -> Tensor:
+def _project_to_irrep_endomorphism_basis(
+    A: torch.Tensor,
+    rep_x: Representation,
+    rep_y: Representation,
+) -> torch.Tensor:
     r"""Projects a linear map A: X -> Y between two isotypic spaces to the space of equivariant linear maps.
 
     Given a linear map :math:`A: X \to Y`, where :math:`X` and :math:`Y` are isotypic vector spaces of the same type,
@@ -285,14 +289,14 @@ def _project_to_irrep_endomorphism_basis(A: Tensor, rep_x: Representation, rep_y
     function projects the linear map to the space of equivariant linear maps between the two isotypic spaces.
 
     Args:
-        A (:class:`torch.Tensor`): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`,
+        A (:class:`~torch.Tensor`): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`,
             where :math:`d` is the dimension of the irreducible representation, and :math:`m_x` and :math:`m_y`
             are the multiplicities of the irreducible representation in :math:`X` and :math:`Y`, respectively.
         rep_x (:class:`~escnn.group.Representation`): The representation of the isotypic space :math:`X`.
         rep_y (:class:`~escnn.group.Representation`): The representation of the isotypic space :math:`Y`.
 
     Returns:
-        A_equiv (:class:`torch.Tensor`): A projected linear map of shape :math:`(m_y \cdot d, m_x \cdot d)` which
+        A_equiv (:class:`~torch.Tensor`): A projected linear map of shape :math:`(m_y \cdot d, m_x \cdot d)` which
             commutes with the action of the group on the isotypic spaces :math:`X` and :math:`Y`. That is:
             :math:`A_{equiv} \circ \rho_X(g) = \rho_Y(g) \circ A_{equiv}` for all :math:`g \in \mathbb{G}`.
     """

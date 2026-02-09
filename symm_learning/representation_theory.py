@@ -15,8 +15,6 @@ isotypic_decomp_rep
     Decompose a representation into isotypic components.
 direct_sum
     Direct sum of representations.
-field_type_to_isotypic_basis
-    Convert representations to an isotypic basis.
 irreps_stats
     Statistics about irreducible representations in a representation.
 escnn_representation_form_mapping
@@ -33,7 +31,7 @@ import functools
 import itertools
 import logging
 from collections import OrderedDict
-from typing import Callable, Dict, List, Union
+from typing import Callable
 
 import numpy as np
 import torch
@@ -108,35 +106,40 @@ class GroupHomomorphismBasis(torch.nn.Module):
         >>> # both parameterize equivariant maps
 
     Attributes:
-        G (:class:`~escnn.group.Group`): Symmetry group shared by `in_rep` and `out_rep`.
-        in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}` rewritten in an
-            isotypic basis.
-        out_rep (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}` rewritten in an
-            isotypic basis.
-        basis_expansion (:class:`str`): Strategy (``"memory_heavy"`` or ``"isotypic_expansion"``) controlling
-            storage/perf trade-offs
-        common_irreps (list[tuple]): Irrep identifiers present in both `in_rep` and `out_rep`.
-        iso_blocks (Dict[Tuple, Dict[str, Any]]): Per-irrep metadata for irreps shared by `in_rep`/`out_rep`, keys:
+        G (:class:`~escnn.group.group.Group`): Symmetry group shared by in_rep and out_rep.
+        in_rep (:class:`~escnn.group.representation.Representation`): Input representation
+            :math:`\rho_{\mathcal{X}}` rewritten in an isotypic basis.
+        out_rep (:class:`~escnn.group.representation.Representation`): Output representation
+            :math:`\rho_{\mathcal{Y}}` rewritten in an isotypic basis.
+        basis_expansion (:class:`str`): Strategy ("memory_heavy" or "isotypic_expansion") controlling
+            storage/perf trade-offs.
+        common_irreps (list[tuple]): Irrep identifiers present in both in_rep and out_rep.
+        iso_blocks (`dict <https://docs.python.org/3/library/stdtypes.html#dict>`_): Per-irrep metadata for
+            irreps shared by in_rep/out_rep, keys:
 
-            - ``out_slice`` / ``in_slice``: slice selecting the isotypic coordinates in out/in reps.
-            - ``mul_out`` / ``mul_in``: multiplicities of the irrep in out/in reps.
-            - ``irrep_dim``: Dimension of the irreducible representation  ``d_k``.
-            - ``endomorphism_basis``: basis of ``End_G(irrep_k)`` for the irrep of type k, of shape ``(S_k, d_k, d_k)``.
-            - ``dim_hom_basis``: Dimension of the homomorphism between isotypic spaces of type k. That is
+            - out_slice / in_slice: slice selecting the isotypic coordinates in out/in reps.
+            - mul_out / mul_in: multiplicities of the irrep in out/in reps.
+            - irrep_dim: Dimension of the irreducible representation :math:`d_k`.
+            - endomorphism_basis: basis of :math:`\operatorname{End}_\mathbb{G}(\hat{\rho}_k)` with shape
+              :math:`(S_k, d_k, d_k)`.
+            - dim_hom_basis: Dimension of the homomorphism between isotypic spaces of type :math:`k`, i.e.
               :math:`\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}})) = m_{out}
               \cdot m_{in} \cdot S_k`.
-            - ``hom_basis_slice``: slice containing the degrees of freedom associated to
+            - hom_basis_slice: slice containing the degrees of freedom associated to
               :math:`\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}}))` from a vector of
               shape :math:`(\dim(\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})),)`.
-        basis_elements (torch.Tensor): Full dense basis stack
-            `(dim, out_rep.size, in_rep.size)` when ``basis_expansion="memory_heavy"``.
-        basis_norm_sq (torch.Tensor): Squared Frobenius norms of basis elements when ``basis_expansion="memory_heavy"``.
-        endo_basis_flat_* (torch.Tensor): Per-irrep flattened endomorphism bases `(S_k, d_k*d_k)` when
-            ``basis_expansion="isotypic_expansion"``.
-        endo_basis_norm_sq_* (torch.Tensor): Per-irrep squared norms of the flattened endomorphism bases with isotypic
-            expansion.
-        Q_in_inv (torch.Tensor): Change-of-basis matrix :math:`Q_{in}^{-1}` cached as buffer for isotypic expansion.
-        Q_out (torch.Tensor): Change-of-basis matrix :math:`Q_{out}` cached as buffer for isotypic expansion.
+        basis_elements (:class:`~torch.Tensor`): Full dense basis stack
+            ``(dim, out_rep.size, in_rep.size)`` when ``basis_expansion="memory_heavy"``.
+        basis_norm_sq (:class:`~torch.Tensor`): Squared Frobenius norms of basis elements when
+            ``basis_expansion="memory_heavy"``.
+        endo_basis_flat_<irrep_id> (:class:`~torch.Tensor`): Per-irrep flattened endomorphism bases
+            ``(S_k, d_k*d_k)`` when ``basis_expansion="isotypic_expansion"``.
+        endo_basis_norm_sq_<irrep_id> (:class:`~torch.Tensor`): Per-irrep squared norms of the flattened
+            endomorphism bases with isotypic expansion.
+        Q_in_inv (:class:`~torch.Tensor`): Change-of-basis matrix :math:`Q_{in}^{-1}` cached as buffer for
+            isotypic expansion.
+        Q_out (:class:`~torch.Tensor`): Change-of-basis matrix :math:`Q_{out}` cached as buffer for
+            isotypic expansion.
     """
 
     def __init__(
@@ -231,11 +234,12 @@ class GroupHomomorphismBasis(torch.nn.Module):
             \rho_{\mathcal{Y}}(g)\mathbf{W} = \mathbf{W}\rho_{\mathcal{X}}(g), \quad \forall g\in\mathbb{G}.
 
         Args:
-            w_dof (torch.Tensor): Basis expansion coefficients of shape ``(D,)`` or ``(..., D)``, where
+            w_dof (:class:`~torch.Tensor`): Basis expansion coefficients of shape ``(D,)`` or ``(..., D)``, where
                 ``D = dim(Hom_G(in_rep, out_rep))``.
 
         Returns:
-            torch.Tensor: Dense matrix of shape `(out_rep.size, in_rep.size)` or `(B, out_rep.size, in_rep.size)`.
+            :class:`~torch.Tensor`: Dense matrix of shape
+            ``(out_rep.size, in_rep.size)`` or ``(B, out_rep.size, in_rep.size)``.
 
         Example:
             >>> W = basis(w_dof)
@@ -284,10 +288,11 @@ class GroupHomomorphismBasis(torch.nn.Module):
             \quad \forall g\in\mathbb{G}.
 
         Args:
-            W (torch.Tensor): Weight matrix of shape ``(..., out_rep.size, in_rep.size)`` in the original basis.
+            W (:class:`~torch.Tensor`): Weight matrix of shape ``(..., out_rep.size, in_rep.size)`` in the
+                original basis.
 
         Returns:
-            torch.Tensor: Projection of ``W`` onto the equivariant subspace, matching the input shape.
+            :class:`~torch.Tensor`: Projection of ``W`` onto the equivariant subspace, matching the input shape.
 
         Note:
             The projection is orthogonal with respect to the Frobenius inner product. The selected
@@ -358,7 +363,7 @@ class GroupHomomorphismBasis(torch.nn.Module):
         r"""Construct the basis of :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`.
 
         Returns:
-            basis_elements (torch.Tensor): Stack of homomorphism basis elements of shape
+            ``basis_elements`` (:class:`~torch.Tensor`): Stack of homomorphism basis elements of shape
             `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`.
 
         Note:
@@ -433,7 +438,7 @@ class GroupHomomorphismBasis(torch.nn.Module):
             - return_dense=True  → ``(*leading_shape, out_rep.size, in_rep.size)``
 
         Returns:
-            torch.Tensor: Initialized parameters with the shapes above.
+            :class:`~torch.Tensor`: Initialized parameters with the shapes above.
 
         Notes:
             - If ``return_dense=False``, output lives in coefficient space and can be passed to :meth:`forward`.
@@ -514,7 +519,8 @@ class GroupHomomorphismBasis(torch.nn.Module):
 def isotypic_decomp_rep(rep: Representation) -> Representation:
     r"""Return an equivalent representation disentangled into isotypic subspaces.
 
-    Given an input :class:`~escnn.group.Representation`, this function computes an equivalent representation by
+    Given an input :class:`~escnn.group.representation.Representation`, this function computes an equivalent
+    representation by
     updating the change of basis (and its inverse) and reordering the irreducible representations. The returned
     representation is guaranteed to be disentangled into its isotypic subspaces.
 
@@ -548,10 +554,10 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     - ``attributes["in_isotypic_basis"]``: boolean flag set to ``True``.
 
     Args:
-        rep (:class:`~escnn.group.Representation`): The input representation :math:`\rho`.
+        rep (:class:`~escnn.group.representation.Representation`): The input representation :math:`\rho`.
 
     Returns:
-        escnn.group.Representation: An equivalent, disentangled representation.
+        :class:`~escnn.group.representation.Representation`: An equivalent, disentangled representation.
 
     Note:
         The decomposition is cached per symmetry group under ``rep.group.representations`` with key
@@ -648,7 +654,9 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     return rep_iso_basis
 
 
-def direct_sum(reps: List[Representation], name: str = None, change_of_basis: np.ndarray = None) -> Representation:
+def direct_sum(
+    reps: list[Representation], name: str | None = None, change_of_basis: np.ndarray | None = None
+) -> Representation:
     r"""Return the direct sum :math:`\rho=\bigoplus_i \rho_i` of representations.
 
     If ``name`` is not provided, the function builds one by run-length encoding consecutive repeated names:
@@ -658,12 +666,13 @@ def direct_sum(reps: List[Representation], name: str = None, change_of_basis: np
     This preserves order and makes repeated contiguous blocks explicit.
 
     Args:
-        reps (:class:`typing.List`[:class:`~escnn.group.Representation`]): Summands in the direct sum.
+        reps (list[:class:`~escnn.group.representation.Representation`]): Summands in the direct sum.
         name (:class:`str`, optional): Name of the resulting representation. Auto-generated when ``None``.
-        change_of_basis (:class:`numpy.ndarray`, optional): Optional change of basis for the resulting representation.
+        change_of_basis (:class:`~numpy.ndarray`, optional): Optional change of basis for the resulting representation.
 
     Returns:
-        :class:`~escnn.group.Representation`: Direct-sum representation with ``attributes["direct_sum_reps"]`` set.
+        :class:`~escnn.group.representation.Representation`: Direct-sum representation with
+        ``attributes["direct_sum_reps"]`` set.
     """
     from escnn.group import directsum
 
@@ -685,26 +694,6 @@ def direct_sum(reps: List[Representation], name: str = None, change_of_basis: np
     out_rep = directsum(reps, name=name, change_of_basis=change_of_basis)
     out_rep.attributes["direct_sum_reps"] = reps
     return out_rep
-
-
-def field_type_to_isotypic_basis(rep_or_field: Representation) -> Representation:
-    r"""Convert a representation-like object to an isotypic-basis representation.
-
-    Accepts either:
-
-    - a :class:`~escnn.group.Representation`, or
-    - an object with a ``representation`` attribute (legacy ``FieldType`` style).
-
-    Returns:
-        :class:`~escnn.group.Representation`: Output of
-        :func:`~symm_learning.representation_theory.isotypic_decomp_rep`.
-    """
-    rep = rep_or_field
-    if not isinstance(rep_or_field, Representation):
-        rep = getattr(rep_or_field, "representation", None)
-    if not isinstance(rep, Representation):
-        raise TypeError("Expected a Representation or an object with a 'representation' attribute.")
-    return isotypic_decomp_rep(rep)
 
 
 def permutation_matrix(oneline_notation):
@@ -750,23 +739,26 @@ def irreps_stats(irreps_ids):
 
 def escnn_representation_form_mapping(
     group: Group,
-    rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]],
+    rep: dict[GroupElement, np.ndarray] | Callable[[GroupElement], np.ndarray],
     name: str = "reconstructed",
 ):
-    r"""Reconstruct :class:`escnn.group.Representation` from a map :math:`\mathbb{G}\to\mathrm{GL}(\mathcal{X})`.
+    r"""Reconstruct a representation from a map :math:`\mathbb{G}\to\mathrm{GL}(\mathcal{X})`.
 
     Given a representation map :math:`\rho: \mathbb{G}\to\mathrm{GL}(\mathcal{X})`, this function identifies the
     irreducible ESCNN decomposition and returns an equivalent
-    :class:`~escnn.group.Representation` object.
+    :class:`~escnn.group.representation.Representation` object.
 
     Args:
-        group (:class:`escnn.group.Group`): Symmetry group of the representation.
-        rep: Either a dictionary ``{g: rho(g)}`` or a callable returning the matrix :math:`\rho(g)` for each
-            :class:`escnn.group.GroupElement` ``g``.
+        group (:class:`~escnn.group.group.Group`): Symmetry group of the representation.
+        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.
+            Either a `dict <https://docs.python.org/3/library/stdtypes.html#dict>`_ or a
+            :class:`collections.abc.Callable` returning the matrix :math:`\rho(g)` for each
+            :class:`~escnn.group.group.GroupElement` ``g``.
         name (:class:`str`, optional): Name of the representation. Defaults to 'reconstructed'.
 
     Returns:
-        representation (:class:`escnn.group.Representation`): Reconstructed ESCNN representation instance.
+        representation (:class:`~escnn.group.representation.Representation`): Reconstructed ESCNN representation
+            instance.
 
     Note:
         Matrices must define a valid representation (invertible and group-consistent).
@@ -862,21 +854,21 @@ def escnn_representation_form_mapping(
     return reconstructed_rep
 
 
-def is_complex_irreducible(
-    group: Group, rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]
-):
+def is_complex_irreducible(group: Group, rep: dict[GroupElement, np.ndarray] | Callable[[GroupElement], np.ndarray]):
     r"""Check complex irreducibility of :math:`\rho:\mathbb{G}\to\mathrm{GL}(\mathcal{X})`.
 
     By Schur's lemma, :math:`\rho` is complex-irreducible iff every Hermitian matrix commuting with all
     :math:`\rho(g)` is scalar. The routine searches for a non-scalar commuting Hermitian witness :math:`\mathbf{H}`.
 
     Args:
-        group (:class:`escnn.group.Group`): Symmetry group of the representation.
-        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):
-            Mapping from group elements to their representation matrices.
+        group (:class:`~escnn.group.group.Group`): Symmetry group of the representation.
+        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.
+            It must be either a `dict <https://docs.python.org/3/library/stdtypes.html#dict>`_ or a
+            :class:`collections.abc.Callable`.
+            It must map each :class:`~escnn.group.group.GroupElement` to a matrix :class:`~numpy.ndarray`.
 
     Returns:
-        tuple[:class:`bool`, :class:`numpy.ndarray`]:
+        tuple[:class:`bool`, :class:`~numpy.ndarray`]:
             - ``(True, I)`` if irreducible (identity witness),
             - ``(False, H)`` if reducible with a non-scalar commuting Hermitian witness.
     """
@@ -915,9 +907,7 @@ def is_complex_irreducible(
     return True, np.eye(n)
 
 
-def decompose_representation(
-    G: Group, rep: Union[Dict[GroupElement, np.ndarray], Callable[[GroupElement], np.ndarray]]
-):
+def decompose_representation(G: Group, rep: dict[GroupElement, np.ndarray] | Callable[[GroupElement], np.ndarray]):
     r"""Block-diagonalize :math:`\rho:\mathbb{G}\to\mathrm{GL}(\mathcal{X})` into invariant subspaces.
 
     Finds a unitary matrix :math:`\mathbf{Q}` such that
@@ -930,15 +920,16 @@ def decompose_representation(
     witnesses and graph connected-components to obtain contiguous block structure.
 
     Args:
-        G (:class:`escnn.group.Group`): The symmetry group.
-        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):
-            The representation to decompose.
+        G (:class:`~escnn.group.group.Group`): The symmetry group.
+        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.
+            It must be either a `dict <https://docs.python.org/3/library/stdtypes.html#dict>`_ or a
+            :class:`collections.abc.Callable`.
+            It must map each :class:`~escnn.group.group.GroupElement` to a matrix :class:`~numpy.ndarray`.
 
     Returns:
         tuple:
-            - subreps (:class:`typing.List`[:class:`CallableDict`]): Decomposed subrepresentations (not guaranteed
-              sorted by dimension).
-            - Q (:class:`numpy.ndarray`): Unitary change-of-basis matrix.
+            - subreps (list[Callable]): Decomposed subrepresentations (not guaranteed sorted by dimension).
+            - Q (:class:`~numpy.ndarray`): Unitary change-of-basis matrix.
 
     """
     import networkx as nx
@@ -1031,18 +1022,18 @@ def decompose_representation(
     return subreps, Q
 
 
-def compute_character_table(G: Group, reps: List[Union[Dict[GroupElement, np.ndarray], Representation]]):
+def compute_character_table(G: Group, reps: list[dict[GroupElement, np.ndarray] | Representation]):
     """Computes the character table of a group for a given set of representations.
 
     Args:
-        G (:class:`escnn.group.Group`): Symmetry group.
-        reps (list[Union[dict, :class:`~escnn.group.Representation`]]): Representations (or representation mappings)
-            for which characters are evaluated on all group elements. Each entry can be either:
-            - a mapping from :class:`~escnn.group.GroupElement` to :class:`numpy.ndarray`, or
-            - an :class:`~escnn.group.Representation`.
+        G (:class:`~escnn.group.group.Group`): Symmetry group.
+        reps (:class:`list`): Representations (or representation mappings) for which characters are evaluated on all
+            group elements. Each entry is a :class:`~typing.Union` of:
+            - a mapping from :class:`~escnn.group.group.GroupElement` to :class:`~numpy.ndarray`, or
+            - an :class:`~escnn.group.representation.Representation`.
 
     Returns:
-        :class:`numpy.ndarray`: The character table of shape `(n_reps, G.order())`.
+        :class:`~numpy.ndarray`: The character table of shape `(n_reps, G.order())`.
     """
     n_reps = len(reps)
     table = np.zeros((n_reps, G.order()), dtype=complex)
@@ -1071,15 +1062,17 @@ def cplx_isotypic_decomposition(G: Group, rep: Callable[[GroupElement], np.ndarr
     This routine decomposes the representation into complex irreducibles.
 
     Args:
-        G (:class:`escnn.group.Group`): Symmetry group of the representation.
-        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement, np.ndarray]]]):
-            dict/mapping from group elements to matrices, or a function that takes a group element and returns a matrix.
+        G (:class:`~escnn.group.group.Group`): Symmetry group of the representation.
+        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.
+            It must be either a `dict <https://docs.python.org/3/library/stdtypes.html#dict>`_ or a
+            :class:`collections.abc.Callable`.
+            It must map each :class:`~escnn.group.group.GroupElement` to a matrix :class:`~numpy.ndarray`.
 
     Returns:
-        sorted_irreps (List[Dict[escnn.group.GroupElement, np.ndarray]]): List of complex irreducible representations,
-        sorted in ascending order of dimension.
-        Q (:class:`numpy.ndarray`): Hermitian matrix such that Q @ rep[g] @ Q^-1 is block diagonal, with blocks
-        `sorted_irreps`.
+        sorted_irreps (list[dict]): List of complex irreducible representations, sorted in ascending order of
+            dimension.
+        Q (:class:`~numpy.ndarray`): Hermitian matrix such that ``Q @ rep[g] @ Q^-1`` is block diagonal, with blocks
+            ``sorted_irreps``.
 
     """
     if isinstance(rep, dict):
@@ -1127,18 +1120,16 @@ def cplx_isotypic_decomposition(G: Group, rep: Callable[[GroupElement], np.ndarr
     return sorted_irreps, Q
 
 
-def sorted_jordan_canonical_form(group: Group, reps: List[Callable[[GroupElement], np.ndarray]]):
+def sorted_jordan_canonical_form(group: Group, reps: list[Callable[[GroupElement], np.ndarray]]):
     """Sorts a list of representations in ascending order of dimension, and returns a permutation matrix P such that.
 
     Args:
-        group (:class:`escnn.group.Group`): Symmetry group of the representation.
-        reps (List[Union[Callable[[escnn.group.GroupElement], np.ndarray], escnn.group.Representation]]):
-            List of representations to sort by dimension.
+        group (:class:`~escnn.group.group.Group`): Symmetry group of the representation.
+        reps (:class:`list`[:class:`collections.abc.Callable`]): List of representations to sort by dimension.
 
     Returns:
-        P (:class:`numpy.ndarray`): Permutation matrix sorting the input reps.
-        reps (:class:`typing.List`[:class:`typing.Callable`[[:class:`escnn.group.GroupElement`],
-            :class:`numpy.ndarray`]]): Sorted list of representations.
+        P (:class:`~numpy.ndarray`): Permutation matrix sorting the input reps.
+        reps (:class:`list`[:class:`collections.abc.Callable`]): Sorted list of representations.
     """
     reps_idx = range(len(reps))
     reps_size = [rep(group.sample()).shape[0] for rep in reps]

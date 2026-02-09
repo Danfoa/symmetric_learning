@@ -19,10 +19,16 @@ logger = logging.getLogger(__name__)
 
 
 class eCondTransformerRegressor(GenCondRegressor):
-    r"""Equivariant analogue of :class:`CondTransformerRegressor`.
+    r"""Equivariant analogue of the conditional transformer regressor baseline.
+
+    This module mirrors
+    :class:`~symm_learning.models.diffusion.cond_transformer_regressor.CondTransformerRegressor`
+    while enforcing equivariance constraints.
 
     Tokens transforming according to ``in_rep`` are embedded into an ``embedding_rep`` space built from copies of the
-    regular representation so that :class:`eTransformerEncoderLayer`/:class:`eTransformerDecoderLayer` can be used
+    regular representation so that
+    :class:`~symm_learning.models.transformer.etransformer.eTransformerEncoderLayer`/
+    :class:`~symm_learning.models.transformer.etransformer.eTransformerDecoderLayer` can be used
     directly. Positional encodings and timestep embeddings are projected onto the invariant subspace so they can be
     added to equivariant tokens without breaking symmetry.
 
