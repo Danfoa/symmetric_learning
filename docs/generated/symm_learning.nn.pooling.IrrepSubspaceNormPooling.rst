@@ -1,9 +1,0 @@
-﻿IrrepSubspaceNormPooling
-========================
-
-.. currentmodule:: symm_learning.nn.pooling
-
-.. autoclass:: IrrepSubspaceNormPooling
-   :members:
-   :show-inheritance:
-   :inherited-members:

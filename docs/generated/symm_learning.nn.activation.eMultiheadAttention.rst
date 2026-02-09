@@ -1,9 +1,0 @@
-﻿eMultiheadAttention
-===================
-
-.. currentmodule:: symm_learning.nn.activation
-
-.. autoclass:: eMultiheadAttention
-   :members:
-   :show-inheritance:
-   :inherited-members:

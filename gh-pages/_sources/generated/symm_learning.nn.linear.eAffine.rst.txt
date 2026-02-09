@@ -1,9 +1,0 @@
-﻿eAffine
-=======
-
-.. currentmodule:: symm_learning.nn.linear
-
-.. autoclass:: eAffine
-   :members:
-   :show-inheritance:
-   :inherited-members:

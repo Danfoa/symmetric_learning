@@ -1,0 +1,866 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="light">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>symm_learning.stats &#8212; Symmetric Learning v0.4.1 Docs [main]</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=cf6ff117" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/stats';</script>
+    <link rel="icon" href="../../_static/logo_v1_without_text.svg"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.4.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+    
+    <img src="../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">v0.4.1 - main</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">symm_learning.stats</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for symm_learning.stats</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Symmetric Learning - Statistics Utilities.</span>
+
+<span class="sd">Functions for computing statistics of symmetric random variables that respect group</span>
+<span class="sd">symmetry constraints.</span>
+
+<span class="sd">Functions</span>
+<span class="sd">---------</span>
+<span class="sd">mean</span>
+<span class="sd">    Compute the mean projected onto the G-invariant subspace.</span>
+<span class="sd">var</span>
+<span class="sd">    Compute variance respecting symmetry structure.</span>
+<span class="sd">var_mean</span>
+<span class="sd">    Compute variance and mean together efficiently.</span>
+<span class="sd">cov</span>
+<span class="sd">    Compute covariance between symmetric random variables.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">invariant_orthogonal_projector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">isotypic_decomp_rep</span>
+
+
+<div class="viewcode-block" id="mean">
+<a class="viewcode-back" href="../../generated/symm_learning.stats.mean.html#symm_learning.stats.mean">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mean</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Estimate the :math:`\mathbb{G}`-invariant mean of a random variable.</span>
+
+<span class="sd">    Let :math:`\mathbf{X}: \Omega \to \mathcal{X}` be a random variable taking values in the symmetric vector space</span>
+<span class="sd">    :math:`\mathcal{X}`, with group representation :math:`\rho_{\mathcal{X}}:\mathbb{G}\to\mathrm{GL}(\mathcal{X})`,</span>
+<span class="sd">    and marginal density :math:`\mathbb{P}_{\mathbf{X}}`.</span>
+<span class="sd">    Under the assumption that this marginal is invariant under the group action</span>
+<span class="sd">    (i.e., a point and all its symmetric points have equal likelihood under the marginal), formally:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbb{P}_{\mathbf{X}}(\mathbf{x})</span>
+<span class="sd">        = \mathbb{P}_{\mathbf{X}}\!\left(\rho_{\mathcal{X}}(g)\mathbf{x}\right),</span>
+<span class="sd">        \quad \forall \mathbf{x}\in\mathcal{X},\ \forall g\in\mathbb{G},</span>
+
+<span class="sd">    the true mean satisfies</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbb{E}[\mathbf{X}] = \rho_{\mathcal{X}}(g)\,\mathbb{E}[\mathbf{X}], \quad \forall g\in\mathbb{G},</span>
+
+<span class="sd">    hence :math:`\mathbb{E}[\mathbf{X}] \in \mathcal{X}^{\text{inv}}`.</span>
+
+<span class="sd">    Implementation:</span>
+<span class="sd">    from samples :math:`\{\mathbf{x}^{(n)}\}_{n=1}^N`, we first compute the empirical mean</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \widehat{\mathbb{E}}[\mathbf{X}] = \frac{1}{N}\sum_{n=1}^N \mathbf{x}^{(n)},</span>
+
+<span class="sd">    and then project it onto the invariant subspace:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{X}]</span>
+<span class="sd">        = \mathbf{P}_{\mathrm{inv}}\,\widehat{\mathbb{E}}[\mathbf{X}],</span>
+<span class="sd">        \quad</span>
+<span class="sd">        \mathbf{P}_{\mathrm{inv}} = \mathbf{Q}\mathbf{S}\mathbf{Q}^T,</span>
+
+<span class="sd">    where :math:`\mathbf{S}` selects trivial-irrep coordinates in the irrep-spectral basis.</span>
+<span class="sd">    (see :func:`~symm_learning.linalg.invariant_orthogonal_projector`).</span>
+<span class="sd">    Under the repository&#39;s canonical isotypic ordering, this corresponds to the first isotypic block when present.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x: (:class:`~torch.Tensor`) samples of :math:`\mathbf{X}` with shape :math:`(N,D_x)` or</span>
+<span class="sd">            :math:`(N,D_x,T)`; when a time axis is present it is folded into the sample axis.</span>
+<span class="sd">        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}` on :math:`\mathcal{X}`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (:class:`~torch.Tensor`): Invariant mean vector in :math:`\mathcal{X}`.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
+<span class="sd">        - **Output**: :math:`(D_x,)`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        For repeated calls with the same representation object ``rep_x``, this function caches</span>
+<span class="sd">        :math:`\mathbf{P}_{\mathrm{inv}}` in ``rep_x.attributes[&quot;invariant_orthogonal_projector&quot;]``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expected x to be a 2D or 3D tensor, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D tensor&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;invariant_orthogonal_projector&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+        <span class="n">P_inv</span> <span class="o">=</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep_x</span><span class="p">)</span>
+        <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;invariant_orthogonal_projector&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">P_inv</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">P_inv</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;invariant_orthogonal_projector&quot;</span><span class="p">]</span>
+
+    <span class="n">x_flat</span> <span class="o">=</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">mean_empirical</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x_flat</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Mean over batch as sequence length.</span>
+    <span class="c1"># Project to the inv-subspace and map back to the original basis</span>
+    <span class="n">mean_result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,j-&gt;i...&quot;</span><span class="p">,</span> <span class="n">P_inv</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x_flat</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">mean_empirical</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">mean_empirical</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mean_result</span></div>
+
+
+
+<div class="viewcode-block" id="var">
+<a class="viewcode-back" href="../../generated/symm_learning.stats.var.html#symm_learning.stats.var">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">var</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Estimate the symmetry-constrained variance of :math:`\mathbf{X}:\Omega\to\mathcal{X}`.</span>
+
+<span class="sd">    Let :math:`\mathbf{X}: \Omega \to \mathcal{X}` be a random variable taking values in the symmetric vector space</span>
+<span class="sd">    :math:`\mathcal{X}`, with group representation :math:`\rho_{\mathcal{X}}:\mathbb{G}\to\mathrm{GL}(\mathcal{X})`,</span>
+<span class="sd">    and marginal density :math:`\mathbb{P}_{\mathbf{X}}`.</span>
+<span class="sd">    Under the assumption that this marginal is invariant under the group action</span>
+<span class="sd">    (i.e., a point and all its symmetric points have equal likelihood under the marginal), formally:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbb{P}_{\mathbf{X}}(\mathbf{x})</span>
+<span class="sd">        = \mathbb{P}_{\mathbf{X}}\!\left(\rho_{\mathcal{X}}(g)\mathbf{x}\right),</span>
+<span class="sd">        \quad \forall \mathbf{x}\in\mathcal{X},\ \forall g\in\mathbb{G},</span>
+
+<span class="sd">    the true variance in the irrep-spectral basis</span>
+<span class="sd">    (:func:`~symm_learning.representation_theory.isotypic_decomp_rep`) is constant within each irreducible copy:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \operatorname{Var}(\hat{\mathbf{X}}_{k,i,1})</span>
+<span class="sd">        = \cdots =</span>
+<span class="sd">        \operatorname{Var}(\hat{\mathbf{X}}_{k,i,d_k})</span>
+<span class="sd">        = \sigma^2_{k,i}.</span>
+
+<span class="sd">    Implementation:</span>
+<span class="sd">    given samples :math:`\{\mathbf{x}^{(n)}\}_{n=1}^{N}`, we compute:</span>
+
+<span class="sd">    1. Centering (using provided center or :func:`mean`):</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \widehat{\boldsymbol{\mu}} =</span>
+<span class="sd">        \begin{cases}</span>
+<span class="sd">        \texttt{center}, &amp; \text{if provided} \\</span>
+<span class="sd">        \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{X}], &amp; \text{otherwise}</span>
+<span class="sd">        \end{cases}</span>
+
+<span class="sd">    2. Empirical spectral variance:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \hat{\mathbf{x}}^{(n)} = \mathbf{Q}^{T}(\mathbf{x}^{(n)}-\widehat{\boldsymbol{\mu}}),\qquad</span>
+<span class="sd">        \widehat{v}_{j} = \frac{1}{N-1}\sum_{n=1}^{N}\left(\hat{x}^{(n)}_{j}\right)^2.</span>
+
+<span class="sd">    3. Irrep-wise averaging for each copy :math:`(k,i)`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \widehat{\sigma}^{2}_{k,i}</span>
+<span class="sd">        = \frac{1}{d_k}\sum_{r=1}^{d_k}\widehat{v}_{k,i,r},</span>
+<span class="sd">        \qquad</span>
+<span class="sd">        \widehat{v}_{k,i,1}=\cdots=\widehat{v}_{k,i,d_k}:=\widehat{\sigma}^{2}_{k,i}.</span>
+
+<span class="sd">    4. Mapping back to the original basis:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \widehat{\operatorname{Var}}(\mathbf{X}) = \mathbf{Q}^{\odot 2}\,\widehat{\mathbf{v}},</span>
+
+<span class="sd">    where :math:`\mathbf{Q}^{\odot 2}` is the elementwise square of :math:`\mathbf{Q}` and</span>
+<span class="sd">    :math:`\widehat{\mathbf{v}}` denotes the broadcast spectral variance vector after step 3.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x: (:class:`~torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`;</span>
+<span class="sd">            the optional time axis is folded into samples.</span>
+<span class="sd">        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.</span>
+<span class="sd">        center: (:class:`~torch.Tensor`, optional) Center for variance computation. If None, computes the mean.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (:class:`~torch.Tensor`): Variance vector in the original basis, consistent with</span>
+<span class="sd">            the irrep-wise constraint above.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
+<span class="sd">        - **center**: :math:`(D_x,)` if provided.</span>
+<span class="sd">        - **Output**: :math:`(D_x,)`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        For repeated calls with the same representation object ``rep_x``, this function caches and reuses:</span>
+<span class="sd">        ``Q_inv``, ``Q_squared``, ``irrep_dims``, and ``irrep_indices`` in ``rep_x.attributes``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expected x to be a 2D or 3D tensor, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D tensor&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;Q_inv&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>  <span class="c1"># Use cache Tensor if available.</span>
+        <span class="n">Q_inv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rep_x</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;Q_inv&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Q_inv</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Q_inv</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;Q_inv&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="s2">&quot;Q_squared&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>  <span class="c1"># Use cache Tensor if available.</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rep_x</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">Q_squared</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;Q_squared&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Q_squared</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Q_squared</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;Q_squared&quot;</span><span class="p">]</span>
+
+    <span class="n">x_flat</span> <span class="o">=</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1"># Use provided center or compute mean</span>
+    <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">)</span>
+
+    <span class="c1"># Symmetry constrained variance computation.</span>
+    <span class="c1"># The variance is constraint to be a single constant per each irreducible subspace.</span>
+    <span class="c1"># Hence, we compute the empirical variance, and average within each irreducible subspace.</span>
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="n">x_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">x_c_irrep_spectral</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="n">Q_inv</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x_flat</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">x_flat</span> <span class="o">-</span> <span class="n">center</span><span class="p">)</span>
+    <span class="n">var_spectral</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x_c_irrep_spectral</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n_samples</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Vectorized averaging over irreducible subspace dimensions</span>
+    <span class="k">if</span> <span class="s2">&quot;irrep_dims&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+        <span class="n">irrep_dims</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">rep_x</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">irrep_id</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">irreps</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_dims&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">irrep_dims</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">irrep_dims</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_dims&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;irrep_indices&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+        <span class="c1"># Create indices for each irrep subspace: [0,0,0,1,1,2,2,2,2,...] for irrep dims [3,2,4,...]</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">irrep_dims</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">irrep_dims</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">irrep_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">irrep_dims</span><span class="p">)</span>
+        <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_indices&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">irrep_indices</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">irrep_indices</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_indices&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="c1"># Compute average variance for each irrep subspace using scatter operations</span>
+    <span class="n">avg_vars</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">irrep_dims</span><span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">var_spectral</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="c1"># Sum variances within each irrep subspace using scatter_add_:</span>
+    <span class="c1"># For irrep_indices = [0,0,0,1,1,2,2,2,2] and var_spectral = [v0,v1,v2,v3,v4,v5,v6,v7,v8]</span>
+    <span class="c1"># This computes: avg_vars[0] = v0+v1+v2, avg_vars[1] = v3+v4, avg_vars[2] = v5+v6+v7+v8</span>
+    <span class="n">avg_vars</span><span class="o">.</span><span class="n">scatter_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">irrep_indices</span><span class="p">,</span> <span class="n">var_spectral</span><span class="p">)</span>
+    <span class="n">avg_vars</span> <span class="o">=</span> <span class="n">avg_vars</span> <span class="o">/</span> <span class="n">irrep_dims</span>
+
+    <span class="c1"># Broadcast back to full spectral dimensions</span>
+    <span class="n">var_spectral</span> <span class="o">=</span> <span class="n">avg_vars</span><span class="p">[</span><span class="n">irrep_indices</span><span class="p">]</span>
+
+    <span class="n">var_result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="n">Q_squared</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">var_spectral</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">var_result</span></div>
+
+
+
+<div class="viewcode-block" id="var_mean">
+<a class="viewcode-back" href="../../generated/symm_learning.stats.var_mean.html#symm_learning.stats.var_mean">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">var_mean</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute :func:`var` and :func:`mean` under symmetry constraints.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x: (:class:`~torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
+<span class="sd">        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (:class:`~torch.Tensor`, :class:`~torch.Tensor`): Tuple ``(var, mean)`` where mean is projected to</span>
+<span class="sd">        :math:`\mathcal{X}^{\text{inv}}` and variance satisfies irrep-wise isotropy in spectral basis.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
+<span class="sd">        - **Output**: ``(var, mean)`` both with shape :math:`(D_x,)`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This function reuses the same caches as :func:`mean` and :func:`var` when called repeatedly with the</span>
+<span class="sd">        same representation object ``rep_x``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Compute mean first</span>
+    <span class="n">mean_result</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">)</span>
+    <span class="c1"># Compute variance using the computed mean</span>
+    <span class="n">var_result</span> <span class="o">=</span> <span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">mean_result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">var_result</span><span class="p">,</span> <span class="n">mean_result</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_isotypic_cov</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Cross-covariance between two **isotypic sub-spaces that share the same irrep**.</span>
+
+<span class="sd">    If both signals live in</span>
+<span class="sd">    :math:`\rho_X=\bigoplus_{i=1}^{m_x}\rho_k` and</span>
+<span class="sd">    :math:`\rho_Y=\bigoplus_{i=1}^{m_y}\rho_k`</span>
+<span class="sd">    (with :math:`\rho_k` of dimension *d*), every</span>
+<span class="sd">    :math:`G`-equivariant linear map factorises as</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \operatorname{Cov}(\mathbf{X}, \mathbf{Y})</span>
+<span class="sd">        \;=\;\mathbf{Z}_{XY}\otimes \mathbf{I}_d,  \qquad</span>
+<span class="sd">        \mathbf{Z}_{XY}\in\mathbb{R}^{m_y\times m_x}.</span>
+
+<span class="sd">    We estimate the free matrix :math:`\mathbf Z_{XY}` by</span>
+
+<span class="sd">    1. **centering** (skipped if the irrep is trivial);</span>
+<span class="sd">    2. **reshaping** the data so that each copy of the irrep becomes one</span>
+<span class="sd">       “channel” of length *d·N*;</span>
+<span class="sd">    3. **projecting** every :math:`d\times d` block onto the orthogonal basis</span>
+<span class="sd">       of :math:`\mathrm{End}_{\mathbb{G}}(\rho_k)` via Frobenius inner products (see</span>
+<span class="sd">       `arXiv:2505.19809 &lt;https://arxiv.org/abs/2505.19809&gt;`_);</span>
+<span class="sd">    4. rebuilding the block matrix that respects the constraint above.</span>
+
+<span class="sd">    When ``y is None`` the routine reduces to an **auto-covariance** and only</span>
+<span class="sd">    the symmetric (identity) basis element is kept.</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (:class:`~torch.Tensor`): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): isotypic representation</span>
+<span class="sd">            containing exactly one irrep type.</span>
+<span class="sd">        y (:class:`~torch.Tensor`, optional): shape :math:`(N,\; m_y d)` —</span>
+<span class="sd">            samples drawn from ``rep_y``.  If *None*, computes the</span>
+<span class="sd">            auto-covariance of *x*.</span>
+<span class="sd">        rep_y (:class:`~escnn.group.Representation`, optional): isotypic</span>
+<span class="sd">            representation matching the irrep of ``rep_x``; ignored when</span>
+<span class="sd">            *y* is *None*.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (Tensor, Tensor):</span>
+<span class="sd">            - C_xy: :math:`(m_y d,\; m_x d)` projected covariance.</span>
+<span class="sd">            - Z_xy: :math:`(m_y,\; m_x,\; B)`, free coefficients of each cross-covariance between irrep subspaces,</span>
+<span class="sd">              representing basis expansion coefficients in the basis of endomorphisms of the irrep subspaces.</span>
+<span class="sd">              Where :math:`B = 1, 2, 4` for real, complex, quaternionic irreps, respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">irrep_id</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">irreps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Irrep id of the isotypic subspace</span>
+    <span class="k">assert</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;Expected signal shape to be (..., </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">assert</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_isotypic_rep&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expected rep of a single type, got </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">irreps</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;Expected signal shape to be (..., </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_isotypic_rep&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expected rep of a single type, got </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">irreps</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Get information about the irreducible representation present in the isotypic subspace</span>
+    <span class="n">irrep_dim</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_dim&quot;</span><span class="p">]</span>
+    <span class="c1"># irrep_end_basis := (dim(End(irrep)), dim(irrep), dim(irrep))</span>
+    <span class="n">irrep_end_basis</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_endomorphism_basis&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rep_y</span> <span class="o">=</span> <span class="n">rep_x</span>  <span class="c1"># Use the same representation for Y</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">x</span>
+
+    <span class="n">m_x</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_multiplicity&quot;</span><span class="p">]</span>  <span class="c1"># Multiplicity of the irrep in X</span>
+    <span class="n">m_y</span> <span class="o">=</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;irrep_multiplicity&quot;</span><span class="p">]</span>  <span class="c1"># Multiplicity of the irrep in Y</span>
+
+    <span class="n">x_iso</span><span class="p">,</span> <span class="n">y_iso</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+    <span class="n">is_inv_subspace</span> <span class="o">=</span> <span class="n">irrep_id</span> <span class="o">==</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">trivial_representation</span><span class="o">.</span><span class="n">id</span>
+    <span class="k">if</span> <span class="n">is_inv_subspace</span><span class="p">:</span>  <span class="c1"># Nothing to do, return empirical covariance.</span>
+        <span class="n">x_iso</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">y_iso</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">Cxy_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...y,...x-&gt;yx&quot;</span><span class="p">,</span> <span class="n">y_iso</span><span class="p">,</span> <span class="n">x_iso</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_iso</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Cxy_iso</span><span class="p">,</span> <span class="n">Cxy_iso</span>  <span class="c1"># Invariant subspace covariance is the same as the covariance matrix.</span>
+
+    <span class="c1"># Compute empirical cross-covariance</span>
+    <span class="n">Cxy_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...y,...x-&gt;yx&quot;</span><span class="p">,</span> <span class="n">y_iso</span><span class="p">,</span> <span class="n">x_iso</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_iso</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Reshape from (my * d, mx * d) to (my, mx, d, d)</span>
+    <span class="n">Cxy_irreps</span> <span class="o">=</span> <span class="n">Cxy_iso</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">m_y</span><span class="p">,</span> <span class="n">irrep_dim</span><span class="p">,</span> <span class="n">m_x</span><span class="p">,</span> <span class="n">irrep_dim</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+    <span class="c1"># Compute basis expansion coefficients of each irrep cross-covariance in basis of End(irrep) ========</span>
+    <span class="c1"># Frobenius inner product  &lt;C , Ψ_b&gt;  =  Σ_{i,j} C_{ij} Ψ_b,ij</span>
+    <span class="n">Cxy_irreps_basis_coeff</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;mnij,bij-&gt;mnb&quot;</span><span class="p">,</span> <span class="n">Cxy_irreps</span><span class="p">,</span> <span class="n">irrep_end_basis</span><span class="p">)</span>  <span class="c1"># (m_y , m_x , B)</span>
+    <span class="c1"># squared norms ‖Ψ_b‖²</span>
+    <span class="n">basis_coeff_norms</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;bij,bij-&gt;b&quot;</span><span class="p">,</span> <span class="n">irrep_end_basis</span><span class="p">,</span> <span class="n">irrep_end_basis</span><span class="p">)</span>  <span class="c1"># (B,)</span>
+    <span class="n">Cxy_irreps_basis_coeff</span> <span class="o">=</span> <span class="n">Cxy_irreps_basis_coeff</span> <span class="o">/</span> <span class="n">basis_coeff_norms</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+
+    <span class="n">Cxy_irreps</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...b,bij-&gt;...ij&quot;</span><span class="p">,</span> <span class="n">Cxy_irreps_basis_coeff</span><span class="p">,</span> <span class="n">irrep_end_basis</span><span class="p">)</span>  <span class="c1"># (m_y , m_x , d , d)</span>
+    <span class="c1"># Reshape to (my * d, mx * d)</span>
+    <span class="n">Cxy_iso</span> <span class="o">=</span> <span class="n">Cxy_irreps</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">m_y</span> <span class="o">*</span> <span class="n">irrep_dim</span><span class="p">,</span> <span class="n">m_x</span> <span class="o">*</span> <span class="n">irrep_dim</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Cxy_iso</span><span class="p">,</span> <span class="n">Cxy_irreps_basis_coeff</span>
+
+
+<div class="viewcode-block" id="cov">
+<a class="viewcode-back" href="../../generated/symm_learning.stats.cov.html#symm_learning.stats.cov">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cov</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute the covariance between two symmetric random variables.</span>
+
+<span class="sd">    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` with representations</span>
+<span class="sd">    :math:`\rho_{\mathcal{X}}`, :math:`\rho_{\mathcal{Y}}`. The covariance is computed via the</span>
+<span class="sd">    :ref:`isotypic decomposition &lt;isotypic-decomposition-example&gt;`</span>
+<span class="sd">    from :func:`~symm_learning.representation_theory.isotypic_decomp_rep`.</span>
+<span class="sd">    Covariance contributions between different isotypic types are zero in the constrained model.</span>
+<span class="sd">    Hence, in the disentangled/isotypic basis the covariance can be computed in block-diagonal form:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \begin{align}</span>
+<span class="sd">            \mathbf{C}_{xy} &amp;= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{C}_{xy}^{(k)} )\mathbf{Q}_x</span>
+<span class="sd">            \\</span>
+<span class="sd">            &amp;= \mathbf{Q}_y^T (</span>
+<span class="sd">            \bigoplus_{k} \sum_{b\in \mathbb{B}_k} \mathbf{Z}_b^{(k)} \otimes \mathbf{b}</span>
+<span class="sd">            ) \mathbf{Q}_x</span>
+<span class="sd">            \\</span>
+<span class="sd">        \end{align}</span>
+
+<span class="sd">    Where :math:`\mathbf{Q}_x^{\mathsf T}` and :math:`\mathbf{Q}_y^{\mathsf T}`</span>
+<span class="sd">    are the change-of-basis matrices to the isotypic bases of :math:`\mathcal{X}` and :math:`\mathcal{Y}`,</span>
+<span class="sd">    respectively; :math:`\mathbf{C}_{xy}^{(k)}` is the covariance restricted to the</span>
+<span class="sd">    isotypic subspaces of type *k*; and :math:`\mathbf{Z}_b^{(k)}` are the free</span>
+<span class="sd">    parameters—i.e. the expansion coefficients in the endomorphism basis</span>
+<span class="sd">    :math:`\mathbb{B}_k` of the irreducible representation of type *k*.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (:class:`~torch.Tensor`): Realizations of a random variable :math:`X`.</span>
+<span class="sd">        y (:class:`~torch.Tensor`): Realizations of a random variable :math:`Y`.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}`.</span>
+<span class="sd">        rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`~torch.Tensor`: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **x**: :math:`(N, D_x)` where :math:`D_x` is the dimension of the random variable :math:`\mathbf{X}`.</span>
+<span class="sd">        - **y**: :math:`(N, D_y)` where :math:`D_y` is the dimension of the random variable :math:`\mathbf{Y}`.</span>
+
+<span class="sd">        - **Output**: :math:`(D_y, D_x)`</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This function calls :func:`~symm_learning.representation_theory.isotypic_decomp_rep`, which caches</span>
+<span class="sd">        decompositions in the group representation registry. Repeated calls with the same representations reuse</span>
+<span class="sd">        cached decompositions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># assert X.shape[0] == Y.shape[0], &quot;Expected equal number of samples in X and Y&quot;</span>
+    <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected X shape (N, </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected Y shape (N, </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected X shape (..., </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected Y shape (..., </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="n">rep_X_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_x</span><span class="p">)</span>
+    <span class="n">rep_Y_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_y</span><span class="p">)</span>
+    <span class="n">rep_X_iso_subspaces</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_reps&quot;</span><span class="p">]</span>
+    <span class="n">rep_Y_iso_subspaces</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_reps&quot;</span><span class="p">]</span>
+    <span class="n">iso_idx_X</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
+    <span class="n">iso_idx_Y</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
+
+    <span class="c1"># Changes of basis from the Disentangled/Isotypic-basis of X, and Y to the original basis.</span>
+    <span class="n">Qx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">Qy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="n">X_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="n">Qx</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">Y_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="n">Qy</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">Cxy_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">iso_id</span> <span class="ow">in</span> <span class="n">rep_Y_iso_subspaces</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">iso_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_X_iso_subspaces</span><span class="p">:</span>
+            <span class="k">continue</span>  <span class="c1"># No covariance between the isotypic subspaces of different types.</span>
+        <span class="n">X_k</span> <span class="o">=</span> <span class="n">X_iso</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">iso_idx_X</span><span class="p">[</span><span class="n">iso_id</span><span class="p">]]</span>
+        <span class="n">Y_k</span> <span class="o">=</span> <span class="n">Y_iso</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">iso_idx_Y</span><span class="p">[</span><span class="n">iso_id</span><span class="p">]]</span>
+        <span class="n">rep_X_k</span> <span class="o">=</span> <span class="n">rep_X_iso_subspaces</span><span class="p">[</span><span class="n">iso_id</span><span class="p">]</span>
+        <span class="n">rep_Y_k</span> <span class="o">=</span> <span class="n">rep_Y_iso_subspaces</span><span class="p">[</span><span class="n">iso_id</span><span class="p">]</span>
+        <span class="c1"># Cxy_k = D_xy_k ⊗ I_d [my * d x mx * d]</span>
+        <span class="n">Cxy_k</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_isotypic_cov</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">X_k</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">Y_k</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="n">rep_X_k</span><span class="p">,</span> <span class="n">rep_y</span><span class="o">=</span><span class="n">rep_Y_k</span><span class="p">)</span>
+        <span class="n">Cxy_iso</span><span class="p">[</span><span class="n">iso_idx_Y</span><span class="p">[</span><span class="n">iso_id</span><span class="p">],</span> <span class="n">iso_idx_X</span><span class="p">[</span><span class="n">iso_id</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Cxy_k</span>
+
+    <span class="c1"># Change to the original basis</span>
+    <span class="n">Cxy</span> <span class="o">=</span> <span class="n">Qy</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Cxy_iso</span> <span class="o">@</span> <span class="n">Qx</span>
+    <span class="k">return</span> <span class="n">Cxy</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Daniel Felipe Ordoñez Apraez.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

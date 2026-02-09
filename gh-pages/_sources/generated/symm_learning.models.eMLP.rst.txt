@@ -1,9 +1,0 @@
-﻿eMLP
-====
-
-.. currentmodule:: symm_learning.models
-
-.. autoclass:: eMLP
-   :members:
-   :show-inheritance:
-   :inherited-members:

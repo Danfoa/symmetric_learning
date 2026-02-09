@@ -1,0 +1,8 @@
+﻿GenCondRegressor
+================
+
+.. currentmodule:: symm_learning.models
+
+.. autoclass:: GenCondRegressor
+   :members:
+   :show-inheritance:
