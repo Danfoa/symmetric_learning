@@ -55,7 +55,13 @@ html[data-theme="dark"] {
 /* Home page hero logo */
 .sl-home-logo {
     width: min(92%, 520px);
+    max-height: 140px;
     height: auto;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
 }
 
 .sl-home-logo-dark {

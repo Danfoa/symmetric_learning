@@ -9,9 +9,19 @@
 project = "Symmetric Learning"
 copyright = "2025, Daniel Felipe Ordoñez Apraez"
 author = "Daniel Felipe Ordoñez Apraez"
-from importlib.metadata import version as get_version
+import re
+from pathlib import Path
 
-release = get_version("symm-learning")
+# Read docs version from local project metadata, not installed site-packages.
+pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+pyproject_text = pyproject_path.read_text(encoding="utf-8")
+match = re.search(
+    r"(?ms)^\[project\].*?^version\s*=\s*[\"']([^\"']+)[\"']\s*$",
+    pyproject_text,
+)
+if match is None:
+    raise RuntimeError("Could not determine project version from pyproject.toml")
+release = match.group(1)
 version = ".".join(release.split(".")[:3])
 
 # -- General configuration ---------------------------------------------------

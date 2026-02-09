@@ -2,8 +2,8 @@
 .. raw:: html
 
    <div style="text-align:center; margin: 0.5rem 0 1rem 0;">
-     <img src="_static/logo_v1_with_text.svg" alt="Symmetric Learning logo" class="sl-home-logo sl-home-logo-light">
-     <img src="_static/logo_v1_without_text_dark_background.svg" alt="Symmetric Learning logo" class="sl-home-logo sl-home-logo-dark">
+     <img src="_static/logo_v1_with_text.svg?v=5" alt="Symmetric Learning logo" class="sl-home-logo sl-home-logo-light">
+     <img src="_static/logo_v1_without_text_dark_background.svg?v=5" alt="Symmetric Learning logo" class="sl-home-logo sl-home-logo-dark">
    </div>
    <p align="center">
      <a href="https://pypi.org/project/symm-learning/">
@@ -17,8 +17,7 @@
      </a>
    </p>
 
-**Symmetric Learning** is a machine learning library tailored to optimization problems featuring symmetry priors. It provides equivariant neural network modules, models, and utilities for leveraging group symmetries in data.
-
+**Symmetric Learning** is a torch-based machine learning library tailored to optimization problems featuring symmetry priors. It provides equivariant neural network modules, models, and utilities for leveraging group symmetries in data.
 Installation
 ------------
 

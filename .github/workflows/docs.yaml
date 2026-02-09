@@ -35,7 +35,7 @@ jobs:
       - name: Build docs
         env:
           DOCS_BRANCH: ${{ github.ref_name }}
-        run: make -C docs html
+        run: make -C docs clean html
 
       - name: Checkout gh-pages
         uses: actions/checkout@v4
@@ -55,6 +55,21 @@ jobs:
             # Branch docs under /<branch>/
             mkdir -p "gh-pages/${BRANCH}"
             rsync -a --delete docs/_build/html/ "gh-pages/${BRANCH}/"
+            # If stable docs were never published yet, keep root URL alive.
+            if [ ! -f gh-pages/index.html ]; then
+              printf '%s\n' \
+                '<!doctype html>' \
+                '<html lang="en">' \
+                '  <head>' \
+                '    <meta charset="utf-8">' \
+                '    <meta http-equiv="refresh" content="0; url=./devel/">' \
+                '    <title>Symmetric Learning Docs</title>' \
+                '  </head>' \
+                '  <body>' \
+                '    <p>Redirecting to <a href="./devel/">devel documentation</a>...</p>' \
+                '  </body>' \
+                '</html>' > gh-pages/index.html
+            fi
           fi
           touch gh-pages/.nojekyll
 
