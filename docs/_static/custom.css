@@ -1,0 +1,23 @@
+/* Custom CSS for Symmetric Learning Documentation */
+
+/* Widen the "On this page" sidebar */
+.bd-sidebar-secondary {
+    max-width: 320px;
+    min-width: 200px;
+}
+
+/* Ensure TOC items don't wrap awkwardly */
+.bd-sidebar-secondary .toc-entry {
+    word-break: break-word;
+}
+
+/* Fix banner occlusion on small screens */
+@media (max-width: 960px) {
+    .navbar-brand {
+        font-size: 1rem !important;
+        margin-right: 0 !important;
+    }
+    .navbar-header {
+        max-width: 70%;
+    }
+}

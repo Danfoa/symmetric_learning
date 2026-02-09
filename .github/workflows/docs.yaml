@@ -1,28 +1,72 @@
-name: Shinx Documentation Build
+name: Sphinx Documentation Build
 
 on:
-  workflow_run:
-    workflows: ["Unit Tests"]
-    types:
-      - completed
+  push:
     branches:
       - main
+      - devel
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-pages
+  cancel-in-progress: false
 
 jobs:
   docs:
     runs-on: ubuntu-latest
-    # Only run if the tests workflow completed successfully
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    permissions:
-      pages: write
-      id-token: write
 
     steps:
-      - name: Build and Deploy Docs
-        id: deployment
-        uses: sphinx-notes/pages@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Build docs
+        env:
+          DOCS_BRANCH: ${{ github.ref_name }}
+        run: make -C docs html
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 0
+
+      - name: Sync built docs into gh-pages tree
+        run: |
+          set -eux
+          BRANCH="${GITHUB_REF_NAME}"
+          if [ "$BRANCH" = "main" ]; then
+            # Stable docs at project root
+            rsync -a --delete docs/_build/html/ gh-pages/
+          else
+            # Branch docs under /<branch>/
+            mkdir -p "gh-pages/${BRANCH}"
+            rsync -a --delete docs/_build/html/ "gh-pages/${BRANCH}/"
+          fi
+          touch gh-pages/.nojekyll
+
+      - name: Commit and push gh-pages
+        working-directory: gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "docs: update ${GITHUB_REF_NAME} (${GITHUB_SHA::7})"
+            git push origin HEAD:gh-pages
+          else
+            echo "No documentation changes to publish."
+          fi

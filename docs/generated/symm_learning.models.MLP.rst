@@ -1,0 +1,9 @@
+﻿MLP
+===
+
+.. currentmodule:: symm_learning.models
+
+.. autoclass:: MLP
+   :members:
+   :show-inheritance:
+   :inherited-members:

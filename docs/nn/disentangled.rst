@@ -1,5 +1,12 @@
 disentangled
 ============
 
-.. automodule:: symm_learning.nn.disentangled
-   :members:
+
+.. currentmodule:: symm_learning.nn.disentangled
+
+
+.. autosummary::
+   :toctree: ../generated/
+   :recursive:
+
+   Change2DisentangledBasis

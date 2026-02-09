@@ -4,32 +4,30 @@ build-backend = "hatchling.build"
 
 [project]
 name = "symm-learning"
-version = "0.2.21"
+version = "0.4.1"
 
-description = "Torch modules and utilities of equivariant/invariant learning"
+description = "Library of torch modules and utilities of equivariant/invariant learning"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.8"
 authors = [
-  {name = "Daniel Ordoñez", email = "daniels.ordonez@gmail.com" },
+  { name = "Daniel Felipe Ordoñez Apraez", email = "daniels.ordonez@gmail.com" },
 ]
 # Dependencies ___________________________________________________________________________________________________
-dependencies = [
-  "torch",
-  "escnn",
-]
+dependencies = ["torch", "escnn"]
 
 # Optional dependencies ___________________________________________________________________________________________
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "ruff",
-    "pre-commit",
-    "sphinx-autobuild",
-    "renku-sphinx-theme",
-]
-
-docs = [
-    "renku-sphinx-theme",
+  "pytest",
+  "pytest-xdist",
+  "ruff",
+  "pre-commit",
+  "sphinx-autobuild; python_version >= '3.11'",
+  "sphinx>=8; python_version >= '3.11'",
+  "sphinx-autodoc-typehints; python_version >= '3.11'",
+  "pydata-sphinx-theme; python_version >= '3.11'",
+  "tqdm",
 ]
 
 # Develop dependencies
@@ -78,15 +76,15 @@ pydocstyle.convention = "google"
 
 # Enable specific linting rules
 select = [
-  "F",    # pyflakes: general code quality checks
-  "E",    # pycodestyle: PEP8 error checks
-#  "W",    # pycodestyle: PEP8 warning checks
-  "I",    # isort: import sorting checks
-  "D",    # pydocstyle: docstring style checks,
-  "FA",   # Future annotations
-  "ISC",  # String concat
-  "ICN",  # Import conventions
-  "SIM"   # flake8-simplify
+  "F", # pyflakes: general code quality checks
+  "E", # pycodestyle: PEP8 error checks
+  #  "W",    # pycodestyle: PEP8 warning checks
+  "I",   # isort: import sorting checks
+  "D",   # pydocstyle: docstring style checks,
+  "FA",  # Future annotations
+  "ISC", # String concat
+  "ICN", # Import conventions
+  "SIM", # flake8-simplify
 ]
 
 # Ignore specific linting rules
@@ -95,22 +93,23 @@ ignore = [
   "D405", # Allow non-imperative mood in docstring section names
   "D415", # Allow docstrings to end without a period
   "E701", # Allow multiple statements on one line (colon)
-  "D100",  # Ignore missing docstring in public module
+  "D100", # Ignore missing docstring in public module
   "F401", # Don't remove unused imports
   "D107", # Document __init__ arguments inside class docstring
+  "E402", # Allow module level import not at top of file
 ]
 
 # Exclude specific directories from linting (in addition to global exclude)
 exclude = [
-  ".git",  # Git version control directory
-  ".idea", # PyCharm project settings directory
-  ".venv",  # Virtual environment directory
+  ".git",    # Git version control directory
+  ".idea",   # PyCharm project settings directory
+  ".venv",   # Virtual environment directory
   ".vscode",
   "docs/**", # Documentation directory
   "test/**", # Test files
   # Additional exclusions for external libraries
   "**/anaconda3/**",
-  "**/miniconda3/**", 
+  "**/miniconda3/**",
   "**/site-packages/**",
   "**/lib/python*/**",
   "**/envs/**",
@@ -126,17 +125,18 @@ docstring-code-line-length = "dynamic"
 # Pypi build configuration._________________________________________________________________________
 [tool.hatch.build] # ===============================================================================
 include = [
-  "symm_learning/**",   # Only include necessary package files
+  "symm_learning/**", # Only include necessary package files
 ]
 exclude = [
-  ".github/**",        # Exclude GitHub workflows
+  ".github/**",     # Exclude GitHub workflows
   ".git/**",
   ".idea/**",
-  "tests/**",          # Exclude test files
-  "*.log",             # Exclude log files
-  "*.zip", "*.tar.gz", # Exclude compressed files
-  "*.h5",              # Exclude large data files
-  "*.mat",             # Exclude large data files
-  "*.pkl",             # Exclude pickle files
-  "__pycache__/**",    # Exclude Python cache files
+  "tests/**",       # Exclude test files
+  "*.log",          # Exclude log files
+  "*.zip",
+  "*.tar.gz",       # Exclude compressed files
+  "*.h5",           # Exclude large data files
+  "*.mat",          # Exclude large data files
+  "*.pkl",          # Exclude pickle files
+  "__pycache__/**", # Exclude Python cache files
 ]
