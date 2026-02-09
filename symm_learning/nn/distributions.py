@@ -22,44 +22,49 @@ def _equiv_mean_var_from_input(
 
 
 class eMultivariateNormal(torch.nn.Module):
-    r"""G-equivariant multivariate normal distribution layer.
+    r"""Conditional Gaussian with :math:`\mathbb{G}`-equivariant parameters.
 
-    A pure PyTorch module parameterizing a :math:`G`-equivariant multivariate Gaussian distribution:
-
-    .. math::
-
-        y \sim \mathcal{N} \bigl( \mu(x), \Sigma(x) \bigr),
-
-    Where the input :math:`x` parameterizes the mean and the (free) degrees of freedom of the covariance matrix,
-    constrained to satisfy:
+    This module maps parameter vectors in an input representation space to a Gaussian over
+    :math:`\mathcal{Y}` with representation :math:`\rho_{\mathcal{Y}}`:
 
     .. math::
+        \mathbf{y}\,|\,\mathbf{u}
+        \sim
+        \mathcal{N}\!\left(\boldsymbol{\mu}(\mathbf{u}),\mathbf{\Sigma}(\mathbf{u})\right).
 
-        \rho_Y(g) \mu(x) = \mu(\rho_X(g) \cdot x)
-
-        \rho_Y(g) \Sigma(x) \rho_Y(g)^{\top}= \Sigma(\rho_X(g) x)
-        \quad \forall g \in G.
-
-    Such that the distribution is bi-invariant:
+    The constraints are
 
     .. math::
+        \boldsymbol{\mu}(\rho_{\mathrm{in}}(g)\mathbf{u})
+        = \rho_{\mathcal{Y}}(g)\,\boldsymbol{\mu}(\mathbf{u}),
+        \quad
+        \mathbf{\Sigma}(\rho_{\mathrm{in}}(g)\mathbf{u})
+        = \rho_{\mathcal{Y}}(g)\,\mathbf{\Sigma}(\mathbf{u})\,\rho_{\mathcal{Y}}(g)^T,
+        \ \forall g\in\mathbb{G},
 
-        P(y \mid x) = P(\rho_Y(g) y \mid \rho_X(g) x) \quad \forall g \in G.
+    implying orbit-wise density invariance
 
-    The input is composed of the desired mean of the distribution and the log-variances of each irreducible subspace
-    of the representation :math:`\rho_Y`. The number of log-variances equals the number of irreducible subspaces
-    in the representation.
+    .. math::
+        p(\mathbf{y}\mid\mathbf{u}) = p(\rho_{\mathcal{Y}}(g)\mathbf{y}\mid \rho_{\mathrm{in}}(g)\mathbf{u}).
+
+    Implementation details:
+
+    - The first ``out_rep.size`` coordinates of the input are interpreted as :math:`\boldsymbol{\mu}`.
+    - Remaining coordinates are log-variances, one per irreducible copy in :math:`\rho_{\mathcal{Y}}`.
+    - Only diagonal covariances are implemented. In the irrep-spectral basis, each irrep copy uses one scalar
+      variance shared by all dimensions of that copy.
 
     Args:
-        out_rep: :class:`escnn.group.Representation` describing the distribution's output space (i.e., the
-            representation of the mean).
+        out_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}` describing
+            the output space :math:`\mathcal{Y}`.
         diagonal: Only diagonal covariance matrices are implemented. These are not necessarily constant multiples of
             identity. Default: ``True``.
 
     Attributes:
-        in_rep: The input representation, a direct sum of ``out_rep`` and ``n_irreps`` trivial representations
-            (for the log-variance parameters).
-        out_rep: The output representation (same as the input ``out_rep``).
+        in_rep: Input representation
+            :math:`\rho_{\mathrm{in}}=\rho_{\mathcal{Y}}\oplus n_{\mathrm{irr}}\cdot\hat{\rho}_{\mathrm{triv}}`
+            carrying mean and covariance DoFs.
+        out_rep: Output representation :math:`\rho_{\mathcal{Y}}`.
         n_cov_params: Number of independent covariance parameters (equals the number of irreps in ``out_rep``).
 
     Example:
@@ -100,15 +105,16 @@ class eMultivariateNormal(torch.nn.Module):
         self.in_rep = direct_sum([out_rep, rep_cov_dof])
 
     def forward(self, input: torch.Tensor) -> MultivariateNormal:
-        """Compute the mean and variance and return the equivariant multivariate normal distribution.
+        r"""Build :class:`torch.distributions.MultivariateNormal` from equivariant DoFs.
 
         Args:
-            input: Tensor of shape ``(..., in_rep.size)`` containing the mean and log-variance parameters.
-                The first ``out_rep.size`` elements are the mean, and the remaining ``n_cov_params`` elements are the
-                log-variances.
+            input (:class:`torch.Tensor`): Tensor of shape ``(..., in_rep.size)`` containing the mean and log-variance
+                parameters. The first ``out_rep.size`` elements are the mean, and the remaining ``n_cov_params``
+                elements are the log-variances.
 
         Returns:
-            A :class:`torch.distributions.MultivariateNormal` distribution with diagonal covariance.
+            :class:`torch.distributions.MultivariateNormal`: Gaussian with mean in :math:`\mathcal{Y}` and diagonal
+            covariance satisfying the constraints described in :class:`eMultivariateNormal`.
         """
         if input.shape[-1] != self.in_rep.size:
             raise ValueError(f"Expected last dimension {self.in_rep.size}, got {input.shape[-1]}")
@@ -123,11 +129,13 @@ class eMultivariateNormal(torch.nn.Module):
     def check_equivariance(self, atol: float = 1e-5, rtol: float = 1e-5) -> None:  # noqa: D301
         r"""Verify that the distribution satisfies the equivariance constraint.
 
-        Checks that :math:`P(y | x) = P(\rho_Y(g) y | \rho_X(g) x)` for all group elements.
+        Checks :math:`p(\mathbf{y} \mid \mathbf{u}) = p(\rho_{\mathcal{Y}}(g)\mathbf{y} \mid
+        \rho_{\mathrm{in}}(g)\mathbf{u})`
+        for sampled group elements.
 
         Args:
-            atol: Absolute tolerance for the equivariance check.
-            rtol: Relative tolerance for the equivariance check.
+            atol (:class:`float`): Absolute tolerance for the equivariance check.
+            rtol (:class:`float`): Relative tolerance for the equivariance check.
 
         Raises:
             AssertionError: If the distribution is not equivariant within the given tolerances.

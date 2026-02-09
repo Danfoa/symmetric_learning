@@ -12,29 +12,29 @@ class EMAStats(torch.nn.Module):
     This module tracks running statistics of two input tensors using exponential moving
     averages without transforming the data. It computes and maintains estimates of:
 
-    - :math:`\\mu_x`: Mean of input tensor x
-    - :math:`\\mu_y`: Mean of input tensor y
-    - :math:`\\Sigma_{xx}`: Covariance matrix of x
-    - :math:`\\Sigma_{yy}`: Covariance matrix of y
-    - :math:`\\Sigma_{xy}`: Cross-covariance matrix between x and y
+    - :math:`\mu_x`: Mean of input tensor x
+    - :math:`\mu_y`: Mean of input tensor y
+    - :math:`\Sigma_{xx}`: Covariance matrix of x
+    - :math:`\Sigma_{yy}`: Covariance matrix of y
+    - :math:`\Sigma_{xy}`: Cross-covariance matrix between x and y
 
     **Mathematical Formulation:**
 
     The exponential moving average update rule for any statistic :math:`S` is:
 
     .. math::
-        S_{\\text{running}} = (1 - \\alpha) \\cdot S_{\\text{running}} + \\alpha \\cdot S_{\\text{batch}}
+        S_{\text{running}} = (1 - \alpha) \cdot S_{\text{running}} + \alpha \cdot S_{\text{batch}}
 
-    where :math:`\\alpha` is the momentum parameter and :math:`S_{\\text{batch}}` is the
+    where :math:`\alpha` is the momentum parameter and :math:`S_{\text{batch}}` is the
     statistic computed from the current batch.
 
     **Covariance Computation:**
 
     For tensors of shape :math:`(N, D)`:
 
-    - Mean: :math:`\\mu = \\mathbb{E}[x]` computed over batch dimension
-    - Covariance: :math:`\\Sigma = \\mathbb{E}[(x - \\mu)(x - \\mu)^T]`
-    - Cross-covariance: :math:`\\Sigma_{xy} = \\mathbb{E}[(x - \\mu_x)(y - \\mu_y)^T]`
+    - Mean: :math:`\mu = \mathbb{E}[x]` computed over batch dimension
+    - Covariance: :math:`\Sigma = \mathbb{E}[(x - \mu)(x - \mu)^T]`
+    - Cross-covariance: :math:`\Sigma_{xy} = \mathbb{E}[(x - \mu_x)(y - \mu_y)^T]`
 
     Args:
         num_features_x: Number of features in input tensor x.

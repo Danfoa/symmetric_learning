@@ -41,9 +41,9 @@ def impose_linear_equivariance(
     lin : :class:`~torch.nn.Module`
         The linear layer to impose equivariance on. Must have 'weight' and optionally 'bias' attributes.
     in_rep : :class:`~escnn.group.Representation`
-        The input representation of the layer.
+        The input representation :math:`\rho_{\text{in}}` of the layer.
     out_rep : :class:`~escnn.group.Representation`
-        The output representation of the layer.
+        The output representation :math:`\rho_{\text{out}}` of the layer.
     basis_expansion_scheme : str
         Basis expansion strategy for the commuting constraint (``"memory_heavy"`` or ``"isotypic_expansion"``).
     """
@@ -62,17 +62,26 @@ def impose_linear_equivariance(
 class eLinear(torch.nn.Linear):
     r"""Parameterize a :math:`\mathbb{G}`-equivariant linear map with optional invariant bias.
 
-    The layer learns coefficients over :math:`\operatorname{Hom}_\mathbb{G}(\text{in}, \text{out})`, synthesizing a
-    dense weight commuting with the supplied representations. The optional bias is delegated to :class:`InvariantBias`,
-    which caches its expansion in eval mode. The weight is cached after each expansion in eval mode to avoid redundant
-    synthesis.
+    The layer learns coefficients over :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`,
+    synthesizing a dense weight matrix :math:`\mathbf{W}` satisfying:
+
+    .. math::
+        \rho_{\text{out}}(g) \mathbf{W} = \mathbf{W} \rho_{\text{in}}(g) \quad \forall g \in \mathbb{G}
+
+    If ``bias=True``, the bias vector :math:`\mathbf{b}` is constrained to the invariant subspace:
+
+    .. math::
+        \rho_{\text{out}}(g) \mathbf{b} = \mathbf{b} \quad \forall g \in \mathbb{G}
+
+    The optional bias is delegated to :class:`InvariantBias`, which caches its expansion in eval mode. The weight is
+    cached after each expansion in eval mode to avoid redundant synthesis.
 
     Note:
         This layer can be used as a drop-in replacement for ``torch.nn.Linear``.
 
     Attributes:
         homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Handler exposing the
-        equivariant basis and metadata.
+            equivariant basis and metadata.
         bias_module (:class:`InvariantBias` | None): Optional module handling the invariant bias.
     """
 
@@ -87,18 +96,20 @@ class eLinear(torch.nn.Linear):
         r"""Initialize the equivariant layer.
 
         Args:
-            in_rep (Representation): Representation describing how inputs transform.
-            out_rep (Representation): Representation describing how outputs transform.
-            bias (bool, optional): Enables the invariant bias if the trivial irrep is present in ``out_rep``.
+            in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` describing how inputs
+                transform.
+            out_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{out}}` describing how
+                outputs transform.
+            bias (:class:`bool`, optional): Enables the invariant bias if the trivial irrep is present in ``out_rep``.
                 Default: ``True``.
-            init_scheme (str | None, optional): Initialization method passed to
-                :meth:`GroupHomomorphismBasis.initialize_params`. Use ``None`` to skip initialization. Default:
-                ``"xavier_normal"``.
-            basis_expansion_scheme (str, optional): Strategy for materializing the basis (``"isotypic_expansion"`` or
-                ``"memory_heavy"``). Default: ``"isotypic_expansion"``.
+            init_scheme (:class:`str` | :class:`None`, optional): Initialization method passed to
+                :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Use ``None``
+                to skip initialization. Default: ``"xavier_normal"``.
+            basis_expansion_scheme (:class:`str`, optional): Strategy for materializing the basis
+                (``"isotypic_expansion"`` or ``"memory_heavy"``). Default: ``"isotypic_expansion"``.
 
         Raises:
-            ValueError: If :math:`\dim(\mathrm{Hom}_G(\text{in}, \text{out})) = 0`.
+            ValueError: If :math:`\dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\text{in}}, \rho_{\text{out}})) = 0`.
         """
         super().__init__(in_features=in_rep.size, out_features=out_rep.size, bias=bias)
         # Delete linear unconstrained module parameters
@@ -155,8 +166,8 @@ class eLinear(torch.nn.Linear):
         """Reset all trainable parameters.
 
         Args:
-            scheme (str): Initialization scheme (``"xavier_normal"``, ``"xavier_uniform"``, ``"kaiming_normal"``, or
-                ``"kaiming_uniform"``).
+            scheme (:class:`str`): Initialization scheme (``"xavier_normal"``, ``"xavier_uniform"``,
+                ``"kaiming_normal"``, or ``"kaiming_uniform"``).
         """
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.Linear init
             return super().reset_parameters()
@@ -207,11 +218,11 @@ class eLinear(torch.nn.Linear):
 
 
 class InvariantBias(torch.nn.Module):
-    r"""Module parameterizing a learnable :math:`G`-invariant bias.
+    r"""Module parameterizing a learnable :math:`\mathbb{G}`-invariant bias.
 
-    For point-group symmetries the bias is constrained to live in the `trivial/invariant` subspace of the input vector
-    space. Therefore this module allocates a trainable parameter of size equal to the multiplicity of the trivial irrep
-    in the input representation.
+    For representation space :math:`\mathcal{X}`, this module enforces
+    :math:`\rho_{\mathcal{X}}(g)\mathbf{b}=\mathbf{b}` for all :math:`g\in\mathbb{G}`. Hence only trivial-irrep
+    coordinates in the irrep-spectral basis carry free parameters.
 
     If the input representation does not contain the trivial irrep (no trivial/invariant subspace), the module behaves
     as the identity function.
@@ -221,10 +232,11 @@ class InvariantBias(torch.nn.Module):
     """
 
     def __init__(self, in_rep: Representation):
-        """Construct the invariant bias module.
+        r"""Construct the invariant bias module.
 
         Args:
-            in_rep: Representation of the input space (same as output space).
+            in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` of the input space
+                (same as output space).
         """
         super().__init__()
         self.in_rep, self.out_rep = in_rep, in_rep
@@ -343,21 +355,40 @@ class InvariantBias(torch.nn.Module):
 
 
 class eAffine(torch.nn.Module):
-    r"""Symmetry-preserving affine map :math:`y = \alpha \odot x + \beta`.
+    r"""Equivariant affine map with per-irrep scales and invariant bias.
 
-    The scale :math:`\alpha` is constant within each irrep block and the bias :math:`\beta`
-    lives only in the invariant subspace. When ``learnable=True`` these degrees of freedom are
-    stored as trainable parameters. When ``learnable=False`` they must be provided to
-    :meth:`forward` as ``scale_dof`` (length ``n_irreps``) and, if enabled, ``bias_dof``
-    (length ``#trivial``), allowing external FiLM-style modulation.
+    Let :math:`\mathbf{x}\in\mathcal{X}` with representation
 
-    Note:
+    .. math::
+        \rho_{\mathcal{X}} = \mathbf{Q}\left(
+        \bigoplus_{k\in[1,n_{\text{iso}}]}
+        \bigoplus_{i\in[1,n_k]}
+        \hat{\rho}_k
+        \right)\mathbf{Q}^T.
+
+    This module applies
+
+    .. math::
+        \mathbf{y} = \mathbf{Q}\,\mathbf{D}_{\alpha}\,\mathbf{Q}^T\mathbf{x} + \mathbf{b},
+
+    where :math:`\mathbf{D}_{\alpha}` is diagonal in irrep-spectral basis and constant over dimensions of each irrep
+    copy (:math:`\alpha_{k,i}`), while :math:`\mathbf{b}\in\mathrm{Fix}(\rho_{\mathcal{X}})` (trivial block only).
+    Therefore:
+
+    .. math::
+        \rho_{\mathcal{X}}(g)\mathbf{y}
+        = \operatorname{eAffine}\!\left(\rho_{\mathcal{X}}(g)\mathbf{x}\right)
+        \quad \forall g\in\mathbb{G}.
+
+    When ``learnable=True`` these DoFs are trainable parameters. When ``learnable=False``,
+    ``scale_dof`` and ``bias_dof`` are provided at call-time (FiLM style).
+
     Note:
         This module can be implemented without transitioning to the spectral basis, which can improve efficiency
         dramatically.
 
     Args:
-        in_rep: :class:`escnn.group.Representation` describing the input/output space.
+        in_rep: :class:`~escnn.group.Representation` describing the input/output space :math:`\rho_{\text{in}}`.
         bias: include invariant biases when the trivial irrep is present. Default: ``True``.
         learnable: if ``False``, no parameters are registered and ``scale_dof``/``bias_dof`` must
             be passed at call time. Default: ``True``.
@@ -371,8 +402,9 @@ class eAffine(torch.nn.Module):
         - Output: ``(..., D)``.
 
     Attributes:
-        num_scale_dof (int): Expected length of ``scale_dof`` (one per irrep).
-        num_bias_dof (int): Expected length of ``bias_dof`` when an invariant subspace is present.
+        homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Handler exposing the
+        equivariant basis and metadata.
+        bias_module (:class:`InvariantBias` | None): Optional module handling the invariant bias.
     """
 
     def __init__(
@@ -446,15 +478,15 @@ class eAffine(torch.nn.Module):
         scale_dof: torch.Tensor | None = None,
         bias_dof: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Apply the equivariant affine transform.
+        r"""Apply the equivariant affine transform.
 
         When ``learnable=False`` ``scale_dof`` (and ``bias_dof`` if ``bias=True``) must be provided.
 
         Args:
-            input: tensor whose last dimension matches ``in_rep.size``.
-            scale_dof: optional per-irrep scaling degrees of freedom (length ``num_scale_dof``). Required when
+            input: Tensor :math:`\mathbf{x}` whose last dimension matches ``in_rep.size``.
+            scale_dof: Optional per-irrep scaling DoFs (length ``num_scale_dof``). Required when
                 ``learnable=False`` with leading dims matching ``input.shape[:-1]``.
-            bias_dof: optional bias degrees of freedom for the invariant irreps (length ``num_bias_dof``). Required
+            bias_dof: Optional invariant-bias DoFs (length ``num_bias_dof``). Required
                 when ``learnable=False`` and ``bias=True`` with leading dims matching ``input.shape[:-1]``.
         """
         if input.shape[-1] != self.rep_x.size:

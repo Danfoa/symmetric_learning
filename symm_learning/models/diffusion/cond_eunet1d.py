@@ -25,7 +25,7 @@ class _eChannelRMSNorm(torch.nn.Module):
 
 
 class eConditionalResidualBlock1D(torch.nn.Module):
-    """Channel-equivariant conditional residual block with FiLM modulation.
+    r"""Channel-equivariant conditional residual block with FiLM modulation.
 
     This block applies two equivariant convolutional layers with a residual
     connection. The output of the first convolutional block is modulated by a
@@ -38,6 +38,13 @@ class eConditionalResidualBlock1D(torch.nn.Module):
     learnable parameter for each irreducible representation (irrep). The bias
     is applied only to the invariant (trivial) subspaces of the representation.
     See details in :class:`~symm_learning.nn.eAffine`.
+
+    Functional constraint:
+
+    .. math::
+        f(\rho_{\mathcal{X}}(g)\mathbf{x},\,\rho_{\mathcal{C}}(g)\mathbf{c})
+        = \rho_{\mathcal{Y}}(g)\,f(\mathbf{x},\mathbf{c}),
+        \quad \forall g\in\mathbb{G}.
     """
 
     def __init__(
@@ -54,9 +61,12 @@ class eConditionalResidualBlock1D(torch.nn.Module):
         r"""Initialize the conditional residual block.
 
         Args:
-            in_rep (Representation): Input representation acting on the channel axis.
-            out_rep (Representation): Output representation for the convolutions and residual.
-            cond_rep (Representation): Representation of the conditioning vector used to predict FiLM parameters.
+            in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}` acting on the
+                channel axis.
+            out_rep (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\text{out}}` for the
+                convolutions and residual.
+            cond_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{cond}}` of the
+                conditioning vector used to predict FiLM parameters.
             kernel_size (int, optional): Spatial kernel size for the equivariant convolutions. Defaults to 3.
             cond_predict_scale (bool, optional): Whether the FiLM encoder predicts scale parameters.
                 Currently must be ``True``. Defaults to True.
@@ -153,7 +163,22 @@ class eConditionalResidualBlock1D(torch.nn.Module):
 
 
 class eConditionalUnet1D(torch.nn.Module):
-    """Equivariant U-Net for 1D signals with global conditioning and FiLM."""
+    r"""Equivariant U-Net for 1D signals with global conditioning and FiLM.
+
+    The model defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}:
+        \mathcal{X}^{L} \times \mathcal{Z}_{\mathrm{local}}^{L} \times \mathcal{Z}_{\mathrm{global}} \times \mathbb{R}
+        \to \mathcal{X}^{L}.
+
+    Functional equivariance constraint:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{x},\,\rho_{\mathcal{Z}}(g)\mathbf{z},\,t)
+        = \rho_{\mathcal{X}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{x},\mathbf{z},t),
+        \quad \forall g\in\mathbb{G}.
+    """
 
     def __init__(
         self,

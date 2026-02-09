@@ -1,6 +1,8 @@
 linalg
 ======
 
+.. module:: symm_learning.linalg
+
 
 .. currentmodule:: symm_learning.linalg
 

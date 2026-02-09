@@ -1,6 +1,8 @@
 models
 ======
 
+.. module:: symm_learning.models
+
 A collection of equivariant neural network architectures.
 
 

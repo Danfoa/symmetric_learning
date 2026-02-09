@@ -20,11 +20,25 @@ logger = logging.getLogger(__name__)
 
 
 class eTransformerEncoderLayer(torch.nn.Module):
-    """Equivariant Transformer encoder layer with the same API as ``torch.nn.TransformerEncoderLayer``.
+    r"""Equivariant Transformer encoder layer with the same API as ``torch.nn.TransformerEncoderLayer``.
 
     Applies :class:`eMultiheadAttention` followed by an equivariant feed-forward block
     built from :class:`eLinear` layers and :class:`eLayerNorm`, mirroring PyTorch’s ordering
     (pre- or post-norm) while constraining every linear map to commute with the group action.
+
+    The layer defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}: \mathcal{X}^{T} \to \mathcal{X}^{T}.
+
+    Functional equivariance constraint:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{x}_{1:T})
+        = \rho_{\mathcal{X}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{x}_{1:T})
+        \quad \forall g\in\mathbb{G},
+
+    where :math:`\rho_{\mathcal{X}}(g)` acts on the feature/channel axis at every token.
     """
 
     __constants__ = ["norm_first"]
@@ -45,10 +59,10 @@ class eTransformerEncoderLayer(torch.nn.Module):
         dtype=None,
         init_scheme: str | None = "xavier_uniform",
     ) -> None:
-        """Create an equivariant Transformer encoder layer.
+        r"""Create an equivariant Transformer encoder layer.
 
         Args:
-            in_rep: Input representation.
+            in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}`.
             nhead: Number of attention heads.
             dim_feedforward: Hidden dimension of the feedforward network.
             dropout: Dropout probability.
@@ -188,11 +202,24 @@ class eTransformerEncoderLayer(torch.nn.Module):
 
 
 class eTransformerDecoderLayer(torch.nn.Module):
-    """Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
+    r"""Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
 
     Combines an equivariant self-attention block, an equivariant cross-attention block,
     and the same eLinear/eLayerNorm feed-forward structure used by the encoder so every
     submodule commutes with the group action while keeping PyTorch’s runtime logic intact.
+
+    The layer defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}: \mathcal{X}^{T_{\mathrm{tgt}}}\times\mathcal{X}^{T_{\mathrm{mem}}}
+        \to \mathcal{X}^{T_{\mathrm{tgt}}}.
+
+    Functional equivariance constraint (assuming ``tgt`` and ``memory`` transform under the same representation):
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{tgt},\rho_{\mathcal{X}}(g)\mathbf{mem})
+        = \rho_{\mathcal{X}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{tgt},\mathbf{mem})
+        \quad \forall g\in\mathbb{G}.
     """
 
     __constants__ = ["norm_first"]
@@ -213,10 +240,10 @@ class eTransformerDecoderLayer(torch.nn.Module):
         dtype=None,
         init_scheme: str | None = "xavier_uniform",
     ) -> None:
-        """Create an equivariant Transformer decoder layer.
+        r"""Create an equivariant Transformer decoder layer.
 
         Args:
-            in_rep: Input representation.
+            in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}`.
             nhead: Number of attention heads.
             dim_feedforward: Hidden dimension of the feedforward network.
             dropout: Dropout probability.

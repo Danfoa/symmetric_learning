@@ -25,6 +25,20 @@ class eCondTransformerRegressor(GenCondRegressor):
     regular representation so that :class:`eTransformerEncoderLayer`/:class:`eTransformerDecoderLayer` can be used
     directly. Positional encodings and timestep embeddings are projected onto the invariant subspace so they can be
     added to equivariant tokens without breaking symmetry.
+
+    The model defines:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}:
+        \mathcal{X}^{T_x} \times \mathcal{Z}^{T_z} \times \mathbb{R}
+        \to \mathcal{Y}^{T_x}.
+
+    Functional equivariance constraint:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{X}_k,\, \rho_{\mathcal{Z}}(g)\mathbf{Z},\, k)
+        = \rho_{\mathcal{Y}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{X}_k,\mathbf{Z},k),
+        \quad \forall g\in\mathbb{G}.
     """
 
     def __init__(
@@ -44,12 +58,14 @@ class eCondTransformerRegressor(GenCondRegressor):
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         init_scheme: str = "xavier_uniform",
     ) -> None:
-        """Create an equivariant conditional transformer regressor.
+        r"""Create an equivariant conditional transformer regressor.
 
         Args:
-            in_rep: Representation of the input tokens.
-            cond_rep: Representation of the conditioning tokens.
-            out_rep: Output representation. Defaults to ``in_rep`` if ``None``.
+            in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` of the input tokens.
+            cond_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{cond}}` of the
+                conditioning tokens.
+            out_rep (:class:`~escnn.group.Representation`, optional): Output representation :math:`\rho_{\text{out}}`.
+                Defaults to ``in_rep`` if ``None``.
             in_horizon: Maximum length of the input sequence.
             cond_horizon: Maximum length of the conditioning sequence.
             num_layers: Number of transformer decoder layers in the main generation trunk.
@@ -236,7 +252,7 @@ class eCondTransformerRegressor(GenCondRegressor):
         return optim_groups
 
     def configure_optimizers(  # noqa: D102
-        self, learning_rate: float = 1e-4, weight_decay: float = 1e-3, betas: Tuple[float, float] = (0.9, 0.95)
+        self, learning_rate: float = 1e-4, weight_decay: float = 1e-3, betas: tuple[float, float] = (0.9, 0.95)
     ):  # noqa: D102
         optim_groups = self.get_optim_groups(weight_decay=weight_decay)
         return torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas)

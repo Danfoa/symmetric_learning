@@ -1,6 +1,8 @@
 stats
 =====
 
+.. module:: symm_learning.stats
+
 
 .. currentmodule:: symm_learning.stats
 

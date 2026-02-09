@@ -9,14 +9,22 @@ from symm_learning.representation_theory import direct_sum
 
 
 class IrrepSubspaceNormPooling(torch.nn.Module):
-    """Pool an irrep-structured feature into invariant magnitudes per isotypic block.
+    r"""Pool irrep features into :math:`\mathbb{G}`-invariant radii.
 
-    For an input transforming under ``in_rep``, the layer computes one invariant feature per irrep block by taking its
-    Euclidean norm. The output representation is a direct sum of trivial irreps with length equal to the number of
-    irreps in ``in_rep``.
+    Given :math:`\mathbf{x}\in\mathcal{X}` with representation :math:`\rho_{\mathcal{X}}`, the module computes one
+    scalar per irreducible copy in the isotypic/irrep-spectral basis:
+
+    .. math::
+        r_{k,i} = \lVert \hat{\mathbf{x}}_{k,i} \rVert_2,
+        \qquad
+        \hat{\mathbf{x}}=\mathbf{Q}^T\mathbf{x}.
+
+    This is exactly :func:`~symm_learning.linalg.irrep_radii`, exposed as a module. The output transforms under a
+    direct sum of trivial representations, hence is invariant.
 
     Args:
-        in_rep (Representation): Representation describing how the input last dimension transforms.
+        in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` describing how the input
+            last dimension transforms.
     """
 
     def __init__(self, in_rep: Representation):
@@ -28,13 +36,14 @@ class IrrepSubspaceNormPooling(torch.nn.Module):
         self.out_rep = direct_sum([G.trivial_representation] * n_inv_features)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute invariant norms per irrep block.
+        """Compute one invariant radius per irreducible copy.
 
         Args:
-            x (torch.Tensor): Input with trailing dimension ``in_rep.size``; any leading batch/time dims are accepted.
+            x (:class:`torch.Tensor`): Input with trailing dimension ``in_rep.size``; any leading batch/time dims are
+                accepted.
 
         Returns:
-            torch.Tensor: Tensor with same leading shape as ``x`` and last dim ``out_rep.size`` containing one
+            :class:`torch.Tensor`: Tensor with same leading shape as ``x`` and last dim ``out_rep.size`` containing one
                 Euclidean norm per irrep block (trivial features).
         """
         assert x.shape[-1] == self.in_rep.size, f"Expected input shape (..., {self.in_rep.size}), but got {x.shape}"

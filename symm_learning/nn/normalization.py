@@ -13,27 +13,32 @@ from symm_learning.representation_theory import direct_sum
 
 
 class eRMSNorm(torch.nn.Module):
-    r"""Equivariant Root-Mean-Square Normalization.
+    r"""Root-mean-square normalization with :math:`\mathbb{G}`-equivariant affine map.
 
-    This layer mirrors :class:`torch.nn.RMSNorm` while keeping the affine step symmetry-preserving.
-    For an input :math:`x \in \mathbb{R}^{D}` with :math:`D = \texttt{in_rep.size}`, it shares a
-    single normalization factor across all channels:
+    For :math:`\mathbf{x}\in\mathcal{X}` with :math:`D=\dim(\rho_{\mathcal{X}})`, define
 
     .. math::
-        \operatorname{rms}(x) = \sqrt{\tfrac{1}{D}\langle x, x\rangle + \varepsilon}, \qquad
-        y = \frac{x}{\operatorname{rms}(x)}.
+        \hat{\mathbf{x}} = \frac{\mathbf{x}}{\sqrt{\frac{1}{D} \|\mathbf{x}\|^2 + \varepsilon}}, \qquad
+        \mathbf{y} = \alpha \odot \hat{\mathbf{x}} + \mathbf{\beta}
 
-    When ``equiv_affine=True`` a learnable :class:`~symm_learning.nn.linear.eAffine` is applied
-    after normalization, providing per-irrep scales (and optional invariant biases) that commute
-    with the group action and therefore preserve equivariance.
+    where the second step is implemented by :class:`~symm_learning.nn.linear.eAffine`
+    (per-irrep scaling and optional invariant bias).
+
+    Equivariance:
+
+    .. math::
+        \operatorname{eRMSNorm}(\rho_{\mathcal{X}}(g)\mathbf{x})
+        = \rho_{\mathcal{X}}(g)\operatorname{eRMSNorm}(\mathbf{x}),
+        \quad \forall g\in\mathbb{G},
+
+    because the RMS factor is invariant and :class:`eAffine` commutes with :math:`\rho_{\mathcal{X}}`.
 
     Args:
-        in_rep (escnn.group.Representation): Description of the feature space.
-        eps (float): Numerical stabilizer added inside the RMS computation.
-        equiv_affine (bool): If ``True``, apply a symmetry-preserving :class:`eAffine` after normalization.
-        bias (bool): Include invariant biases in the affine term (only used if ``equiv_affine``).
+        in_rep (:class:`~escnn.group.Representation`): Description of the feature space :math:`\rho_{\text{in}}`.
+        eps (:class:`float`): Numerical stabilizer added inside the RMS computation.
+        equiv_affine (:class:`bool`): If ``True``, apply a symmetry-preserving :class:`eAffine` after normalization.
         device, dtype: Optional tensor factory kwargs passed to the affine parameters.
-        init_scheme (Literal["identity", "random"] | None): Initialization scheme forwarded to
+        init_scheme (:class:`typing.Literal`["identity", "random"] | :class:`None`): Initialization scheme forwarded to
             :meth:`eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful when loading checkpoints).
 
     Shape:
@@ -92,22 +97,30 @@ class eRMSNorm(torch.nn.Module):
 class eLayerNorm(torch.nn.Module):
     r"""Equivariant Layer Normalization.
 
-    Given an input :math:`x \in \mathbb{R}^{D}`, we first move to the irrep-spectral basis
-    :math:`\hat{x} = Q^{-1}x`, compute one variance scalar per irreducible block,
+    Given :math:`\mathbf{x}\in\mathcal{X}`, we first move to the irrep-spectral basis
+    :math:`\hat{\mathbf{x}} = \mathbf{Q}^{-1}\mathbf{x}`, compute one variance scalar per irreducible block
+    via :func:`~symm_learning.linalg.irrep_radii`,
     and normalize each block uniformly:
 
     .. math::
-        \hat{y} = \frac{\hat{x}}{\sqrt{\sigma^{2} + \varepsilon}}, \qquad
-        y = Q\hat{y}.
+        \hat{\mathbf{y}} = \frac{\hat{\mathbf{x}}}{\sqrt{\mathbf{\sigma}^{2} + \varepsilon}}, \qquad
+        \mathbf{y} = Q\hat{\mathbf{y}}.
+
+    The layer is equivariant:
+
+    .. math::
+        \rho_{\text{in}}(g) \mathbf{y} = \text{LayerNorm}(\rho_{\text{in}}(g) \mathbf{x})
+
+    since the statistics are computed per irreducible subspace (which are preserved by the group action).
 
     When ``equiv_affine=True`` the learnable affine step is performed directly in the spectral basis
     using the per-irrep scale/bias provided by :class:`~symm_learning.nn.linear.eAffine`.
 
     Args:
-        in_rep: (:class:`escnn.group.Representation`) description of the feature space.
-        eps: numerical stabilizer added to each variance.
-        equiv_affine: if ``True``, applies an :class:`eAffine` in spectral space.
-        bias: whether the affine term includes invariant biases (only used if ``equiv_affine``).
+        in_rep (:class:`~escnn.group.Representation`): description of the feature space :math:`\rho_{\text{in}}`.
+        eps (:class:`float`): numerical stabilizer added to each variance.
+        equiv_affine (:class:`bool`): if ``True``, applies an :class:`eAffine` in spectral space.
+        bias (:class:`bool`): whether the affine term includes invariant biases (only used if ``equiv_affine``).
         device, dtype: optional tensor factory kwargs.
 
     Note:
@@ -117,7 +130,7 @@ class eLayerNorm(torch.nn.Module):
 
     r"""Symmetry-preserving LayerNorm:
 
-    .. math:: y = Q ( (Q^{-1} x) \odot \alpha + \beta )
+    .. math:: \mathbf{y} = Q ( (Q^{-1} \mathbf{x}) \odot \alpha + \mathbf{\beta} )
     """
 
     def __init__(
@@ -192,8 +205,14 @@ class eBatchNorm1d(torch.nn.Module):
     optional affine parameters are implemented via :class:`eAffine` to preserve
     equivariance.
 
+    The layer satisfies:
+
+    .. math::
+        \rho_{\text{in}}(g) \mathbf{y} = \text{BatchNorm}(\rho_{\text{in}}(g) \mathbf{x})
+
     Args:
-        in_rep: Representation describing the feature space.
+        in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` describing the feature
+            space.
         eps: Numerical stabilizer added to the variance.
         momentum: Momentum for exponential moving averages.
         affine: If ``True``, apply a symmetry-preserving affine transform.

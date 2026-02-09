@@ -1,11 +1,10 @@
 Examples
 ========
 
-.. note::
-
-    Examples are coming soon! This section will contain tutorials and usage examples for Symmetric Learning.
+Practical guides and worked examples for common workflows.
 
 .. toctree::
    :maxdepth: 2
    :caption: Examples:
 
+   examples/isotypic_decomposition
