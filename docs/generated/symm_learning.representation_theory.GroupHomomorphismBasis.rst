@@ -1,0 +1,9 @@
+﻿GroupHomomorphismBasis
+======================
+
+.. currentmodule:: symm_learning.representation_theory
+
+.. autoclass:: GroupHomomorphismBasis
+   :members:
+   :show-inheritance:
+   :inherited-members:
