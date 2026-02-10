@@ -6,4 +6,3 @@
 .. autoclass:: TimeCNNEncoder
    :members:
    :show-inheritance:
-   :inherited-members:

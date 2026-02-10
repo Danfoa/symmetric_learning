@@ -6,4 +6,3 @@
 .. autoclass:: eTimeCNNEncoder
    :members:
    :show-inheritance:
-   :inherited-members:

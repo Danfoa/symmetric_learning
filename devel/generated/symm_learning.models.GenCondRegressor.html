@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>disentangled &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+    <title>GenCondRegressor &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
   
   
   
@@ -42,12 +42,13 @@
     <script src="../_static/documentation_options.js?v=c87aa342"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'nn/disentangled';</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/symm_learning.models.GenCondRegressor';</script>
     <link rel="icon" href="../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Change2DisentangledBasis" href="../generated/symm_learning.nn.disentangled.Change2DisentangledBasis.html" />
-    <link rel="prev" title="eConvTranspose1d" href="../generated/symm_learning.nn.conv.eConvTranspose1d.html" />
+    <link rel="next" title="eCondTransformerRegressor" href="symm_learning.models.eCondTransformerRegressor.html" />
+    <link rel="prev" title="eTransformerDecoderLayer" href="symm_learning.models.eTransformerDecoderLayer.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.4.1" />
@@ -300,22 +301,20 @@
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Modules:</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../linalg.html">linalg</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../nn.html">nn</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="activation.html">activation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="conv.html">conv</a></li>
-<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">disentangled</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../generated/symm_learning.nn.disentangled.Change2DisentangledBasis.html">Change2DisentangledBasis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../nn.html">nn</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../models.html">models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eMLP.html">eMLP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.iMLP.html">iMLP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.MLP.html">MLP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eTimeCNNEncoder.html">eTimeCNNEncoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.TimeCNNEncoder.html">TimeCNNEncoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eTransformerEncoderLayer.html">eTransformerEncoderLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eTransformerDecoderLayer.html">eTransformerDecoderLayer</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">GenCondRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eCondTransformerRegressor.html">eCondTransformerRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.CondTransformerRegressor.html">CondTransformerRegressor</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="distributions.html">distributions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="linear.html">linear</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pooling.html">pooling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="normalization.html">normalization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parametrizations.html">parametrizations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="running_stats.html">running_stats</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1"><a class="reference internal" href="../models.html">models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../stats.html">stats</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../representation_theory.html">representation_theory</a></li>
 </ul>
@@ -362,9 +361,9 @@
     <li class="breadcrumb-item"><a href="../reference.html" class="nav-link">Reference API</a></li>
     
     
-    <li class="breadcrumb-item"><a href="../nn.html" class="nav-link">nn</a></li>
+    <li class="breadcrumb-item"><a href="../models.html" class="nav-link">models</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">disentangled</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">GenCondRegressor</span></li>
   </ul>
 </nav>
 </div>
@@ -381,16 +380,71 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="disentangled">
-<h1>disentangled<a class="headerlink" href="#disentangled" title="Link to this heading">#</a></h1>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../generated/symm_learning.nn.disentangled.Change2DisentangledBasis.html#symm_learning.nn.disentangled.Change2DisentangledBasis" title="symm_learning.nn.disentangled.Change2DisentangledBasis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Change2DisentangledBasis</span></code></a>(in_rep[, learnable])</p></td>
-<td><p>Map features to the isotypic/irrep-spectral basis.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
+  <section id="gencondregressor">
+<h1>GenCondRegressor<a class="headerlink" href="#gencondregressor" title="Link to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="symm_learning.models.GenCondRegressor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">GenCondRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#GenCondRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.GenCondRegressor" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Generative Conditional Regressor module.</p>
+<p>This is an abstract module inteded to be used as the backbone of a conditional flow-matching/diffusion process which
+enables sampling from the conditional probability distribution:</p>
+<div class="math notranslate nohighlight">
+\[\mathbb{P}(X \mid Z)\]</div>
+<p>Let <span class="math notranslate nohighlight">\(\mathcal{X}=\mathbb{R}^{d_x}\)</span>, <span class="math notranslate nohighlight">\(\mathcal{Z}=\mathbb{R}^{d_z}\)</span>, and
+<span class="math notranslate nohighlight">\(\mathcal{Y}=\mathbb{R}^{d_v}\)</span>.
+Where <span class="math notranslate nohighlight">\(X = [x_0,\ldots,x_{T_x}] \in \mathcal{X}^{T_x}\)</span> is the input/data sample composed of a
+trajectory of <span class="math notranslate nohighlight">\(T_x\)</span> points, and <span class="math notranslate nohighlight">\(Z = [z_0,\ldots,z_{T_z}] \in \mathcal{Z}^{T_z}\)</span> is the
+conditioning/observation variable composed of <span class="math notranslate nohighlight">\(T_z\)</span> points.</p>
+<p>The module parameterizes a conditional vector-valued regression map:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{f}_{\mathbf{\theta}}: \mathcal{X}^{T_x} \times \mathcal{Z}^{T_z} \times \mathbb{R}
+\to \mathcal{Y}^{T_x},\]</div>
+<p>with</p>
+<div class="math notranslate nohighlight">
+\[V_k = \mathbf{f}_{\mathbf{\theta}}(X_k, Z, k).\]</div>
+<p>Where <span class="math notranslate nohighlight">\(k\)</span> denotes the inference-time optimization timestep (i.e., the step of the flow-matching/diffusion)
+process, <span class="math notranslate nohighlight">\(X_k\)</span> is the noisy version of the data sample at step <cite>k</cite>, and
+<span class="math notranslate nohighlight">\(V_k \in (\mathbb{R}^{d_v})^{T_x}\)</span> is the target regression vector-valued variable.
+For diffusion models <span class="math notranslate nohighlight">\(V_k\)</span> typically corresponds to the score functional of
+<span class="math notranslate nohighlight">\(\mathbb{P}_k(X \mid Z)\)</span>, while for flow-matching models it typically corresponds
+to the flow-matching velocity vector field.</p>
+<p>This abstract base class does not impose equivariance/invariance constraints by itself.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>out_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>cond_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="symm_learning.models.GenCondRegressor.forward">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#GenCondRegressor.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.GenCondRegressor.forward" title="Link to this definition">#</a></dt>
+<dd><p>Forward pass of the generative conditional regressor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – The input/data sample composed of a trajectory of <cite>T_x</cite> points in a
+<cite>d_x</cite>-dimensional space. Shape: <cite>(B, T_x, d_x)</cite>, where <cite>B</cite> is the batch size.</p></li>
+<li><p><strong>opt_step</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – The optimization step(s) <cite>k</cite> at which to
+evaluate the regressor. Can be a single scalar or a tensor of shape <cite>(B,)</cite>.</p></li>
+<li><p><strong>Z</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – The conditioning/observation variable composed of <cite>T_z</cite> points in a
+<cite>d_z</cite>-dimensional space. Shape: <cite>(B, T_z, d_z)</cite>, where <cite>B</cite> is the batch size.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The output regression variable of shape <cite>(B, T_x, d_v)</cite>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
@@ -404,20 +458,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../generated/symm_learning.nn.conv.eConvTranspose1d.html"
+       href="symm_learning.models.eTransformerDecoderLayer.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">eConvTranspose1d</p>
+        <p class="prev-next-title">eTransformerDecoderLayer</p>
       </div>
     </a>
     <a class="right-next"
-       href="../generated/symm_learning.nn.disentangled.Change2DisentangledBasis.html"
+       href="symm_learning.models.eCondTransformerRegressor.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Change2DisentangledBasis</p>
+        <p class="prev-next-title">eCondTransformerRegressor</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -433,10 +487,25 @@
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.GenCondRegressor"><code class="docutils literal notranslate"><span class="pre">GenCondRegressor</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.GenCondRegressor.forward"><code class="docutils literal notranslate"><span class="pre">forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/nn/disentangled.rst.txt"
+      <li><a href="../_sources/generated/symm_learning.models.GenCondRegressor.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

@@ -6,4 +6,3 @@
 .. autoclass:: eBatchNorm1d
    :members:
    :show-inheritance:
-   :inherited-members:

@@ -6,4 +6,3 @@
 .. autoclass:: eMultivariateNormal
    :members:
    :show-inheritance:
-   :inherited-members:

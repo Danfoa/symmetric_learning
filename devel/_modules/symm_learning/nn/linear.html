@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../../../" >
+<html lang="en" data-content_root="../../../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -12,8 +12,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -30,7 +30,7 @@
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,6 +42,7 @@
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/linear';</script>
+    <link rel="icon" href="../../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -50,7 +51,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -84,9 +85,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -96,7 +94,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -110,14 +108,20 @@
   
   
   
+    
+    
+    
+    <img src="../../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -153,16 +157,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -192,15 +192,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -261,6 +252,12 @@
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
         
           <div class="navbar-item">
 
@@ -426,16 +423,20 @@
 <span class="sd">    .. math::</span>
 <span class="sd">        \rho_{\text{out}}(g) \mathbf{b} = \mathbf{b} \quad \forall g \in \mathbb{G}</span>
 
-<span class="sd">    The optional bias is delegated to :class:`InvariantBias`, which caches its expansion in eval mode. The weight is</span>
-<span class="sd">    cached after each expansion in eval mode to avoid redundant synthesis.</span>
-
 <span class="sd">    Note:</span>
-<span class="sd">        This layer can be used as a drop-in replacement for ``torch.nn.Linear``.</span>
+<span class="sd">        Runtime behavior depends on mode.</span>
+<span class="sd">        In training mode (``model.train()``), the constrained dense tensors are recomputed every forward pass, which</span>
+<span class="sd">        is correct for gradient updates but slower.</span>
+<span class="sd">        In inference mode (``model.eval()``), the expanded dense weight (and optional invariant bias) are cached and</span>
+<span class="sd">        reused until parameters change or :meth:`invalidate_cache` is called, which is faster.</span>
+<span class="sd">        With the cache active, :meth:`forward` is computationally equivalent to a symmetry-agnostic</span>
+<span class="sd">        :class:`~torch.nn.Linear` with fixed dense ``weight`` and ``bias``.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Handler exposing the</span>
 <span class="sd">            equivariant basis and metadata.</span>
-<span class="sd">        bias_module (:class:`InvariantBias` | None): Optional module handling the invariant bias.</span>
+<span class="sd">        bias_module (:class:`~symm_learning.nn.linear.InvariantBias` | None): Optional module handling the invariant</span>
+<span class="sd">            bias.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -568,6 +569,7 @@
 <div class="viewcode-block" id="eLinear.train">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eLinear.html#symm_learning.nn.linear.eLinear.train">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Switch mode and keep cached expanded tensors consistent.&quot;&quot;&quot;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">mode</span><span class="p">:</span>  <span class="c1"># Switching to train mode - invalidate cache</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
@@ -579,6 +581,7 @@
 <div class="viewcode-block" id="eLinear.load_state_dict">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eLinear.html#symm_learning.nn.linear.eLinear.load_state_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and invalidate cached expanded tensors.&quot;&quot;&quot;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">result</span></div>
@@ -599,7 +602,20 @@
 <span class="sd">    as the identity function.</span>
 
 <span class="sd">    Note:</span>
-<span class="sd">        The bias is cached after switching to evaluation mode for efficiency.</span>
+<span class="sd">        Runtime behavior depends on mode.</span>
+<span class="sd">        In training mode (``model.train()``), the invariant bias is recomputed each forward pass.</span>
+<span class="sd">        In inference mode (``model.eval()``), the expanded invariant bias is cached and reused until ``bias_dof``</span>
+<span class="sd">        changes or :meth:`invalidate_cache` is called, which is faster.</span>
+<span class="sd">        With the cache active, the forward path is the same computation as the standard symmetry-agnostic bias add</span>
+<span class="sd">        ``input + b`` with fixed ``b``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        in_rep (:class:`~escnn.group.Representation`): Representation defining the symmetry action on</span>
+<span class="sd">            :math:`\mathcal{X}`.</span>
+<span class="sd">        out_rep (:class:`~escnn.group.Representation`): Same as ``in_rep`` (bias acts in the same space).</span>
+<span class="sd">        has_bias (:class:`bool`): ``True`` iff the trivial irrep is present and a learnable invariant bias exists.</span>
+<span class="sd">        bias_dof (:class:`~torch.nn.Parameter`): Learnable trivial-subspace coefficients (present only if</span>
+<span class="sd">            ``has_bias=True``).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
@@ -641,10 +657,10 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the invariant bias.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            input (torch.Tensor): Tensor whose last dimension equals ``in_rep.size``.</span>
+<span class="sd">            input (:class:`~torch.Tensor`): Tensor whose last dimension equals ``in_rep.size``.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor: Output tensor with the same shape as ``input``.</span>
+<span class="sd">            :class:`~torch.Tensor`: Output tensor with the same shape as ``input``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">input</span>
@@ -743,6 +759,7 @@
 <div class="viewcode-block" id="InvariantBias.load_state_dict">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.load_state_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and invalidate cached expanded bias.&quot;&quot;&quot;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">result</span></div>
@@ -781,10 +798,6 @@
 <span class="sd">    When ``learnable=True`` these DoFs are trainable parameters. When ``learnable=False``,</span>
 <span class="sd">    ``scale_dof`` and ``bias_dof`` are provided at call-time (FiLM style).</span>
 
-<span class="sd">    Note:</span>
-<span class="sd">        This module can be implemented without transitioning to the spectral basis, which can improve efficiency</span>
-<span class="sd">        dramatically.</span>
-
 <span class="sd">    Args:</span>
 <span class="sd">        in_rep: :class:`~escnn.group.Representation` describing the input/output space :math:`\rho_{\text{in}}`.</span>
 <span class="sd">        bias: include invariant biases when the trivial irrep is present. Default: ``True``.</span>
@@ -799,10 +812,22 @@
 <span class="sd">        - ``bias_dof`` (optional): ``(..., num_bias_dof)`` when ``bias=True``.</span>
 <span class="sd">        - Output: ``(..., D)``.</span>
 
+<span class="sd">    Note:</span>
+<span class="sd">        Runtime behavior depends on mode.</span>
+<span class="sd">        In training mode (``model.train()``), the affine map is recomputed each forward pass.</span>
+<span class="sd">        In inference mode (``model.eval()``) and with ``learnable=True``, the dense affine map</span>
+<span class="sd">        :math:`\mathbf{Q}\mathbf{D}_{\alpha}\mathbf{Q}^T` (and optional invariant bias) is cached and reused until</span>
+<span class="sd">        parameters change or :meth:`invalidate_cache` is called, which is faster.</span>
+<span class="sd">        Unlike :class:`~symm_learning.nn.linear.eLinear`, this module is not a strict symmetry-agnostic drop-in</span>
+<span class="sd">        affine block, because parameters are irrep-structured and may also be provided externally</span>
+<span class="sd">        (FiLM-style via ``scale_dof``/``bias_dof``).</span>
+
 <span class="sd">    Attributes:</span>
-<span class="sd">        homo_basis (:class:`~symm_learning.representation_theory.GroupHomomorphismBasis`): Handler exposing the</span>
-<span class="sd">        equivariant basis and metadata.</span>
-<span class="sd">        bias_module (:class:`InvariantBias` | None): Optional module handling the invariant bias.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}` of the feature space.</span>
+<span class="sd">        Q (:class:`~torch.Tensor`): Change-of-basis matrix to the irrep-spectral basis.</span>
+<span class="sd">        Q_inv (:class:`~torch.Tensor`): Inverse change-of-basis matrix from irrep-spectral basis.</span>
+<span class="sd">        bias_module (:class:`~symm_learning.nn.linear.InvariantBias` | None): Optional module handling the invariant</span>
+<span class="sd">            bias.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -947,8 +972,9 @@
 <span class="sd">            input_shape: Shape of the input tensor when ``learnable=False``. Used to validate DoF shapes.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            spectral_scale: Spectral scale tensor shaped ``(..., rep_x.size)``.</span>
-<span class="sd">            spectral_bias: Spectral bias tensor shaped ``(..., rep_x.size)`` or ``None`` when ``bias=False``.</span>
+<span class="sd">            tuple[torch.Tensor, torch.Tensor | None]: Pair ``(spectral_scale, spectral_bias)`` where</span>
+<span class="sd">            ``spectral_scale`` is shaped ``(..., rep_x.size)`` and ``spectral_bias`` is shaped</span>
+<span class="sd">            ``(..., rep_x.size)`` (or ``None`` when ``bias=False``).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">input_shape</span> <span class="o">=</span> <span class="p">()</span> <span class="k">if</span> <span class="n">input_shape</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">input_shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
@@ -1010,11 +1036,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="eAffine.extra_repr">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.extra_repr">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;bias=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="si">}</span><span class="s2"> learnable=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">learnable</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">in_rep=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="si">}</span><span class="s2">&quot;</span></div>
-
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;bias=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="si">}</span><span class="s2"> learnable=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">learnable</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">in_rep=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_mark_affine_cache_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_affine_cache_dirty</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1046,6 +1069,7 @@
 <div class="viewcode-block" id="eAffine.train">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.train">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Switch mode and keep cached affine expansion consistent.&quot;&quot;&quot;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">mode</span><span class="p">:</span>  <span class="c1"># Switching to train mode - invalidate cache</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
@@ -1057,6 +1081,7 @@
 <div class="viewcode-block" id="eAffine.load_state_dict">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.load_state_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and invalidate cached affine expansion.&quot;&quot;&quot;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">result</span></div>

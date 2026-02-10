@@ -1,10 +1,23 @@
 .. Symmetric Learning documentation master file
+.. raw:: html
 
-Symmetric Learning
-==================
+   <div style="text-align:center; margin: 0.5rem 0 1rem 0;">
+     <img src="_static/logo_v1_with_text.svg?v=5" alt="Symmetric Learning logo" class="sl-home-logo sl-home-logo-light">
+     <img src="_static/logo_v1_without_text_dark_background.svg?v=5" alt="Symmetric Learning logo" class="sl-home-logo sl-home-logo-dark">
+   </div>
+   <p align="center">
+     <a href="https://pypi.org/project/symm-learning/">
+       <img src="https://img.shields.io/pypi/v/symm-learning.svg?logo=pypi" alt="PyPI version">
+     </a>
+     <a href="https://github.com/Danfoa/symmetric_learning/actions/workflows/tests.yaml">
+       <img src="https://img.shields.io/badge/python-3.8%20--%203.12-blue?logo=pypy&logoColor=white" alt="Python Version">
+     </a>
+     <a href="https://danfoa.github.io/symmetric_learning/">
+       <img src="https://img.shields.io/github/actions/workflow/status/Danfoa/symmetric_learning/docs.yaml?branch=main&logo=readthedocs&logoColor=white&label=Docs" alt="Docs">
+     </a>
+   </p>
 
-**Symmetric Learning** is a machine learning library tailored to optimization problems featuring symmetry priors. It provides equivariant neural network modules, models, and utilities for leveraging group symmetries in data.
-
+**Symmetric Learning** is a torch-based machine learning library tailored to optimization problems featuring symmetry priors. It provides equivariant neural network modules, models, and utilities for leveraging group symmetries in data.
 Installation
 ------------
 

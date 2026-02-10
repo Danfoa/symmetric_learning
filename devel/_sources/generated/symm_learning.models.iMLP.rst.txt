@@ -6,4 +6,3 @@
 .. autoclass:: iMLP
    :members:
    :show-inheritance:
-   :inherited-members:

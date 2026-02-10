@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="./" >
+<html lang="en" data-content_root="./" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -12,8 +12,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -30,7 +30,7 @@
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,6 +42,7 @@
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
+    <link rel="icon" href="_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -50,7 +51,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -84,9 +85,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -96,7 +94,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -110,14 +108,20 @@
   
   
   
+    
+    
+    
+    <img src="_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -153,16 +157,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -192,15 +192,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -261,6 +252,12 @@
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
         
           <div class="navbar-item">
 
@@ -364,6 +361,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.bias_dof">bias_dof (InvariantBias attribute)</a>
+</li>
       <li><a href="generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.bias_module">bias_module (eAffine attribute)</a>
 
       <ul>
@@ -454,14 +453,14 @@
 </li>
       <li><a href="generated/symm_learning.nn.activation.eMultiheadAttention.html#symm_learning.nn.activation.eMultiheadAttention">eMultiheadAttention (class in symm_learning.nn.activation)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.nn.distributions.eMultivariateNormal.html#symm_learning.nn.distributions.eMultivariateNormal">eMultivariateNormal (class in symm_learning.nn.distributions)</a>
 </li>
       <li><a href="generated/symm_learning.nn.normalization.eRMSNorm.html#symm_learning.nn.normalization.eRMSNorm">eRMSNorm (class in symm_learning.nn.normalization)</a>
 </li>
       <li><a href="generated/symm_learning.representation_theory.escnn_representation_form_mapping.html#symm_learning.representation_theory.escnn_representation_form_mapping">escnn_representation_form_mapping() (in module symm_learning.representation_theory)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.models.eTimeCNNEncoder.html#symm_learning.models.eTimeCNNEncoder">eTimeCNNEncoder (class in symm_learning.models)</a>
 </li>
       <li><a href="generated/symm_learning.models.eTransformerDecoderLayer.html#symm_learning.models.eTransformerDecoderLayer">eTransformerDecoderLayer (class in symm_learning.models)</a>
@@ -478,30 +477,14 @@
 </li>
       <li><a href="generated/symm_learning.nn.running_stats.eEMAStats.html#symm_learning.nn.running_stats.eEMAStats.export">export() (eEMAStats method)</a>
 </li>
-      <li><a href="generated/symm_learning.nn.disentangled.Change2DisentangledBasis.html#symm_learning.nn.disentangled.Change2DisentangledBasis.extra_repr">extra_repr() (Change2DisentangledBasis method)</a>
-
-      <ul>
-        <li><a href="generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.extra_repr">(eAffine method)</a>
+      <li><a href="generated/symm_learning.nn.running_stats.EMAStats.html#symm_learning.nn.running_stats.EMAStats.extra_repr">extra_repr() (EMAStats method)</a>
 </li>
-        <li><a href="generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d.extra_repr">(eBatchNorm1d method)</a>
-</li>
-        <li><a href="generated/symm_learning.nn.normalization.eLayerNorm.html#symm_learning.nn.normalization.eLayerNorm.extra_repr">(eLayerNorm method)</a>
-</li>
-        <li><a href="generated/symm_learning.nn.running_stats.EMAStats.html#symm_learning.nn.running_stats.EMAStats.extra_repr">(EMAStats method)</a>
-</li>
-        <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.extra_repr">(GroupHomomorphismBasis method)</a>
-</li>
-        <li><a href="generated/symm_learning.nn.pooling.IrrepSubspaceNormPooling.html#symm_learning.nn.pooling.IrrepSubspaceNormPooling.extra_repr">(IrrepSubspaceNormPooling method)</a>
-</li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="generated/symm_learning.representation_theory.field_type_to_isotypic_basis.html#symm_learning.representation_theory.field_type_to_isotypic_basis">field_type_to_isotypic_basis() (in module symm_learning.representation_theory)</a>
-</li>
       <li><a href="generated/symm_learning.nn.disentangled.Change2DisentangledBasis.html#symm_learning.nn.disentangled.Change2DisentangledBasis.forward">forward() (Change2DisentangledBasis method)</a>
 
       <ul>
@@ -537,6 +520,8 @@
 </li>
         <li><a href="generated/symm_learning.models.eTransformerEncoderLayer.html#symm_learning.models.eTransformerEncoderLayer.forward">(eTransformerEncoderLayer method)</a>
 </li>
+        <li><a href="generated/symm_learning.models.GenCondRegressor.html#symm_learning.models.GenCondRegressor.forward">(GenCondRegressor method)</a>
+</li>
         <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.forward">(GroupHomomorphismBasis method)</a>
 </li>
         <li><a href="generated/symm_learning.models.iMLP.html#symm_learning.models.iMLP.forward">(iMLP method)</a>
@@ -560,14 +545,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.G">G (GroupHomomorphismBasis attribute)</a>
 </li>
+      <li><a href="generated/symm_learning.models.GenCondRegressor.html#symm_learning.models.GenCondRegressor">GenCondRegressor (class in symm_learning.models)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.models.CondTransformerRegressor.html#symm_learning.models.CondTransformerRegressor.get_optim_groups">get_optim_groups() (CondTransformerRegressor method)</a>
 
       <ul>
         <li><a href="generated/symm_learning.models.eCondTransformerRegressor.html#symm_learning.models.eCondTransformerRegressor.get_optim_groups">(eCondTransformerRegressor method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis">GroupHomomorphismBasis (class in symm_learning.representation_theory)</a>
 </li>
   </ul></td>
@@ -576,11 +563,13 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.has_bias">has_bias (InvariantBias attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.nn.parametrizations.CommutingConstraint.html#symm_learning.nn.parametrizations.CommutingConstraint.homo_basis">homo_basis (CommutingConstraint attribute)</a>
 
       <ul>
-        <li><a href="generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.homo_basis">(eAffine attribute)</a>
-</li>
         <li><a href="generated/symm_learning.nn.linear.eLinear.html#symm_learning.nn.linear.eLinear.homo_basis">(eLinear attribute)</a>
 </li>
       </ul></li>
@@ -598,6 +587,8 @@
 
       <ul>
         <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.in_rep">(GroupHomomorphismBasis attribute)</a>
+</li>
+        <li><a href="generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.in_rep">(InvariantBias attribute)</a>
 </li>
       </ul></li>
       <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params">initialize_params() (GroupHomomorphismBasis method)</a>
@@ -713,12 +704,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.orthogonal_projection">orthogonal_projection() (GroupHomomorphismBasis method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated/symm_learning.nn.distributions.eMultivariateNormal.html#symm_learning.nn.distributions.eMultivariateNormal.out_rep">out_rep (eMultivariateNormal attribute)</a>
 
       <ul>
         <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.out_rep">(GroupHomomorphismBasis attribute)</a>
+</li>
+        <li><a href="generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.out_rep">(InvariantBias attribute)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -735,10 +726,14 @@
 <h2 id="Q">Q</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.Q">Q (eAffine attribute)</a>
+</li>
       <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.Q_in_inv">Q_in_inv (GroupHomomorphismBasis attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.Q_inv">Q_inv (eAffine attribute)</a>
+</li>
       <li><a href="generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.Q_out">Q_out (GroupHomomorphismBasis attribute)</a>
 </li>
   </ul></td>
@@ -750,6 +745,8 @@
       <li><a href="generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.refresh_eval_cache">refresh_eval_cache() (InvariantBias method)</a>
 </li>
       <li><a href="generated/symm_learning.nn.parametrizations.InvariantConstraint.html#symm_learning.nn.parametrizations.InvariantConstraint.rep">rep (InvariantConstraint attribute)</a>
+</li>
+      <li><a href="generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.rep_x">rep_x (eAffine attribute)</a>
 </li>
       <li><a href="generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.reset_parameters">reset_parameters() (eAffine method)</a>
 

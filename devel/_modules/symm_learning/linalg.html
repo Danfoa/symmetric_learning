@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../../" >
+<html lang="en" data-content_root="../../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -12,8 +12,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -30,7 +30,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,6 +42,7 @@
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/linalg';</script>
+    <link rel="icon" href="../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -50,7 +51,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -84,9 +85,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -96,7 +94,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -110,14 +108,20 @@
   
   
   
+    
+    
+    
+    <img src="../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -153,16 +157,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -192,15 +192,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -261,6 +252,12 @@
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
         
           <div class="navbar-item">
 
@@ -366,12 +363,11 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
 
 
 <div class="viewcode-block" id="isotypic_signal2irreducible_subspaces">
 <a class="viewcode-back" href="../../generated/symm_learning.linalg.isotypic_signal2irreducible_subspaces.html#symm_learning.linalg.isotypic_signal2irreducible_subspaces">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">isotypic_signal2irreducible_subspaces</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">isotypic_signal2irreducible_subspaces</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Flatten an isotypic signal into its irreducible-subspace coordinates.</span>
 
 <span class="sd">    This function assumes :math:`\mathcal{X}` is a single isotypic subspace of type :math:`k`, i.e.</span>
@@ -387,11 +383,11 @@
 <span class="sd">        \mathbf{z}[:, i] = [x_{1,i,1}, \ldots, x_{1,i,d_k}, x_{2,i,1}, \ldots, x_{n,i,d_k}]^\top.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x (:class:`torch.Tensor`): Shape :math:`(n, n_k \cdot d_k)`.</span>
+<span class="sd">        x (:class:`~torch.Tensor`): Shape :math:`(n, n_k \cdot d_k)`.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`): Representation in isotypic basis with a single active irrep type.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Tensor: Flattened irreducible-subspace signal of shape :math:`(n \cdot d_k, n_k)`.</span>
+<span class="sd">        :class:`~torch.Tensor`: Flattened irreducible-subspace signal of shape :math:`(n \cdot d_k, n_k)`.</span>
 
 <span class="sd">    Shape:</span>
 <span class="sd">        :math:`(n \cdot d_k, n_k)`.</span>
@@ -410,7 +406,7 @@
 
 <div class="viewcode-block" id="irrep_radii">
 <a class="viewcode-back" href="../../generated/symm_learning.linalg.irrep_radii.html#symm_learning.linalg.irrep_radii">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">irrep_radii</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">irrep_radii</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute Euclidean radii for all irreducible-subspace features.</span>
 
 <span class="sd">    Let :math:`\rho_{\mathcal{X}}` be the (possibly decomposable) representation of a vector space</span>
@@ -432,12 +428,12 @@
 <span class="sd">        r_{k,i} = \lVert \hat{\mathbf{x}}_{k,i} \rVert_2.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x: (:class:`torch.Tensor`) of shape :math:`(..., D)` describing vectors transforming according to ``rep``.</span>
+<span class="sd">        x: (:class:`~torch.Tensor`) of shape :math:`(..., D)` describing vectors transforming according to ``rep``.</span>
 <span class="sd">        rep: (:class:`~escnn.group.Representation`) acting on the last dimension of ``x``.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        (:class:`torch.Tensor`): Radii of shape :math:`(..., N)` where :math:`N=\texttt{len(rep.irreps)}`. The output</span>
-<span class="sd">        order follows :attr:`rep.irreps` (one radius per irreducible copy in the decomposition).</span>
+<span class="sd">        (:class:`~torch.Tensor`): Radii of shape :math:`(..., N)` where :math:`N=\texttt{len(rep.irreps)}`. The output</span>
+<span class="sd">        order follows ``rep.irreps`` (one radius per irreducible copy in the decomposition).</span>
 
 <span class="sd">    Shape:</span>
 <span class="sd">        - **Input** ``x``: :math:`(..., D)` with :math:`D=\dim(\rho_{\mathcal{X}})`.</span>
@@ -476,7 +472,7 @@
 
 <div class="viewcode-block" id="lstsq">
 <a class="viewcode-back" href="../../generated/symm_learning.linalg.lstsq.html#symm_learning.linalg.lstsq">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">lstsq</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">lstsq</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Computes a solution to the least squares problem of a system of linear equations with equivariance constraints.</span>
 
 <span class="sd">    The :math:`\mathbb{G}`-equivariant least squares problem to the linear system of equations</span>
@@ -495,9 +491,9 @@
 <span class="sd">    representations of :math:`\mathbb{G}`.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x (:class:`torch.Tensor`): Realizations of the random variable :math:`\mathbf{X}` with shape</span>
+<span class="sd">        x (:class:`~torch.Tensor`): Realizations of the random variable :math:`\mathbf{X}` with shape</span>
 <span class="sd">            :math:`(N, D_x)`, where :math:`N` is the number of samples.</span>
-<span class="sd">        y (:class:`torch.Tensor`):</span>
+<span class="sd">        y (:class:`~torch.Tensor`):</span>
 <span class="sd">            Realizations of the random variable :math:`\mathbf{Y}` with shape :math:`(N, D_y)`.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`):</span>
 <span class="sd">            Representation :math:`\rho_{\mathcal{X}}` acting on the vector space :math:`\mathcal{X}`.</span>
@@ -505,7 +501,7 @@
 <span class="sd">            Representation :math:`\rho_{\mathcal{Y}}` acting on the vector space :math:`\mathcal{Y}`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        :class:`torch.Tensor`:</span>
+<span class="sd">        :class:`~torch.Tensor`:</span>
 <span class="sd">            A :math:`(D_y \times D_x)` matrix :math:`\mathbf{A}` satisfying the :math:`\mathbb{G}`-equivariance</span>
 <span class="sd">            constraint and minimizing :math:`\|\mathbf{Y} - \mathbf{A}\,\mathbf{X}\|^2`.</span>
 
@@ -569,7 +565,7 @@
 
 <div class="viewcode-block" id="invariant_orthogonal_projector">
 <a class="viewcode-back" href="../../generated/symm_learning.linalg.invariant_orthogonal_projector.html#symm_learning.linalg.invariant_orthogonal_projector">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Computes the orthogonal projection to the invariant subspace.</span>
 
 <span class="sd">    The input representation :math:`\rho_{\mathcal{X}}: \mathbb{G} \mapsto \mathbb{G}\mathbb{L}(\mathcal{X})` is</span>
@@ -609,14 +605,15 @@
 <span class="sd">        = \mathbf{P}_{\mathrm{inv}} \quad \forall g\in\mathbb{G}.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        rep_x (:class:`~escnn.group.Representation`): The representation for which the orthogonal projection to the</span>
-<span class="sd">        invariant subspace is computed.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): The representation for which the orthogonal projection</span>
+<span class="sd">            to the invariant subspace is computed.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        :class:`torch.Tensor`: The orthogonal projection matrix to the invariant subspace,</span>
+<span class="sd">        :class:`~torch.Tensor`: The orthogonal projection matrix to the invariant subspace,</span>
 <span class="sd">        :math:`\mathbf{Q} \mathbf{S} \mathbf{Q}^T`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">Qx_T</span><span class="p">,</span> <span class="n">Qx</span> <span class="o">=</span> <span class="n">Tensor</span><span class="p">(</span><span class="n">rep_x</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">),</span> <span class="n">Tensor</span><span class="p">(</span><span class="n">rep_x</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">)</span>
+    <span class="n">Qx_T</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">rep_x</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">)</span>
+    <span class="n">Qx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">rep_x</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">)</span>
 
     <span class="c1"># S is an indicator of which dimension (in the irrep-spectral basis) is associated with a trivial irrep</span>
     <span class="n">S</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
@@ -637,7 +634,11 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_project_to_irrep_endomorphism_basis</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_project_to_irrep_endomorphism_basis</span><span class="p">(</span>
+    <span class="n">A</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Projects a linear map A: X -&gt; Y between two isotypic spaces to the space of equivariant linear maps.</span>
 
 <span class="sd">    Given a linear map :math:`A: X \to Y`, where :math:`X` and :math:`Y` are isotypic vector spaces of the same type,</span>
@@ -645,14 +646,14 @@
 <span class="sd">    function projects the linear map to the space of equivariant linear maps between the two isotypic spaces.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        A (:class:`torch.Tensor`): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`,</span>
+<span class="sd">        A (:class:`~torch.Tensor`): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`,</span>
 <span class="sd">            where :math:`d` is the dimension of the irreducible representation, and :math:`m_x` and :math:`m_y`</span>
 <span class="sd">            are the multiplicities of the irreducible representation in :math:`X` and :math:`Y`, respectively.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`): The representation of the isotypic space :math:`X`.</span>
 <span class="sd">        rep_y (:class:`~escnn.group.Representation`): The representation of the isotypic space :math:`Y`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        A_equiv (:class:`torch.Tensor`): A projected linear map of shape :math:`(m_y \cdot d, m_x \cdot d)` which</span>
+<span class="sd">        A_equiv (:class:`~torch.Tensor`): A projected linear map of shape :math:`(m_y \cdot d, m_x \cdot d)` which</span>
 <span class="sd">            commutes with the action of the group on the isotypic spaces :math:`X` and :math:`Y`. That is:</span>
 <span class="sd">            :math:`A_{equiv} \circ \rho_X(g) = \rho_Y(g) \circ A_{equiv}` for all :math:`g \in \mathbb{G}`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>

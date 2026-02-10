@@ -1,4 +1,119 @@
 /* Custom CSS for Symmetric Learning Documentation */
+:root {
+    /* ======================================================================
+       Color Controls
+       ====================================================================== */
+    --sl-color-link: #127c76;
+    --sl-color-link-hover: #ee4c2c;
+
+    /* ======================================================================
+       Navbar Logo Controls
+       ======================================================================
+       Desktop logo:
+       - width controls horizontal footprint in navbar.
+       - fluid-width controls smooth shrinking as viewport narrows.
+       - height is AUTO from SVG aspect ratio.
+       - row-padding-y controls top/bottom space in the whole navbar row.
+    */
+    --sl-navbar-logo-width: 400px;
+    --sl-navbar-logo-width-fluid: 42vw;
+    --sl-navbar-row-padding-y: 0.9rem;
+
+    /* Mobile symbol-only logo (used after the symbol-switch breakpoint).
+       Width/height apply when full logo collapses to symbol-only mode. */
+    --sl-navbar-logo-width-mobile: 50px;
+    --sl-navbar-logo-height-mobile: 50px;
+
+    /* Space between logo and version/branch text */
+    --sl-navbar-logo-gap: 0.1rem;
+
+    /* Version/branch text sizing and truncation */
+    --sl-navbar-title-font-size: 0.9rem;
+    --sl-navbar-title-max-width: 180px;
+
+    /* Space between version/branch text and the tabs/search area.
+       Practically, this is right padding on the left navbar column. */
+    --sl-navbar-start-right-padding: 0.75rem;
+
+    /* Desktop left navbar column target width (fluid clamp).
+       This avoids abrupt jumps while resizing and keeps logo contraction smooth. */
+    --sl-navbar-start-width-desktop: clamp(260px, 40vw, 620px);
+
+}
+
+/* Brand link color */
+html[data-theme="light"],
+html[data-theme="dark"] {
+    --pst-color-link: var(--sl-color-link);
+    --pst-color-link-hover: var(--sl-color-link-hover);
+    --bs-link-color: var(--sl-color-link);
+    --bs-link-color-rgb: 18, 124, 118;
+    --bs-link-hover-color: var(--sl-color-link-hover);
+    --bs-link-hover-color-rgb: 238, 76, 44;
+}
+
+/* Home page hero logo */
+.sl-home-logo {
+    width: min(92%, 520px);
+    max-height: 140px;
+    height: auto;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.sl-home-logo-dark {
+    display: none;
+}
+
+html[data-theme="dark"] .sl-home-logo-light {
+    display: none;
+}
+
+html[data-theme="dark"] .sl-home-logo-dark {
+    display: inline-block;
+}
+
+/* Remove top announcement bar entirely */
+.bd-header-announcement {
+    display: none !important;
+}
+
+.navbar-brand.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sl-navbar-logo-gap);
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.navbar-brand.logo .logo__image {
+    display: inline-block;
+    width: clamp(0px, var(--sl-navbar-logo-width-fluid), var(--sl-navbar-logo-width)) !important;
+    height: auto !important;
+    max-width: var(--sl-navbar-logo-width) !important;
+}
+
+.navbar-brand.logo::before {
+    content: none;
+}
+
+.navbar-brand.logo .logo__title {
+    font-size: var(--sl-navbar-title-font-size);
+    color: var(--pst-color-text-muted);
+    white-space: nowrap;
+    max-width: var(--sl-navbar-title-max-width);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Controls the vertical space above/below logo + title inside navbar row */
+.bd-header.navbar .bd-header__inner {
+    padding-block: var(--sl-navbar-row-padding-y);
+}
 
 /* Widen the "On this page" sidebar */
 .bd-sidebar-secondary {
@@ -11,8 +126,33 @@
     word-break: break-word;
 }
 
-/* Fix banner occlusion on small screens */
-@media (max-width: 960px) {
+/* Desktop header layout: reserve enough space for logo + version label */
+@media (min-width: 961px) {
+    /* Breakpoint 961px:
+       Above this, we enforce custom desktop column widths. */
+    .bd-header .col-lg-3.navbar-header-items__start {
+        flex: 0 1 var(--sl-navbar-start-width-desktop);
+        max-width: var(--sl-navbar-start-width-desktop);
+        padding-right: var(--sl-navbar-start-right-padding);
+    }
+
+    .bd-header .col-lg-9.navbar-header-items {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .navbar-brand.logo .logo__title {
+        display: inline-block;
+        max-width: var(--sl-navbar-title-max-width);
+    }
+}
+
+@media (max-width: 760px) {
+    /* Breakpoint 760px:
+       Full logo has already shrunk with available space. At this point we
+       switch to symbol-only mode. Increase this value to switch earlier,
+       decrease to keep full logo longer. */
     .navbar-brand {
         font-size: 1rem !important;
         margin-right: 0 !important;
@@ -20,4 +160,24 @@
     .navbar-header {
         max-width: 70%;
     }
+
+    .navbar-brand.logo .logo__image {
+        display: none !important;
+    }
+
+    .navbar-brand.logo::before {
+        content: "";
+        display: inline-block;
+        width: var(--sl-navbar-logo-width-mobile);
+        height: var(--sl-navbar-logo-height-mobile);
+        background-image: url("logo_v1_without_text.svg");
+        background-repeat: no-repeat;
+        background-position: left center;
+        background-size: contain;
+    }
+
+    html[data-theme="dark"] .navbar-brand.logo::before {
+        background-image: url("logo_v1_without_text.svg");
+    }
+
 }

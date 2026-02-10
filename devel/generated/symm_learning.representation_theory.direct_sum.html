@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../" >
+<html lang="en" data-content_root="../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -13,8 +13,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -31,7 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,11 +42,12 @@
     <script src="../_static/documentation_options.js?v=c87aa342"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/symm_learning.representation_theory.direct_sum';</script>
+    <link rel="icon" href="../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="field_type_to_isotypic_basis" href="symm_learning.representation_theory.field_type_to_isotypic_basis.html" />
+    <link rel="next" title="permutation_matrix" href="symm_learning.representation_theory.permutation_matrix.html" />
     <link rel="prev" title="isotypic_decomp_rep" href="symm_learning.representation_theory.isotypic_decomp_rep.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -54,7 +55,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -88,9 +89,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -100,7 +98,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -114,14 +112,20 @@
   
   
   
+    
+    
+    
+    <img src="../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -157,16 +161,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -196,15 +196,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -270,6 +261,12 @@
         
           <div class="navbar-item">
 
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+
 <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
   <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
   <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
@@ -311,7 +308,6 @@
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.GroupHomomorphismBasis.html">GroupHomomorphismBasis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.isotypic_decomp_rep.html">isotypic_decomp_rep</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">direct_sum</a></li>
-<li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.field_type_to_isotypic_basis.html">field_type_to_isotypic_basis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.permutation_matrix.html">permutation_matrix</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.irreps_stats.html">irreps_stats</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.escnn_representation_form_mapping.html">escnn_representation_form_mapping</a></li>
@@ -396,13 +392,14 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>reps</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">typing.List`[:class:`~escnn.group.Representation</span></code>]) – Summands in the direct sum.</p></li>
+<li><p><strong>reps</strong> (list[<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>]) – Summands in the direct sum.</p></li>
 <li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, optional) – Name of the resulting representation. Auto-generated when <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>change_of_basis</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>, optional) – Optional change of basis for the resulting representation.</p></li>
+<li><p><strong>change_of_basis</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>, optional) – Optional change of basis for the resulting representation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Direct-sum representation with <code class="docutils literal notranslate"><span class="pre">attributes[&quot;direct_sum_reps&quot;]</span></code> set.</p>
+<dd class="field-even"><p>Direct-sum representation with
+<code class="docutils literal notranslate"><span class="pre">attributes[&quot;direct_sum_reps&quot;]</span></code> set.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a></p>
@@ -432,11 +429,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="symm_learning.representation_theory.field_type_to_isotypic_basis.html"
+       href="symm_learning.representation_theory.permutation_matrix.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">field_type_to_isotypic_basis</p>
+        <p class="prev-next-title">permutation_matrix</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

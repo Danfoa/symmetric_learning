@@ -6,4 +6,3 @@
 .. autoclass:: eTransformerDecoderLayer
    :members:
    :show-inheritance:
-   :inherited-members:

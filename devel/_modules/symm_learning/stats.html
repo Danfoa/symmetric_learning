@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../../" >
+<html lang="en" data-content_root="../../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -12,8 +12,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -30,7 +30,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,6 +42,7 @@
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/stats';</script>
+    <link rel="icon" href="../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -50,7 +51,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -84,9 +85,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -96,7 +94,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -110,14 +108,20 @@
   
   
   
+    
+    
+    
+    <img src="../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -153,16 +157,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -192,15 +192,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -261,6 +252,12 @@
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
         
           <div class="navbar-item">
 
@@ -416,12 +413,12 @@
 <span class="sd">    Under the repository&#39;s canonical isotypic ordering, this corresponds to the first isotypic block when present.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x: (:class:`torch.Tensor`) samples of :math:`\mathbf{X}` with shape :math:`(N,D_x)` or</span>
+<span class="sd">        x: (:class:`~torch.Tensor`) samples of :math:`\mathbf{X}` with shape :math:`(N,D_x)` or</span>
 <span class="sd">            :math:`(N,D_x,T)`; when a time axis is present it is folded into the sample axis.</span>
 <span class="sd">        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}` on :math:`\mathcal{X}`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        (:class:`torch.Tensor`): Invariant mean vector in :math:`\mathcal{X}`.</span>
+<span class="sd">        (:class:`~torch.Tensor`): Invariant mean vector in :math:`\mathcal{X}`.</span>
 
 <span class="sd">    Shape:</span>
 <span class="sd">        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
@@ -508,13 +505,14 @@
 <span class="sd">    :math:`\widehat{\mathbf{v}}` denotes the broadcast spectral variance vector after step 3.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x: (:class:`torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`;</span>
+<span class="sd">        x: (:class:`~torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`;</span>
 <span class="sd">            the optional time axis is folded into samples.</span>
 <span class="sd">        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.</span>
-<span class="sd">        center: (:class:`torch.Tensor`, optional) Center for variance computation. If None, computes the mean.</span>
+<span class="sd">        center: (:class:`~torch.Tensor`, optional) Center for variance computation. If None, computes the mean.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        (:class:`torch.Tensor`): Variance vector in the original basis, consistent with the irrep-wise constraint above.</span>
+<span class="sd">        (:class:`~torch.Tensor`): Variance vector in the original basis, consistent with</span>
+<span class="sd">            the irrep-wise constraint above.</span>
 
 <span class="sd">    Shape:</span>
 <span class="sd">        - **x**: :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
@@ -592,11 +590,11 @@
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute :func:`var` and :func:`mean` under symmetry constraints.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x: (:class:`torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
+<span class="sd">        x: (:class:`~torch.Tensor`) samples with shape :math:`(N,D_x)` or :math:`(N,D_x,T)`.</span>
 <span class="sd">        rep_x: (:class:`~escnn.group.Representation`) representation :math:`\rho_{\mathcal{X}}`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        (:class:`torch.Tensor`, :class:`torch.Tensor`): Tuple ``(var, mean)`` where mean is projected to</span>
+<span class="sd">        (:class:`~torch.Tensor`, :class:`~torch.Tensor`): Tuple ``(var, mean)`` where mean is projected to</span>
 <span class="sd">        :math:`\mathcal{X}^{\text{inv}}` and variance satisfies irrep-wise isotropy in spectral basis.</span>
 
 <span class="sd">    Shape:</span>
@@ -644,10 +642,10 @@
 
 
 <span class="sd">    Args:</span>
-<span class="sd">        x (:class:`torch.Tensor`): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.</span>
+<span class="sd">        x (:class:`~torch.Tensor`): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`): isotypic representation</span>
 <span class="sd">            containing exactly one irrep type.</span>
-<span class="sd">        y (:class:`torch.Tensor`, optional): shape :math:`(N,\; m_y d)` —</span>
+<span class="sd">        y (:class:`~torch.Tensor`, optional): shape :math:`(N,\; m_y d)` —</span>
 <span class="sd">            samples drawn from ``rep_y``.  If *None*, computes the</span>
 <span class="sd">            auto-covariance of *x*.</span>
 <span class="sd">        rep_y (:class:`~escnn.group.Representation`, optional): isotypic</span>
@@ -738,13 +736,13 @@
 <span class="sd">    :math:`\mathbb{B}_k` of the irreducible representation of type *k*.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x (:class:`torch.Tensor`): Realizations of a random variable :math:`X`.</span>
-<span class="sd">        y (:class:`torch.Tensor`): Realizations of a random variable :math:`Y`.</span>
+<span class="sd">        x (:class:`~torch.Tensor`): Realizations of a random variable :math:`X`.</span>
+<span class="sd">        y (:class:`~torch.Tensor`): Realizations of a random variable :math:`Y`.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}`.</span>
 <span class="sd">        rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        :class:`torch.Tensor`: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.</span>
+<span class="sd">        :class:`~torch.Tensor`: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.</span>
 
 <span class="sd">    Shape:</span>
 <span class="sd">        - **x**: :math:`(N, D_x)` where :math:`D_x` is the dimension of the random variable :math:`\mathbf{X}`.</span>

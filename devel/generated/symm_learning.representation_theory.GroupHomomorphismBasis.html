@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../" >
+<html lang="en" data-content_root="../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -13,8 +13,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -31,7 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,8 +42,9 @@
     <script src="../_static/documentation_options.js?v=c87aa342"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/symm_learning.representation_theory.GroupHomomorphismBasis';</script>
+    <link rel="icon" href="../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="isotypic_decomp_rep" href="symm_learning.representation_theory.isotypic_decomp_rep.html" />
@@ -54,7 +55,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -88,9 +89,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -100,7 +98,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -114,14 +112,20 @@
   
   
   
+    
+    
+    
+    <img src="../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -157,16 +161,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -196,15 +196,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -270,6 +261,12 @@
         
           <div class="navbar-item">
 
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+
 <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
   <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
   <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
@@ -311,7 +308,6 @@
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">GroupHomomorphismBasis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.isotypic_decomp_rep.html">isotypic_decomp_rep</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.direct_sum.html">direct_sum</a></li>
-<li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.field_type_to_isotypic_basis.html">field_type_to_isotypic_basis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.permutation_matrix.html">permutation_matrix</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.irreps_stats.html">irreps_stats</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.escnn_representation_form_mapping.html">escnn_representation_form_mapping</a></li>
@@ -438,7 +434,7 @@ matrix.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.G">
 <span class="sig-name descname"><span class="pre">G</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.G" title="Link to this definition">#</a></dt>
-<dd><p>Symmetry group shared by <cite>in_rep</cite> and <cite>out_rep</cite>.</p>
+<dd><p>Symmetry group shared by in_rep and out_rep.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Group" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Group</span></code></a></p>
@@ -449,8 +445,8 @@ matrix.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.in_rep">
 <span class="sig-name descname"><span class="pre">in_rep</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.in_rep" title="Link to this definition">#</a></dt>
-<dd><p>Input representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span> rewritten in an
-isotypic basis.</p>
+<dd><p>Input representation
+<span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span> rewritten in an isotypic basis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a></p>
@@ -461,8 +457,8 @@ isotypic basis.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.out_rep">
 <span class="sig-name descname"><span class="pre">out_rep</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.out_rep" title="Link to this definition">#</a></dt>
-<dd><p>Output representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span> rewritten in an
-isotypic basis.</p>
+<dd><p>Output representation
+<span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span> rewritten in an isotypic basis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a></p>
@@ -473,8 +469,8 @@ isotypic basis.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.basis_expansion">
 <span class="sig-name descname"><span class="pre">basis_expansion</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_expansion" title="Link to this definition">#</a></dt>
-<dd><p>Strategy (<code class="docutils literal notranslate"><span class="pre">&quot;memory_heavy&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;isotypic_expansion&quot;</span></code>) controlling
-storage/perf trade-offs</p>
+<dd><p>Strategy (“memory_heavy” or “isotypic_expansion”) controlling
+storage/perf trade-offs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
@@ -485,7 +481,7 @@ storage/perf trade-offs</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.common_irreps">
 <span class="sig-name descname"><span class="pre">common_irreps</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.common_irreps" title="Link to this definition">#</a></dt>
-<dd><p>Irrep identifiers present in both <cite>in_rep</cite> and <cite>out_rep</cite>.</p>
+<dd><p>Irrep identifiers present in both in_rep and out_rep.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>]</p>
@@ -496,22 +492,24 @@ storage/perf trade-offs</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.iso_blocks">
 <span class="sig-name descname"><span class="pre">iso_blocks</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.iso_blocks" title="Link to this definition">#</a></dt>
-<dd><p>Per-irrep metadata for irreps shared by <cite>in_rep</cite>/<cite>out_rep</cite>, keys:</p>
+<dd><p>Per-irrep metadata for
+irreps shared by in_rep/out_rep, keys:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">out_slice</span></code> / <code class="docutils literal notranslate"><span class="pre">in_slice</span></code>: slice selecting the isotypic coordinates in out/in reps.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">mul_out</span></code> / <code class="docutils literal notranslate"><span class="pre">mul_in</span></code>: multiplicities of the irrep in out/in reps.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">irrep_dim</span></code>: Dimension of the irreducible representation  <code class="docutils literal notranslate"><span class="pre">d_k</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">endomorphism_basis</span></code>: basis of <code class="docutils literal notranslate"><span class="pre">End_G(irrep_k)</span></code> for the irrep of type k, of shape <code class="docutils literal notranslate"><span class="pre">(S_k,</span> <span class="pre">d_k,</span> <span class="pre">d_k)</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">dim_hom_basis</span></code>: Dimension of the homomorphism between isotypic spaces of type k. That is
+<li><p>out_slice / in_slice: slice selecting the isotypic coordinates in out/in reps.</p></li>
+<li><p>mul_out / mul_in: multiplicities of the irrep in out/in reps.</p></li>
+<li><p>irrep_dim: Dimension of the irreducible representation <span class="math notranslate nohighlight">\(d_k\)</span>.</p></li>
+<li><p>endomorphism_basis: basis of <span class="math notranslate nohighlight">\(\operatorname{End}_\mathbb{G}(\hat{\rho}_k)\)</span> with shape
+<span class="math notranslate nohighlight">\((S_k, d_k, d_k)\)</span>.</p></li>
+<li><p>dim_hom_basis: Dimension of the homomorphism between isotypic spaces of type <span class="math notranslate nohighlight">\(k\)</span>, i.e.
 <span class="math notranslate nohighlight">\(\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}})) = m_{out}
 \cdot m_{in} \cdot S_k\)</span>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">hom_basis_slice</span></code>: slice containing the degrees of freedom associated to
+<li><p>hom_basis_slice: slice containing the degrees of freedom associated to
 <span class="math notranslate nohighlight">\(\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}}))\)</span> from a vector of
 shape <span class="math notranslate nohighlight">\((\dim(\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})),)\)</span>.</p></li>
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dict[Tuple, Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, Any]]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -520,10 +518,10 @@ shape <span class="math notranslate nohighlight">\((\dim(\operatorname{Hom}_\mat
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.basis_elements">
 <span class="sig-name descname"><span class="pre">basis_elements</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_elements" title="Link to this definition">#</a></dt>
 <dd><p>Full dense basis stack
-<cite>(dim, out_rep.size, in_rep.size)</cite> when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;memory_heavy&quot;</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">(dim,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code> when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;memory_heavy&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -531,34 +529,35 @@ shape <span class="math notranslate nohighlight">\((\dim(\operatorname{Hom}_\mat
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.basis_norm_sq">
 <span class="sig-name descname"><span class="pre">basis_norm_sq</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_norm_sq" title="Link to this definition">#</a></dt>
-<dd><p>Squared Frobenius norms of basis elements when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;memory_heavy&quot;</span></code>.</p>
+<dd><p>Squared Frobenius norms of basis elements when
+<code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;memory_heavy&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">endo_basis_flat_*</span></span></dt>
-<dd><p>Per-irrep flattened endomorphism bases <cite>(S_k, d_k*d_k)</cite> when
-<code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;isotypic_expansion&quot;</span></code>.</p>
+<span class="sig-name descname"><span class="pre">endo_basis_flat_&lt;irrep_id&gt;</span></span></dt>
+<dd><p>Per-irrep flattened endomorphism bases
+<code class="docutils literal notranslate"><span class="pre">(S_k,</span> <span class="pre">d_k*d_k)</span></code> when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;isotypic_expansion&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">endo_basis_norm_sq_*</span></span></dt>
-<dd><p>Per-irrep squared norms of the flattened endomorphism bases with isotypic
-expansion.</p>
+<span class="sig-name descname"><span class="pre">endo_basis_norm_sq_&lt;irrep_id&gt;</span></span></dt>
+<dd><p>Per-irrep squared norms of the flattened
+endomorphism bases with isotypic expansion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -566,10 +565,11 @@ expansion.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.Q_in_inv">
 <span class="sig-name descname"><span class="pre">Q_in_inv</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.Q_in_inv" title="Link to this definition">#</a></dt>
-<dd><p>Change-of-basis matrix <span class="math notranslate nohighlight">\(Q_{in}^{-1}\)</span> cached as buffer for isotypic expansion.</p>
+<dd><p>Change-of-basis matrix <span class="math notranslate nohighlight">\(Q_{in}^{-1}\)</span> cached as buffer for
+isotypic expansion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -577,10 +577,11 @@ expansion.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.Q_out">
 <span class="sig-name descname"><span class="pre">Q_out</span></span><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.Q_out" title="Link to this definition">#</a></dt>
-<dd><p>Change-of-basis matrix <span class="math notranslate nohighlight">\(Q_{out}\)</span> cached as buffer for isotypic expansion.</p>
+<dd><p>Change-of-basis matrix <span class="math notranslate nohighlight">\(Q_{out}\)</span> cached as buffer for
+isotypic expansion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -612,15 +613,6 @@ slower.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.extra_repr">
-<span class="sig-name descname"><span class="pre">extra_repr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/representation_theory.html#GroupHomomorphismBasis.extra_repr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.extra_repr" title="Link to this definition">#</a></dt>
-<dd><p>Return the extra representation of the module.</p>
-<p>To print customized extra information, you should re-implement
-this method in your own modules. Both single-line and multi-line
-strings are acceptable.</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis.forward">
 <span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">w_dof</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/representation_theory.html#GroupHomomorphismBasis.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis.forward" title="Link to this definition">#</a></dt>
 <dd><p>Return equivariant linear map from coefficients.</p>
@@ -629,14 +621,15 @@ strings are acceptable.</p>
 \[\rho_{\mathcal{Y}}(g)\mathbf{W} = \mathbf{W}\rho_{\mathcal{X}}(g), \quad \forall g\in\mathbb{G}.\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>w_dof</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>torch.Tensor</em></a>) – Basis expansion coefficients of shape <code class="docutils literal notranslate"><span class="pre">(D,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">D)</span></code>, where
+<dd class="field-odd"><p><strong>w_dof</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Basis expansion coefficients of shape <code class="docutils literal notranslate"><span class="pre">(D,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">D)</span></code>, where
 <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">dim(Hom_G(in_rep,</span> <span class="pre">out_rep))</span></code>.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dense matrix of shape <cite>(out_rep.size, in_rep.size)</cite> or <cite>(B, out_rep.size, in_rep.size)</cite>.</p>
+<dd class="field-even"><p>Dense matrix of shape
+<code class="docutils literal notranslate"><span class="pre">(out_rep.size,</span> <span class="pre">in_rep.size)</span></code> or <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 <p class="rubric">Example</p>
@@ -678,7 +671,7 @@ dims. Examples: <code class="docutils literal notranslate"><span class="pre">Non
 <dd class="field-odd"><p>Initialized parameters with the shapes above.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -714,13 +707,14 @@ enforces</p>
 \quad \forall g\in\mathbb{G}.\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>torch.Tensor</em></a>) – Weight matrix of shape <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code> in the original basis.</p>
+<dd class="field-odd"><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Weight matrix of shape <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code> in the
+original basis.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Projection of <code class="docutils literal notranslate"><span class="pre">W</span></code> onto the equivariant subspace, matching the input shape.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -790,21 +784,20 @@ enforces</p>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis</span></code></a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.G"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.G</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.in_rep"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.in_rep</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.out_rep"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.out_rep</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_expansion"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.basis_expansion</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.common_irreps"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.common_irreps</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.iso_blocks"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.iso_blocks</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_elements"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.basis_elements</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_norm_sq"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.basis_norm_sq</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.Q_in_inv"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.Q_in_inv</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.Q_out"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.Q_out</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.dim"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.dim</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.extra_repr"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.extra_repr()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.forward"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.forward()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.initialize_params()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.orthogonal_projection"><code class="docutils literal notranslate"><span class="pre">GroupHomomorphismBasis.orthogonal_projection()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.G"><code class="docutils literal notranslate"><span class="pre">G</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.in_rep"><code class="docutils literal notranslate"><span class="pre">in_rep</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.out_rep"><code class="docutils literal notranslate"><span class="pre">out_rep</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_expansion"><code class="docutils literal notranslate"><span class="pre">basis_expansion</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.common_irreps"><code class="docutils literal notranslate"><span class="pre">common_irreps</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.iso_blocks"><code class="docutils literal notranslate"><span class="pre">iso_blocks</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_elements"><code class="docutils literal notranslate"><span class="pre">basis_elements</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.basis_norm_sq"><code class="docutils literal notranslate"><span class="pre">basis_norm_sq</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.Q_in_inv"><code class="docutils literal notranslate"><span class="pre">Q_in_inv</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.Q_out"><code class="docutils literal notranslate"><span class="pre">Q_out</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.dim"><code class="docutils literal notranslate"><span class="pre">dim</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.forward"><code class="docutils literal notranslate"><span class="pre">forward()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params"><code class="docutils literal notranslate"><span class="pre">initialize_params()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.representation_theory.GroupHomomorphismBasis.orthogonal_projection"><code class="docutils literal notranslate"><span class="pre">orthogonal_projection()</span></code></a></li>
 </ul>
 </li>
 </ul>

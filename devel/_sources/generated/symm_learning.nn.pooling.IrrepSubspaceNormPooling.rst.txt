@@ -6,4 +6,3 @@
 .. autoclass:: IrrepSubspaceNormPooling
    :members:
    :show-inheritance:
-   :inherited-members:

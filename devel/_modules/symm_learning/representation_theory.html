@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../../" >
+<html lang="en" data-content_root="../../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -12,8 +12,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -30,7 +30,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,6 +42,7 @@
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/representation_theory';</script>
+    <link rel="icon" href="../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -50,7 +51,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -84,9 +85,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -96,7 +94,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -110,14 +108,20 @@
   
   
   
+    
+    
+    
+    <img src="../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -153,16 +157,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -192,15 +192,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -261,6 +252,12 @@
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
         
           <div class="navbar-item">
 
@@ -363,8 +360,6 @@
 <span class="sd">    Decompose a representation into isotypic components.</span>
 <span class="sd">direct_sum</span>
 <span class="sd">    Direct sum of representations.</span>
-<span class="sd">field_type_to_isotypic_basis</span>
-<span class="sd">    Convert representations to an isotypic basis.</span>
 <span class="sd">irreps_stats</span>
 <span class="sd">    Statistics about irreducible representations in a representation.</span>
 <span class="sd">escnn_representation_form_mapping</span>
@@ -381,7 +376,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
@@ -458,35 +453,40 @@
 <span class="sd">        &gt;&gt;&gt; # both parameterize equivariant maps</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        G (:class:`~escnn.group.Group`): Symmetry group shared by `in_rep` and `out_rep`.</span>
-<span class="sd">        in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}` rewritten in an</span>
-<span class="sd">            isotypic basis.</span>
-<span class="sd">        out_rep (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}` rewritten in an</span>
-<span class="sd">            isotypic basis.</span>
-<span class="sd">        basis_expansion (:class:`str`): Strategy (``&quot;memory_heavy&quot;`` or ``&quot;isotypic_expansion&quot;``) controlling</span>
-<span class="sd">            storage/perf trade-offs</span>
-<span class="sd">        common_irreps (list[tuple]): Irrep identifiers present in both `in_rep` and `out_rep`.</span>
-<span class="sd">        iso_blocks (Dict[Tuple, Dict[str, Any]]): Per-irrep metadata for irreps shared by `in_rep`/`out_rep`, keys:</span>
+<span class="sd">        G (:class:`~escnn.group.group.Group`): Symmetry group shared by in_rep and out_rep.</span>
+<span class="sd">        in_rep (:class:`~escnn.group.representation.Representation`): Input representation</span>
+<span class="sd">            :math:`\rho_{\mathcal{X}}` rewritten in an isotypic basis.</span>
+<span class="sd">        out_rep (:class:`~escnn.group.representation.Representation`): Output representation</span>
+<span class="sd">            :math:`\rho_{\mathcal{Y}}` rewritten in an isotypic basis.</span>
+<span class="sd">        basis_expansion (:class:`str`): Strategy (&quot;memory_heavy&quot; or &quot;isotypic_expansion&quot;) controlling</span>
+<span class="sd">            storage/perf trade-offs.</span>
+<span class="sd">        common_irreps (list[tuple]): Irrep identifiers present in both in_rep and out_rep.</span>
+<span class="sd">        iso_blocks (`dict &lt;https://docs.python.org/3/library/stdtypes.html#dict&gt;`_): Per-irrep metadata for</span>
+<span class="sd">            irreps shared by in_rep/out_rep, keys:</span>
 
-<span class="sd">            - ``out_slice`` / ``in_slice``: slice selecting the isotypic coordinates in out/in reps.</span>
-<span class="sd">            - ``mul_out`` / ``mul_in``: multiplicities of the irrep in out/in reps.</span>
-<span class="sd">            - ``irrep_dim``: Dimension of the irreducible representation  ``d_k``.</span>
-<span class="sd">            - ``endomorphism_basis``: basis of ``End_G(irrep_k)`` for the irrep of type k, of shape ``(S_k, d_k, d_k)``.</span>
-<span class="sd">            - ``dim_hom_basis``: Dimension of the homomorphism between isotypic spaces of type k. That is</span>
+<span class="sd">            - out_slice / in_slice: slice selecting the isotypic coordinates in out/in reps.</span>
+<span class="sd">            - mul_out / mul_in: multiplicities of the irrep in out/in reps.</span>
+<span class="sd">            - irrep_dim: Dimension of the irreducible representation :math:`d_k`.</span>
+<span class="sd">            - endomorphism_basis: basis of :math:`\operatorname{End}_\mathbb{G}(\hat{\rho}_k)` with shape</span>
+<span class="sd">              :math:`(S_k, d_k, d_k)`.</span>
+<span class="sd">            - dim_hom_basis: Dimension of the homomorphism between isotypic spaces of type :math:`k`, i.e.</span>
 <span class="sd">              :math:`\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}})) = m_{out}</span>
 <span class="sd">              \cdot m_{in} \cdot S_k`.</span>
-<span class="sd">            - ``hom_basis_slice``: slice containing the degrees of freedom associated to</span>
+<span class="sd">            - hom_basis_slice: slice containing the degrees of freedom associated to</span>
 <span class="sd">              :math:`\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}}))` from a vector of</span>
 <span class="sd">              shape :math:`(\dim(\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})),)`.</span>
-<span class="sd">        basis_elements (torch.Tensor): Full dense basis stack</span>
-<span class="sd">            `(dim, out_rep.size, in_rep.size)` when ``basis_expansion=&quot;memory_heavy&quot;``.</span>
-<span class="sd">        basis_norm_sq (torch.Tensor): Squared Frobenius norms of basis elements when ``basis_expansion=&quot;memory_heavy&quot;``.</span>
-<span class="sd">        endo_basis_flat_* (torch.Tensor): Per-irrep flattened endomorphism bases `(S_k, d_k*d_k)` when</span>
-<span class="sd">            ``basis_expansion=&quot;isotypic_expansion&quot;``.</span>
-<span class="sd">        endo_basis_norm_sq_* (torch.Tensor): Per-irrep squared norms of the flattened endomorphism bases with isotypic</span>
-<span class="sd">            expansion.</span>
-<span class="sd">        Q_in_inv (torch.Tensor): Change-of-basis matrix :math:`Q_{in}^{-1}` cached as buffer for isotypic expansion.</span>
-<span class="sd">        Q_out (torch.Tensor): Change-of-basis matrix :math:`Q_{out}` cached as buffer for isotypic expansion.</span>
+<span class="sd">        basis_elements (:class:`~torch.Tensor`): Full dense basis stack</span>
+<span class="sd">            ``(dim, out_rep.size, in_rep.size)`` when ``basis_expansion=&quot;memory_heavy&quot;``.</span>
+<span class="sd">        basis_norm_sq (:class:`~torch.Tensor`): Squared Frobenius norms of basis elements when</span>
+<span class="sd">            ``basis_expansion=&quot;memory_heavy&quot;``.</span>
+<span class="sd">        endo_basis_flat_&lt;irrep_id&gt; (:class:`~torch.Tensor`): Per-irrep flattened endomorphism bases</span>
+<span class="sd">            ``(S_k, d_k*d_k)`` when ``basis_expansion=&quot;isotypic_expansion&quot;``.</span>
+<span class="sd">        endo_basis_norm_sq_&lt;irrep_id&gt; (:class:`~torch.Tensor`): Per-irrep squared norms of the flattened</span>
+<span class="sd">            endomorphism bases with isotypic expansion.</span>
+<span class="sd">        Q_in_inv (:class:`~torch.Tensor`): Change-of-basis matrix :math:`Q_{in}^{-1}` cached as buffer for</span>
+<span class="sd">            isotypic expansion.</span>
+<span class="sd">        Q_out (:class:`~torch.Tensor`): Change-of-basis matrix :math:`Q_{out}` cached as buffer for</span>
+<span class="sd">            isotypic expansion.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -583,11 +583,12 @@
 <span class="sd">            \rho_{\mathcal{Y}}(g)\mathbf{W} = \mathbf{W}\rho_{\mathcal{X}}(g), \quad \forall g\in\mathbb{G}.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            w_dof (torch.Tensor): Basis expansion coefficients of shape ``(D,)`` or ``(..., D)``, where</span>
+<span class="sd">            w_dof (:class:`~torch.Tensor`): Basis expansion coefficients of shape ``(D,)`` or ``(..., D)``, where</span>
 <span class="sd">                ``D = dim(Hom_G(in_rep, out_rep))``.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor: Dense matrix of shape `(out_rep.size, in_rep.size)` or `(B, out_rep.size, in_rep.size)`.</span>
+<span class="sd">            :class:`~torch.Tensor`: Dense matrix of shape</span>
+<span class="sd">            ``(out_rep.size, in_rep.size)`` or ``(B, out_rep.size, in_rep.size)``.</span>
 
 <span class="sd">        Example:</span>
 <span class="sd">            &gt;&gt;&gt; W = basis(w_dof)</span>
@@ -639,10 +640,11 @@
 <span class="sd">            \quad \forall g\in\mathbb{G}.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            W (torch.Tensor): Weight matrix of shape ``(..., out_rep.size, in_rep.size)`` in the original basis.</span>
+<span class="sd">            W (:class:`~torch.Tensor`): Weight matrix of shape ``(..., out_rep.size, in_rep.size)`` in the</span>
+<span class="sd">                original basis.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor: Projection of ``W`` onto the equivariant subspace, matching the input shape.</span>
+<span class="sd">            :class:`~torch.Tensor`: Projection of ``W`` onto the equivariant subspace, matching the input shape.</span>
 
 <span class="sd">        Note:</span>
 <span class="sd">            The projection is orthogonal with respect to the Frobenius inner product. The selected</span>
@@ -714,7 +716,7 @@
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Construct the basis of :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            basis_elements (torch.Tensor): Stack of homomorphism basis elements of shape</span>
+<span class="sd">            ``basis_elements`` (:class:`~torch.Tensor`): Stack of homomorphism basis elements of shape</span>
 <span class="sd">            `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`.</span>
 
 <span class="sd">        Note:</span>
@@ -791,7 +793,7 @@
 <span class="sd">            - return_dense=True  → ``(*leading_shape, out_rep.size, in_rep.size)``</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            torch.Tensor: Initialized parameters with the shapes above.</span>
+<span class="sd">            :class:`~torch.Tensor`: Initialized parameters with the shapes above.</span>
 
 <span class="sd">        Notes:</span>
 <span class="sd">            - If ``return_dense=False``, output lives in coefficient space and can be passed to :meth:`forward`.</span>
@@ -866,11 +868,8 @@
             <span class="k">return</span> <span class="n">w_dof</span></div>
 
 
-<div class="viewcode-block" id="GroupHomomorphismBasis.extra_repr">
-<a class="viewcode-back" href="../../generated/symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.extra_repr">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;basis_expansion=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">basis_expansion</span><span class="si">}</span><span class="se">\n</span><span class="s2">in_rep=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="si">}</span><span class="se">\n</span><span class="s2">out_rep=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="si">}</span><span class="s2">&quot;</span></div>
-</div>
 
 
 
@@ -879,7 +878,8 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Representation</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return an equivalent representation disentangled into isotypic subspaces.</span>
 
-<span class="sd">    Given an input :class:`~escnn.group.Representation`, this function computes an equivalent representation by</span>
+<span class="sd">    Given an input :class:`~escnn.group.representation.Representation`, this function computes an equivalent</span>
+<span class="sd">    representation by</span>
 <span class="sd">    updating the change of basis (and its inverse) and reordering the irreducible representations. The returned</span>
 <span class="sd">    representation is guaranteed to be disentangled into its isotypic subspaces.</span>
 
@@ -913,10 +913,10 @@
 <span class="sd">    - ``attributes[&quot;in_isotypic_basis&quot;]``: boolean flag set to ``True``.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        rep (:class:`~escnn.group.Representation`): The input representation :math:`\rho`.</span>
+<span class="sd">        rep (:class:`~escnn.group.representation.Representation`): The input representation :math:`\rho`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        escnn.group.Representation: An equivalent, disentangled representation.</span>
+<span class="sd">        :class:`~escnn.group.representation.Representation`: An equivalent, disentangled representation.</span>
 
 <span class="sd">    Note:</span>
 <span class="sd">        The decomposition is cached per symmetry group under ``rep.group.representations`` with key</span>
@@ -1016,7 +1016,9 @@
 
 <div class="viewcode-block" id="direct_sum">
 <a class="viewcode-back" href="../../generated/symm_learning.representation_theory.direct_sum.html#symm_learning.representation_theory.direct_sum">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">direct_sum</span><span class="p">(</span><span class="n">reps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Representation</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">change_of_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Representation</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">direct_sum</span><span class="p">(</span>
+    <span class="n">reps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Representation</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">change_of_basis</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Representation</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return the direct sum :math:`\rho=\bigoplus_i \rho_i` of representations.</span>
 
 <span class="sd">    If ``name`` is not provided, the function builds one by run-length encoding consecutive repeated names:</span>
@@ -1026,12 +1028,13 @@
 <span class="sd">    This preserves order and makes repeated contiguous blocks explicit.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        reps (:class:`typing.List`[:class:`~escnn.group.Representation`]): Summands in the direct sum.</span>
+<span class="sd">        reps (list[:class:`~escnn.group.representation.Representation`]): Summands in the direct sum.</span>
 <span class="sd">        name (:class:`str`, optional): Name of the resulting representation. Auto-generated when ``None``.</span>
-<span class="sd">        change_of_basis (:class:`numpy.ndarray`, optional): Optional change of basis for the resulting representation.</span>
+<span class="sd">        change_of_basis (:class:`~numpy.ndarray`, optional): Optional change of basis for the resulting representation.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        :class:`~escnn.group.Representation`: Direct-sum representation with ``attributes[&quot;direct_sum_reps&quot;]`` set.</span>
+<span class="sd">        :class:`~escnn.group.representation.Representation`: Direct-sum representation with</span>
+<span class="sd">        ``attributes[&quot;direct_sum_reps&quot;]`` set.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">directsum</span>
 
@@ -1053,29 +1056,6 @@
     <span class="n">out_rep</span> <span class="o">=</span> <span class="n">directsum</span><span class="p">(</span><span class="n">reps</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">change_of_basis</span><span class="o">=</span><span class="n">change_of_basis</span><span class="p">)</span>
     <span class="n">out_rep</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;direct_sum_reps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reps</span>
     <span class="k">return</span> <span class="n">out_rep</span></div>
-
-
-
-<div class="viewcode-block" id="field_type_to_isotypic_basis">
-<a class="viewcode-back" href="../../generated/symm_learning.representation_theory.field_type_to_isotypic_basis.html#symm_learning.representation_theory.field_type_to_isotypic_basis">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">field_type_to_isotypic_basis</span><span class="p">(</span><span class="n">rep_or_field</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Representation</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert a representation-like object to an isotypic-basis representation.</span>
-
-<span class="sd">    Accepts either:</span>
-
-<span class="sd">    - a :class:`~escnn.group.Representation`, or</span>
-<span class="sd">    - an object with a ``representation`` attribute (legacy ``FieldType`` style).</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        :class:`~escnn.group.Representation`: Output of</span>
-<span class="sd">        :func:`~symm_learning.representation_theory.isotypic_decomp_rep`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">rep</span> <span class="o">=</span> <span class="n">rep_or_field</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rep_or_field</span><span class="p">,</span> <span class="n">Representation</span><span class="p">):</span>
-        <span class="n">rep</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">rep_or_field</span><span class="p">,</span> <span class="s2">&quot;representation&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">Representation</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Expected a Representation or an object with a &#39;representation&#39; attribute.&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep</span><span class="p">)</span></div>
 
 
 
@@ -1130,23 +1110,26 @@
 <a class="viewcode-back" href="../../generated/symm_learning.representation_theory.escnn_representation_form_mapping.html#symm_learning.representation_theory.escnn_representation_form_mapping">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">escnn_representation_form_mapping</span><span class="p">(</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
-    <span class="n">rep</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
+    <span class="n">rep</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;reconstructed&quot;</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Reconstruct :class:`escnn.group.Representation` from a map :math:`\mathbb{G}\to\mathrm{GL}(\mathcal{X})`.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Reconstruct a representation from a map :math:`\mathbb{G}\to\mathrm{GL}(\mathcal{X})`.</span>
 
 <span class="sd">    Given a representation map :math:`\rho: \mathbb{G}\to\mathrm{GL}(\mathcal{X})`, this function identifies the</span>
 <span class="sd">    irreducible ESCNN decomposition and returns an equivalent</span>
-<span class="sd">    :class:`~escnn.group.Representation` object.</span>
+<span class="sd">    :class:`~escnn.group.representation.Representation` object.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        group (:class:`escnn.group.Group`): Symmetry group of the representation.</span>
-<span class="sd">        rep: Either a dictionary ``{g: rho(g)}`` or a callable returning the matrix :math:`\rho(g)` for each</span>
-<span class="sd">            :class:`escnn.group.GroupElement` ``g``.</span>
+<span class="sd">        group (:class:`~escnn.group.group.Group`): Symmetry group of the representation.</span>
+<span class="sd">        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.</span>
+<span class="sd">            Either a `dict &lt;https://docs.python.org/3/library/stdtypes.html#dict&gt;`_ or a</span>
+<span class="sd">            :class:`collections.abc.Callable` returning the matrix :math:`\rho(g)` for each</span>
+<span class="sd">            :class:`~escnn.group.group.GroupElement` ``g``.</span>
 <span class="sd">        name (:class:`str`, optional): Name of the representation. Defaults to &#39;reconstructed&#39;.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        representation (:class:`escnn.group.Representation`): Reconstructed ESCNN representation instance.</span>
+<span class="sd">        representation (:class:`~escnn.group.representation.Representation`): Reconstructed ESCNN representation</span>
+<span class="sd">            instance.</span>
 
 <span class="sd">    Note:</span>
 <span class="sd">        Matrices must define a valid representation (invertible and group-consistent).</span>
@@ -1245,21 +1228,21 @@
 
 <div class="viewcode-block" id="is_complex_irreducible">
 <a class="viewcode-back" href="../../generated/symm_learning.representation_theory.is_complex_irreducible.html#symm_learning.representation_theory.is_complex_irreducible">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">is_complex_irreducible</span><span class="p">(</span>
-    <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span>
-<span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_complex_irreducible</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Check complex irreducibility of :math:`\rho:\mathbb{G}\to\mathrm{GL}(\mathcal{X})`.</span>
 
 <span class="sd">    By Schur&#39;s lemma, :math:`\rho` is complex-irreducible iff every Hermitian matrix commuting with all</span>
 <span class="sd">    :math:`\rho(g)` is scalar. The routine searches for a non-scalar commuting Hermitian witness :math:`\mathbf{H}`.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        group (:class:`escnn.group.Group`): Symmetry group of the representation.</span>
-<span class="sd">        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):</span>
-<span class="sd">            Mapping from group elements to their representation matrices.</span>
+<span class="sd">        group (:class:`~escnn.group.group.Group`): Symmetry group of the representation.</span>
+<span class="sd">        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.</span>
+<span class="sd">            It must be either a `dict &lt;https://docs.python.org/3/library/stdtypes.html#dict&gt;`_ or a</span>
+<span class="sd">            :class:`collections.abc.Callable`.</span>
+<span class="sd">            It must map each :class:`~escnn.group.group.GroupElement` to a matrix :class:`~numpy.ndarray`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        tuple[:class:`bool`, :class:`numpy.ndarray`]:</span>
+<span class="sd">        tuple[:class:`bool`, :class:`~numpy.ndarray`]:</span>
 <span class="sd">            - ``(True, I)`` if irreducible (identity witness),</span>
 <span class="sd">            - ``(False, H)`` if reducible with a non-scalar commuting Hermitian witness.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1301,9 +1284,7 @@
 
 <div class="viewcode-block" id="decompose_representation">
 <a class="viewcode-back" href="../../generated/symm_learning.representation_theory.decompose_representation.html#symm_learning.representation_theory.decompose_representation">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">decompose_representation</span><span class="p">(</span>
-    <span class="n">G</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span>
-<span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">decompose_representation</span><span class="p">(</span><span class="n">G</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Block-diagonalize :math:`\rho:\mathbb{G}\to\mathrm{GL}(\mathcal{X})` into invariant subspaces.</span>
 
 <span class="sd">    Finds a unitary matrix :math:`\mathbf{Q}` such that</span>
@@ -1316,15 +1297,16 @@
 <span class="sd">    witnesses and graph connected-components to obtain contiguous block structure.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        G (:class:`escnn.group.Group`): The symmetry group.</span>
-<span class="sd">        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement], np.ndarray]]):</span>
-<span class="sd">            The representation to decompose.</span>
+<span class="sd">        G (:class:`~escnn.group.group.Group`): The symmetry group.</span>
+<span class="sd">        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.</span>
+<span class="sd">            It must be either a `dict &lt;https://docs.python.org/3/library/stdtypes.html#dict&gt;`_ or a</span>
+<span class="sd">            :class:`collections.abc.Callable`.</span>
+<span class="sd">            It must map each :class:`~escnn.group.group.GroupElement` to a matrix :class:`~numpy.ndarray`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        tuple:</span>
-<span class="sd">            - subreps (:class:`typing.List`[:class:`CallableDict`]): Decomposed subrepresentations (not guaranteed</span>
-<span class="sd">              sorted by dimension).</span>
-<span class="sd">            - Q (:class:`numpy.ndarray`): Unitary change-of-basis matrix.</span>
+<span class="sd">            - subreps (list[Callable]): Decomposed subrepresentations (not guaranteed sorted by dimension).</span>
+<span class="sd">            - Q (:class:`~numpy.ndarray`): Unitary change-of-basis matrix.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
@@ -1418,18 +1400,18 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">compute_character_table</span><span class="p">(</span><span class="n">G</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">reps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Representation</span><span class="p">]]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_character_table</span><span class="p">(</span><span class="n">G</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">reps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="n">Representation</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the character table of a group for a given set of representations.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        G (:class:`escnn.group.Group`): Symmetry group.</span>
-<span class="sd">        reps (list[Union[dict, :class:`~escnn.group.Representation`]]): Representations (or representation mappings)</span>
-<span class="sd">            for which characters are evaluated on all group elements. Each entry can be either:</span>
-<span class="sd">            - a mapping from :class:`~escnn.group.GroupElement` to :class:`numpy.ndarray`, or</span>
-<span class="sd">            - an :class:`~escnn.group.Representation`.</span>
+<span class="sd">        G (:class:`~escnn.group.group.Group`): Symmetry group.</span>
+<span class="sd">        reps (:class:`list`): Representations (or representation mappings) for which characters are evaluated on all</span>
+<span class="sd">            group elements. Each entry is a :class:`~typing.Union` of:</span>
+<span class="sd">            - a mapping from :class:`~escnn.group.group.GroupElement` to :class:`~numpy.ndarray`, or</span>
+<span class="sd">            - an :class:`~escnn.group.representation.Representation`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        :class:`numpy.ndarray`: The character table of shape `(n_reps, G.order())`.</span>
+<span class="sd">        :class:`~numpy.ndarray`: The character table of shape `(n_reps, G.order())`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">n_reps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">reps</span><span class="p">)</span>
     <span class="n">table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_reps</span><span class="p">,</span> <span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
@@ -1458,15 +1440,17 @@
 <span class="sd">    This routine decomposes the representation into complex irreducibles.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        G (:class:`escnn.group.Group`): Symmetry group of the representation.</span>
-<span class="sd">        rep (Union[Dict[escnn.group.GroupElement, np.ndarray], Callable[[escnn.group.GroupElement, np.ndarray]]]):</span>
-<span class="sd">            dict/mapping from group elements to matrices, or a function that takes a group element and returns a matrix.</span>
+<span class="sd">        G (:class:`~escnn.group.group.Group`): Symmetry group of the representation.</span>
+<span class="sd">        rep (dict | collections.abc.Callable): A :class:`~typing.Union`-style input.</span>
+<span class="sd">            It must be either a `dict &lt;https://docs.python.org/3/library/stdtypes.html#dict&gt;`_ or a</span>
+<span class="sd">            :class:`collections.abc.Callable`.</span>
+<span class="sd">            It must map each :class:`~escnn.group.group.GroupElement` to a matrix :class:`~numpy.ndarray`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        sorted_irreps (List[Dict[escnn.group.GroupElement, np.ndarray]]): List of complex irreducible representations,</span>
-<span class="sd">        sorted in ascending order of dimension.</span>
-<span class="sd">        Q (:class:`numpy.ndarray`): Hermitian matrix such that Q @ rep[g] @ Q^-1 is block diagonal, with blocks</span>
-<span class="sd">        `sorted_irreps`.</span>
+<span class="sd">        sorted_irreps (list[dict]): List of complex irreducible representations, sorted in ascending order of</span>
+<span class="sd">            dimension.</span>
+<span class="sd">        Q (:class:`~numpy.ndarray`): Hermitian matrix such that ``Q @ rep[g] @ Q^-1`` is block diagonal, with blocks</span>
+<span class="sd">            ``sorted_irreps``.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -1514,18 +1498,16 @@
     <span class="k">return</span> <span class="n">sorted_irreps</span><span class="p">,</span> <span class="n">Q</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">sorted_jordan_canonical_form</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">reps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sorted_jordan_canonical_form</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">reps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Sorts a list of representations in ascending order of dimension, and returns a permutation matrix P such that.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        group (:class:`escnn.group.Group`): Symmetry group of the representation.</span>
-<span class="sd">        reps (List[Union[Callable[[escnn.group.GroupElement], np.ndarray], escnn.group.Representation]]):</span>
-<span class="sd">            List of representations to sort by dimension.</span>
+<span class="sd">        group (:class:`~escnn.group.group.Group`): Symmetry group of the representation.</span>
+<span class="sd">        reps (:class:`list`[:class:`collections.abc.Callable`]): List of representations to sort by dimension.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        P (:class:`numpy.ndarray`): Permutation matrix sorting the input reps.</span>
-<span class="sd">        reps (:class:`typing.List`[:class:`typing.Callable`[[:class:`escnn.group.GroupElement`],</span>
-<span class="sd">            :class:`numpy.ndarray`]]): Sorted list of representations.</span>
+<span class="sd">        P (:class:`~numpy.ndarray`): Permutation matrix sorting the input reps.</span>
+<span class="sd">        reps (:class:`list`[:class:`collections.abc.Callable`]): Sorted list of representations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">reps_idx</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">reps</span><span class="p">))</span>
     <span class="n">reps_size</span> <span class="o">=</span> <span class="p">[</span><span class="n">rep</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">sample</span><span class="p">())</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">rep</span> <span class="ow">in</span> <span class="n">reps</span><span class="p">]</span>

@@ -6,4 +6,3 @@
 .. autoclass:: eCondTransformerRegressor
    :members:
    :show-inheritance:
-   :inherited-members:

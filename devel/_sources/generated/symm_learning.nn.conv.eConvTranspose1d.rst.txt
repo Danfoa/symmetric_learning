@@ -6,4 +6,3 @@
 .. autoclass:: eConvTranspose1d
    :members:
    :show-inheritance:
-   :inherited-members:

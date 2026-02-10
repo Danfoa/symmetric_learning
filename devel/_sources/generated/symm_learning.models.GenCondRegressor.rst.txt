@@ -1,8 +1,8 @@
-﻿eMLP
-====
+﻿GenCondRegressor
+================
 
 .. currentmodule:: symm_learning.models
 
-.. autoclass:: eMLP
+.. autoclass:: GenCondRegressor
    :members:
    :show-inheritance:

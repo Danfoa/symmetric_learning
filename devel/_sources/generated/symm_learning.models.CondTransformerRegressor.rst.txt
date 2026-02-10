@@ -6,4 +6,3 @@
 .. autoclass:: CondTransformerRegressor
    :members:
    :show-inheritance:
-   :inherited-members:

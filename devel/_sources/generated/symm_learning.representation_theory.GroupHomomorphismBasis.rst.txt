@@ -6,4 +6,3 @@
 .. autoclass:: GroupHomomorphismBasis
    :members:
    :show-inheritance:
-   :inherited-members:

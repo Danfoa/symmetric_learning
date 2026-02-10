@@ -6,4 +6,3 @@
 .. autoclass:: eRMSNorm
    :members:
    :show-inheritance:
-   :inherited-members:

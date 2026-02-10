@@ -6,4 +6,3 @@
 .. autoclass:: eAffine
    :members:
    :show-inheritance:
-   :inherited-members:

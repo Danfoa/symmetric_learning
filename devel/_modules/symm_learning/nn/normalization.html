@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../../../" >
+<html lang="en" data-content_root="../../../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -12,8 +12,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -30,7 +30,7 @@
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,6 +42,7 @@
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/normalization';</script>
+    <link rel="icon" href="../../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -50,7 +51,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -84,9 +85,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -96,7 +94,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -110,14 +108,20 @@
   
   
   
+    
+    
+    
+    <img src="../../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -153,16 +157,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -192,15 +192,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -261,6 +252,12 @@
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
         
           <div class="navbar-item">
 
@@ -381,15 +378,18 @@
 <span class="sd">        = \rho_{\mathcal{X}}(g)\operatorname{eRMSNorm}(\mathbf{x}),</span>
 <span class="sd">        \quad \forall g\in\mathbb{G},</span>
 
-<span class="sd">    because the RMS factor is invariant and :class:`eAffine` commutes with :math:`\rho_{\mathcal{X}}`.</span>
+<span class="sd">    because the RMS factor is invariant and :class:`~symm_learning.nn.linear.eAffine` commutes with</span>
+<span class="sd">    :math:`\rho_{\mathcal{X}}`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        in_rep (:class:`~escnn.group.Representation`): Description of the feature space :math:`\rho_{\text{in}}`.</span>
 <span class="sd">        eps (:class:`float`): Numerical stabilizer added inside the RMS computation.</span>
-<span class="sd">        equiv_affine (:class:`bool`): If ``True``, apply a symmetry-preserving :class:`eAffine` after normalization.</span>
+<span class="sd">        equiv_affine (:class:`bool`): If ``True``, apply a symmetry-preserving</span>
+<span class="sd">            :class:`~symm_learning.nn.linear.eAffine` after normalization.</span>
 <span class="sd">        device, dtype: Optional tensor factory kwargs passed to the affine parameters.</span>
-<span class="sd">        init_scheme (:class:`typing.Literal`[&quot;identity&quot;, &quot;random&quot;] | :class:`None`): Initialization scheme forwarded to</span>
-<span class="sd">            :meth:`eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful when loading checkpoints).</span>
+<span class="sd">        init_scheme (Literal[&quot;identity&quot;, &quot;random&quot;] | None): Initialization scheme forwarded to</span>
+<span class="sd">            :meth:`~symm_learning.nn.linear.eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful</span>
+<span class="sd">            when loading checkpoints).</span>
 
 <span class="sd">    Shape:</span>
 <span class="sd">        - Input: ``(..., in_rep.size)``</span>
@@ -431,7 +431,8 @@
 <span class="sd">            input: Tensor shaped ``(..., in_rep.size)``.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            Tensor with identical shape, RMS-normalized and possibly transformed by :class:`eAffine`.</span>
+<span class="sd">            Tensor with identical shape, RMS-normalized and possibly transformed by</span>
+<span class="sd">            :class:`~symm_learning.nn.linear.eAffine`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected (...,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">rms_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
@@ -478,7 +479,8 @@
 <span class="sd">    Args:</span>
 <span class="sd">        in_rep (:class:`~escnn.group.Representation`): description of the feature space :math:`\rho_{\text{in}}`.</span>
 <span class="sd">        eps (:class:`float`): numerical stabilizer added to each variance.</span>
-<span class="sd">        equiv_affine (:class:`bool`): if ``True``, applies an :class:`eAffine` in spectral space.</span>
+<span class="sd">        equiv_affine (:class:`bool`): if ``True``, applies an :class:`~symm_learning.nn.linear.eAffine` in spectral</span>
+<span class="sd">            space.</span>
 <span class="sd">        bias (:class:`bool`): whether the affine term includes invariant biases (only used if ``equiv_affine``).</span>
 <span class="sd">        device, dtype: optional tensor factory kwargs.</span>
 
@@ -555,11 +557,8 @@
         <span class="k">return</span> <span class="n">normalized</span></div>
 
 
-<div class="viewcode-block" id="eLayerNorm.extra_repr">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eLayerNorm.html#symm_learning.nn.normalization.eLayerNorm.extra_repr">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{normalized_shape}</span><span class="s2">, eps=</span><span class="si">{eps}</span><span class="s2">, affine=</span><span class="si">{equiv_affine}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span></div>
-</div>
 
 
 
@@ -570,7 +569,7 @@
 
 <span class="sd">    The mean and variance are computed with :func:`~symm_learning.stats.var_mean`,</span>
 <span class="sd">    enforcing that each irreducible subspace shares a single variance scalar. The</span>
-<span class="sd">    optional affine parameters are implemented via :class:`eAffine` to preserve</span>
+<span class="sd">    optional affine parameters are implemented via :class:`~symm_learning.nn.linear.eAffine` to preserve</span>
 <span class="sd">    equivariance.</span>
 
 <span class="sd">    The layer satisfies:</span>
@@ -621,6 +620,7 @@
 <div class="viewcode-block" id="eBatchNorm1d.forward">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Normalize using symmetry-constrained batch statistics and optional equivariant affine map.&quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected (..., </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="n">x_flat</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
@@ -649,14 +649,11 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">evaluate_output_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
         <span class="k">return</span> <span class="n">input_shape</span>
 
-<div class="viewcode-block" id="eBatchNorm1d.extra_repr">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d.extra_repr">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;in_rep: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="si">}</span><span class="s2">, affine: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="si">}</span><span class="s2">, track_running_stats: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="si">}</span><span class="s2"> &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;eps: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="si">}</span><span class="s2">, momentum: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span></div>
-
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="eBatchNorm1d.check_equivariance">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d.check_equivariance">[docs]</a>

@@ -6,4 +6,3 @@
 .. autoclass:: InvariantBias
    :members:
    :show-inheritance:
-   :inherited-members:

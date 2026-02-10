@@ -6,4 +6,3 @@
 .. autoclass:: eMultiheadAttention
    :members:
    :show-inheritance:
-   :inherited-members:

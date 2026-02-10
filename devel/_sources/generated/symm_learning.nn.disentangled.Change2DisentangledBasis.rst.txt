@@ -6,4 +6,3 @@
 .. autoclass:: Change2DisentangledBasis
    :members:
    :show-inheritance:
-   :inherited-members:

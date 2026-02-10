@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../../../../" >
+<html lang="en" data-content_root="../../../../" data-theme="light">
 
   <head>
     <meta charset="utf-8" />
@@ -12,8 +12,8 @@
   
   
   <script data-cfasync="false">
-    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   <!--
     this give us a css class that will be invisible only if js is disabled
@@ -30,7 +30,7 @@
 <link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=e564c319" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
   <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -42,6 +42,7 @@
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/models/diffusion/cond_transformer_regressor';</script>
+    <link rel="icon" href="../../../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -50,7 +51,7 @@
   </head>
   
   
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
 
   
   
@@ -84,9 +85,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content"><strong>v0.4.1 - devel</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -96,7 +94,7 @@
   </button>
   
   
-  <div class="col-lg-3 navbar-header-items__start">
+  <div class=" navbar-header-items__start">
     
       <div class="navbar-item">
 
@@ -110,14 +108,20 @@
   
   
   
+    
+    
+    
+    <img src="../../../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
-    <p class="title logo__title">Symmetric Learning v0.4.1 Docs [devel]</p>
+  
+    <p class="title logo__title">v0.4.1 - devel</p>
   
 </a></div>
     
   </div>
   
-  <div class="col-lg-9 navbar-header-items">
+  <div class=" navbar-header-items">
     
     <div class="me-auto navbar-header-items__center">
       
@@ -153,16 +157,12 @@
     
     <div class="navbar-header-items__end">
       
-        <div class="navbar-item navbar-persistent--container">
-          
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-        </div>
       
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
       
         <div class="navbar-item">
 
@@ -192,15 +192,6 @@
     
   </div>
   
-  
-    <div class="navbar-persistent--mobile">
-
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button>
-    </div>
   
 
   
@@ -261,6 +252,12 @@
     
     
       <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
         
           <div class="navbar-item">
 
@@ -360,6 +357,8 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
+<div class="viewcode-block" id="GenCondRegressor">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.GenCondRegressor.html#symm_learning.models.GenCondRegressor">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">GenCondRegressor</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Generative Conditional Regressor module.</span>
 
@@ -402,22 +401,26 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">out_dim</span> <span class="o">=</span> <span class="n">out_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">cond_dim</span>
 
+<div class="viewcode-block" id="GenCondRegressor.forward">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.GenCondRegressor.html#symm_learning.models.GenCondRegressor.forward">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">opt_step</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Z</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Forward pass of the generative conditional regressor.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            X (:class:`torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a</span>
+<span class="sd">            X (:class:`~torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a</span>
 <span class="sd">                `d_x`-dimensional space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.</span>
-<span class="sd">            opt_step (:class:`torch.Tensor` | :class:`float` | :class:`int`): The optimization step(s) `k` at which to</span>
+<span class="sd">            opt_step (:class:`~torch.Tensor` | :class:`float` | :class:`int`): The optimization step(s) `k` at which to</span>
 <span class="sd">                evaluate the regressor. Can be a single scalar or a tensor of shape `(B,)`.</span>
-<span class="sd">            Z (:class:`torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a</span>
+<span class="sd">            Z (:class:`~torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a</span>
 <span class="sd">                `d_z`-dimensional space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            :class:`torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.</span>
+<span class="sd">            :class:`~torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
+        <span class="k">pass</span></div>
+</div>
+
 
 
 <div class="viewcode-block" id="CondTransformerRegressor">
@@ -677,15 +680,15 @@
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Forward pass of the conditional transformer regressor, approximating V_k = f(X_k, Z, k).</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            X (:class:`torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a</span>
+<span class="sd">            X (:class:`~torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a</span>
 <span class="sd">                `d_x`-dimensional space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.</span>
-<span class="sd">            opt_step (:class:`torch.Tensor` | :class:`float` | :class:`int`): The optimization timestep(s) `k` at which</span>
+<span class="sd">            opt_step (:class:`~torch.Tensor` | :class:`float` | :class:`int`): The optimization timestep(s) `k` at which</span>
 <span class="sd">                to evaluate the regressor. Can be a single scalar or a tensor of shape `(B,)`.</span>
-<span class="sd">            Z (:class:`torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a</span>
+<span class="sd">            Z (:class:`~torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a</span>
 <span class="sd">                `d_z`-dimensional space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            :class:`torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.</span>
+<span class="sd">            :class:`~torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># assert X.shape[1] &lt;= self.in_horizon, f&quot;Input horizon {X.shape[1]} larger than {self.in_horizon}&quot;</span>
         <span class="c1"># assert Z.shape[1] &lt;= self.cond_horizon - 1, f&quot;Cond horizon {Z.shape[1]} larger than {self.cond_horizon - 1}&quot;</span>
