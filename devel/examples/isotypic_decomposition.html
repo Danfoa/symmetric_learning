@@ -365,49 +365,44 @@
 <span id="isotypic-decomposition-example"></span><h1>Isotypic Decomposition<a class="headerlink" href="#isotypic-decomposition" title="Link to this heading">#</a></h1>
 <section id="what-it-is">
 <h2>What It Is<a class="headerlink" href="#what-it-is" title="Link to this heading">#</a></h2>
-<p>In this library, a <strong>symmetric vector space</strong> is a pair
-<span class="math notranslate nohighlight">\((\mathcal{X}, \rho_{\mathcal{X}})\)</span> where
-<span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}:\mathbb{G}\to \mathrm{GL}(\mathcal{X})\)</span> is a representation.</p>
-<p>The isotypic decomposition can be written equivalently at the representation level
-and at the vector-space level:</p>
+<p>In this library, a <strong>symmetric vector space</strong> is a pair <span class="math notranslate nohighlight">\((\mathcal{X}, \rho_{\mathcal{X}})\)</span>, where <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}:\mathbb{G}\to \mathbb{GL}(\mathcal{X})\)</span> is a linear group representation of the vector space symmetry group <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>, and <span class="math notranslate nohighlight">\(\mathbb{GL}(\mathcal{X})\)</span> is the group of invertible linear transformations on <span class="math notranslate nohighlight">\(\mathcal{X}\)</span>.</p>
+<p>To perform most relevant statistical and linear algebraic operations on vector spaces efficiently, we leverage the <strong>isotypic decomposition</strong> of <span class="math notranslate nohighlight">\(\mathcal{X}\)</span>. Intuitively, this decomposition is an ordered breakdown of the vector space into a direct sum of (potentially many copies of) its irreducible building-block subspaces. Similarly to how ordinary vector spaces can be decomposed into a set of one-dimensional (irreducible) subspaces, symmetric vector spaces can also be decomposed; however, their irreducible subspaces are not always one-dimensional, and they come in different types (associated to different irreducible representations of the group).</p>
+<p>The isotypic decomposition can be applied to any <strong>compact symmetry group</strong> (e.g., finite groups, compact Lie groups, and their products), and is directly linked to the decomposition of the vector space representation into an ordered direct sum of irreducible representations (irreps) <span class="math notranslate nohighlight">\(\{ \hat{\rho}_k: \mathbb{G} \to \mathrm{GL}(\mathcal{H}_k) \}_{k\in[1,n_{\text{iso}}]}\)</span>. These are the irreducible linear group representations describing the symmetries of the different types of irreducible constituents of the symmetric vector space, namely <span class="math notranslate nohighlight">\(\{\mathcal{H}_k\}_{k\in[1,n_{\text{iso}}]}\)</span>. In particular, this means that any <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-symmetric vector space can be decomposed into copies of these irreducible building-block vector spaces. Here, <span class="math notranslate nohighlight">\(\hat{\rho}_k\)</span> denotes the <span class="math notranslate nohighlight">\(k\)</span>-th irrep type, and <span class="math notranslate nohighlight">\(n_{\text{iso}}\)</span> denotes the number of (real) irreducible representations of the group. Having this in mind, the isotypic decomposition can be written as:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{aligned}
+\[\begin{aligned}
 \rho_{\mathcal{X}}(g)
 &amp;= \mathbf{Q}\left(
 \bigoplus_{k\in[1,n_{\text{iso}}]}
 \bigoplus_{i\in[1,n_k]}
 \hat{\rho}_k(g)
 \right)\mathbf{Q}^T
-\qquad
+\quad\iff \quad
 &amp;
 \mathcal{X}
-&amp;= \bigoplus_{k\in[1,n_{\text{iso}}]} \mathcal{X}^{(k)},
-\\
-&amp;&amp;
-\mathcal{X}^{(k)}
-&amp;= \bigoplus_{i\in[1,n_k]} \hat{\mathcal{X}}_k^{(i)}.
-\end{aligned}\end{split}\]</div>
-<p>These two views are equivalent: block-diagonalizing <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>
-with <span class="math notranslate nohighlight">\(\mathbf{Q}\)</span> is exactly the same operation as decomposing
-<span class="math notranslate nohighlight">\(\mathcal{X}\)</span> into isotypic subspaces and irreducible copies.</p>
+&amp;= \bigoplus_{k\in[1,n_{\text{iso}}]}^{\perp} \mathcal{X}^{(k)}
+=
+ \bigoplus_{k\in[1,n_{\text{iso}}]}^{\perp}
+ \bigoplus_{i\in[1,n_k]} \hat{\mathcal{X}}_i^{(k)}.
+\end{aligned}\]</div>
+<p>The decomposition of the representation is directly linked to the orthogonal decomposition of the vector space into <strong>isotypic subspaces</strong> <span class="math notranslate nohighlight">\(\mathcal{X}^{(k)}\)</span>. Each isotypic subspace is composed of <span class="math notranslate nohighlight">\(n_k\)</span> subspaces <span class="math notranslate nohighlight">\(\hat{\mathcal{X}}_i^{(k)}\)</span> that are all isomorphic to the irreducible representation space of the irrep of type <span class="math notranslate nohighlight">\(k\)</span>, i.e., <span class="math notranslate nohighlight">\(\hat{\mathcal{X}}_i^{(k)} \cong \mathcal{H}_{k} \quad \forall i \in [1,n_k]\)</span>. `</p>
+<p>The orthogonality between isotypic subspaces follows from <a class="reference external" href="https://en.wikipedia.org/wiki/Schur_orthogonality_relations">Schur’s orthogonality relations</a> and is a key property we exploit throughout the library. In practice, to reach this decomposition we use the change-of-basis <span class="math notranslate nohighlight">\(\mathbf{Q}\)</span>. Applying this change of basis to the data allows us to work in an isotypic-irrep-spectral basis, enabling more efficient and more interpretable operations per irrep type / isotypic subspace.</p>
 </section>
 <section id="notation-convention">
 <h2>Notation Convention<a class="headerlink" href="#notation-convention" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(\mathbb{G}\)</span> denotes the group.</p></li>
-<li><p><span class="math notranslate nohighlight">\(k\)</span> indexes isotypic subspaces / irrep types.</p></li>
-<li><p><span class="math notranslate nohighlight">\(i\)</span> indexes multiplicity within type <span class="math notranslate nohighlight">\(k\)</span>.</p></li>
-<li><p><span class="math notranslate nohighlight">\(\mathcal{X}^{(k)}\)</span> denotes the isotypic subspace of type <span class="math notranslate nohighlight">\(k\)</span>.</p></li>
-<li><p><span class="math notranslate nohighlight">\(\hat{\mathcal{X}}_k^{(i)}\)</span> denotes the <span class="math notranslate nohighlight">\(i\)</span>-th copy of irrep type <span class="math notranslate nohighlight">\(k\)</span>.</p></li>
-<li><p><span class="math notranslate nohighlight">\(\hat{\rho}_k\)</span> denotes an irreducible representation.</p></li>
-<li><p><span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span> denotes a (possibly decomposable) representation on <span class="math notranslate nohighlight">\(\mathcal{X}\)</span>.</p></li>
-<li><p>The first block is the invariant subspace when present:
-<span class="math notranslate nohighlight">\(\mathcal{X}^{\text{inv}}=\mathcal{X}^{(1)}\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\mathbb{G}\)</span> denotes the symmetry group.</p></li>
+<li><p><span class="math notranslate nohighlight">\((\mathcal{X}, \rho_{\mathcal{X}})\)</span> denotes a <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-symmetric vector space, where <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}:\mathbb{G}\to \mathrm{GL}(\mathcal{X})\)</span> is a (possibly reducible) linear representation.</p></li>
+<li><p><span class="math notranslate nohighlight">\(k\)</span> indexes <strong>irrep types</strong> / <strong>isotypic components</strong>, i.e., <span class="math notranslate nohighlight">\(k\in[1,n_{\text{iso}}]\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(i\)</span> indexes the <strong>multiplicity copies</strong> within type <span class="math notranslate nohighlight">\(k\)</span>, i.e., <span class="math notranslate nohighlight">\(i\in[1,n_k]\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\hat{\rho}_k:\mathbb{G}\to \mathrm{GL}(\mathcal{H}_k)\)</span> denotes the irrep of type <span class="math notranslate nohighlight">\(k\)</span> with the associated irreducible vector space <span class="math notranslate nohighlight">\(\mathcal{H}_k\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\mathcal{X}^{(k)}\)</span> denotes the isotypic subspace of type <span class="math notranslate nohighlight">\(k\)</span>, composed of (potentially many) copies of spaces isomorphic to <span class="math notranslate nohighlight">\(\mathcal{H}_k\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\hat{\mathcal{X}}_i^{(k)}\)</span> denotes the <span class="math notranslate nohighlight">\(i\)</span>-th irreducible copy of type <span class="math notranslate nohighlight">\(k\)</span>, with <span class="math notranslate nohighlight">\(\hat{\mathcal{X}}_i^{(k)} \cong \mathcal{H}_k\)</span>.</p></li>
+<li><p>By convention, when present, the first isotypic block corresponds to the trivial (invariant) representation: <span class="math notranslate nohighlight">\(\mathcal{X}^{\text{inv}}=\mathcal{X}^{(1)}\)</span> (equivalently, <span class="math notranslate nohighlight">\(\hat{\rho}_1 = \hat{\rho}_{\text{tr}}\)</span> is the trivial irrep).</p></li>
 </ul>
 </section>
 <section id="change-of-basis">
 <h2>Change Of Basis<a class="headerlink" href="#change-of-basis" title="Link to this heading">#</a></h2>
-<p>The isotypic/spectral coordinates are defined by:</p>
+<p>Taking data representations to the isotypic-irrep-spectral basis is done via the orthogonal change-of-basis operator <span class="math notranslate nohighlight">\(\mathbf{Q}\)</span>:</p>
 <div class="math notranslate nohighlight">
 \[\tilde{\mathbf{x}} = \mathbf{Q}^T\mathbf{x},
 \qquad
@@ -416,8 +411,7 @@ with <span class="math notranslate nohighlight">\(\mathbf{Q}\)</span> is exactly
 \tilde{\rho}_{\mathcal{X}}(g)
 = \mathbf{Q}^T\rho_{\mathcal{X}}(g)\mathbf{Q}
 = \bigoplus_{k\in[1,n_{\text{iso}}]}\bigoplus_{i\in[1,n_k]}\hat{\rho}_k(g).\]</div>
-<p>In practice, use <a class="reference internal" href="../generated/symm_learning.representation_theory.isotypic_decomp_rep.html#symm_learning.representation_theory.isotypic_decomp_rep" title="symm_learning.representation_theory.isotypic_decomp_rep"><code class="xref py py-func docutils literal notranslate"><span class="pre">symm_learning.representation_theory.isotypic_decomp_rep()</span></code></a>,
-which returns an equivalent representation object carrying this change of basis.</p>
+<p>In practice, given any linear group representation, you can use <a class="reference internal" href="../generated/symm_learning.representation_theory.isotypic_decomp_rep.html#symm_learning.representation_theory.isotypic_decomp_rep" title="symm_learning.representation_theory.isotypic_decomp_rep"><code class="xref py py-func docutils literal notranslate"><span class="pre">symm_learning.representation_theory.isotypic_decomp_rep()</span></code></a>, to obtain an equivalent representation exposing the change-of-basis operator <span class="math notranslate nohighlight">\(\mathbf{Q}\)</span>.</p>
 </section>
 <section id="practical-example-icosahedral-group">
 <h2>Practical Example (Icosahedral Group)<a class="headerlink" href="#practical-example-icosahedral-group" title="Link to this heading">#</a></h2>
@@ -506,15 +500,6 @@ parametrizations).</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#practical-example-icosahedral-group">Practical Example (Icosahedral Group)</a></li>
 </ul>
   </nav></div>
-
-  <div class="sidebar-secondary-item">
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/examples/isotypic_decomposition.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div></div>
 
 </div></div>
               
