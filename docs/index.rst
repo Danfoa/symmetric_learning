@@ -9,6 +9,9 @@
      <a href="https://pypi.org/project/symm-learning/">
        <img src="https://img.shields.io/pypi/v/symm-learning.svg?logo=pypi" alt="PyPI version">
      </a>
+     <a href="https://github.com/Danfoa/symmetric_learning">
+       <img src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github&logoColor=white" alt="GitHub repository">
+     </a>
      <a href="https://github.com/Danfoa/symmetric_learning/actions/workflows/tests.yaml">
        <img src="https://img.shields.io/badge/python-3.8%20--%203.12-blue?logo=pypy&logoColor=white" alt="Python Version">
      </a>
