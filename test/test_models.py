@@ -52,6 +52,52 @@ def test_imlp(group: Group, hidden_units: int):  # noqa: D103
 
 
 @pytest.mark.parametrize(
+    "activation",
+    [
+        pytest.param(torch.nn.ReLU(), id="relu"),
+        pytest.param(torch.nn.GELU(), id="gelu"),
+        pytest.param(torch.nn.SiLU(), id="silu"),
+        pytest.param(torch.nn.Tanh(), id="tanh"),
+        pytest.param(torch.nn.ELU(), id="elu"),
+    ],
+)
+def test_emlp_accepts_torch_pointwise_activations(activation: torch.nn.Module):
+    """eMLP and iMLP should accept any point-wise activation from torch.nn."""
+    from symm_learning.models import eMLP, iMLP
+
+    G = CyclicGroup(4)
+    x_rep = G.regular_representation
+    y_rep = direct_sum([G.regular_representation] * 2)
+
+    eMLP(in_rep=x_rep, out_rep=y_rep, hidden_units=[16], activation=activation)
+    iMLP(in_rep=x_rep, out_dim=8, hidden_units=[16], activation=activation)
+
+
+@pytest.mark.parametrize(
+    "activation",
+    [
+        pytest.param(torch.nn.Sequential(torch.nn.ReLU()), id="sequential"),
+        pytest.param(torch.nn.Linear(4, 4), id="linear"),
+    ],
+)
+def test_emlp_rejects_non_pointwise_activations(activation: torch.nn.Module):
+    """eMLP and iMLP must raise ValueError when passed a non-pointwise activation."""
+    from symm_learning.models import eMLP, iMLP
+
+    G = CyclicGroup(4)
+    x_rep = G.regular_representation
+    y_rep = direct_sum([G.regular_representation] * 2)
+
+    type_name = type(activation).__qualname__
+
+    with pytest.raises(ValueError, match=f"point-wise non-linearity.*{type_name}"):
+        eMLP(in_rep=x_rep, out_rep=y_rep, hidden_units=[16], activation=activation)
+
+    with pytest.raises(ValueError, match=f"point-wise non-linearity.*{type_name}"):
+        iMLP(in_rep=x_rep, out_dim=8, hidden_units=[16], activation=activation)
+
+
+@pytest.mark.parametrize(
     "group",
     [
         pytest.param(CyclicGroup(5), id="cyclic5"),

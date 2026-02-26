@@ -13,6 +13,31 @@ from symm_learning.representation_theory import direct_sum
 logger = logging.getLogger(__name__)
 
 
+def _is_torch_pointwise_activation(module: object) -> bool:
+    """Return ``True`` if *module* is a point-wise non-linearity from ``torch.nn``.
+
+    The check inspects the module's defining Python module, which is
+    ``"torch.nn.modules.activation"`` for every activation function shipped
+    with PyTorch.  This makes the predicate automatically forward-compatible:
+    any new activation added to that namespace will be accepted without
+    requiring changes here.
+
+    Note:
+        The ``torch.nn.modules.activation`` namespace is dedicated to
+        activation functions in PyTorch.  All standard point-wise
+        non-linearities (e.g. :class:`~torch.nn.ReLU`,
+        :class:`~torch.nn.GELU`, :class:`~torch.nn.SiLU`) live there.
+
+    Args:
+        module: Object to test.
+
+    Returns:
+        ``True`` iff *module* is an instance of a class defined in
+        ``torch.nn.modules.activation``.
+    """
+    return isinstance(module, torch.nn.Module) and type(module).__module__ == "torch.nn.modules.activation"
+
+
 class eMLP(torch.nn.Module):
     r"""Equivariant MLP composed of :class:`~symm_learning.nn.linear.eLinear` layers.
 
@@ -70,7 +95,11 @@ class eMLP(torch.nn.Module):
         G = in_rep.group
         self.in_rep, self.out_rep = in_rep, out_rep
 
-        assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module, got {type(activation)}"
+        if not _is_torch_pointwise_activation(activation):
+            raise ValueError(
+                f"Expected a point-wise non-linearity from `torch.nn` (e.g. `torch.nn.ReLU()`), "
+                f"got {type(activation).__qualname__!r} from module {type(activation).__module__!r}."
+            )
 
         drop_value = float(dropout)
         assert 0.0 <= drop_value <= 1.0, f"dropout must be within [0, 1], got {drop_value}"
@@ -170,6 +199,11 @@ class iMLP(torch.nn.Module):
         assert isinstance(hidden_units, list) and len(hidden_units) > 0, (
             f"hidden_units must be a non-empty list, got {hidden_units}"
         )
+        if not _is_torch_pointwise_activation(activation):
+            raise ValueError(
+                f"Expected a point-wise non-linearity from `torch.nn` (e.g. `torch.nn.ReLU()`), "
+                f"got {type(activation).__qualname__!r} from module {type(activation).__module__!r}."
+            )
         self.in_rep = in_rep
         self.out_rep = direct_sum([in_rep.group.trivial_representation] * out_dim)
         G = in_rep.group
