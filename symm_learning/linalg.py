@@ -104,18 +104,14 @@ def irrep_radii(x: torch.Tensor, rep: Representation) -> torch.Tensor:
 
     # Change to irrep-spectral basis
     x_spectral = torch.einsum("ij,...j->...i", Q_inv, x)
-    # Compute a mask for each irreducible subspace (subspace associated to an irrep)
     n_subspaces = len(rep.irreps)
-    subspace_ids = _get_irrep_subspace_index(rep).to(x.device)
+    subspace_dims = [rep.group.irrep(*irrep_id).size for irrep_id in rep.irreps]
 
     flat = x_spectral.reshape(-1, rep.size)
-    flat_sq = flat.pow(2)  # squared magnitudes per coordinate
-
-    scatter_idx = subspace_ids.view(1, -1).expand(flat_sq.size(0), -1)  # broadcast labels across batch
-    radii_sq = torch.zeros(flat_sq.size(0), n_subspaces, device=x.device, dtype=x.dtype)
-    radii_sq.scatter_add_(1, scatter_idx, flat_sq)  # sum squares inside each irrep block
-
-    radii = radii_sq.sqrt().reshape(*x_spectral.shape[:-1], n_subspaces)
+    # vector_norm has a stable subgradient at zero, unlike manual sqrt(sum(x^2))
+    flat_blocks = torch.split(flat, subspace_dims, dim=-1)
+    radii = torch.stack([torch.linalg.vector_norm(block, ord=2, dim=-1) for block in flat_blocks], dim=-1)
+    radii = radii.reshape(*x_spectral.shape[:-1], n_subspaces)
     return radii
 
 
