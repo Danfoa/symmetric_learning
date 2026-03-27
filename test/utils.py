@@ -175,6 +175,25 @@ def _assert_output_close(expected: Any, actual: Any, atol: float = 1e-6, rtol: f
     assert actual == expected, f"Outputs differ: {actual} != {expected}"
 
 
+def _assert_state_dict_close(
+    expected_state: dict[str, Any],
+    actual_state: dict[str, Any],
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+) -> None:
+    assert actual_state.keys() == expected_state.keys(), (
+        f"State dict keys differ: {actual_state.keys()} != {expected_state.keys()}"
+    )
+    for key in expected_state:
+        expected_val = expected_state[key]
+        actual_val = actual_state[key]
+        if isinstance(expected_val, torch.Tensor):
+            assert isinstance(actual_val, torch.Tensor), f"State key '{key}' expected Tensor, got {type(actual_val)}"
+            torch.testing.assert_close(actual_val.detach().cpu(), expected_val.detach().cpu(), atol=atol, rtol=rtol)
+        else:
+            assert actual_val == expected_val, f"State key '{key}' differs: {actual_val} != {expected_val}"
+
+
 def _clone_module_for_reload(module: torch.nn.Module) -> torch.nn.Module:
     was_training = module.training
     module.train()
@@ -185,6 +204,15 @@ def _clone_module_for_reload(module: torch.nn.Module) -> torch.nn.Module:
     clone = deepcopy(module)
     module.train(was_training)
     return clone
+
+
+class _ParentWrapper(torch.nn.Module):
+    def __init__(self, child: torch.nn.Module):
+        super().__init__()
+        self.child = child
+
+    def forward(self, *args, **kwargs):
+        return self.child(*args, **kwargs)
 
 
 def assert_module_save_load_consistency(
@@ -233,15 +261,30 @@ def assert_module_save_load_consistency(
             with torch.no_grad():
                 expected = transform(module(*forward_args, **kwargs))
 
-            reloaded = _clone_module_for_reload(module)
-            reloaded.load_state_dict(loaded_state)
-            reloaded.train(load_training)
+            # Path 1: direct module load_state_dict(...)
+            reloaded_direct = _clone_module_for_reload(module)
+            reloaded_direct.load_state_dict(loaded_state)
+            reloaded_direct.train(load_training)
+            _assert_state_dict_close(loaded_state, reloaded_direct.state_dict(), atol=atol, rtol=rtol)
             torch.manual_seed(seed)
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(seed)
             with torch.no_grad():
-                actual = transform(reloaded(*forward_args, **kwargs))
+                actual_direct = transform(reloaded_direct(*forward_args, **kwargs))
+            _assert_output_close(expected, actual_direct, atol=atol, rtol=rtol)
 
-            _assert_output_close(expected, actual, atol=atol, rtol=rtol)
+            # Path 2: parent-recursive load_state_dict(...) into submodule
+            reloaded_parent = _clone_module_for_reload(module)
+            parent = _ParentWrapper(reloaded_parent)
+            parent_state = {f"child.{k}": v for k, v in loaded_state.items()}
+            parent.load_state_dict(parent_state)
+            reloaded_parent.train(load_training)
+            _assert_state_dict_close(loaded_state, reloaded_parent.state_dict(), atol=atol, rtol=rtol)
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+            with torch.no_grad():
+                actual_parent = transform(reloaded_parent(*forward_args, **kwargs))
+            _assert_output_close(expected, actual_parent, atol=atol, rtol=rtol)
     finally:
         module.train(original_mode)

@@ -196,13 +196,6 @@ class eLinear(eModule, torch.nn.Linear):
         if self.bias_module is not None:
             self.bias_module.invalidate_cache()
 
-    def _refresh_eval_cache(self) -> None:
-        """Ensure eval-mode caches are materialized."""
-        if self._weight is None or self._weight_cache_dirty:
-            self.expand_weight()
-        if self.bias_module is not None:
-            self.bias_module._refresh_eval_cache()
-
 
 class InvariantBias(eModule):
     r"""Module parameterizing a learnable :math:`\mathbb{G}`-invariant bias.
@@ -326,13 +319,6 @@ class InvariantBias(eModule):
             return
         self._bias = None
         self._bias_cache_dirty = True
-
-    def _refresh_eval_cache(self) -> None:
-        """Ensure eval-mode cache is populated."""
-        if not self.has_bias:
-            return
-        if self._bias is None or self._bias_cache_dirty:
-            self.expand_bias()
 
 
 class eAffine(eModule):
@@ -603,14 +589,6 @@ class eAffine(eModule):
         self._affine_cache_dirty = True
         if self.bias_module is not None:
             self.bias_module.invalidate_cache()
-
-    def _refresh_eval_cache(self) -> None:
-        if not self.learnable:
-            return
-        if self._affine is None or self._affine_cache_dirty:
-            self.expand_affine()
-        if self.bias_module is not None:
-            self.bias_module._refresh_eval_cache()
 
     @property
     def num_scale_dof(self) -> int:

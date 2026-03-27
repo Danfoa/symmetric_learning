@@ -270,6 +270,26 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
     x_roundtrip = torch.randn(8, in_rep.size, device=layer.weight_dof.device, dtype=layer.weight_dof.dtype)
     assert_module_save_load_consistency(layer, x_roundtrip)
 
+    # Parent-level load_state_dict path: cached dense weight must match loaded DoFs.
+    class _Parent(torch.nn.Module):
+        def __init__(self, rep_in: Representation, rep_out: Representation, scheme: str):
+            super().__init__()
+            self.Dr = eLinear(rep_in, rep_out, bias=True, basis_expansion_scheme=scheme)
+
+        def forward(self, x):
+            return self.Dr(x)
+
+    source = _Parent(in_rep, out_rep, basis_expansion_scheme).eval()
+    target = _Parent(in_rep, out_rep, basis_expansion_scheme).eval()
+    _ = source(torch.randn(2, in_rep.size))
+    _ = target(torch.randn(2, in_rep.size))
+    target.load_state_dict(source.state_dict())
+
+    w_from_dof = target.Dr.homo_basis(target.Dr.weight_dof)
+    assert torch.allclose(target.Dr.weight, w_from_dof, atol=1e-6, rtol=1e-6), (
+        "eLinear cached dense weight is stale after parent load_state_dict"
+    )
+
 
 @pytest.mark.parametrize(
     "group",
@@ -324,7 +344,8 @@ def test_bias(group: Group, mx: int):
     # Eval cache: refreshed on eval and reused while staying in eval mode.
     x = torch.randn(4, in_rep.size)
     bias_layer.bias_dof.data.fill_(1.0)
-    bias_layer.eval()  # recompute cache after modifying bias_dof
+    bias_layer.eval()  # cache is populated lazily on first access in eval
+    _ = bias_layer.bias
     cached_bias = bias_layer._bias.clone()
     y_eval = bias_layer(x)
     assert torch.allclose(y_eval, x + cached_bias), "Eval output should include cached bias"
@@ -339,7 +360,8 @@ def test_bias(group: Group, mx: int):
     y_train = bias_layer(x)
     assert not torch.allclose(y_train, y_eval), "Train output should reflect updated DoFs"
 
-    bias_layer.eval()  # cache current bias
+    bias_layer.eval()  # cache current bias (lazy in eval)
+    _ = bias_layer.bias
     updated_cached = bias_layer._bias.clone()
     bias_layer.bias_dof.data.fill_(4.0)
     y_eval_after = bias_layer(x)
