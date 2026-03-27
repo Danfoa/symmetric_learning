@@ -4,10 +4,11 @@ from __future__ import annotations
 import torch
 from escnn.group import Representation
 
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
 
 
-class Change2DisentangledBasis(torch.nn.Module):
+class Change2DisentangledBasis(eModule):
     r"""Map features to the isotypic/irrep-spectral basis.
 
     For :math:`\mathbf{x}\in\mathcal{X}` with representation :math:`\rho_{\mathcal{X}}`, this module applies

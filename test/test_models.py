@@ -8,6 +8,7 @@ from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral
 
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import backprop_sanity, check_equivariance
+from utils import assert_module_save_load_consistency
 
 
 @pytest.mark.parametrize(
@@ -30,6 +31,7 @@ def test_emlp(group: Group, hidden_units: int, activation: str, bias: bool):  # 
 
     check_equivariance(emlp, atol=1e-4, rtol=1e-4)
     backprop_sanity(emlp)
+    assert_module_save_load_consistency(emlp, torch.randn(8, x_rep.size), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -49,6 +51,7 @@ def test_imlp(group: Group, hidden_units: int):  # noqa: D103
 
     check_equivariance(imlp, atol=1e-4, rtol=1e-4)
     backprop_sanity(imlp)
+    assert_module_save_load_consistency(imlp, torch.randn(8, x_rep.size), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize(

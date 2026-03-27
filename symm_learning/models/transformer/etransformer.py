@@ -12,13 +12,14 @@ from escnn.group import Representation
 # from torch.nn import Transformer
 from symm_learning.nn.activation import eMultiheadAttention
 from symm_learning.nn.linear import eLinear
+from symm_learning.nn.module import eModule
 from symm_learning.nn.normalization import eLayerNorm, eRMSNorm
 from symm_learning.representation_theory import direct_sum
 
 logger = logging.getLogger(__name__)
 
 
-class eTransformerEncoderLayer(torch.nn.Module):
+class eTransformerEncoderLayer(eModule):
     r"""Equivariant Transformer encoder layer with the same API as ``torch.nn.TransformerEncoderLayer``.
 
     Applies :class:`~symm_learning.nn.activation.eMultiheadAttention` followed by an equivariant feed-forward block
@@ -205,7 +206,7 @@ class eTransformerEncoderLayer(torch.nn.Module):
         self.self_attn.reset_parameters(scheme)
 
 
-class eTransformerDecoderLayer(torch.nn.Module):
+class eTransformerDecoderLayer(eModule):
     r"""Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
 
     Combines an equivariant self-attention block, an equivariant cross-attention block,

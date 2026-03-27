@@ -8,14 +8,17 @@ from escnn.group import Representation
 
 from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 from symm_learning.nn import IrrepSubspaceNormPooling, eAffine, eConv1d, eConvTranspose1d, eRMSNorm
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 
 
-class _eChannelRMSNorm(torch.nn.Module):
+class _eChannelRMSNorm(eModule):
     """Apply eRMSNorm over channels for tensors shaped (B, C, L)."""
 
     def __init__(self, rep: Representation, eps: float = 1e-6):
         super().__init__()
+        self.in_rep = rep
+        self.out_rep = rep
         self.norm = eRMSNorm(rep, eps=eps, equiv_affine=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -24,7 +27,7 @@ class _eChannelRMSNorm(torch.nn.Module):
         return y.permute(0, 2, 1)
 
 
-class eConditionalResidualBlock1D(torch.nn.Module):
+class eConditionalResidualBlock1D(eModule):
     r"""Channel-equivariant conditional residual block with FiLM modulation.
 
     This block applies two equivariant convolutional layers with a residual
@@ -165,7 +168,7 @@ class eConditionalResidualBlock1D(torch.nn.Module):
             )
 
 
-class eConditionalUnet1D(torch.nn.Module):
+class eConditionalUnet1D(eModule):
     r"""Equivariant U-Net for 1D signals with global conditioning and FiLM.
 
     The model defines:

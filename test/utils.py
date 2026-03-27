@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import deepcopy
+import io
 import time
+from typing import Any
 
 import torch
 
@@ -138,3 +141,107 @@ def benchmark_eval_forward(
     forward_mean = float(fwd_stats.mean().item())
     forward_std = float(fwd_stats.std(unbiased=False).item())
     return forward_mean, forward_std
+
+
+def _assert_output_close(expected: Any, actual: Any, atol: float = 1e-6, rtol: float = 1e-6) -> None:
+    from torch.distributions import MultivariateNormal
+
+    if isinstance(expected, torch.Tensor):
+        torch.testing.assert_close(actual, expected, atol=atol, rtol=rtol)
+        return
+    if isinstance(expected, MultivariateNormal):
+        assert isinstance(actual, MultivariateNormal), f"Expected MultivariateNormal, got {type(actual)}"
+        torch.testing.assert_close(actual.mean, expected.mean, atol=atol, rtol=rtol)
+        torch.testing.assert_close(actual.covariance_matrix, expected.covariance_matrix, atol=atol, rtol=rtol)
+        return
+    if isinstance(expected, tuple):
+        assert isinstance(actual, tuple), f"Expected tuple output, got {type(actual)}"
+        assert len(actual) == len(expected), f"Tuple lengths differ: {len(actual)} != {len(expected)}"
+        for got_item, exp_item in zip(actual, expected):
+            _assert_output_close(exp_item, got_item, atol=atol, rtol=rtol)
+        return
+    if isinstance(expected, list):
+        assert isinstance(actual, list), f"Expected list output, got {type(actual)}"
+        assert len(actual) == len(expected), f"List lengths differ: {len(actual)} != {len(expected)}"
+        for got_item, exp_item in zip(actual, expected):
+            _assert_output_close(exp_item, got_item, atol=atol, rtol=rtol)
+        return
+    if isinstance(expected, dict):
+        assert isinstance(actual, dict), f"Expected dict output, got {type(actual)}"
+        assert actual.keys() == expected.keys(), f"Dict keys differ: {actual.keys()} != {expected.keys()}"
+        for key in expected:
+            _assert_output_close(expected[key], actual[key], atol=atol, rtol=rtol)
+        return
+    assert actual == expected, f"Outputs differ: {actual} != {expected}"
+
+
+def _clone_module_for_reload(module: torch.nn.Module) -> torch.nn.Module:
+    was_training = module.training
+    module.train()
+    for submodule in module.modules():
+        invalidate_cache = getattr(submodule, "invalidate_cache", None)
+        if callable(invalidate_cache):
+            invalidate_cache()
+    clone = deepcopy(module)
+    module.train(was_training)
+    return clone
+
+
+def assert_module_save_load_consistency(
+    module: torch.nn.Module,
+    *forward_args,
+    forward_kwargs: dict[str, Any] | None = None,
+    output_transform: Callable[[Any], Any] | None = None,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    mode_pairs: tuple[tuple[bool, bool], ...] = ((True, True), (False, False), (True, False), (False, True)),
+) -> None:
+    """Assert that save/load round-trips preserve outputs across save/load modes.
+
+    Args:
+        module: Module under test.
+        *forward_args: Positional args passed to forward.
+        forward_kwargs: Optional forward kwargs.
+        output_transform: Optional projection from module output to comparable values.
+        atol: Absolute tolerance for numerical comparisons.
+        rtol: Relative tolerance for numerical comparisons.
+        mode_pairs: Tuples of ``(save_training, load_training)`` to test.
+    """
+    kwargs = {} if forward_kwargs is None else forward_kwargs
+    transform = (lambda out: out) if output_transform is None else output_transform
+
+    original_mode = module.training
+
+    try:
+        for idx, (save_training, load_training) in enumerate(mode_pairs):
+            module.train(save_training)
+
+            # Prime module once in the save mode to emulate arbitrary user save points.
+            with torch.no_grad():
+                _ = module(*forward_args, **kwargs)
+
+            state_buffer = io.BytesIO()
+            torch.save(module.state_dict(), state_buffer)
+            state_buffer.seek(0)
+            loaded_state = torch.load(state_buffer, map_location="cpu", weights_only=False)
+
+            module.train(load_training)
+            seed = 1234 + idx
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+            with torch.no_grad():
+                expected = transform(module(*forward_args, **kwargs))
+
+            reloaded = _clone_module_for_reload(module)
+            reloaded.load_state_dict(loaded_state)
+            reloaded.train(load_training)
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+            with torch.no_grad():
+                actual = transform(reloaded(*forward_args, **kwargs))
+
+            _assert_output_close(expected, actual, atol=atol, rtol=rtol)
+    finally:
+        module.train(original_mode)

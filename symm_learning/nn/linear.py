@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from escnn.group import Representation
 from torch.nn.utils import parametrize
 
+from symm_learning.nn.module import eModule
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
 from symm_learning.representation_theory import GroupHomomorphismBasis
 from symm_learning.utils import get_spectral_trivial_mask
@@ -59,7 +60,7 @@ def impose_linear_equivariance(
         parametrize.register_parametrization(lin, "bias", InvariantConstraint(out_rep))
 
 
-class eLinear(torch.nn.Linear):
+class eLinear(eModule, torch.nn.Linear):
     r"""Parameterize a :math:`\mathbb{G}`-equivariant linear map with optional invariant bias.
 
     The layer learns coefficients over :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`,
@@ -200,30 +201,10 @@ class eLinear(torch.nn.Linear):
         if self._weight is None or self._weight_cache_dirty:
             self.expand_weight()
         if self.bias_module is not None:
-            self.bias_module.refresh_eval_cache()
-
-    def _apply(self, fn):
-        super()._apply(fn)
-        self.invalidate_cache()
-        return self
-
-    def train(self, mode: bool = True):  # noqa: D102
-        """Switch mode and keep cached expanded tensors consistent."""
-        result = super().train(mode)
-        if mode:  # Switching to train mode - invalidate cache
-            self.invalidate_cache()
-        else:  # Switching to eval mode - refresh cache
-            self._refresh_eval_cache()
-        return result
-
-    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
-        """Load parameters and invalidate cached expanded tensors."""
-        result = super().load_state_dict(state_dict, strict)
-        self.invalidate_cache()
-        return result
+            self.bias_module._refresh_eval_cache()
 
 
-class InvariantBias(torch.nn.Module):
+class InvariantBias(eModule):
     r"""Module parameterizing a learnable :math:`\mathbb{G}`-invariant bias.
 
     For representation space :math:`\mathcal{X}`, this module enforces
@@ -335,15 +316,6 @@ class InvariantBias(torch.nn.Module):
 
         self.invalidate_cache()
 
-    def train(self, mode: bool = True):
-        """Switch between training and evaluation modes, managing cache appropriately."""
-        result = super().train(mode)
-        if mode:  # Switching to train mode - invalidate cache
-            self.invalidate_cache()
-        else:  # Switching to eval mode - refresh cache
-            self.refresh_eval_cache()
-        return result
-
     def _mark_bias_cache_dirty(self, grad: torch.Tensor) -> torch.Tensor:
         self._bias_cache_dirty = True
         return grad
@@ -355,26 +327,15 @@ class InvariantBias(torch.nn.Module):
         self._bias = None
         self._bias_cache_dirty = True
 
-    def refresh_eval_cache(self) -> None:
+    def _refresh_eval_cache(self) -> None:
         """Ensure eval-mode cache is populated."""
         if not self.has_bias:
             return
         if self._bias is None or self._bias_cache_dirty:
             self.expand_bias()
 
-    def _apply(self, fn):
-        super()._apply(fn)
-        self.invalidate_cache()
-        return self
 
-    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
-        """Load parameters and invalidate cached expanded bias."""
-        result = super().load_state_dict(state_dict, strict)
-        self.invalidate_cache()
-        return result
-
-
-class eAffine(torch.nn.Module):
+class eAffine(eModule):
     r"""Equivariant affine map with per-irrep scales and invariant bias.
 
     Let :math:`\mathbf{x}\in\mathcal{X}` with representation
@@ -649,27 +610,7 @@ class eAffine(torch.nn.Module):
         if self._affine is None or self._affine_cache_dirty:
             self.expand_affine()
         if self.bias_module is not None:
-            self.bias_module.refresh_eval_cache()
-
-    def _apply(self, fn):
-        super()._apply(fn)
-        self.invalidate_cache()
-        return self
-
-    def train(self, mode: bool = True):  # noqa: D102
-        """Switch mode and keep cached affine expansion consistent."""
-        result = super().train(mode)
-        if mode:  # Switching to train mode - invalidate cache
-            self.invalidate_cache()
-        else:  # Switching to eval mode - refresh cache
-            self._refresh_eval_cache()
-        return result
-
-    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
-        """Load parameters and invalidate cached affine expansion."""
-        result = super().load_state_dict(state_dict, strict)
-        self.invalidate_cache()
-        return result
+            self.bias_module._refresh_eval_cache()
 
     @property
     def num_scale_dof(self) -> int:

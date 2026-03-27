@@ -8,14 +8,17 @@ from escnn.group import Representation
 
 from symm_learning.models.emlp import eMLP, iMLP
 from symm_learning.nn import eConv1d, eRMSNorm
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 
 
-class _eChannelRMSNorm(torch.nn.Module):
+class _eChannelRMSNorm(eModule):
     """Apply eRMSNorm over the channel dimension for tensors shaped (B, C, L)."""
 
     def __init__(self, rep: Representation, eps: float = 1e-6):
         super().__init__()
+        self.in_rep = rep
+        self.out_rep = rep
         self.rep = rep
         self.norm = eRMSNorm(rep, eps=eps, equiv_affine=True)
 
@@ -26,7 +29,7 @@ class _eChannelRMSNorm(torch.nn.Module):
         return y.permute(0, 2, 1)  # (B, C, L)
 
 
-class eTimeCNNEncoder(torch.nn.Module):
+class eTimeCNNEncoder(eModule):
     r"""Equivariant 1D CNN encoder built from channel-equivariant blocks.
 
     Inputs are plain tensors of shape ``(N, in_rep.size, H)``. Each conv block halves the

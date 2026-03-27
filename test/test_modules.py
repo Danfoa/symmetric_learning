@@ -10,6 +10,7 @@ from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Represen
 from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import backprop_sanity, check_equivariance
+from utils import assert_module_save_load_consistency
 
 
 @pytest.mark.parametrize(
@@ -20,6 +21,8 @@ from symm_learning.utils import backprop_sanity, check_equivariance
     ],
 )
 def test_deepcopy(group: Group):
+    import torch
+
     from symm_learning.nn.linear import eLinear
 
     G = group
@@ -33,6 +36,8 @@ def test_deepcopy(group: Group):
     assert layer.in_rep.group.representations is clone.in_rep.group.representations, (
         "Deepcopy should not duplicate the group's representation cache"
     )
+
+    assert_module_save_load_consistency(layer, torch.randn(6, rep.size))
 
 
 @pytest.mark.parametrize(
@@ -62,6 +67,8 @@ def test_change2disentangled(group: Group):  # noqa: D103
         f"Max error: {torch.max(torch.abs(y_iso_nn - y_iso)):.5f}"
     )
 
+    assert_module_save_load_consistency(change_layer, y)
+
 
 @pytest.mark.parametrize(
     "group",
@@ -86,6 +93,15 @@ def test_equiv_multivariate_normal(group: Group, mx: int, my: int):
     e_normal = eMultivariateNormal(out_rep=rep_y, diagonal=True)
 
     e_normal.check_equivariance(atol=1e-6, rtol=1e-6)
+
+    gaussian_params = torch.randn(12, e_normal.in_rep.size)
+    assert_module_save_load_consistency(
+        e_normal,
+        gaussian_params,
+        output_transform=lambda dist: (dist.mean, dist.covariance_matrix),
+        atol=1e-6,
+        rtol=1e-6,
+    )
 
 
 @pytest.mark.parametrize(
@@ -131,11 +147,15 @@ def test_conv1d(group: Group, mx: int, my: int):  # noqa: D103
 
     t_layer.train()
     t_layer.zero_grad()
-    out_t = t_layer(torch.randn(B, out_rep.size, L))
+    x_t = torch.randn(B, out_rep.size, L)
+    out_t = t_layer(x_t)
     loss_t = (out_t - torch.randn_like(out_t)).pow(2).mean()
     loss_t.backward()
     grads_t = [p.grad for p in t_layer.parameters() if p.grad is not None]
     assert grads_t, "Expected gradients to propagate through eConvTranspose1d"
+
+    assert_module_save_load_consistency(layer, x)
+    assert_module_save_load_consistency(t_layer, x_t)
 
 
 @pytest.mark.parametrize(
@@ -247,6 +267,9 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
             "CUDA cache refresh should update value after gradient step"
         )
 
+    x_roundtrip = torch.randn(8, in_rep.size, device=layer.weight_dof.device, dtype=layer.weight_dof.dtype)
+    assert_module_save_load_consistency(layer, x_roundtrip)
+
 
 @pytest.mark.parametrize(
     "group",
@@ -273,6 +296,8 @@ def test_parametrizations(group: Group, mx: int, my: int, basis_expansion_scheme
 
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
     backprop_sanity(layer)
+
+    assert_module_save_load_consistency(layer, torch.randn(7, in_rep.size))
 
 
 @pytest.mark.parametrize(
@@ -376,6 +401,9 @@ def test_bias(group: Group, mx: int):
             "CUDA cache refresh should update bias value after gradient step"
         )
 
+    x_roundtrip = torch.randn(8, in_rep.size, device=bias_layer.bias_dof.device, dtype=bias_layer.bias_dof.dtype)
+    assert_module_save_load_consistency(bias_layer, x_roundtrip)
+
 
 # @pytest.mark.parametrize(
 #     "group",
@@ -447,6 +475,7 @@ def test_affine(group: Group, mx: int, bias: bool, learnable: bool):
 
     batch_size = 20
     x = torch.randn(batch_size, rep.size)
+    save_load_kwargs = {}
 
     affine = eAffine(in_rep=rep, bias=bias, learnable=learnable, init_scheme="random" if learnable else None)
     if learnable:
@@ -478,6 +507,7 @@ def test_affine(group: Group, mx: int, bias: bool, learnable: bool):
     else:
         scale = torch.full((batch_size, affine.num_scale_dof), 2.0)
         bias_dof = torch.full((batch_size, affine.num_bias_dof), 0.25) if bias and affine.num_bias_dof > 0 else None
+        save_load_kwargs = {"scale_dof": scale, "bias_dof": bias_dof}
         y = affine(x, scale_dof=scale, bias_dof=bias_dof)
 
         class _AffineWithExternal(torch.nn.Module):
@@ -499,6 +529,7 @@ def test_affine(group: Group, mx: int, bias: bool, learnable: bool):
 
     assert y.shape == x.shape
     assert not torch.allclose(y, x, atol=1e-5, rtol=1e-5)
+    assert_module_save_load_consistency(affine, x, forward_kwargs=save_load_kwargs)
 
 
 @pytest.mark.parametrize(
@@ -572,6 +603,15 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
         "eMultiheadAttention output in eval mode (fast inference) must match output in train mode with updated weights"
     )
 
+    assert_module_save_load_consistency(
+        attn,
+        x,
+        x,
+        x,
+        forward_kwargs={"need_weights": False},
+        output_transform=lambda out: out[0],
+    )
+
 
 @pytest.mark.parametrize(
     "group",
@@ -602,6 +642,7 @@ def test_layer_norm(group: Group, mx: int, bias: bool, affine: bool):
     assert y.shape == x.shape
 
     check_equivariance(layer, atol=1e-4, rtol=1e-4)
+    assert_module_save_load_consistency(layer, x, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize(
@@ -632,6 +673,7 @@ def test_rms_norm(group: Group, mx: int, affine: bool):
     assert y.shape == x.shape
 
     check_equivariance(layer, atol=1e-5, rtol=1e-5)
+    assert_module_save_load_consistency(layer, x, atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("kind", [pytest.param("ema", id="ema"), pytest.param("eema", id="eema")])
@@ -686,3 +728,5 @@ def test_ema_stats_core(kind: str):
         x_std, y_std = exported(raw_x, raw_y)
         assert torch.equal(x_std, raw_x)
         assert torch.equal(y_std, raw_y)
+
+    assert_module_save_load_consistency(stats, raw_x, raw_y)

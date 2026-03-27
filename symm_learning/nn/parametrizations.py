@@ -5,13 +5,14 @@ import torch
 from escnn.group import Representation
 
 from symm_learning.linalg import invariant_orthogonal_projector
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import GroupHomomorphismBasis, direct_sum
 from symm_learning.utils import bytes_to_mb, check_equivariance, module_device_memory, module_memory
 
 logger = logging.getLogger(__name__)
 
 
-class InvariantConstraint(torch.nn.Module):
+class InvariantConstraint(eModule):
     r"""Orthogonally project vectors onto :math:`\mathrm{Fix}(\rho)`.
 
     For representation :math:`\rho_{\mathcal{X}}`, this parametrization enforces
@@ -42,6 +43,7 @@ class InvariantConstraint(torch.nn.Module):
     def __init__(self, rep: Representation):
         """Precompute the invariant projector for the supplied representation."""
         super().__init__()
+        self.requires_reps = False
         self.rep = rep
         self.register_buffer("inv_projector", invariant_orthogonal_projector(rep))
         self.register_buffer("_bias", None, persistent=False)
@@ -84,19 +86,8 @@ class InvariantConstraint(torch.nn.Module):
         self._cached_input_id = None
         self._cached_input_version = None
 
-    def _apply(self, fn):
-        super()._apply(fn)
-        self.invalidate_cache()
-        return self
 
-    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
-        """Load parameters and clear cached projected bias."""
-        result = super().load_state_dict(state_dict, strict)
-        self.invalidate_cache()
-        return result
-
-
-class CommutingConstraint(torch.nn.Module):
+class CommutingConstraint(eModule):
     r"""Orthogonal projection onto :math:`\operatorname{Hom}_{\mathbb{G}}(\rho_{\text{in}},\rho_{\text{out}})`.
 
     For a dense weight :math:`\mathbf{W}\in\mathbb{R}^{D_{\text{out}}\times D_{\text{in}}}`, this module returns
@@ -190,17 +181,6 @@ class CommutingConstraint(torch.nn.Module):
         self._weight = None
         self._cached_input_id = None
         self._cached_input_version = None
-
-    def _apply(self, fn):
-        super()._apply(fn)
-        self.invalidate_cache()
-        return self
-
-    def load_state_dict(self, state_dict, strict: bool = True):  # noqa: D102
-        """Load parameters and clear cached projected weight."""
-        result = super().load_state_dict(state_dict, strict)
-        self.invalidate_cache()
-        return result
 
 
 if __name__ == "__main__":
