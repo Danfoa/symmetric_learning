@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Change2DisentangledBasis &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+    <title>Change2DisentangledBasis &#8212; Symmetric Learning v0.4.4 Docs [devel]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../_static/documentation_options.js?v=90733dfc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -51,7 +51,7 @@
     <link rel="prev" title="disentangled" href="../nn/disentangled.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.4" />
   </head>
   
   
@@ -119,7 +119,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - devel</p>
+    <p class="title logo__title">v0.4.4 - devel</p>
   
 </a></div>
     
@@ -390,7 +390,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.nn.disentangled.Change2DisentangledBasis">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Change2DisentangledBasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_rep</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/disentangled.html#Change2DisentangledBasis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.disentangled.Change2DisentangledBasis" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></p>
 <p>Map features to the isotypic/irrep-spectral basis.</p>
 <p>For <span class="math notranslate nohighlight">\(\mathbf{x}\in\mathcal{X}\)</span> with representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>, this module applies
 <span class="math notranslate nohighlight">\(\mathbf{Q}^{-1}\)</span> from <a class="reference internal" href="symm_learning.representation_theory.isotypic_decomp_rep.html#symm_learning.representation_theory.isotypic_decomp_rep" title="symm_learning.representation_theory.isotypic_decomp_rep"><code class="xref py py-func docutils literal notranslate"><span class="pre">isotypic_decomp_rep()</span></code></a>:</p>
@@ -425,7 +425,7 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">False</
 <dd><p>Apply the basis change to isotypic coordinates.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Input whose last dimension equals <code class="docutils literal notranslate"><span class="pre">in_rep.size</span></code>; arbitrary leading dimensions
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Input whose last dimension equals <code class="docutils literal notranslate"><span class="pre">in_rep.size</span></code>; arbitrary leading dimensions
 allowed.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -434,7 +434,7 @@ allowed.</p>
 the tensor is returned unchanged.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>

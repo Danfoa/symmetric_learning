@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>InvariantConstraint &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+    <title>InvariantConstraint &#8212; Symmetric Learning v0.4.4 Docs [devel]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../_static/documentation_options.js?v=90733dfc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -51,7 +51,7 @@
     <link rel="prev" title="CommutingConstraint" href="symm_learning.nn.parametrizations.CommutingConstraint.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.4" />
   </head>
   
   
@@ -119,7 +119,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - devel</p>
+    <p class="title logo__title">v0.4.4 - devel</p>
   
 </a></div>
     
@@ -391,7 +391,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.nn.parametrizations.InvariantConstraint">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">InvariantConstraint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rep</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/parametrizations.html#InvariantConstraint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.parametrizations.InvariantConstraint" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></p>
 <p>Orthogonally project vectors onto <span class="math notranslate nohighlight">\(\mathrm{Fix}(\rho)\)</span>.</p>
 <p>For representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>, this parametrization enforces</p>
 <div class="math notranslate nohighlight">
@@ -433,7 +433,7 @@ dimension <code class="docutils literal notranslate"><span class="pre">rep.size<
 <span class="math notranslate nohighlight">\(\mathrm{Fix}(\rho)\)</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -445,10 +445,10 @@ dimension <code class="docutils literal notranslate"><span class="pre">rep.size<
 <dd><p>Project b onto the invariant subspace using the precomputed projector.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>b</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>)</p>
+<dd class="field-even"><p><strong>b</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -465,26 +465,15 @@ dimension <code class="docutils literal notranslate"><span class="pre">rep.size<
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="symm_learning.nn.parametrizations.InvariantConstraint.load_state_dict">
-<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/parametrizations.html#InvariantConstraint.load_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.parametrizations.InvariantConstraint.load_state_dict" title="Link to this definition">#</a></dt>
-<dd><p>Load parameters and clear cached projected bias.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>strict</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="symm_learning.nn.parametrizations.InvariantConstraint.right_inverse">
 <span class="sig-name descname"><span class="pre">right_inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/parametrizations.html#InvariantConstraint.right_inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.parametrizations.InvariantConstraint.right_inverse" title="Link to this definition">#</a></dt>
 <dd><p>Return a parameter tensor whose projection equals <code class="docutils literal notranslate"><span class="pre">tensor</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>tensor</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>)</p>
+<dd class="field-even"><p><strong>tensor</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -545,7 +534,6 @@ dimension <code class="docutils literal notranslate"><span class="pre">rep.size<
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.nn.parametrizations.InvariantConstraint.inv_projector"><code class="docutils literal notranslate"><span class="pre">inv_projector</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.nn.parametrizations.InvariantConstraint.forward"><code class="docutils literal notranslate"><span class="pre">forward()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.nn.parametrizations.InvariantConstraint.invalidate_cache"><code class="docutils literal notranslate"><span class="pre">invalidate_cache()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.nn.parametrizations.InvariantConstraint.load_state_dict"><code class="docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.nn.parametrizations.InvariantConstraint.right_inverse"><code class="docutils literal notranslate"><span class="pre">right_inverse()</span></code></a></li>
 </ul>
 </li>

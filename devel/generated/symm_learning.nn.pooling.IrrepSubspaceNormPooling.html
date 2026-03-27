@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>IrrepSubspaceNormPooling &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+    <title>IrrepSubspaceNormPooling &#8212; Symmetric Learning v0.4.4 Docs [devel]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../_static/documentation_options.js?v=90733dfc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -51,7 +51,7 @@
     <link rel="prev" title="pooling" href="../nn/pooling.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.4" />
   </head>
   
   
@@ -119,7 +119,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - devel</p>
+    <p class="title logo__title">v0.4.4 - devel</p>
   
 </a></div>
     
@@ -390,7 +390,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.nn.pooling.IrrepSubspaceNormPooling">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">IrrepSubspaceNormPooling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_rep</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/pooling.html#IrrepSubspaceNormPooling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.pooling.IrrepSubspaceNormPooling" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></p>
 <p>Pool irrep features into <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-invariant radii.</p>
 <p>Given <span class="math notranslate nohighlight">\(\mathbf{x}\in\mathcal{X}\)</span> with representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>, the module computes one
 scalar per irreducible copy in the isotypic/irrep-spectral basis:</p>
@@ -412,7 +412,7 @@ last dimension transforms.</p>
 <dd><p>Compute one invariant radius per irreducible copy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Input with trailing dimension <code class="docutils literal notranslate"><span class="pre">in_rep.size</span></code>; any leading batch/time dims are
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Input with trailing dimension <code class="docutils literal notranslate"><span class="pre">in_rep.size</span></code>; any leading batch/time dims are
 accepted.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -423,7 +423,7 @@ accepted.</p>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>

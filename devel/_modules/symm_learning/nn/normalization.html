@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.nn.normalization &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+    <title>symm_learning.nn.normalization &#8212; Symmetric Learning v0.4.4 Docs [devel]</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../../../_static/documentation_options.js?v=90733dfc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/normalization';</script>
@@ -47,7 +47,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.4" />
   </head>
   
   
@@ -115,7 +115,7 @@
     <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - devel</p>
+    <p class="title logo__title">v0.4.4 - devel</p>
   
 </a></div>
     
@@ -354,12 +354,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">symm_learning.stats</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">irrep_radii</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.linear</span><span class="w"> </span><span class="kn">import</span> <span class="n">eAffine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">eModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">direct_sum</span>
 
 
 <div class="viewcode-block" id="eRMSNorm">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eRMSNorm.html#symm_learning.nn.normalization.eRMSNorm">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">eRMSNorm</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">eRMSNorm</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Root-mean-square normalization with :math:`\mathbb{G}`-equivariant affine map.</span>
 
 <span class="sd">    For :math:`\mathbf{x}\in\mathcal{X}` with :math:`D=\dim(\rho_{\mathcal{X}})`, define</span>
@@ -454,7 +455,7 @@
 
 <div class="viewcode-block" id="eLayerNorm">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eLayerNorm.html#symm_learning.nn.normalization.eLayerNorm">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">eLayerNorm</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">eLayerNorm</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant Layer Normalization.</span>
 
 <span class="sd">    Given :math:`\mathbf{x}\in\mathcal{X}`, we first move to the irrep-spectral basis</span>
@@ -564,7 +565,7 @@
 
 <div class="viewcode-block" id="eBatchNorm1d">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.normalization.eBatchNorm1d.html#symm_learning.nn.normalization.eBatchNorm1d">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">eBatchNorm1d</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">eBatchNorm1d</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Symmetry-aware Batch Normalization over the representation dimension.</span>
 
 <span class="sd">    The mean and variance are computed with :func:`~symm_learning.stats.var_mean`,</span>

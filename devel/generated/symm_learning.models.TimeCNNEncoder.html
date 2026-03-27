@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>TimeCNNEncoder &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+    <title>TimeCNNEncoder &#8212; Symmetric Learning v0.4.4 Docs [devel]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../_static/documentation_options.js?v=90733dfc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -51,7 +51,7 @@
     <link rel="prev" title="eTimeCNNEncoder" href="symm_learning.models.eTimeCNNEncoder.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.4" />
   </head>
   
   
@@ -119,7 +119,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - devel</p>
+    <p class="title logo__title">v0.4.4 - devel</p>
   
 </a></div>
     
@@ -385,7 +385,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.models.TimeCNNEncoder">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">TimeCNNEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ReLU()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlp_hidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[128]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stride'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">append_last_frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_scheme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xavier_uniform'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/time_cnn/cnn_encoder.html#TimeCNNEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.TimeCNNEncoder" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>1D CNN baseline encoder for inputs of shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">in_dim,</span> <span class="pre">H)</span></code>.</p>
 <p>The model applies a stack of 1D conv blocks over time. Each block halves the time
 horizon using either stride-2 convolution or max-pooling. The final feature map of
@@ -402,7 +402,7 @@ It is an unconstrained baseline.</p>
 <li><p><strong>out_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Output feature dimension.</p></li>
 <li><p><strong>hidden_channels</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – Channels per conv block; depth equals len(hidden_channels).</p></li>
 <li><p><strong>horizon</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Input sequence length H.</p></li>
-<li><p><strong>activation</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></span>) – Activation module or list (one per block). If a single module is given,
+<li><p><strong>activation</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></span>) – Activation module or list (one per block). If a single module is given,
 it is replicated for all blocks.</p></li>
 <li><p><strong>batch_norm</strong> – If True, add RMSNorm after each convolution.</p></li>
 <li><p><strong>bias</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Use bias in conv/linear layers.</p></li>
@@ -424,13 +424,13 @@ features before the MLP.</p></li>
 <dd><p>Forward pass.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>torch.Tensor</em></a>) – Input tensor of shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">in_dim,</span> <span class="pre">H)</span></code>.</p>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>torch.Tensor</em></a>) – Input tensor of shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">in_dim,</span> <span class="pre">H)</span></code>.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Encoded tensor of shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">out_dim)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)">torch.Tensor</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)">torch.Tensor</a></p>
 </dd>
 </dl>
 </dd></dl>

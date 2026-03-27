@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>impose_linear_equivariance &#8212; Symmetric Learning v0.4.1 Docs [devel]</title>
+    <title>impose_linear_equivariance &#8212; Symmetric Learning v0.4.4 Docs [devel]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../_static/documentation_options.js?v=90733dfc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -51,7 +51,7 @@
     <link rel="prev" title="linear" href="../nn/linear.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.4" />
   </head>
   
   
@@ -119,7 +119,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - devel</p>
+    <p class="title logo__title">v0.4.4 - devel</p>
   
 </a></div>
     
@@ -404,7 +404,7 @@ the given linear layer commutes with the group actions of the input and output r
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>lin</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a>) – The linear layer to impose equivariance on. Must have ‘weight’ and optionally ‘bias’ attributes.</p></li>
+<li><p><strong>lin</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a>) – The linear layer to impose equivariance on. Must have ‘weight’ and optionally ‘bias’ attributes.</p></li>
 <li><p><strong>in_rep</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – The input representation <span class="math notranslate nohighlight">\(\rho_{\text{in}}\)</span> of the layer.</p></li>
 <li><p><strong>out_rep</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – The output representation <span class="math notranslate nohighlight">\(\rho_{\text{out}}\)</span> of the layer.</p></li>
 <li><p><strong>basis_expansion_scheme</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Basis expansion strategy for the commuting constraint (<code class="docutils literal notranslate"><span class="pre">&quot;memory_heavy&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;isotypic_expansion&quot;</span></code>).</p></li>
