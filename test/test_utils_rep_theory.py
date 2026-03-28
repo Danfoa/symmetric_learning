@@ -35,6 +35,18 @@ def test_rep_decomposition(group: Group):
     # rep_iso3 = isotypic_decomp_rep(rep_iso)
 
 
+def test_rep_decomposition_single_isotypic_cache_key():
+    """Single-isotypic reps should cache under `<rep_name>-Iso` and be reused."""
+    group = CyclicGroup(2)
+    rep = group.irrep(1)
+
+    rep_iso = isotypic_decomp_rep(rep)
+    rep_iso2 = isotypic_decomp_rep(rep)
+
+    assert rep_iso is rep_iso2, "Single-isotypic decomposition should be served from cache"
+    assert f"{rep.name}-Iso" in group.representations, "Expected canonical -Iso cache key to be populated"
+
+
 @pytest.mark.parametrize(
     "group", [pytest.param(CyclicGroup(5), id="cyclic5"), pytest.param(Icosahedral(), id="icosahedral")]
 )

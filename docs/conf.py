@@ -96,7 +96,7 @@ html_theme_options = {
     "show_nav_level": 1,
     "navigation_depth": 4,
     "show_toc_level": 2,
-    "secondary_sidebar_items": ["page-toc", "sourcelink"],
+    "secondary_sidebar_items": ["page-toc"],
 }
 
 html_css_files = ["custom.css"]

@@ -5,10 +5,11 @@ import torch
 from escnn.group import Representation
 
 from symm_learning.linalg import irrep_radii
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 
 
-class IrrepSubspaceNormPooling(torch.nn.Module):
+class IrrepSubspaceNormPooling(eModule):
     r"""Pool irrep features into :math:`\mathbb{G}`-invariant radii.
 
     Given :math:`\mathbf{x}\in\mathcal{X}` with representation :math:`\rho_{\mathcal{X}}`, the module computes one

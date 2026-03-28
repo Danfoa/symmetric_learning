@@ -9,10 +9,11 @@ from escnn.group import Representation
 import symm_learning.stats
 from symm_learning.linalg import irrep_radii
 from symm_learning.nn.linear import eAffine
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 
 
-class eRMSNorm(torch.nn.Module):
+class eRMSNorm(eModule):
     r"""Root-mean-square normalization with :math:`\mathbb{G}`-equivariant affine map.
 
     For :math:`\mathbf{x}\in\mathcal{X}` with :math:`D=\dim(\rho_{\mathcal{X}})`, define
@@ -98,7 +99,7 @@ class eRMSNorm(torch.nn.Module):
             self.affine.reset_parameters(scheme)
 
 
-class eLayerNorm(torch.nn.Module):
+class eLayerNorm(eModule):
     r"""Equivariant Layer Normalization.
 
     Given :math:`\mathbf{x}\in\mathcal{X}`, we first move to the irrep-spectral basis
@@ -202,7 +203,7 @@ class eLayerNorm(torch.nn.Module):
         return "{normalized_shape}, eps={eps}, affine={equiv_affine}".format(**self.__dict__)
 
 
-class eBatchNorm1d(torch.nn.Module):
+class eBatchNorm1d(eModule):
     r"""Symmetry-aware Batch Normalization over the representation dimension.
 
     The mean and variance are computed with :func:`~symm_learning.stats.var_mean`,

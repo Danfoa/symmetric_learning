@@ -34,6 +34,7 @@ from .conv import eConv1d, eConvTranspose1d
 from .disentangled import Change2DisentangledBasis
 from .distributions import eMultivariateNormal
 from .linear import eAffine, eLinear
+from .module import eModule
 from .normalization import eBatchNorm1d, eLayerNorm, eRMSNorm
 from .pooling import IrrepSubspaceNormPooling
 from .running_stats import EMAStats, eEMAStats
@@ -47,6 +48,7 @@ __all__ = [
     "eAffine",
     "eConv1d",
     "eConvTranspose1d",
+    "eModule",
     "EMAStats",
     "eEMAStats",
     "eLinear",

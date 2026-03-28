@@ -7,13 +7,14 @@ import torch
 from escnn.group import Representation
 
 from symm_learning.nn.linear import eLinear
+from symm_learning.nn.module import eModule
 from symm_learning.nn.pooling import IrrepSubspaceNormPooling
 from symm_learning.representation_theory import direct_sum
 
 logger = logging.getLogger(__name__)
 
 
-class eMLP(torch.nn.Module):
+class eMLP(eModule):
     r"""Equivariant MLP composed of :class:`~symm_learning.nn.linear.eLinear` layers.
 
     The network preserves the action of the underlying group on every layer by
@@ -120,7 +121,7 @@ class eMLP(torch.nn.Module):
         logger.debug(f"Initialized eMLP with scheme '{scheme}'")
 
 
-class iMLP(torch.nn.Module):
+class iMLP(eModule):
     r"""Invariant MLP built from an equivariant backbone and invariant pooling.
 
     The network defines:

@@ -4,6 +4,7 @@ import torch
 from escnn.group import Representation
 from torch.distributions import MultivariateNormal
 
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 
 
@@ -21,7 +22,7 @@ def _equiv_mean_var_from_input(
     return mu, var
 
 
-class eMultivariateNormal(torch.nn.Module):
+class eMultivariateNormal(eModule):
     r"""Conditional Gaussian with :math:`\mathbb{G}`-equivariant parameters.
 
     This module maps parameter vectors in an input representation space to a Gaussian over

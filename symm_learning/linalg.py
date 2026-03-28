@@ -15,9 +15,27 @@ isotypic_signal2irreducible_subspaces
     Flatten isotypic signals into irreducible subspace components.
 """
 
+from __future__ import annotations
+
 import numpy as np
 import torch
 from escnn.group import Representation
+
+
+def _cached_rep_matrix(
+    rep: Representation,
+    key: str,
+    matrix: np.ndarray,
+    like: torch.Tensor,
+) -> torch.Tensor:
+    """Return a representation matrix cache updated to the latest ``like`` dtype/device."""
+    cached = rep.attributes.get(key, None)
+    if cached is None:
+        cached = torch.as_tensor(matrix, device=like.device, dtype=like.dtype)
+    elif cached.device != like.device or cached.dtype != like.dtype:
+        cached = cached.to(device=like.device, dtype=like.dtype)
+    rep.attributes[key] = cached
+    return cached
 
 
 def isotypic_signal2irreducible_subspaces(x: torch.Tensor, rep_x: Representation):
@@ -96,26 +114,18 @@ def irrep_radii(x: torch.Tensor, rep: Representation) -> torch.Tensor:
     if x.shape[-1] != rep.size:
         raise ValueError(f"Expected last dimension {rep.size}, got {x.shape[-1]}")
 
-    if "Q_inv" not in rep.attributes:  # cache inverse change-of-basis for reuse
-        Q_inv = torch.tensor(rep.change_of_basis_inv, device=x.device, dtype=x.dtype)
-        rep.attributes["Q_inv"] = Q_inv
-    else:
-        Q_inv = rep.attributes["Q_inv"].to(x.device, x.dtype)
+    Q_inv = _cached_rep_matrix(rep=rep, key="Q_inv", matrix=rep.change_of_basis_inv, like=x)
 
     # Change to irrep-spectral basis
     x_spectral = torch.einsum("ij,...j->...i", Q_inv, x)
-    # Compute a mask for each irreducible subspace (subspace associated to an irrep)
     n_subspaces = len(rep.irreps)
-    subspace_ids = _get_irrep_subspace_index(rep).to(x.device)
+    subspace_dims = [rep.group.irrep(*irrep_id).size for irrep_id in rep.irreps]
 
     flat = x_spectral.reshape(-1, rep.size)
-    flat_sq = flat.pow(2)  # squared magnitudes per coordinate
-
-    scatter_idx = subspace_ids.view(1, -1).expand(flat_sq.size(0), -1)  # broadcast labels across batch
-    radii_sq = torch.zeros(flat_sq.size(0), n_subspaces, device=x.device, dtype=x.dtype)
-    radii_sq.scatter_add_(1, scatter_idx, flat_sq)  # sum squares inside each irrep block
-
-    radii = radii_sq.sqrt().reshape(*x_spectral.shape[:-1], n_subspaces)
+    # vector_norm has a stable subgradient at zero, unlike manual sqrt(sum(x^2))
+    flat_blocks = torch.split(flat, subspace_dims, dim=-1)
+    radii = torch.stack([torch.linalg.vector_norm(block, ord=2, dim=-1) for block in flat_blocks], dim=-1)
+    radii = radii.reshape(*x_spectral.shape[:-1], n_subspaces)
     return radii
 
 
@@ -170,11 +180,18 @@ def lstsq(x: torch.Tensor, y: torch.Tensor, rep_x: Representation, rep_y: Repres
     assert x.shape[-1] == rep_x.size, f"Expected X shape (..., {rep_x.size}), got {x.shape}"
     assert y.shape[-1] == rep_y.size, f"Expected Y shape (..., {rep_y.size}), got {y.shape}"
 
+    if x.device != y.device:
+        raise ValueError(f"Expected x and y on same device, got {x.device} and {y.device}")
+
+    work_dtype = torch.promote_types(x.dtype, y.dtype)
+    x_work = x if x.dtype == work_dtype else x.to(dtype=work_dtype)
+    y_work = y if y.dtype == work_dtype else y.to(dtype=work_dtype)
+
     rep_X_iso = isotypic_decomp_rep(rep_x)
     rep_Y_iso = isotypic_decomp_rep(rep_y)
     # Changes of basis from the Disentangled/Isotypic-basis of X, and Y to the original basis.
-    Qx = torch.tensor(rep_X_iso.change_of_basis, device=x.device, dtype=x.dtype)
-    Qy = torch.tensor(rep_Y_iso.change_of_basis, device=y.device, dtype=y.dtype)
+    Qx = _cached_rep_matrix(rep=rep_X_iso, key="Q", matrix=rep_X_iso.change_of_basis, like=x_work)
+    Qy = _cached_rep_matrix(rep=rep_Y_iso, key="Q", matrix=rep_Y_iso.change_of_basis, like=x_work)
     rep_X_iso_subspaces = rep_X_iso.attributes["isotypic_reps"]
     rep_Y_iso_subspaces = rep_Y_iso.attributes["isotypic_reps"]
 
@@ -189,9 +206,9 @@ def lstsq(x: torch.Tensor, y: torch.Tensor, rep_x: Representation, rep_y: Repres
         iso_idx_Y[iso_id] = slice(y_dim, y_dim + rep_k.size)
         y_dim += rep_k.size
 
-    x_iso = torch.einsum("ij,...j->...i", Qx.T, x)
-    y_iso = torch.einsum("ij,...j->...i", Qy.T, y)
-    A_iso = torch.zeros((rep_y.size, rep_x.size), dtype=x.dtype, device=x.device)
+    x_iso = torch.einsum("ij,...j->...i", Qx.T, x_work)
+    y_iso = torch.einsum("ij,...j->...i", Qy.T, y_work)
+    A_iso = torch.zeros((rep_y.size, rep_x.size), dtype=work_dtype, device=x_work.device)
     for iso_id in rep_Y_iso_subspaces:
         if iso_id not in rep_X_iso_subspaces:
             continue  # No covariance between the isotypic subspaces of different types.
@@ -209,7 +226,9 @@ def lstsq(x: torch.Tensor, y: torch.Tensor, rep_x: Representation, rep_y: Repres
     return A
 
 
-def invariant_orthogonal_projector(rep_x: Representation) -> torch.Tensor:
+def invariant_orthogonal_projector(
+    rep_x: Representation, device: torch.device | str | None = None, dtype: torch.dtype | None = None
+) -> torch.Tensor:
     r"""Computes the orthogonal projection to the invariant subspace.
 
     The input representation :math:`\rho_{\mathcal{X}}: \mathbb{G} \mapsto \mathbb{G}\mathbb{L}(\mathcal{X})` is
@@ -251,16 +270,21 @@ def invariant_orthogonal_projector(rep_x: Representation) -> torch.Tensor:
     Args:
         rep_x (:class:`~escnn.group.Representation`): The representation for which the orthogonal projection
             to the invariant subspace is computed.
+        device (:class:`~torch.device`, optional): Device for the returned projector. If ``None``, uses CPU.
+        dtype (:class:`~torch.dtype`, optional): Data type for the returned projector. If ``None``, uses
+            ``torch.get_default_dtype()``.
 
     Returns:
         :class:`~torch.Tensor`: The orthogonal projection matrix to the invariant subspace,
         :math:`\mathbf{Q} \mathbf{S} \mathbf{Q}^T`.
     """
-    Qx_T = torch.as_tensor(rep_x.change_of_basis_inv)
-    Qx = torch.as_tensor(rep_x.change_of_basis)
+    device = torch.device("cpu") if device is None else torch.device(device)
+    dtype = torch.get_default_dtype() if dtype is None else dtype
+    Qx_T = torch.as_tensor(rep_x.change_of_basis_inv, device=device, dtype=dtype)
+    Qx = torch.as_tensor(rep_x.change_of_basis, device=device, dtype=dtype)
 
     # S is an indicator of which dimension (in the irrep-spectral basis) is associated with a trivial irrep
-    S = torch.zeros((rep_x.size, rep_x.size))
+    S = torch.zeros((rep_x.size, rep_x.size), device=device, dtype=dtype)
     irreps_dimension = []
     cum_dim = 0
     for irrep_id in rep_x.irreps:

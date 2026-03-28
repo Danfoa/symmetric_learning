@@ -7,12 +7,13 @@ import torch
 from escnn.group import Representation
 
 from symm_learning.nn.linear import eINIT_SCHEMES
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import GroupHomomorphismBasis
 
 log = logging.getLogger(__name__)
 
 
-class eConv1d(torch.nn.Conv1d):
+class eConv1d(eModule, torch.nn.Conv1d):
     r"""Channel-equivariant 1D convolution.
 
     Matches :class:`torch.nn.Conv1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—while
@@ -154,7 +155,7 @@ class eConv1d(torch.nn.Conv1d):
         return bias
 
 
-class eConvTranspose1d(torch.nn.ConvTranspose1d):
+class eConvTranspose1d(eModule, torch.nn.ConvTranspose1d):
     r"""Channel-equivariant transposed 1D convolution.
 
     Matches :class:`torch.nn.ConvTranspose1d`—inputs ``(B, in_rep.size, L)`` to outputs ``(B, out_rep.size, L_out)``—

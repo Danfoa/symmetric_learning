@@ -7,13 +7,14 @@ from escnn.group import Representation
 from torch.nn.utils import parametrize
 
 from symm_learning.nn.linear import eLinear
+from symm_learning.nn.module import eModule
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
 from symm_learning.representation_theory import direct_sum
 
 logger = logging.getLogger(__name__)
 
 
-class eMultiheadAttention(torch.nn.MultiheadAttention):
+class eMultiheadAttention(eModule, torch.nn.MultiheadAttention):
     """Drop-in replacement for :class:`torch.nn.MultiheadAttention` that preserves G-equivariance.
 
     This module keeps the runtime logic of PyTorch’s implementation untouched: we still rely on

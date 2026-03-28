@@ -12,13 +12,14 @@ import symm_learning
 from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.models.diffusion.cond_transformer_regressor import GenCondRegressor
 from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import module_memory
 
 logger = logging.getLogger(__name__)
 
 
-class eCondTransformerRegressor(GenCondRegressor):
+class eCondTransformerRegressor(eModule, GenCondRegressor):
     r"""Equivariant analogue of the conditional transformer regressor baseline.
 
     This module mirrors
