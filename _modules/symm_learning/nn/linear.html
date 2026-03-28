@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.nn.linear &#8212; Symmetric Learning v0.4.1 Docs [main]</title>
+    <title>symm_learning.nn.linear &#8212; Symmetric Learning v0.4.5 Docs [main]</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../../../_static/documentation_options.js?v=340bb9e5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/linear';</script>
@@ -47,7 +47,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.5" />
   </head>
   
   
@@ -115,7 +115,7 @@
     <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - main</p>
+    <p class="title logo__title">v0.4.5 - main</p>
   
 </a></div>
     
@@ -353,6 +353,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parametrize</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">eModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.parametrizations</span><span class="w"> </span><span class="kn">import</span> <span class="n">CommutingConstraint</span><span class="p">,</span> <span class="n">InvariantConstraint</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroupHomomorphismBasis</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_spectral_trivial_mask</span>
@@ -409,7 +410,7 @@
 
 <div class="viewcode-block" id="eLinear">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eLinear.html#symm_learning.nn.linear.eLinear">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">eLinear</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">eLinear</span><span class="p">(</span><span class="n">eModule</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Parameterize a :math:`\mathbb{G}`-equivariant linear map with optional invariant bias.</span>
 
 <span class="sd">    The layer learns coefficients over :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`,</span>
@@ -552,46 +553,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_weight_cache_dirty</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_refresh_eval_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure eval-mode caches are materialized.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weight</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weight_cache_dirty</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">expand_weight</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span><span class="o">.</span><span class="n">refresh_eval_cache</span><span class="p">()</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-<div class="viewcode-block" id="eLinear.train">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eLinear.html#symm_learning.nn.linear.eLinear.train">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Switch mode and keep cached expanded tensors consistent.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">mode</span><span class="p">:</span>  <span class="c1"># Switching to train mode - invalidate cache</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Switching to eval mode - refresh cache</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_refresh_eval_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
-
-
-<div class="viewcode-block" id="eLinear.load_state_dict">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eLinear.html#symm_learning.nn.linear.eLinear.load_state_dict">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and invalidate cached expanded tensors.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
 </div>
 
 
 
 <div class="viewcode-block" id="InvariantBias">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">InvariantBias</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InvariantBias</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Module parameterizing a learnable :math:`\mathbb{G}`-invariant bias.</span>
 
 <span class="sd">    For representation space :math:`\mathcal{X}`, this module enforces</span>
@@ -715,18 +683,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="InvariantBias.train">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.train">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Switch between training and evaluation modes, managing cache appropriately.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">mode</span><span class="p">:</span>  <span class="c1"># Switching to train mode - invalidate cache</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Switching to eval mode - refresh cache</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">refresh_eval_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
-
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_mark_bias_cache_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_bias_cache_dirty</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">grad</span>
@@ -739,37 +695,13 @@
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_bias_cache_dirty</span> <span class="o">=</span> <span class="kc">True</span></div>
-
-
-<div class="viewcode-block" id="InvariantBias.refresh_eval_cache">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.refresh_eval_cache">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">refresh_eval_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure eval-mode cache is populated.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_bias</span><span class="p">:</span>
-            <span class="k">return</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bias_cache_dirty</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">expand_bias</span><span class="p">()</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-<div class="viewcode-block" id="InvariantBias.load_state_dict">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.InvariantBias.html#symm_learning.nn.linear.InvariantBias.load_state_dict">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and invalidate cached expanded bias.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
 </div>
 
 
 
 <div class="viewcode-block" id="eAffine">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">eAffine</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">eAffine</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant affine map with per-irrep scales and invariant bias.</span>
 
 <span class="sd">    Let :math:`\mathbf{x}\in\mathcal{X}` with representation</span>
@@ -1051,40 +983,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_affine_cache_dirty</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_refresh_eval_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span><span class="p">:</span>
-            <span class="k">return</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine_cache_dirty</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">expand_affine</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">bias_module</span><span class="o">.</span><span class="n">refresh_eval_cache</span><span class="p">()</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-<div class="viewcode-block" id="eAffine.train">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.train">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Switch mode and keep cached affine expansion consistent.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">mode</span><span class="p">:</span>  <span class="c1"># Switching to train mode - invalidate cache</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Switching to eval mode - refresh cache</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_refresh_eval_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
-
-
-<div class="viewcode-block" id="eAffine.load_state_dict">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.linear.eAffine.html#symm_learning.nn.linear.eAffine.load_state_dict">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and invalidate cached affine expansion.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
 
 
     <span class="nd">@property</span>

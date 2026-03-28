@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.nn.parametrizations &#8212; Symmetric Learning v0.4.1 Docs [main]</title>
+    <title>symm_learning.nn.parametrizations &#8212; Symmetric Learning v0.4.5 Docs [main]</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../../../_static/documentation_options.js?v=340bb9e5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/parametrizations';</script>
@@ -47,7 +47,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.5" />
   </head>
   
   
@@ -115,7 +115,7 @@
     <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - main</p>
+    <p class="title logo__title">v0.4.5 - main</p>
   
 </a></div>
     
@@ -350,6 +350,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">invariant_orthogonal_projector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">eModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroupHomomorphismBasis</span><span class="p">,</span> <span class="n">direct_sum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">bytes_to_mb</span><span class="p">,</span> <span class="n">check_equivariance</span><span class="p">,</span> <span class="n">module_device_memory</span><span class="p">,</span> <span class="n">module_memory</span>
 
@@ -358,7 +359,7 @@
 
 <div class="viewcode-block" id="InvariantConstraint">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.InvariantConstraint.html#symm_learning.nn.parametrizations.InvariantConstraint">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">InvariantConstraint</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InvariantConstraint</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Orthogonally project vectors onto :math:`\mathrm{Fix}(\rho)`.</span>
 
 <span class="sd">    For representation :math:`\rho_{\mathcal{X}}`, this parametrization enforces</span>
@@ -389,6 +390,7 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Precompute the invariant projector for the supplied representation.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requires_reps</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rep</span> <span class="o">=</span> <span class="n">rep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;inv_projector&quot;</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;_bias&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -438,27 +440,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span> <span class="o">=</span> <span class="kc">None</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-<div class="viewcode-block" id="InvariantConstraint.load_state_dict">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.InvariantConstraint.html#symm_learning.nn.parametrizations.InvariantConstraint.load_state_dict">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and clear cached projected bias.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
 </div>
 
 
 
 <div class="viewcode-block" id="CommutingConstraint">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.CommutingConstraint.html#symm_learning.nn.parametrizations.CommutingConstraint">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">CommutingConstraint</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CommutingConstraint</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Orthogonal projection onto :math:`\operatorname{Hom}_{\mathbb{G}}(\rho_{\text{in}},\rho_{\text{out}})`.</span>
 
 <span class="sd">    For a dense weight :math:`\mathbf{W}\in\mathbb{R}^{D_{\text{out}}\times D_{\text{in}}}`, this module returns</span>
@@ -560,20 +548,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_weight</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span> <span class="o">=</span> <span class="kc">None</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-<div class="viewcode-block" id="CommutingConstraint.load_state_dict">
-<a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.CommutingConstraint.html#symm_learning.nn.parametrizations.CommutingConstraint.load_state_dict">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load parameters and clear cached projected weight.&quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
 </div>
 
 

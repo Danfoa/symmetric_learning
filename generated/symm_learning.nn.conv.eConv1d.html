@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>eConv1d &#8212; Symmetric Learning v0.4.1 Docs [main]</title>
+    <title>eConv1d &#8212; Symmetric Learning v0.4.5 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=c87aa342"></script>
+    <script src="../_static/documentation_options.js?v=340bb9e5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -51,7 +51,7 @@
     <link rel="prev" title="conv" href="../nn/conv.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.1" />
+  <meta name="docsearch:version" content="0.4.5" />
   </head>
   
   
@@ -119,7 +119,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.1 - main</p>
+    <p class="title logo__title">v0.4.5 - main</p>
   
 </a></div>
     
@@ -391,9 +391,9 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.nn.conv.eConv1d">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">eConv1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_rep</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_rep</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis_expansion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'isotypic_expansion'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_scheme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xavier_uniform'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">conv1d_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/conv.html#eConv1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.conv.eConv1d" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.modules.conv.Conv1d.html#torch.nn.modules.conv.Conv1d" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Conv1d</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv1d.html#torch.nn.Conv1d" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Conv1d</span></code></a></p>
 <p>Channel-equivariant 1D convolution.</p>
-<p>Matches <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv1d.html#torch.nn.Conv1d" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Conv1d</span></code></a>—inputs <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">in_rep.size,</span> <span class="pre">L)</span></code> to outputs <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">out_rep.size,</span> <span class="pre">L_out)</span></code>—while
+<p>Matches <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv1d.html#torch.nn.Conv1d" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Conv1d</span></code></a>—inputs <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">in_rep.size,</span> <span class="pre">L)</span></code> to outputs <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">out_rep.size,</span> <span class="pre">L_out)</span></code>—while
 constraining each kernel slice to lie in <span class="math notranslate nohighlight">\(\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})\)</span>.</p>
 <p>The layer satisfies the equivariance constraint:</p>
 <div class="math notranslate nohighlight">
@@ -416,13 +416,13 @@ output transformation.</p></li>
 <li><p><strong>init_scheme</strong> (<code class="docutils literal notranslate"><span class="pre">eINIT_SCHEMES</span></code>, optional) – Initialization passed to
 <a class="reference internal" href="symm_learning.representation_theory.GroupHomomorphismBasis.html#symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params" title="symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params"><code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize_params()</span></code></a>. Defaults to
 <code class="docutils literal notranslate"><span class="pre">&quot;xavier_uniform&quot;</span></code>.</p></li>
-<li><p><strong>**conv1d_kwargs</strong> – Standard <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv1d.html#torch.nn.Conv1d" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Conv1d</span></code></a> arguments (stride, padding, bias, etc.).</p></li>
+<li><p><strong>**conv1d_kwargs</strong> – Standard <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv1d.html#torch.nn.Conv1d" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Conv1d</span></code></a> arguments (stride, padding, bias, etc.).</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="symm_learning.nn.conv.eConv1d.bias">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bias</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#symm_learning.nn.conv.eConv1d.bias" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bias</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#symm_learning.nn.conv.eConv1d.bias" title="Link to this definition">#</a></dt>
 <dd><p>Expanded invariant bias or <code class="docutils literal notranslate"><span class="pre">None</span></code> when not admissible.</p>
 </dd></dl>
 
@@ -438,10 +438,10 @@ output transformation.</p></li>
 <dd><p>Apply the constrained 1D convolution on channel-last dimension.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>input</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><em>Tensor</em></a>)</p>
+<dd class="field-even"><p><strong>input</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -459,7 +459,7 @@ output transformation.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="symm_learning.nn.conv.eConv1d.weight">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">weight</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.conv.eConv1d.weight" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">weight</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.conv.eConv1d.weight" title="Link to this definition">#</a></dt>
 <dd><p>Dense kernel of shape <code class="docutils literal notranslate"><span class="pre">(out_channels,</span> <span class="pre">in_channels,</span> <span class="pre">kernel_size)</span></code>.</p>
 </dd></dl>
 
@@ -524,15 +524,6 @@ output transformation.</p></li>
 </li>
 </ul>
   </nav></div>
-
-  <div class="sidebar-secondary-item">
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/generated/symm_learning.nn.conv.eConv1d.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div></div>
 
 </div></div>
               
