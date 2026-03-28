@@ -648,9 +648,13 @@ def isotypic_decomp_rep(rep: Representation) -> Representation:
     rep_iso_basis.attributes["isotypic_subspace_dims"] = iso_subspace_dims
     rep_iso_basis.attributes["in_isotypic_basis"] = True  # Boolean flag useful
 
-    # Store representation in symmetry group cache:
-    symm_group.representations[rep_iso_basis.name] = rep_iso_basis
-    logger.debug(f"Stored isotypic decomposition representation {rep_iso_basis.name} in cache.")
+    # Store representation in symmetry group cache.
+    # `direct_sum()` returns the only summand unchanged when there is a single isotypic block,
+    # so its `.name` can differ from `iso_rep_name`; always cache the canonical `-Iso` key.
+    symm_group.representations[iso_rep_name] = rep_iso_basis
+    if rep_iso_basis.name != iso_rep_name:
+        symm_group.representations[rep_iso_basis.name] = rep_iso_basis
+    logger.debug(f"Stored isotypic decomposition representation {rep_iso_basis.name} in cache as {iso_rep_name}.")
     return rep_iso_basis
 
 
