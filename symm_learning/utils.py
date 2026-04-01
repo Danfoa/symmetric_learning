@@ -1,6 +1,7 @@
 # Created by Daniel Ordoñez (daniels.ordonez@gmail.com) at 02/04/25
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 
 import numpy as np
@@ -239,3 +240,253 @@ def check_equivariance(
         errors.append((g, errs.mean()))
 
     print(f"Equivariant check passed for module {module_name} with max error {max(e[1] for e in errors)} ")
+
+
+# ____________________________ PROFILING UTILITIES _____________________________________________
+
+
+def _profile_stats(values: list[float]) -> tuple[float, float]:
+    t = torch.tensor(values)
+    return float(t.mean().item()), float(t.std(unbiased=False).item())
+
+
+def _n_parameters(model: torch.nn.Module) -> int:
+    return sum(p.numel() for p in model.parameters())
+
+
+def _sync(device: torch.device) -> None:
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+
+
+def _prime_eval_cache(model: torch.nn.Module, x: torch.Tensor, device: torch.device) -> None:
+    """Populate eval caches once outside measured/profiled loops."""
+    model.eval()
+    with torch.no_grad():
+        _ = model(x)
+    _sync(device)
+
+
+def _run_timing(
+    model: torch.nn.Module,
+    x: torch.Tensor,
+    device: torch.device,
+    n_steps: int,
+    warmup_steps: int,
+) -> dict[str, float]:
+    model.train()
+    train_forward_ms: list[float] = []
+    backward_ms: list[float] = []
+    for i in range(warmup_steps + n_steps):
+        model.zero_grad(set_to_none=True)
+
+        _sync(device)
+        t0 = time.perf_counter()
+        out = model(x)
+        _sync(device)
+        t1 = time.perf_counter()
+
+        loss = out.square().mean()
+        _sync(device)
+        t2 = time.perf_counter()
+        loss.backward()
+        _sync(device)
+        t3 = time.perf_counter()
+
+        if i >= warmup_steps:
+            train_forward_ms.append((t1 - t0) * 1e3)
+            backward_ms.append((t3 - t2) * 1e3)
+
+    model.eval()
+    _prime_eval_cache(model, x, device)
+    val_forward_ms: list[float] = []
+    with torch.no_grad():
+        for i in range(warmup_steps + n_steps):
+            _sync(device)
+            t0 = time.perf_counter()
+            _ = model(x)
+            _sync(device)
+            t1 = time.perf_counter()
+            if i >= warmup_steps:
+                val_forward_ms.append((t1 - t0) * 1e3)
+
+    f_m, f_s = _profile_stats(train_forward_ms)
+    b_m, b_s = _profile_stats(backward_ms)
+    v_m, v_s = _profile_stats(val_forward_ms)
+    return {
+        "train_forward_ms_mean": f_m,
+        "train_forward_ms_std": f_s,
+        "backward_ms_mean": b_m,
+        "backward_ms_std": b_s,
+        "val_forward_ms_mean": v_m,
+        "val_forward_ms_std": v_s,
+    }
+
+
+def _profile_ops(
+    model: torch.nn.Module,
+    x: torch.Tensor,
+    device: torch.device,
+    mode: str,
+    active_steps: int,
+    warmup_steps: int,
+) -> dict[str, float]:
+    activities = [torch.profiler.ProfilerActivity.CPU]
+    use_cuda = device.type == "cuda"
+    if use_cuda:
+        activities.append(torch.profiler.ProfilerActivity.CUDA)
+
+    model.train(mode == "train")
+    if mode == "eval":
+        _prime_eval_cache(model, x, device)
+    prof_warmup_steps = warmup_steps if mode == "train" else 0
+    with torch.profiler.profile(activities=activities, record_shapes=False, with_stack=False) as prof:
+        for _ in range(prof_warmup_steps + active_steps):
+            if mode == "train":
+                model.zero_grad(set_to_none=True)
+                out = model(x)
+                loss = out.square().mean()
+                loss.backward()
+            else:
+                with torch.no_grad():
+                    _ = model(x)
+            prof.step()
+
+    op_to_ms_per_step: dict[str, float] = {}
+    for item in prof.key_averages():
+        op_name = item.key
+        if not op_name.startswith("aten::"):
+            continue
+        if use_cuda:
+            self_time_us = getattr(item, "self_cuda_time_total", None)
+            if self_time_us is None:
+                self_time_us = getattr(item, "self_device_time_total", 0.0)
+        else:
+            self_time_us = getattr(item, "self_cpu_time_total", 0.0)
+        self_time_us = float(self_time_us)
+        if self_time_us <= 0:
+            continue
+        op_to_ms_per_step[op_name] = self_time_us / 1000.0 / active_steps
+    return op_to_ms_per_step
+
+
+def _fmt_ms(mean_ms: float, std_ms: float) -> str:
+    return f"{mean_ms:7.3f}±{std_ms:6.3f} ms"
+
+
+def _print_top_ops(title: str, ops: dict[str, float], top_k: int) -> None:
+    print(title)
+    print(f"{'Op':<30} {'ms/step':>12}")
+    print("-" * 44)
+    for op_name, ms in sorted(ops.items(), key=lambda kv: kv[1], reverse=True)[:top_k]:
+        print(f"{op_name:<30.30} {ms:10.3f}")
+
+
+def run_module_pair_profile(
+    lhs_name: str,
+    lhs: torch.nn.Module,
+    rhs_name: str,
+    rhs: torch.nn.Module,
+    x: torch.Tensor,
+    *,
+    group_name: str | None = None,
+    profile_active_steps: int = 25,
+    profile_warmup_steps: int = 5,
+    mode: str = "eval",
+    top_k: int = 10,
+) -> dict[str, object]:
+    """Run timing + op profiling for two already-instantiated modules on the same input."""
+    if mode not in {"eval", "train", "both"}:
+        raise ValueError("mode must be one of: eval, train, both")
+
+    n_steps = profile_active_steps
+    warmup_steps = profile_warmup_steps
+
+    device = x.device
+    lhs = lhs.to(device=device, dtype=x.dtype)
+    rhs = rhs.to(device=device, dtype=x.dtype)
+
+    lhs_timing = _run_timing(lhs, x, device=device, n_steps=n_steps, warmup_steps=warmup_steps)
+    rhs_timing = _run_timing(rhs, x, device=device, n_steps=n_steps, warmup_steps=warmup_steps)
+
+    print(f"Device: {device} | dtype: {x.dtype}")
+    if group_name is not None:
+        print(f"Group: {group_name} | input dim: {x.shape[-1]} | batch: {x.shape[0]}")
+    else:
+        print(f"Input dim: {x.shape[-1]} | batch: {x.shape[0]}")
+    print(f"Compare: {lhs_name} vs {rhs_name}")
+    print(f"Timing steps: warmup={warmup_steps}, measured={n_steps}")
+    print(f"Profiler steps: warmup={profile_warmup_steps}, active={profile_active_steps}")
+    print()
+    batch_size = int(x.shape[0])
+    input_dim = int(x.shape[-1])
+    print("Average Runtime (ms, mean±std)")
+    print(
+        f"{'Module':<12} {'#params':>10} {'Batch':>8} {'InputDim':>10} {'TrainFwd':>18} {'Backward':>18} {'ValFwd':>18}"
+    )
+    print("-" * 108)
+    print(
+        f"{lhs_name:<12} {_n_parameters(lhs):10d} {batch_size:8d} {input_dim:10d} "
+        f"{_fmt_ms(lhs_timing['train_forward_ms_mean'], lhs_timing['train_forward_ms_std']):>18} "
+        f"{_fmt_ms(lhs_timing['backward_ms_mean'], lhs_timing['backward_ms_std']):>18} "
+        f"{_fmt_ms(lhs_timing['val_forward_ms_mean'], lhs_timing['val_forward_ms_std']):>18}"
+    )
+    print(
+        f"{rhs_name:<12} {_n_parameters(rhs):10d} {batch_size:8d} {input_dim:10d} "
+        f"{_fmt_ms(rhs_timing['train_forward_ms_mean'], rhs_timing['train_forward_ms_std']):>18} "
+        f"{_fmt_ms(rhs_timing['backward_ms_mean'], rhs_timing['backward_ms_std']):>18} "
+        f"{_fmt_ms(rhs_timing['val_forward_ms_mean'], rhs_timing['val_forward_ms_std']):>18}"
+    )
+
+    profile_modes = ["eval", "train"] if mode == "both" else [mode]
+    all_mode_results: dict[str, dict[str, object]] = {}
+    for profile_mode in profile_modes:
+        lhs_ops = _profile_ops(
+            lhs,
+            x,
+            device=device,
+            mode=profile_mode,
+            active_steps=profile_active_steps,
+            warmup_steps=profile_warmup_steps,
+        )
+        rhs_ops = _profile_ops(
+            rhs,
+            x,
+            device=device,
+            mode=profile_mode,
+            active_steps=profile_active_steps,
+            warmup_steps=profile_warmup_steps,
+        )
+
+        keys = set(lhs_ops) | set(rhs_ops)
+        deltas: list[tuple[float, str, float, float, float]] = []
+        for op_name in keys:
+            lhs_ms = lhs_ops.get(op_name, 0.0)
+            rhs_ms = rhs_ops.get(op_name, 0.0)
+            delta = lhs_ms - rhs_ms
+            if delta <= 1e-3:
+                continue
+            ratio = lhs_ms / rhs_ms if rhs_ms > 1e-12 else float("inf")
+            deltas.append((delta, op_name, lhs_ms, rhs_ms, ratio))
+        deltas.sort(reverse=True)
+
+        print()
+        print(f"[{profile_mode}] Where {lhs_name} is slower than {rhs_name} (top aten ops, ms/step)")
+        print(f"{'Op':<30} {lhs_name + ' (ms)':>12} {rhs_name + ' (ms)':>12} {'Delta':>10} {'Ratio':>8}")
+        print("-" * 86)
+        for delta, op_name, lhs_ms, rhs_ms, ratio in deltas[:top_k]:
+            ratio_str = "inf" if ratio == float("inf") else f"{ratio:.2f}x"
+            print(f"{op_name:<30.30} {lhs_ms:10.3f} {rhs_ms:10.3f} {delta:8.3f} {ratio_str:>8}")
+
+        print()
+        _print_top_ops(f"[{profile_mode}] Top ops for {lhs_name}", lhs_ops, top_k=top_k)
+        print()
+        _print_top_ops(f"[{profile_mode}] Top ops for {rhs_name}", rhs_ops, top_k=top_k)
+
+        all_mode_results[profile_mode] = {"lhs_ops": lhs_ops, "rhs_ops": rhs_ops, "slowdowns": deltas}
+
+    return {
+        "lhs_timing": lhs_timing,
+        "rhs_timing": rhs_timing,
+        "modes": all_mode_results,
+    }

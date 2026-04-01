@@ -294,3 +294,39 @@ class MLP(torch.nn.Module):
         """Forward pass of the MLP model."""
         output = self.net(input)
         return output
+
+
+if __name__ == "__main__":
+    import escnn
+
+    from symm_learning.utils import run_module_pair_profile
+
+    SEED = 123
+    BATCH_SIZE = 1024
+    REGULAR_COPIES = 2
+    MODE = "eval"  # options: eval, train, both
+
+    torch.manual_seed(SEED)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device.type == "cuda":
+        torch.cuda.manual_seed_all(SEED)
+
+    # G = escnn.group.Icosahedral()
+    G = escnn.group.DihedralGroup(10)
+    rep = direct_sum([G.regular_representation] * REGULAR_COPIES)
+    HIDDEN_UNITS = [G.regular_representation.size * 5] * 2
+    emlp = eMLP(in_rep=rep, out_rep=rep, hidden_units=HIDDEN_UNITS, bias=False).to(device)
+    mlp = MLP(in_dim=rep.size, out_dim=rep.size, hidden_units=HIDDEN_UNITS, bias=False).to(device)
+    x = torch.randn(BATCH_SIZE, rep.size, device=device)
+
+    run_module_pair_profile(
+        lhs_name="eMLP",
+        lhs=emlp,
+        rhs_name="MLP",
+        rhs=mlp,
+        x=x,
+        group_name=G.name,
+        mode=MODE,
+        profile_active_steps=500,
+        profile_warmup_steps=10,
+    )

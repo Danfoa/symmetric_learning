@@ -180,3 +180,4 @@ cython_debug/
 .github/chatmodes/
 .rsyncignore
 *AGENTS.md
+.codex
