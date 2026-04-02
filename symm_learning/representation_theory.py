@@ -184,18 +184,17 @@ class GroupHomomorphismBasis(torch.nn.Module):
             # Multiplicities of the irrep of type k=irrep_id in in_rep and out_rep
             mul_out = self.out_rep._irreps_multiplicities[irrep_id]
             mul_in = self.in_rep._irreps_multiplicities[irrep_id]
-            # Endomorphism basis of the irrep End_G(k=irrep_id)
-            irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+            dim_endo_basis = len(irrep.endomorphism_basis())
             # Dimension of basis of homomorphisms between the two isotypic subspaces of type k=irrep_id
-            dim_irrep_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
+            dim_irrep_hom_basis = mul_out * mul_in * dim_endo_basis  # dim(Hom_G(V_k^{in}, V_k^{out}))
             # Store block info for inference time use.
             self.iso_blocks[irrep_id] = dict(
                 out_slice=out_slice,
                 in_slice=in_slice,
-                endomorphism_basis=irrep_end_basis,
                 mul_out=mul_out,
                 mul_in=mul_in,
                 irrep_dim=irrep.size,
+                dim_endo_basis=dim_endo_basis,
                 dim_hom_basis=dim_irrep_hom_basis,
                 hom_basis_slice=slice(dof_offset, dof_offset + dim_irrep_hom_basis),
             )
@@ -208,20 +207,23 @@ class GroupHomomorphismBasis(torch.nn.Module):
             basis_elements = self._build_fullsize_homomorphism_basis()
             # Register contiguous buffer such that flattening returns a view.
             # This register is memory heavy as fuck, but enables ultra fast forward/backward passes.
-            self.register_buffer("basis_elements", basis_elements.contiguous())
+            self.register_buffer("basis_elements", basis_elements.contiguous(), persistent=False)
             basis_norm_sq = torch.einsum("sab,sab->s", self.basis_elements, self.basis_elements)
-            self.register_buffer("basis_norm_sq", basis_norm_sq)
+            self.register_buffer("basis_norm_sq", basis_norm_sq, persistent=False)
         elif self.basis_expansion == "isotypic_expansion":
             # We store as buffers only each irrep endomorphism basis.
             # This is ultra memory efficient, but mildly slower at runtime.
-            for irrep_id, irrep_metadata in self.iso_blocks.items():
-                endo_basis = irrep_metadata["endomorphism_basis"].contiguous()  # [S_k, d_k, d_k]
+            for irrep_id in self.iso_blocks:
+                irrep = self.G.irrep(*irrep_id)
+                endo_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype).contiguous()  # [S_k, d_k, d_k]
                 endo_basis_flat = endo_basis.view(endo_basis.size(0), -1)
-                self.register_buffer(f"endo_basis_flat_{irrep_id}", endo_basis_flat)
+                self.register_buffer(f"endo_basis_flat_{irrep_id}", endo_basis_flat, persistent=False)
                 endo_basis_norm_sq = torch.einsum("sd,sd->s", endo_basis_flat, endo_basis_flat)
-                self.register_buffer(f"endo_basis_norm_sq_{irrep_id}", endo_basis_norm_sq)
-            self.register_buffer("Q_in_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype))
-            self.register_buffer("Q_out", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
+                self.register_buffer(f"endo_basis_norm_sq_{irrep_id}", endo_basis_norm_sq, persistent=False)
+            self.register_buffer(
+                "Q_in_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype), persistent=False
+            )
+            self.register_buffer("Q_out", torch.tensor(self.out_rep.change_of_basis, dtype=dtype), persistent=False)
         else:
             raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
 
@@ -255,9 +257,22 @@ class GroupHomomorphismBasis(torch.nn.Module):
         elif self.basis_expansion == "isotypic_expansion":
             from symm_learning.linalg import equiv_linear_map
 
-            W = equiv_linear_map(w_dof=w_dof, rep_x=self.in_rep, rep_y=self.out_rep)
+            W = equiv_linear_map(w_dof=w_dof, rep_x=self.in_rep, rep_y=self.out_rep, tensor_cache=self.tensor_cache)
 
         return W
+
+    @property
+    def tensor_cache(self) -> dict[str, object]:
+        """Tensor cache for the isotypic-expansion linalg kernels."""
+        if self.basis_expansion != "isotypic_expansion":
+            raise RuntimeError("tensor_cache is only available for basis_expansion='isotypic_expansion'")
+
+        return {
+            "Q_out": self.Q_out,
+            "Q_in_inv": self.Q_in_inv,
+            "endo_basis_flat": {irrep_id: getattr(self, f"endo_basis_flat_{irrep_id}") for irrep_id in self.iso_blocks},
+            "endo_norm_sq": {irrep_id: getattr(self, f"endo_basis_norm_sq_{irrep_id}") for irrep_id in self.iso_blocks},
+        }
 
     def orthogonal_projection(self, W: torch.Tensor) -> torch.Tensor:
         r"""Project a dense matrix onto :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`.
@@ -302,39 +317,37 @@ class GroupHomomorphismBasis(torch.nn.Module):
             return W_proj_flat.view(*W.shape)
 
         if self.basis_expansion == "isotypic_expansion":
-            Q_out_inv = self.Q_out.mT
-            Q_in = self.Q_in_inv.mT
-            W_iso_in = (Q_out_inv @ W) @ Q_in  # [..., d_out, d_in] in isotypic basis
-            W_iso = torch.zeros_like(W_iso_in)  # accumulator in isotypic basis
-            leading_shape = W_iso_in.shape[:-2]  # batch (possibly empty) dims
+            from symm_learning.linalg import equiv_orthogonal_projection
 
-            for irrep_id, irrep_metadata in self.iso_blocks.items():
-                m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
-                out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
-                d_k = irrep_metadata["irrep_dim"]
-                endo_basis_flat = getattr(self, f"endo_basis_flat_{irrep_id}")
-                endo_norm_sq = getattr(self, f"endo_basis_norm_sq_{irrep_id}")
-
-                block = W_iso_in[..., out_slice, in_slice]
-                block = block.view(*leading_shape, m_out, d_k, m_in, d_k)
-                block = block.permute(*range(len(leading_shape)), -4, -2, -3, -1)  # [..., m_out, m_in, d_k, d_k]
-                block_flat = block.reshape(*leading_shape, m_out * m_in, d_k * d_k)  # [..., m_out*m_in, d_k^2]
-
-                # coeff[..., (o,i), s] = <block_{o,i}, E_s> / ||E_s||^2
-                coeff = block_flat.matmul(endo_basis_flat.mT)
-                coeff = coeff / endo_norm_sq
-                block_proj_flat = coeff.matmul(endo_basis_flat)  # [..., m_out*m_in, d_k^2]
-
-                block_proj = block_proj_flat.view(*leading_shape, m_out, m_in, d_k, d_k)
-                block_proj = block_proj.permute(*range(len(leading_shape)), -4, -2, -3, -1)
-                block_proj = block_proj.reshape(*leading_shape, m_out * d_k, m_in * d_k)
-                W_iso_block = W_iso[..., out_slice, in_slice]
-                W_iso_block.copy_(block_proj)
-
-            W_proj = (self.Q_out @ W_iso) @ self.Q_in_inv  # back to original basis
-            return W_proj
+            return equiv_orthogonal_projection(
+                W=W,
+                rep_x=self.in_rep,
+                rep_y=self.out_rep,
+                tensor_cache=self.tensor_cache,
+            )
 
         raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
+
+    def projection_coefficients(self, W: torch.Tensor) -> torch.Tensor:
+        r"""Return the flattened homomorphism-basis coefficients of the orthogonal projection of ``W``."""
+        from symm_learning.linalg import equiv_orthogonal_projection_coefficients
+
+        if W.shape[-2:] != (self.out_rep.size, self.in_rep.size):
+            raise ValueError(f"Expected weight shape (..., {self.out_rep.size}, {self.in_rep.size}), got {W.shape}")
+
+        if self.basis_expansion == "memory_heavy":
+            basis_flat = self.basis_elements.view(self.dim, -1)
+            W_flat = W.view(*W.shape[:-2], -1)
+            return W_flat.matmul(basis_flat.mT) / self.basis_norm_sq
+
+        if self.basis_expansion == "isotypic_expansion":
+            return equiv_orthogonal_projection_coefficients(
+                W=W,
+                rep_x=self.in_rep,
+                rep_y=self.out_rep,
+                tensor_cache=self.tensor_cache,
+            )
+        return equiv_orthogonal_projection_coefficients(W=W, rep_x=self.in_rep, rep_y=self.out_rep)
 
     @property
     def dim(self) -> int:
@@ -361,9 +374,10 @@ class GroupHomomorphismBasis(torch.nn.Module):
         else:
             logger.debug(f"Building full-size basis for Hom_G({self.in_rep}, {self.out_rep})")
             basis_elements_iso_basis = []
-            for _, irrep_metadata in self.iso_blocks.items():
-                irrep_end_basis = irrep_metadata["endomorphism_basis"]
-                dim_end_basis = irrep_end_basis.size(0)
+            for irrep_id, irrep_metadata in self.iso_blocks.items():
+                irrep = self.G.irrep(*irrep_id)
+                irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=torch.get_default_dtype())
+                dim_end_basis = irrep_metadata["dim_endo_basis"]
                 mul_out, mul_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
                 out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
                 irrep_dim = irrep_metadata["irrep_dim"]
@@ -444,21 +458,13 @@ class GroupHomomorphismBasis(torch.nn.Module):
         device = buffer.device if buffer is not None else None
         dtype = buffer.dtype if buffer is not None else torch.get_default_dtype()
 
-        if return_dense:
-            W_iso = torch.zeros((*leading_shape, self.out_rep.size, self.in_rep.size), dtype=dtype, device=device)
-        else:
-            w_dof = torch.zeros((*leading_shape, self.dim), dtype=dtype, device=device)
+        w_dof = torch.zeros((*leading_shape, self.dim), dtype=dtype, device=device)
 
         for _, irrep_metadata in self.iso_blocks.items():
-            # for out_slice, in_slice, endo_basis, m_out, m_in, irrep_dim in self.irreps_meta:
-            endo_basis = irrep_metadata["endomorphism_basis"]
             m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
-            out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
-            irrep_dim = irrep_metadata["irrep_dim"]
             hom_basis_slice = irrep_metadata["hom_basis_slice"]
 
-            dim_endo_basis = endo_basis.size(0)
-            dtype, device = endo_basis.dtype, endo_basis.device
+            dim_endo_basis = irrep_metadata["dim_endo_basis"]
             # fans for this irrep
             fan_in = dim_endo_basis * m_in
             fan_out = dim_endo_basis * m_out
@@ -479,21 +485,11 @@ class GroupHomomorphismBasis(torch.nn.Module):
             else:
                 raise ValueError(f"Unknown scheme: {scheme}")
 
-            if return_dense:
-                # Expand irrep block (m_out * irrep_dim, m_in * irrep_dim)
-                block = torch.einsum("...soi,sab->...oaib", theta, endo_basis).reshape(
-                    *leading_shape, m_out * irrep_dim, m_in * irrep_dim
-                )
-                W_iso[..., out_slice, in_slice] = block
-            else:
-                w_dof[..., hom_basis_slice] = theta.reshape(*leading_shape, -1)
+            w_dof[..., hom_basis_slice] = theta.reshape(*leading_shape, -1)
 
-        if return_dense:  # Change to original coordinates
-            Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=W_iso.dtype, device=W_iso.device)
-            Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=W_iso.dtype, device=W_iso.device)
-            return torch.einsum("ab,...bc,cd->...ad", Q_out, W_iso, Q_in_inv)
-        else:
-            return w_dof
+        if return_dense:
+            return self(w_dof)
+        return w_dof
 
     def extra_repr(self):  # noqa: D102
         return f"basis_expansion={self.basis_expansion}\nin_rep={self.in_rep}\nout_rep={self.out_rep}"

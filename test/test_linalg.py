@@ -232,12 +232,14 @@ def test_equiv_orthogonal_projection(group: Group, dtype: torch.dtype, device: s
     G = group  # Select the symmetry group instance under test (e.g., C5 or Icosahedral).
     in_rep = direct_sum([G.regular_representation])  # Domain representation ρ_in.
     out_rep = direct_sum([G.regular_representation] * 2)  # Codomain representation ρ_out.
+    basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion="isotypic_expansion").to(device=device, dtype=dtype)
 
     B = 4  # Number of random linear maps tested in one batched call.
     W_rand = torch.randn(B, out_rep.size, in_rep.size, device=device, dtype=dtype)  # Raw unconstrained maps.
 
     # Compute the projection in batched mode.
     W_proj_batch = equiv_orthogonal_projection(W_rand, in_rep, out_rep)
+    W_proj_cached = equiv_orthogonal_projection(W_rand, in_rep, out_rep, tensor_cache=basis.tensor_cache)
     # Compute the same projection map-by-map to verify batching does not change results.
     W_proj_seq = torch.stack(
         [equiv_orthogonal_projection(W_rand[i], in_rep, out_rep) for i in range(B)],
@@ -248,6 +250,10 @@ def test_equiv_orthogonal_projection(group: Group, dtype: torch.dtype, device: s
     # Core check: batched and sequential projection paths are numerically equivalent.
     assert torch.allclose(W_proj_batch, W_proj_seq, atol=1e-5, rtol=1e-5), (
         f"Batched/seq projection mismatch, max error {(W_proj_batch - W_proj_seq).abs().max().item():.3e}"
+    )
+    assert torch.allclose(W_proj_batch, W_proj_cached, atol=1e-5, rtol=1e-5), (
+        "Rep-cache and tensor-cache projection mismatch, "
+        f"max error {(W_proj_batch - W_proj_cached).abs().max().item():.3e}"
     )
 
     # Idempotence property of orthogonal projections: P(P(W)) = P(W).
@@ -313,17 +319,26 @@ def test_equiv_orthogonal_projection_coefficients(group: Group, dtype: torch.dty
     W_rand = torch.randn(batch_size, out_rep.size, in_rep.size, device=device, dtype=dtype)
 
     theta_batch = equiv_orthogonal_projection_coefficients(W_rand, in_rep, out_rep)
+    theta_cached = equiv_orthogonal_projection_coefficients(W_rand, in_rep, out_rep, tensor_cache=basis.tensor_cache)
     theta_seq = torch.stack(
         [equiv_orthogonal_projection_coefficients(W_rand[i], in_rep, out_rep) for i in range(batch_size)],
         dim=0,
     )
     W_proj = equiv_orthogonal_projection(W_rand, in_rep, out_rep)
     W_recon = basis(theta_batch)
+    theta_basis = basis.projection_coefficients(W_rand)
 
     _assert_meta(theta_batch, device=device, dtype=dtype)
     assert theta_batch.shape == (batch_size, basis.dim)
     assert torch.allclose(theta_batch, theta_seq, atol=1e-5, rtol=1e-5), (
         f"Batched/seq coefficient mismatch, max error {(theta_batch - theta_seq).abs().max().item():.3e}"
+    )
+    assert torch.allclose(theta_batch, theta_cached, atol=1e-5, rtol=1e-5), (
+        "Rep-cache and tensor-cache coefficient mismatch, "
+        f"max error {(theta_batch - theta_cached).abs().max().item():.3e}"
+    )
+    assert torch.allclose(theta_batch, theta_basis, atol=1e-5, rtol=1e-5), (
+        f"Function/module coefficient mismatch, max error {(theta_batch - theta_basis).abs().max().item():.3e}"
     )
     assert torch.allclose(W_recon, W_proj, atol=1e-5, rtol=1e-5), (
         f"Coefficient reconstruction mismatch, max error {(W_recon - W_proj).abs().max().item():.3e}"
@@ -349,6 +364,7 @@ def test_equiv_linear_map(group: Group, dtype: torch.dtype, device: str):
     theta_batch = torch.randn(batch_size, basis.dim, device=device, dtype=dtype)
 
     W_batch = equiv_linear_map(theta_batch, in_rep, out_rep)
+    W_cached = equiv_linear_map(theta_batch, in_rep, out_rep, tensor_cache=basis.tensor_cache)
     W_seq = torch.stack([equiv_linear_map(theta_batch[i], in_rep, out_rep) for i in range(batch_size)], dim=0)
     W_basis = basis(theta_batch)
 
@@ -356,6 +372,9 @@ def test_equiv_linear_map(group: Group, dtype: torch.dtype, device: str):
     assert W_batch.shape == (batch_size, out_rep.size, in_rep.size)
     assert torch.allclose(W_batch, W_seq, atol=1e-5, rtol=1e-5), (
         f"Batched/seq synthesis mismatch, max error {(W_batch - W_seq).abs().max().item():.3e}"
+    )
+    assert torch.allclose(W_batch, W_cached, atol=1e-5, rtol=1e-5), (
+        f"Rep-cache and tensor-cache synthesis mismatch, max error {(W_batch - W_cached).abs().max().item():.3e}"
     )
     assert torch.allclose(W_batch, W_basis, atol=1e-5, rtol=1e-5), (
         "Standalone synthesis mismatch against GroupHomomorphismBasis, "

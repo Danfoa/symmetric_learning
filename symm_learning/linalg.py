@@ -23,6 +23,8 @@ isotypic_signal2irreducible_subspaces
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import numpy as np
 import torch
 from escnn.group import Representation
@@ -310,8 +312,7 @@ def _cached_irrep_endomorphism_basis(
 def _hom_irrep_entries(
     rep_x: Representation,
     rep_y: Representation,
-    like: torch.Tensor,
-) -> tuple[Representation, Representation, torch.Tensor, torch.Tensor, list[dict], int]:
+) -> tuple[Representation, Representation, list[dict], int]:
     from symm_learning.representation_theory import isotypic_decomp_rep
 
     if rep_x.group != rep_y.group:
@@ -322,8 +323,6 @@ def _hom_irrep_entries(
     iso_idx_X = rep_X_iso.attributes["isotypic_subspace_dims"]
     iso_idx_Y = rep_Y_iso.attributes["isotypic_subspace_dims"]
     common_irreps = sorted(set(rep_X_iso.irreps).intersection(set(rep_Y_iso.irreps)))
-    Q_out = _cached_rep_matrix(rep=rep_Y_iso, key="Q", matrix=rep_Y_iso.change_of_basis, like=like)
-    Q_in_inv = _cached_rep_matrix(rep=rep_X_iso, key="Q_inv", matrix=rep_X_iso.change_of_basis_inv, like=like)
 
     hom_entries = []
     dof_offset = 0
@@ -334,12 +333,12 @@ def _hom_irrep_entries(
         m_in = rep_X_iso._irreps_multiplicities[irrep_id]
         irrep = rep_X_iso.group.irrep(*irrep_id)
         d_k = irrep.size
-        endo_basis_flat, endo_norm_sq = _cached_irrep_endomorphism_basis(irrep=irrep, like=like)
-        irrep_dim = m_out * m_in * endo_basis_flat.size(0)
+        dim_endo_basis = len(irrep.endomorphism_basis())
+        irrep_dim = m_out * m_in * dim_endo_basis
         hom_entries.append(
             dict(
-                endo_basis_flat=endo_basis_flat,
-                endo_norm_sq=endo_norm_sq,
+                irrep_id=irrep_id,
+                dim_endo_basis=dim_endo_basis,
                 m_out=m_out,
                 m_in=m_in,
                 d_k=d_k,
@@ -350,10 +349,15 @@ def _hom_irrep_entries(
         )
         dof_offset += irrep_dim
 
-    return rep_X_iso, rep_Y_iso, Q_out, Q_in_inv, hom_entries, dof_offset
+    return rep_X_iso, rep_Y_iso, hom_entries, dof_offset
 
 
-def equiv_orthogonal_projection(W: torch.Tensor, rep_x: Representation, rep_y: Representation) -> torch.Tensor:
+def equiv_orthogonal_projection(
+    W: torch.Tensor,
+    rep_x: Representation,
+    rep_y: Representation,
+    tensor_cache: Mapping[str, object] | None = None,
+) -> torch.Tensor:
     r"""Orthogonally project a linear map onto :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`.
 
     Let :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}` be two group representations of the
@@ -383,6 +387,8 @@ def equiv_orthogonal_projection(W: torch.Tensor, rep_x: Representation, rep_y: R
             :math:`(..., D_y, D_x)`.
         rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.
         rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.
+        tensor_cache (:class:`~collections.abc.Mapping`, optional): Optional override containing the tensor cache
+            required by :func:`project_in_isobasis`. When provided, all required tensors must be present.
 
     Returns:
         :class:`~torch.Tensor`: Projected map(s) with same shape, dtype, and device as ``W``.
@@ -391,7 +397,9 @@ def equiv_orthogonal_projection(W: torch.Tensor, rep_x: Representation, rep_y: R
         - **W**: :math:`(..., D_y, D_x)`.
         - **Output**: :math:`(..., D_y, D_x)`.
     """
-    W_iso_in, Q_out, Q_in_inv, projection_entries = project_in_isobasis(W=W, rep_x=rep_x, rep_y=rep_y)
+    W_iso_in, Q_out, Q_in_inv, projection_entries = project_in_isobasis(
+        W=W, rep_x=rep_x, rep_y=rep_y, tensor_cache=tensor_cache
+    )
     leading_shape = W_iso_in.shape[:-2]
     batch_axes = tuple(range(len(leading_shape)))
     W_iso = torch.zeros_like(W_iso_in)
@@ -419,7 +427,10 @@ def equiv_orthogonal_projection(W: torch.Tensor, rep_x: Representation, rep_y: R
 
 
 def equiv_orthogonal_projection_coefficients(
-    W: torch.Tensor, rep_x: Representation, rep_y: Representation
+    W: torch.Tensor,
+    rep_x: Representation,
+    rep_y: Representation,
+    tensor_cache: Mapping[str, object] | None = None,
 ) -> torch.Tensor:
     r"""Return the flattened homomorphism-basis coefficients of :math:`\Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})`.
 
@@ -452,6 +463,8 @@ def equiv_orthogonal_projection_coefficients(
             :math:`(..., D_y, D_x)`.
         rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.
         rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.
+        tensor_cache (:class:`~collections.abc.Mapping`, optional): Optional override containing the tensor cache
+            required by :func:`project_in_isobasis`. When provided, all required tensors must be present.
 
     Returns:
         :class:`~torch.Tensor`: Flattened coefficient vector(s) of shape
@@ -461,7 +474,7 @@ def equiv_orthogonal_projection_coefficients(
         - **W**: :math:`(..., D_y, D_x)`.
         - **Output**: :math:`(..., |\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})|)`.
     """
-    W_iso_in, _, _, projection_entries = project_in_isobasis(W=W, rep_x=rep_x, rep_y=rep_y)
+    W_iso_in, _, _, projection_entries = project_in_isobasis(W=W, rep_x=rep_x, rep_y=rep_y, tensor_cache=tensor_cache)
     leading_shape = W_iso_in.shape[:-2]
     if not projection_entries:
         return W.new_zeros(*leading_shape, 0)
@@ -469,7 +482,12 @@ def equiv_orthogonal_projection_coefficients(
     return torch.cat(coeff, dim=-1)
 
 
-def equiv_linear_map(w_dof: torch.Tensor, rep_x: Representation, rep_y: Representation) -> torch.Tensor:
+def equiv_linear_map(
+    w_dof: torch.Tensor,
+    rep_x: Representation,
+    rep_y: Representation,
+    tensor_cache: Mapping[str, object] | None = None,
+) -> torch.Tensor:
     r"""Expand flattened homomorphism-basis coefficients into a dense equivariant linear map.
 
     Let :math:`\boldsymbol{\theta}` denote coefficients in the blockwise basis of
@@ -501,6 +519,9 @@ def equiv_linear_map(w_dof: torch.Tensor, rep_x: Representation, rep_y: Represen
             :math:`(..., \dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})))`.
         rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.
         rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.
+        tensor_cache (:class:`~collections.abc.Mapping`, optional): Optional tensor cache override containing
+            ``Q_out``, ``Q_in_inv``, and ``endo_basis_flat`` keyed by irrep id. When provided, all required tensors
+            must be present.
 
     Returns:
         :class:`~torch.Tensor`: Dense equivariant linear map(s) of shape :math:`(..., D_y, D_x)`.
@@ -516,18 +537,55 @@ def equiv_linear_map(w_dof: torch.Tensor, rep_x: Representation, rep_y: Represen
     if w_dof.ndim == 0:
         raise ValueError("Expected w_dof to have at least one dimension")
 
-    rep_X_iso, rep_Y_iso, Q_out, Q_in_inv, hom_entries, hom_dim = _hom_irrep_entries(
-        rep_x=rep_x, rep_y=rep_y, like=w_dof
-    )
+    rep_X_iso, rep_Y_iso, hom_entries, hom_dim = _hom_irrep_entries(rep_x=rep_x, rep_y=rep_y)
     if w_dof.shape[-1] != hom_dim:
         raise ValueError(f"Expected w_dof shape (..., {hom_dim}), got {tuple(w_dof.shape)}")
+
+    if tensor_cache is None:
+        Q_out = _cached_rep_matrix(rep=rep_Y_iso, key="Q", matrix=rep_Y_iso.change_of_basis, like=w_dof)
+        Q_in_inv = _cached_rep_matrix(rep=rep_X_iso, key="Q_inv", matrix=rep_X_iso.change_of_basis_inv, like=w_dof)
+        endo_basis_flat_cache = None
+    else:
+        if not isinstance(tensor_cache, Mapping):
+            raise TypeError(f"Expected tensor_cache to be a mapping, got {type(tensor_cache)}")
+        if "Q_out" not in tensor_cache or "Q_in_inv" not in tensor_cache or "endo_basis_flat" not in tensor_cache:
+            raise ValueError("tensor_cache must contain 'Q_out', 'Q_in_inv', and 'endo_basis_flat'")
+        Q_out = tensor_cache["Q_out"]
+        Q_in_inv = tensor_cache["Q_in_inv"]
+        endo_basis_flat_cache = tensor_cache["endo_basis_flat"]
+        if not isinstance(Q_out, torch.Tensor) or not isinstance(Q_in_inv, torch.Tensor):
+            raise TypeError("tensor_cache['Q_out'] and tensor_cache['Q_in_inv'] must be torch.Tensor instances")
+        if Q_out.shape != (rep_Y_iso.size, rep_Y_iso.size):
+            raise ValueError(
+                f"Expected tensor_cache['Q_out'] shape {(rep_Y_iso.size, rep_Y_iso.size)}, got {Q_out.shape}"
+            )
+        if Q_in_inv.shape != (rep_X_iso.size, rep_X_iso.size):
+            raise ValueError(
+                f"Expected tensor_cache['Q_in_inv'] shape {(rep_X_iso.size, rep_X_iso.size)}, got {Q_in_inv.shape}"
+            )
+        if not isinstance(endo_basis_flat_cache, Mapping):
+            raise TypeError("tensor_cache['endo_basis_flat'] must be a mapping keyed by irrep id")
 
     leading_shape = w_dof.shape[:-1]
     batch_axes = tuple(range(len(leading_shape)))
     W_iso = w_dof.new_zeros(*leading_shape, rep_Y_iso.size, rep_X_iso.size)
 
     for entry in hom_entries:
-        endo_basis_flat = entry["endo_basis_flat"]
+        irrep_id = entry["irrep_id"]
+        if tensor_cache is None:
+            irrep = rep_X_iso.group.irrep(*irrep_id)
+            endo_basis_flat, _ = _cached_irrep_endomorphism_basis(irrep=irrep, like=w_dof)
+        else:
+            if irrep_id not in endo_basis_flat_cache:
+                raise ValueError(f"tensor_cache['endo_basis_flat'] missing entry for irrep {irrep_id}")
+            endo_basis_flat = endo_basis_flat_cache[irrep_id]
+            if not isinstance(endo_basis_flat, torch.Tensor):
+                raise TypeError(f"tensor_cache['endo_basis_flat'][{irrep_id}] must be a torch.Tensor")
+            if endo_basis_flat.ndim != 2 or endo_basis_flat.shape[1] != entry["d_k"] * entry["d_k"]:
+                raise ValueError(
+                    "Expected tensor_cache['endo_basis_flat']["
+                    f"{irrep_id}] shape (S_k, {entry['d_k'] * entry['d_k']}), got {tuple(endo_basis_flat.shape)}"
+                )
         m_out = entry["m_out"]
         m_in = entry["m_in"]
         d_k = entry["d_k"]
@@ -545,7 +603,12 @@ def equiv_linear_map(w_dof: torch.Tensor, rep_x: Representation, rep_y: Represen
     return (Q_out @ W_iso) @ Q_in_inv
 
 
-def project_in_isobasis(W: torch.Tensor, rep_x: Representation, rep_y: Representation):
+def project_in_isobasis(
+    W: torch.Tensor,
+    rep_x: Representation,
+    rep_y: Representation,
+    tensor_cache: Mapping[str, object] | None = None,
+):
     r"""Move a dense linear map to isotypic coordinates and prepare blockwise projection metadata.
 
     Let :math:`\mathbf{W}:\mathcal{X}\to\mathcal{Y}` be a dense linear map written in the
@@ -620,6 +683,9 @@ def project_in_isobasis(W: torch.Tensor, rep_x: Representation, rep_y: Represent
             :math:`\rho_{\mathcal{X}}`.
         rep_y (:class:`~escnn.group.Representation`): Output representation
             :math:`\rho_{\mathcal{Y}}`.
+        tensor_cache (:class:`~collections.abc.Mapping`, optional): Optional tensor cache override containing
+            ``Q_out``, ``Q_in_inv``, ``endo_basis_flat``, and ``endo_norm_sq`` keyed by irrep id. When provided,
+            all required tensors must be present.
 
     Returns:
         :class:`tuple`:
@@ -649,7 +715,35 @@ def project_in_isobasis(W: torch.Tensor, rep_x: Representation, rep_y: Represent
     if W.shape[-2:] != (rep_y.size, rep_x.size):
         raise ValueError(f"Expected W shape (..., {rep_y.size}, {rep_x.size}), got {tuple(W.shape)}")
 
-    _, _, Q_out, Q_in_inv, hom_entries, _ = _hom_irrep_entries(rep_x=rep_x, rep_y=rep_y, like=W)
+    rep_X_iso, rep_Y_iso, hom_entries, _ = _hom_irrep_entries(rep_x=rep_x, rep_y=rep_y)
+    if tensor_cache is None:
+        Q_out = _cached_rep_matrix(rep=rep_Y_iso, key="Q", matrix=rep_Y_iso.change_of_basis, like=W)
+        Q_in_inv = _cached_rep_matrix(rep=rep_X_iso, key="Q_inv", matrix=rep_X_iso.change_of_basis_inv, like=W)
+        endo_basis_flat_cache = None
+        endo_norm_sq_cache = None
+    else:
+        if not isinstance(tensor_cache, Mapping):
+            raise TypeError(f"Expected tensor_cache to be a mapping, got {type(tensor_cache)}")
+        required_keys = {"Q_out", "Q_in_inv", "endo_basis_flat", "endo_norm_sq"}
+        missing = required_keys.difference(tensor_cache.keys())
+        if missing:
+            raise ValueError(f"tensor_cache missing required keys: {sorted(missing)}")
+        Q_out = tensor_cache["Q_out"]
+        Q_in_inv = tensor_cache["Q_in_inv"]
+        endo_basis_flat_cache = tensor_cache["endo_basis_flat"]
+        endo_norm_sq_cache = tensor_cache["endo_norm_sq"]
+        if not isinstance(Q_out, torch.Tensor) or not isinstance(Q_in_inv, torch.Tensor):
+            raise TypeError("tensor_cache['Q_out'] and tensor_cache['Q_in_inv'] must be torch.Tensor instances")
+        if Q_out.shape != (rep_Y_iso.size, rep_Y_iso.size):
+            raise ValueError(
+                f"Expected tensor_cache['Q_out'] shape {(rep_Y_iso.size, rep_Y_iso.size)}, got {Q_out.shape}"
+            )
+        if Q_in_inv.shape != (rep_X_iso.size, rep_X_iso.size):
+            raise ValueError(
+                f"Expected tensor_cache['Q_in_inv'] shape {(rep_X_iso.size, rep_X_iso.size)}, got {Q_in_inv.shape}"
+            )
+        if not isinstance(endo_basis_flat_cache, Mapping) or not isinstance(endo_norm_sq_cache, Mapping):
+            raise TypeError("tensor_cache['endo_basis_flat'] and tensor_cache['endo_norm_sq'] must be mappings")
     Q_out_inv = Q_out.mT
     Q_in = Q_in_inv.mT
 
@@ -662,13 +756,32 @@ def project_in_isobasis(W: torch.Tensor, rep_x: Representation, rep_y: Represent
     projection_entries = []
 
     for entry in hom_entries:
+        irrep_id = entry["irrep_id"]
         out_slice = entry["out_slice"]
         in_slice = entry["in_slice"]
         m_out = entry["m_out"]
         m_in = entry["m_in"]
         d_k = entry["d_k"]
-        endo_basis_flat = entry["endo_basis_flat"]
-        endo_norm_sq = entry["endo_norm_sq"]
+        if tensor_cache is None:
+            irrep = rep_X_iso.group.irrep(*irrep_id)
+            endo_basis_flat, endo_norm_sq = _cached_irrep_endomorphism_basis(irrep=irrep, like=W)
+        else:
+            if irrep_id not in endo_basis_flat_cache or irrep_id not in endo_norm_sq_cache:
+                raise ValueError(f"tensor_cache missing endomorphism tensors for irrep {irrep_id}")
+            endo_basis_flat = endo_basis_flat_cache[irrep_id]
+            endo_norm_sq = endo_norm_sq_cache[irrep_id]
+            if not isinstance(endo_basis_flat, torch.Tensor) or not isinstance(endo_norm_sq, torch.Tensor):
+                raise TypeError(f"tensor_cache entries for irrep {irrep_id} must be torch.Tensor instances")
+            if endo_basis_flat.ndim != 2 or endo_basis_flat.shape[1] != d_k * d_k:
+                raise ValueError(
+                    f"Expected tensor_cache['endo_basis_flat'][{irrep_id}] shape (S_k, {d_k * d_k}), "
+                    f"got {tuple(endo_basis_flat.shape)}"
+                )
+            if endo_norm_sq.shape != (endo_basis_flat.shape[0],):
+                raise ValueError(
+                    f"Expected tensor_cache['endo_norm_sq'][{irrep_id}] shape {(endo_basis_flat.shape[0],)}, "
+                    f"got {tuple(endo_norm_sq.shape)}"
+                )
         block = W_iso_in[..., out_slice, in_slice]
         block = block.view(*leading_shape, m_out, d_k, m_in, d_k)
         block = block.permute(*batch_axes, -4, -2, -3, -1)  # [..., m_out, m_in, d_k, d_k]

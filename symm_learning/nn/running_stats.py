@@ -296,26 +296,16 @@ class eEMAStats(EMAStats):
         dtype = self.running_mean_x.dtype
         self.register_buffer(
             "running_cov_xx_dof",
-            equiv_orthogonal_projection_coefficients(
-                torch.eye(self.num_features_x, dtype=dtype),
-                rep_x=self._rep_x,
-                rep_y=self._rep_x,
-            ),
+            self.cov_xx_basis.projection_coefficients(torch.eye(self.num_features_x, dtype=dtype)),
         )
         self.register_buffer(
             "running_cov_yy_dof",
-            equiv_orthogonal_projection_coefficients(
-                torch.eye(self.num_features_y, dtype=dtype),
-                rep_x=self._rep_y,
-                rep_y=self._rep_y,
-            ),
+            self.cov_yy_basis.projection_coefficients(torch.eye(self.num_features_y, dtype=dtype)),
         )
         self.register_buffer(
             "running_cov_xy_dof",
-            equiv_orthogonal_projection_coefficients(
-                torch.zeros(self.num_features_x, self.num_features_y, dtype=dtype),
-                rep_x=self._rep_y,
-                rep_y=self._rep_x,
+            self.cov_xy_basis.projection_coefficients(
+                torch.zeros(self.num_features_x, self.num_features_y, dtype=dtype)
             ),
         )
 
@@ -354,21 +344,9 @@ class eEMAStats(EMAStats):
         # Match symm_learning.stats.cov(..., uncentered=True): centered inputs are treated
         # as already-prepared second-moment samples and normalized by N.
         n_samples = x_centered.shape[0]
-        cov_xx_dof = equiv_orthogonal_projection_coefficients(
-            W=torch.mm(x_centered.T, x_centered) / n_samples,
-            rep_x=self._rep_x,
-            rep_y=self._rep_x,
-        )
-        cov_yy_dof = equiv_orthogonal_projection_coefficients(
-            W=torch.mm(y_centered.T, y_centered) / n_samples,
-            rep_x=self._rep_y,
-            rep_y=self._rep_y,
-        )
-        cov_xy_dof = equiv_orthogonal_projection_coefficients(
-            W=torch.mm(x_centered.T, y_centered) / n_samples,
-            rep_x=self._rep_y,
-            rep_y=self._rep_x,
-        )
+        cov_xx_dof = self.cov_xx_basis.projection_coefficients(torch.mm(x_centered.T, x_centered) / n_samples)
+        cov_yy_dof = self.cov_yy_basis.projection_coefficients(torch.mm(y_centered.T, y_centered) / n_samples)
+        cov_xy_dof = self.cov_xy_basis.projection_coefficients(torch.mm(x_centered.T, y_centered) / n_samples)
 
         return mean_x, mean_y, cov_xx_dof, cov_yy_dof, cov_xy_dof
 

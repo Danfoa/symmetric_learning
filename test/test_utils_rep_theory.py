@@ -84,6 +84,12 @@ def test_hom_basis(group: Group, basis_expansion: str, atol: float = 1e-4, rtol:
     assert torch.allclose(err, torch.zeros_like(err), atol=atol, rtol=rtol), (
         f"Projection mismatch between batched and sequential with max error {err.abs().max()}"
     )
+    theta_batch = basis.projection_coefficients(W_rand)
+    W_proj_from_theta = basis(theta_batch)
+    err = W_proj_from_theta - W_proj_batch
+    assert torch.allclose(err, torch.zeros_like(err), atol=atol, rtol=rtol), (
+        f"Projection coefficients reconstruction failed with max error {err.abs().max()}"
+    )
 
     # Check sampled elements belong to the homomorphism space
     for g in G.elements:
