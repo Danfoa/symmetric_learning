@@ -299,11 +299,29 @@ class eEMAStats(EMAStats):
         x_centered = x - center_x.unsqueeze(0)
         y_centered = y - center_y.unsqueeze(0)
 
-        # Compute covariances using group-aware method on centered data
-        cov_xx = symm_learning.stats.cov(x=x_centered, y=x_centered, rep_x=self._rep_x, rep_y=self._rep_x)
-        cov_yy = symm_learning.stats.cov(x=y_centered, y=y_centered, rep_x=self._rep_y, rep_y=self._rep_y)
+        # Compute covariances on pre-centered data (do not recenter inside cov()).
+        cov_xx = symm_learning.stats.cov(
+            x=x_centered,
+            y=x_centered,
+            rep_x=self._rep_x,
+            rep_y=self._rep_x,
+            uncentered=True,
+        )
+        cov_yy = symm_learning.stats.cov(
+            x=y_centered,
+            y=y_centered,
+            rep_x=self._rep_y,
+            rep_y=self._rep_y,
+            uncentered=True,
+        )
         # Transpose to match expected shape (D_x, D_y)
-        cov_xy = symm_learning.stats.cov(x=x_centered, y=y_centered, rep_x=self._rep_x, rep_y=self._rep_y).T
+        cov_xy = symm_learning.stats.cov(
+            x=x_centered,
+            y=y_centered,
+            rep_x=self._rep_x,
+            rep_y=self._rep_y,
+            uncentered=True,
+        ).T
 
         return mean_x, mean_y, cov_xx, cov_yy, cov_xy
 
@@ -344,3 +362,41 @@ class eEMAStats(EMAStats):
         exported.eval()
 
         return exported
+
+
+if __name__ == "__main__":
+    import escnn
+
+    from symm_learning.representation_theory import direct_sum
+    from symm_learning.utils import run_module_pair_profile
+
+    SEED = 123
+    BATCH_SIZE = 1024
+    REGULAR_COPIES = 2
+    MODE = "both"  # options: eval, train, both
+
+    torch.manual_seed(SEED)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device.type == "cuda":
+        torch.cuda.manual_seed_all(SEED)
+
+    G = escnn.group.Icosahedral()
+    rep = direct_sum([G.regular_representation] * REGULAR_COPIES)
+
+    estats = eEMAStats(x_rep=rep, y_rep=rep, momentum=0.1).to(device)
+    stats = EMAStats(dim_x=rep.size, dim_y=rep.size, momentum=0.1).to(device)
+
+    x = torch.randn(BATCH_SIZE, rep.size, device=device)
+    y = torch.randn(BATCH_SIZE, rep.size, device=device)
+
+    run_module_pair_profile(
+        lhs_name="eEMAStats",
+        lhs=estats,
+        rhs_name="EMAStats",
+        rhs=stats,
+        x=(x, y),
+        group_name=G.name,
+        mode=MODE,
+        profile_active_steps=200,
+        profile_warmup_steps=10,
+    )

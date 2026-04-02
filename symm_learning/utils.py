@@ -17,6 +17,21 @@ class CallableDict(dict, Callable):
         return self[key]
 
 
+def _cached_rep_matrix(
+    rep: Representation,
+    key: str,
+    matrix: np.ndarray | torch.Tensor,
+    like: torch.Tensor,
+) -> torch.Tensor:
+    cached = rep.attributes.get(key, None)
+    if cached is None:
+        cached = torch.as_tensor(matrix, device=like.device, dtype=like.dtype)
+    elif cached.device != like.device or cached.dtype != like.dtype:
+        cached = cached.to(device=like.device, dtype=like.dtype)
+    rep.attributes[key] = cached
+    return cached
+
+
 def _tensor_bytes(t: torch.Tensor) -> int:
     if t.layout == torch.sparse_coo:
         vals = t._values()
@@ -259,17 +274,57 @@ def _sync(device: torch.device) -> None:
         torch.cuda.synchronize()
 
 
+def _first_tensor(obj: torch.Tensor | tuple | list) -> torch.Tensor:
+    if isinstance(obj, torch.Tensor):
+        return obj
+    if isinstance(obj, (tuple, list)):
+        for item in obj:
+            t = _first_tensor(item)
+            if isinstance(t, torch.Tensor):
+                return t
+    raise TypeError("Expected at least one torch.Tensor in input/output structure.")
+
+
+def _call_model(model: torch.nn.Module, model_input: torch.Tensor | tuple | list):
+    if isinstance(model_input, (tuple, list)):
+        return model(*model_input)
+    return model(model_input)
+
+
+def _output_loss(output: torch.Tensor | tuple | list) -> torch.Tensor:
+    if isinstance(output, torch.Tensor):
+        return output.square().mean()
+    if isinstance(output, (tuple, list)):
+        losses = [_output_loss(o) for o in output]
+        if not losses:
+            raise ValueError("Model output tuple/list is empty.")
+        return sum(losses)
+    raise TypeError(f"Unsupported model output type: {type(output)}")
+
+
+def _input_dims_repr(model_input: torch.Tensor | tuple | list) -> str:
+    if isinstance(model_input, torch.Tensor):
+        return str(int(model_input.shape[-1]))
+    if isinstance(model_input, (tuple, list)):
+        dims: list[str] = []
+        for item in model_input:
+            if isinstance(item, torch.Tensor):
+                dims.append(str(int(item.shape[-1])))
+        return ",".join(dims) if dims else "n/a"
+    return "n/a"
+
+
 def _prime_eval_cache(model: torch.nn.Module, x: torch.Tensor, device: torch.device) -> None:
     """Populate eval caches once outside measured/profiled loops."""
     model.eval()
     with torch.no_grad():
-        _ = model(x)
+        _ = _call_model(model, x)
     _sync(device)
 
 
 def _run_timing(
     model: torch.nn.Module,
-    x: torch.Tensor,
+    x: torch.Tensor | tuple | list,
     device: torch.device,
     n_steps: int,
     warmup_steps: int,
@@ -282,14 +337,15 @@ def _run_timing(
 
         _sync(device)
         t0 = time.perf_counter()
-        out = model(x)
+        out = _call_model(model, x)
         _sync(device)
         t1 = time.perf_counter()
 
-        loss = out.square().mean()
+        loss = _output_loss(out)
         _sync(device)
         t2 = time.perf_counter()
-        loss.backward()
+        if loss.requires_grad:
+            loss.backward()
         _sync(device)
         t3 = time.perf_counter()
 
@@ -304,7 +360,7 @@ def _run_timing(
         for i in range(warmup_steps + n_steps):
             _sync(device)
             t0 = time.perf_counter()
-            _ = model(x)
+            _ = _call_model(model, x)
             _sync(device)
             t1 = time.perf_counter()
             if i >= warmup_steps:
@@ -325,7 +381,7 @@ def _run_timing(
 
 def _profile_ops(
     model: torch.nn.Module,
-    x: torch.Tensor,
+    x: torch.Tensor | tuple | list,
     device: torch.device,
     mode: str,
     active_steps: int,
@@ -344,12 +400,13 @@ def _profile_ops(
         for _ in range(prof_warmup_steps + active_steps):
             if mode == "train":
                 model.zero_grad(set_to_none=True)
-                out = model(x)
-                loss = out.square().mean()
-                loss.backward()
+                out = _call_model(model, x)
+                loss = _output_loss(out)
+                if loss.requires_grad:
+                    loss.backward()
             else:
                 with torch.no_grad():
-                    _ = model(x)
+                    _ = _call_model(model, x)
             prof.step()
 
     op_to_ms_per_step: dict[str, float] = {}
@@ -387,7 +444,7 @@ def run_module_pair_profile(
     lhs: torch.nn.Module,
     rhs_name: str,
     rhs: torch.nn.Module,
-    x: torch.Tensor,
+    x: torch.Tensor | tuple | list,
     *,
     group_name: str | None = None,
     profile_active_steps: int = 25,
@@ -402,37 +459,38 @@ def run_module_pair_profile(
     n_steps = profile_active_steps
     warmup_steps = profile_warmup_steps
 
-    device = x.device
-    lhs = lhs.to(device=device, dtype=x.dtype)
-    rhs = rhs.to(device=device, dtype=x.dtype)
+    x_first = _first_tensor(x)
+    device = x_first.device
+    lhs = lhs.to(device=device, dtype=x_first.dtype)
+    rhs = rhs.to(device=device, dtype=x_first.dtype)
 
     lhs_timing = _run_timing(lhs, x, device=device, n_steps=n_steps, warmup_steps=warmup_steps)
     rhs_timing = _run_timing(rhs, x, device=device, n_steps=n_steps, warmup_steps=warmup_steps)
 
-    print(f"Device: {device} | dtype: {x.dtype}")
+    print(f"Device: {device} | dtype: {x_first.dtype}")
     if group_name is not None:
-        print(f"Group: {group_name} | input dim: {x.shape[-1]} | batch: {x.shape[0]}")
+        print(f"Group: {group_name} | input dim: {_input_dims_repr(x)} | batch: {x_first.shape[0]}")
     else:
-        print(f"Input dim: {x.shape[-1]} | batch: {x.shape[0]}")
+        print(f"Input dim: {_input_dims_repr(x)} | batch: {x_first.shape[0]}")
     print(f"Compare: {lhs_name} vs {rhs_name}")
     print(f"Timing steps: warmup={warmup_steps}, measured={n_steps}")
     print(f"Profiler steps: warmup={profile_warmup_steps}, active={profile_active_steps}")
     print()
-    batch_size = int(x.shape[0])
-    input_dim = int(x.shape[-1])
+    batch_size = int(x_first.shape[0])
+    input_dim = _input_dims_repr(x)
     print("Average Runtime (ms, mean±std)")
     print(
         f"{'Module':<12} {'#params':>10} {'Batch':>8} {'InputDim':>10} {'TrainFwd':>18} {'Backward':>18} {'ValFwd':>18}"
     )
     print("-" * 108)
     print(
-        f"{lhs_name:<12} {_n_parameters(lhs):10d} {batch_size:8d} {input_dim:10d} "
+        f"{lhs_name:<12} {_n_parameters(lhs):10d} {batch_size:8d} {input_dim:>10} "
         f"{_fmt_ms(lhs_timing['train_forward_ms_mean'], lhs_timing['train_forward_ms_std']):>18} "
         f"{_fmt_ms(lhs_timing['backward_ms_mean'], lhs_timing['backward_ms_std']):>18} "
         f"{_fmt_ms(lhs_timing['val_forward_ms_mean'], lhs_timing['val_forward_ms_std']):>18}"
     )
     print(
-        f"{rhs_name:<12} {_n_parameters(rhs):10d} {batch_size:8d} {input_dim:10d} "
+        f"{rhs_name:<12} {_n_parameters(rhs):10d} {batch_size:8d} {input_dim:>10} "
         f"{_fmt_ms(rhs_timing['train_forward_ms_mean'], rhs_timing['train_forward_ms_std']):>18} "
         f"{_fmt_ms(rhs_timing['backward_ms_mean'], rhs_timing['backward_ms_std']):>18} "
         f"{_fmt_ms(rhs_timing['val_forward_ms_mean'], rhs_timing['val_forward_ms_std']):>18}"
