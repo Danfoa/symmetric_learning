@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cov &#8212; Symmetric Learning v0.4.5 Docs [devel]</title>
+    <title>cov &#8212; Symmetric Learning v0.4.7 Docs [devel]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=340bb9e5"></script>
+    <script src="../_static/documentation_options.js?v=a78bb796"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -51,7 +51,7 @@
     <link rel="prev" title="var_mean" href="symm_learning.stats.var_mean.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.5" />
+  <meta name="docsearch:version" content="0.4.7" />
   </head>
   
   
@@ -119,7 +119,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.5 - devel</p>
+    <p class="title logo__title">v0.4.7 - devel</p>
   
 </a></div>
     
@@ -378,40 +378,48 @@
 <h1>cov<a class="headerlink" href="#cov" title="Link to this heading">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="symm_learning.stats.cov">
-<span class="sig-name descname"><span class="pre">cov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/stats.html#cov"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.stats.cov" title="Link to this definition">#</a></dt>
-<dd><p>Compute the covariance between two symmetric random variables.</p>
-<p>Let <span class="math notranslate nohighlight">\(\mathbf{X}:\Omega\to\mathcal{X}\)</span> and <span class="math notranslate nohighlight">\(\mathbf{Y}:\Omega\to\mathcal{Y}\)</span> with representations
-<span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>, <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span>. The covariance is computed via the
-<a class="reference internal" href="../examples/isotypic_decomposition.html#isotypic-decomposition-example"><span class="std std-ref">isotypic decomposition</span></a>
-from <a class="reference internal" href="symm_learning.representation_theory.isotypic_decomp_rep.html#symm_learning.representation_theory.isotypic_decomp_rep" title="symm_learning.representation_theory.isotypic_decomp_rep"><code class="xref py py-func docutils literal notranslate"><span class="pre">isotypic_decomp_rep()</span></code></a>.
-Covariance contributions between different isotypic types are zero in the constrained model.
-Hence, in the disentangled/isotypic basis the covariance can be computed in block-diagonal form:</p>
+<span class="sig-name descname"><span class="pre">cov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uncentered</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/stats.html#cov"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.stats.cov" title="Link to this definition">#</a></dt>
+<dd><p>Compute symmetry-aware cross-covariance.</p>
+<p>Let <span class="math notranslate nohighlight">\(\mathbf{X}:\Omega\to\mathcal{X}\)</span> and <span class="math notranslate nohighlight">\(\mathbf{Y}:\Omega\to\mathcal{Y}\)</span> be two
+<span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-invariant random variables endowed with the <span class="math notranslate nohighlight">\(\mathbb{G}\)</span> representations
+<span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span> and <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span> respectively. This function computes the symmetry-aware
+cross-covariance which by construction is a <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-equivariant linear map in
+<span class="math notranslate nohighlight">\(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})\)</span>.</p>
+<p>Implementation: To achieve this we first compute the symmetry-agnostic empirical covariance
+<span class="math notranslate nohighlight">\(\mathbf{C}^{\text{raw}}_{yx} = \frac{1}{N-1}\sum_{n=1}^{N}\mathbf{y}^{\star}_n (\mathbf{x}^{\star}_n)^\top\)</span>.
+By default (<code class="xref py py-attr docutils literal notranslate"><span class="pre">uncentered=False</span></code>), centered variables use invariant means from <a class="reference internal" href="symm_learning.stats.mean.html#symm_learning.stats.mean" title="symm_learning.stats.mean"><code class="xref py py-func docutils literal notranslate"><span class="pre">mean()</span></code></a>:
+<span class="math notranslate nohighlight">\(\mathbf{x}^{\star}_n = \mathbf{x}_n - \boldsymbol{\mu}_x\)</span>,
+<span class="math notranslate nohighlight">\(\mathbf{y}^{\star}_n = \mathbf{y}_n - \boldsymbol{\mu}_y\)</span>,
+with
+<span class="math notranslate nohighlight">\(\boldsymbol{\mu}_x = \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{X}]\)</span>,
+<span class="math notranslate nohighlight">\(\boldsymbol{\mu}_y = \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{Y}]\)</span>.
+If <code class="xref py py-attr docutils literal notranslate"><span class="pre">uncentered=True</span></code>, <span class="math notranslate nohighlight">\(\mathbf{x}^{\star}_n=\mathbf{x}_n\)</span> and
+<span class="math notranslate nohighlight">\(\mathbf{y}^{\star}_n=\mathbf{y}_n\)</span>.</p>
+<p>The returned covariance is the orthogonal projection of <span class="math notranslate nohighlight">\(\mathbf{C}^{\text{raw}}_{yx}\)</span> onto
+<span class="math notranslate nohighlight">\(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})\)</span> via
+<a class="reference internal" href="symm_learning.linalg.equiv_orthogonal_projection.html#symm_learning.linalg.equiv_orthogonal_projection" title="symm_learning.linalg.equiv_orthogonal_projection"><code class="xref py py-func docutils literal notranslate"><span class="pre">equiv_orthogonal_projection()</span></code></a>:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
-    \mathbf{C}_{xy} &amp;= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{C}_{xy}^{(k)} )\mathbf{Q}_x
-    \\
-    &amp;= \mathbf{Q}_y^T (
-    \bigoplus_{k} \sum_{b\in \mathbb{B}_k} \mathbf{Z}_b^{(k)} \otimes \mathbf{b}
-    ) \mathbf{Q}_x
-    \\
-\end{align}\end{split}\]</div>
-<p>Where <span class="math notranslate nohighlight">\(\mathbf{Q}_x^{\mathsf T}\)</span> and <span class="math notranslate nohighlight">\(\mathbf{Q}_y^{\mathsf T}\)</span>
-are the change-of-basis matrices to the isotypic bases of <span class="math notranslate nohighlight">\(\mathcal{X}\)</span> and <span class="math notranslate nohighlight">\(\mathcal{Y}\)</span>,
-respectively; <span class="math notranslate nohighlight">\(\mathbf{C}_{xy}^{(k)}\)</span> is the covariance restricted to the
-isotypic subspaces of type <em>k</em>; and <span class="math notranslate nohighlight">\(\mathbf{Z}_b^{(k)}\)</span> are the free
-parameters—i.e. the expansion coefficients in the endomorphism basis
-<span class="math notranslate nohighlight">\(\mathbb{B}_k\)</span> of the irreducible representation of type <em>k</em>.</p>
+\[\mathbf{C}_{yx}
+= \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{C}^{\text{raw}}_{yx}).\]</div>
+<p>This orthogonal projector is equivalent to the Reynolds/group-average operator:</p>
+<div class="math notranslate nohighlight">
+\[\Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})
+= \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}
+\rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Realizations of a random variable <span class="math notranslate nohighlight">\(X\)</span>.</p></li>
-<li><p><strong>y</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Realizations of a random variable <span class="math notranslate nohighlight">\(Y\)</span>.</p></li>
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Samples of <span class="math notranslate nohighlight">\(\mathbf{X}\)</span>.</p></li>
+<li><p><strong>y</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Samples of <span class="math notranslate nohighlight">\(\mathbf{Y}\)</span>.</p></li>
 <li><p><strong>rep_x</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – Representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>.</p></li>
 <li><p><strong>rep_y</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – Representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span>.</p></li>
+<li><p><strong>uncentered</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), subtract invariant means before covariance
+computation. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, compute the uncentered second moment and project it.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The covariance matrix between the two random variables, of shape <span class="math notranslate nohighlight">\((D_y, D_x)\)</span>.</p>
+<dd class="field-even"><p>Projected cross-covariance <span class="math notranslate nohighlight">\(\mathbf{C}_{yx}\)</span> with shape
+<span class="math notranslate nohighlight">\((D_y, D_x)\)</span>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
@@ -419,18 +427,16 @@ parameters—i.e. the expansion coefficients in the endomorphism basis
 </dl>
 <dl class="simple">
 <dt>Shape:</dt><dd><ul class="simple">
-<li><p><strong>x</strong>: <span class="math notranslate nohighlight">\((N, D_x)\)</span> where <span class="math notranslate nohighlight">\(D_x\)</span> is the dimension of the random variable <span class="math notranslate nohighlight">\(\mathbf{X}\)</span>.</p></li>
-<li><p><strong>y</strong>: <span class="math notranslate nohighlight">\((N, D_y)\)</span> where <span class="math notranslate nohighlight">\(D_y\)</span> is the dimension of the random variable <span class="math notranslate nohighlight">\(\mathbf{Y}\)</span>.</p></li>
-<li><p><strong>Output</strong>: <span class="math notranslate nohighlight">\((D_y, D_x)\)</span></p></li>
+<li><dl class="simple">
+<dt><strong>x</strong>: <span class="math notranslate nohighlight">\((N, D_x)\)</span>. With <cite>N</cite> denoting the number of samples and <cite>D_x</cite> the dimension of the</dt><dd><p>representation space of <cite>x</cite>.</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>y</strong>: <span class="math notranslate nohighlight">\((N, D_y)\)</span>. With <cite>D_y</cite> the dimension of the representation space of <cite>y</cite>.</p></li>
+<li><p><strong>Output</strong>: <span class="math notranslate nohighlight">\((D_y, D_x)\)</span>.</p></li>
 </ul>
 </dd>
 </dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This function calls <a class="reference internal" href="symm_learning.representation_theory.isotypic_decomp_rep.html#symm_learning.representation_theory.isotypic_decomp_rep" title="symm_learning.representation_theory.isotypic_decomp_rep"><code class="xref py py-func docutils literal notranslate"><span class="pre">isotypic_decomp_rep()</span></code></a>, which caches
-decompositions in the group representation registry. Repeated calls with the same representations reuse
-cached decompositions.</p>
-</div>
 </dd></dl>
 
 </section>

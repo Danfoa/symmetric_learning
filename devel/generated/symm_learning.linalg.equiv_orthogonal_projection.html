@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>IrrepSubspaceNormPooling &#8212; Symmetric Learning v0.4.7 Docs [devel]</title>
+    <title>equiv_orthogonal_projection &#8212; Symmetric Learning v0.4.7 Docs [devel]</title>
   
   
   
@@ -43,12 +43,12 @@
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/symm_learning.nn.pooling.IrrepSubspaceNormPooling';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/symm_learning.linalg.equiv_orthogonal_projection';</script>
     <link rel="icon" href="../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="normalization" href="../nn/normalization.html" />
-    <link rel="prev" title="pooling" href="../nn/pooling.html" />
+    <link rel="next" title="irrep_radii" href="symm_learning.linalg.irrep_radii.html" />
+    <link rel="prev" title="invariant_orthogonal_projector" href="symm_learning.linalg.invariant_orthogonal_projector.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.4.7" />
@@ -300,22 +300,15 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Modules:</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../linalg.html">linalg</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../nn.html">nn</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../nn/activation.html">activation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../nn/conv.html">conv</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../nn/disentangled.html">disentangled</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../nn/distributions.html">distributions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../nn/linear.html">linear</a></li>
-<li class="toctree-l2 current active has-children"><a class="reference internal" href="../nn/pooling.html">pooling</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">IrrepSubspaceNormPooling</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../linalg.html">linalg</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.linalg.lstsq.html">lstsq</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.linalg.invariant_orthogonal_projector.html">invariant_orthogonal_projector</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">equiv_orthogonal_projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.linalg.irrep_radii.html">irrep_radii</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.linalg.isotypic_signal2irreducible_subspaces.html">isotypic_signal2irreducible_subspaces</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="../nn/normalization.html">normalization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../nn/parametrizations.html">parametrizations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../nn/running_stats.html">running_stats</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../nn.html">nn</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../models.html">models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../stats.html">stats</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../representation_theory.html">representation_theory</a></li>
@@ -363,12 +356,9 @@
     <li class="breadcrumb-item"><a href="../reference.html" class="nav-link">Reference API</a></li>
     
     
-    <li class="breadcrumb-item"><a href="../nn.html" class="nav-link">nn</a></li>
+    <li class="breadcrumb-item"><a href="../linalg.html" class="nav-link">linalg</a></li>
     
-    
-    <li class="breadcrumb-item"><a href="../nn/pooling.html" class="nav-link">pooling</a></li>
-    
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">IrrepSubspaceNormPooling</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">equiv_orthogonal_projection</span></li>
   </ul>
 </nav>
 </div>
@@ -385,49 +375,52 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="irrepsubspacenormpooling">
-<h1>IrrepSubspaceNormPooling<a class="headerlink" href="#irrepsubspacenormpooling" title="Link to this heading">#</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="symm_learning.nn.pooling.IrrepSubspaceNormPooling">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">IrrepSubspaceNormPooling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_rep</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/pooling.html#IrrepSubspaceNormPooling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.pooling.IrrepSubspaceNormPooling" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></p>
-<p>Pool irrep features into <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-invariant radii.</p>
-<p>Given <span class="math notranslate nohighlight">\(\mathbf{x}\in\mathcal{X}\)</span> with representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>, the module computes one
-scalar per irreducible copy in the isotypic/irrep-spectral basis:</p>
+  <section id="equiv-orthogonal-projection">
+<h1>equiv_orthogonal_projection<a class="headerlink" href="#equiv-orthogonal-projection" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="symm_learning.linalg.equiv_orthogonal_projection">
+<span class="sig-name descname"><span class="pre">equiv_orthogonal_projection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">W</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/linalg.html#equiv_orthogonal_projection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.linalg.equiv_orthogonal_projection" title="Link to this definition">#</a></dt>
+<dd><p>Orthogonally project a linear map onto <span class="math notranslate nohighlight">\(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})\)</span>.</p>
+<p>Let <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span> and <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span> be two group representations of the
+group <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>, acting on vector spaces <span class="math notranslate nohighlight">\(\mathcal{X}\)</span> and <span class="math notranslate nohighlight">\(\mathcal{Y}\)</span> respectively.
+Given any linear map between the spaces <span class="math notranslate nohighlight">\(\mathbf{W}: \mathbb{R}^{|\mathcal{X}|\times|\mathcal{Y}|}\)</span>,
+this function returns the orthogonal projection of <span class="math notranslate nohighlight">\(\mathbf{W}\)</span> onto the space of
+<span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-equivariant linear maps between <span class="math notranslate nohighlight">\(\mathcal{X}\)</span> and <span class="math notranslate nohighlight">\(\mathcal{Y}\)</span>, that is onto
+<span class="math notranslate nohighlight">\(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})\)</span>:</p>
 <div class="math notranslate nohighlight">
-\[r_{k,i} = \lVert \hat{\mathbf{x}}_{k,i} \rVert_2,
-\qquad
-\hat{\mathbf{x}}=\mathbf{Q}^T\mathbf{x}.\]</div>
-<p>This is exactly <a class="reference internal" href="symm_learning.linalg.irrep_radii.html#symm_learning.linalg.irrep_radii" title="symm_learning.linalg.irrep_radii"><code class="xref py py-func docutils literal notranslate"><span class="pre">irrep_radii()</span></code></a>, exposed as a module. The output transforms under a
-direct sum of trivial representations, hence is invariant.</p>
+\[\Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})
+= \operatorname*{argmin}_{\mathbf{A}\in\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})}
+\|\mathbf{W}-\mathbf{A}\|_F.\]</div>
+<p>Implementation uses the isotypic decomposition and projects each common-irrep block independently:</p>
+<p>This projection is equivalent to the Reynolds/group-average operator, but more computational and memory
+efficient when the order of the group is large.</p>
+<div class="math notranslate nohighlight">
+\[\Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})
+= \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}
+\rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>in_rep</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – Representation <span class="math notranslate nohighlight">\(\rho_{\text{in}}\)</span> describing how the input
-last dimension transforms.</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="symm_learning.nn.pooling.IrrepSubspaceNormPooling.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/pooling.html#IrrepSubspaceNormPooling.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.pooling.IrrepSubspaceNormPooling.forward" title="Link to this definition">#</a></dt>
-<dd><p>Compute one invariant radius per irreducible copy.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Input with trailing dimension <code class="docutils literal notranslate"><span class="pre">in_rep.size</span></code>; any leading batch/time dims are
-accepted.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Dense map (or batch of maps) of shape
+<span class="math notranslate nohighlight">\((..., D_y, D_x)\)</span>.</p></li>
+<li><p><strong>rep_x</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – Input representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>.</p></li>
+<li><p><strong>rep_y</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – Output representation <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>Tensor with same leading shape as <code class="docutils literal notranslate"><span class="pre">x</span></code> and last dim <code class="docutils literal notranslate"><span class="pre">out_rep.size</span></code> containing one</dt><dd><p>Euclidean norm per irrep block (trivial features).</p>
-</dd>
-</dl>
-</p>
+<dd class="field-even"><p>Projected map(s) with same shape, dtype, and device as <code class="docutils literal notranslate"><span class="pre">W</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
-</dd></dl>
-
+<dl class="simple">
+<dt>Shape:</dt><dd><ul class="simple">
+<li><p><strong>W</strong>: <span class="math notranslate nohighlight">\((..., D_y, D_x)\)</span>.</p></li>
+<li><p><strong>Output</strong>: <span class="math notranslate nohighlight">\((..., D_y, D_x)\)</span>.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -443,20 +436,20 @@ accepted.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../nn/pooling.html"
+       href="symm_learning.linalg.invariant_orthogonal_projector.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">pooling</p>
+        <p class="prev-next-title">invariant_orthogonal_projector</p>
       </div>
     </a>
     <a class="right-next"
-       href="../nn/normalization.html"
+       href="symm_learning.linalg.irrep_radii.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">normalization</p>
+        <p class="prev-next-title">irrep_radii</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -479,10 +472,7 @@ accepted.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.nn.pooling.IrrepSubspaceNormPooling"><code class="docutils literal notranslate"><span class="pre">IrrepSubspaceNormPooling</span></code></a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.nn.pooling.IrrepSubspaceNormPooling.forward"><code class="docutils literal notranslate"><span class="pre">forward()</span></code></a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.linalg.equiv_orthogonal_projection"><code class="docutils literal notranslate"><span class="pre">equiv_orthogonal_projection()</span></code></a></li>
 </ul>
   </nav></div>
 

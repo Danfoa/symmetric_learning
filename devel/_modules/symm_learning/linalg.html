@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.linalg &#8212; Symmetric Learning v0.4.5 Docs [devel]</title>
+    <title>symm_learning.linalg &#8212; Symmetric Learning v0.4.7 Docs [devel]</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=340bb9e5"></script>
+    <script src="../../_static/documentation_options.js?v=a78bb796"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/linalg';</script>
@@ -47,7 +47,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.5" />
+  <meta name="docsearch:version" content="0.4.7" />
   </head>
   
   
@@ -115,7 +115,7 @@
     <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.5 - devel</p>
+    <p class="title logo__title">v0.4.7 - devel</p>
   
 </a></div>
     
@@ -354,6 +354,8 @@
 <span class="sd">    Least squares solution constrained to equivariant linear maps.</span>
 <span class="sd">invariant_orthogonal_projector</span>
 <span class="sd">    Orthogonal projection onto the G-invariant subspace.</span>
+<span class="sd">equiv_orthogonal_projection</span>
+<span class="sd">    Orthogonal projection onto Hom_G using precomputed isotypic-basis tensors.</span>
 <span class="sd">irrep_radii</span>
 <span class="sd">    Compute Euclidean radius of each irreducible subspace.</span>
 <span class="sd">isotypic_signal2irreducible_subspaces</span>
@@ -655,6 +657,129 @@
 
     <span class="n">inv_projector</span> <span class="o">=</span> <span class="n">Qx</span> <span class="o">@</span> <span class="n">S</span> <span class="o">@</span> <span class="n">Qx_T</span>
     <span class="k">return</span> <span class="n">inv_projector</span></div>
+
+
+
+<div class="viewcode-block" id="equiv_orthogonal_projection">
+<a class="viewcode-back" href="../../generated/symm_learning.linalg.equiv_orthogonal_projection.html#symm_learning.linalg.equiv_orthogonal_projection">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">equiv_orthogonal_projection</span><span class="p">(</span><span class="n">W</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Orthogonally project a linear map onto :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`.</span>
+
+<span class="sd">    Let :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}` be two group representations of the</span>
+<span class="sd">    group :math:`\mathbb{G}`, acting on vector spaces :math:`\mathcal{X}` and :math:`\mathcal{Y}` respectively.</span>
+<span class="sd">    Given any linear map between the spaces :math:`\mathbf{W}: \mathbb{R}^{|\mathcal{X}|\times|\mathcal{Y}|}`,</span>
+<span class="sd">    this function returns the orthogonal projection of :math:`\mathbf{W}` onto the space of</span>
+<span class="sd">    :math:`\mathbb{G}`-equivariant linear maps between :math:`\mathcal{X}` and :math:`\mathcal{Y}`, that is onto</span>
+<span class="sd">    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})</span>
+<span class="sd">        = \operatorname*{argmin}_{\mathbf{A}\in\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})}</span>
+<span class="sd">        \|\mathbf{W}-\mathbf{A}\|_F.</span>
+
+<span class="sd">    Implementation uses the isotypic decomposition and projects each common-irrep block independently:</span>
+
+<span class="sd">    This projection is equivalent to the Reynolds/group-average operator, but more computational and memory</span>
+<span class="sd">    efficient when the order of the group is large.</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})</span>
+<span class="sd">        = \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}</span>
+<span class="sd">        \rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        W (:class:`~torch.Tensor`): Dense map (or batch of maps) of shape</span>
+<span class="sd">            :math:`(..., D_y, D_x)`.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.</span>
+<span class="sd">        rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`~torch.Tensor`: Projected map(s) with same shape, dtype, and device as ``W``.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **W**: :math:`(..., D_y, D_x)`.</span>
+<span class="sd">        - **Output**: :math:`(..., D_y, D_x)`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">isotypic_decomp_rep</span>
+
+    <span class="k">if</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">group</span> <span class="o">!=</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">group</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected same group, got </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">!=</span> <span class="p">(</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected W shape (..., </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">rep_X_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_x</span><span class="p">)</span>
+    <span class="n">rep_Y_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_y</span><span class="p">)</span>
+    <span class="n">iso_idx_X</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
+    <span class="n">iso_idx_Y</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
+    <span class="n">common_irreps</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">irreps</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">irreps</span><span class="p">)))</span>
+
+    <span class="c1"># Reuse representation-level cached change-of-basis matrices while matching W dtype/device.</span>
+    <span class="c1"># Shapes:</span>
+    <span class="c1">#   Q_out:    [d_out, d_out]  (isotypic -&gt; original basis for output)</span>
+    <span class="c1">#   Q_in_inv: [d_in,  d_in ]  (original -&gt; isotypic basis for input)</span>
+    <span class="n">Q_out</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">W</span><span class="p">)</span>
+    <span class="n">Q_in_inv</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q_inv&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">W</span><span class="p">)</span>
+    <span class="n">Q_out_inv</span> <span class="o">=</span> <span class="n">Q_out</span><span class="o">.</span><span class="n">mT</span>
+    <span class="n">Q_in</span> <span class="o">=</span> <span class="n">Q_in_inv</span><span class="o">.</span><span class="n">mT</span>
+
+    <span class="c1"># Move dense map to isotypic coordinates:</span>
+    <span class="c1">#   W_iso_in = Q_out^{-1} W Q_in</span>
+    <span class="c1"># Shape stays [..., d_out, d_in].</span>
+    <span class="n">W_iso_in</span> <span class="o">=</span> <span class="p">(</span><span class="n">Q_out_inv</span> <span class="o">@</span> <span class="n">W</span><span class="p">)</span> <span class="o">@</span> <span class="n">Q_in</span>
+    <span class="n">W_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">W_iso_in</span><span class="p">)</span>
+    <span class="n">leading_shape</span> <span class="o">=</span> <span class="n">W_iso_in</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">batch_axes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leading_shape</span><span class="p">)))</span>
+
+    <span class="k">for</span> <span class="n">irrep_id</span> <span class="ow">in</span> <span class="n">common_irreps</span><span class="p">:</span>
+        <span class="n">out_slice</span> <span class="o">=</span> <span class="n">iso_idx_Y</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">in_slice</span> <span class="o">=</span> <span class="n">iso_idx_X</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">m_out</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">m_in</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">irrep</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span>
+        <span class="n">d_k</span> <span class="o">=</span> <span class="n">irrep</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="n">irrep</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;_endo_basis_flat_cache&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="c1"># Cache key by device+dtype because endomorphism basis tensors are reused across calls.</span>
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">W</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">W</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+            <span class="n">endo_basis</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">irrep</span><span class="o">.</span><span class="n">endomorphism_basis</span><span class="p">(),</span> <span class="n">device</span><span class="o">=</span><span class="n">W</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">W</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+            <span class="n">endo_basis_flat</span> <span class="o">=</span> <span class="n">endo_basis</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">endo_basis</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [S_k, d_k*d_k]</span>
+            <span class="n">endo_norm_sq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;sd,sd-&gt;s&quot;</span><span class="p">,</span> <span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_basis_flat</span><span class="p">)</span>  <span class="c1"># [S_k]</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_norm_sq</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_norm_sq</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+
+        <span class="n">block</span> <span class="o">=</span> <span class="n">W_iso_in</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">out_slice</span><span class="p">,</span> <span class="n">in_slice</span><span class="p">]</span>
+        <span class="c1"># Track block structure inside one common irrep type k:</span>
+        <span class="c1">#   [..., m_out*d_k, m_in*d_k]</span>
+        <span class="c1"># -&gt; [..., m_out, d_k, m_in, d_k]</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span><span class="p">,</span> <span class="n">d_k</span><span class="p">,</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span><span class="p">)</span>
+        <span class="c1"># Reorder to explicit pair-of-copies layout:</span>
+        <span class="c1">#   [..., m_out, m_in, d_k, d_k]</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="o">*</span><span class="n">batch_axes</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Flatten each d_k x d_k sub-block so we can project with matrix products:</span>
+        <span class="c1">#   [..., m_out*m_in, d_k*d_k]</span>
+        <span class="n">block_flat</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span> <span class="o">*</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">)</span>
+
+        <span class="c1"># Frobenius projection coefficients on End_G(irrep_k) basis:</span>
+        <span class="c1">#   coeff[..., p, s] = &lt;block_flat[..., p, :], basis[s, :]&gt; / ||basis[s, :]||^2</span>
+        <span class="c1"># Shapes:</span>
+        <span class="c1">#   coeff: [..., m_out*m_in, S_k]</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">block_flat</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">mT</span><span class="p">)</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">coeff</span> <span class="o">/</span> <span class="n">endo_norm_sq</span>
+        <span class="c1"># Reconstruct projected flattened blocks:</span>
+        <span class="c1">#   [..., m_out*m_in, d_k*d_k]</span>
+        <span class="n">block_proj_flat</span> <span class="o">=</span> <span class="n">coeff</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">)</span>
+
+        <span class="c1"># Undo flattening and permutation to recover block matrix in isotypic coordinates:</span>
+        <span class="c1">#   [..., m_out, m_in, d_k, d_k] -&gt; [..., m_out*d_k, m_in*d_k]</span>
+        <span class="n">block_proj</span> <span class="o">=</span> <span class="n">block_proj_flat</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span><span class="p">,</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span><span class="p">,</span> <span class="n">d_k</span><span class="p">)</span>
+        <span class="n">block_proj</span> <span class="o">=</span> <span class="n">block_proj</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="o">*</span><span class="n">batch_axes</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">block_proj</span> <span class="o">=</span> <span class="n">block_proj</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">,</span> <span class="n">m_in</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">)</span>
+        <span class="n">W_iso</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">out_slice</span><span class="p">,</span> <span class="n">in_slice</span><span class="p">]</span> <span class="o">=</span> <span class="n">block_proj</span>
+
+    <span class="c1"># Return projected operator in original coordinates.</span>
+    <span class="n">W_proj</span> <span class="o">=</span> <span class="p">(</span><span class="n">Q_out</span> <span class="o">@</span> <span class="n">W_iso</span><span class="p">)</span> <span class="o">@</span> <span class="n">Q_in_inv</span>
+    <span class="k">return</span> <span class="n">W_proj</span></div>
 
 
 

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>linalg &#8212; Symmetric Learning v0.4.5 Docs [devel]</title>
+    <title>linalg &#8212; Symmetric Learning v0.4.7 Docs [devel]</title>
   
   
   
@@ -39,9 +39,10 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=340bb9e5"></script>
+    <script src="_static/documentation_options.js?v=a78bb796"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'linalg';</script>
     <link rel="icon" href="_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -50,7 +51,7 @@
     <link rel="prev" title="Reference API" href="reference.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.5" />
+  <meta name="docsearch:version" content="0.4.7" />
   </head>
   
   
@@ -118,7 +119,7 @@
     <img src="_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.5 - devel</p>
+    <p class="title logo__title">v0.4.7 - devel</p>
   
 </a></div>
     
@@ -298,6 +299,7 @@
 <li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">linalg</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.linalg.lstsq.html">lstsq</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.linalg.invariant_orthogonal_projector.html">invariant_orthogonal_projector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.linalg.equiv_orthogonal_projection.html">equiv_orthogonal_projection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.linalg.irrep_radii.html">irrep_radii</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.linalg.isotypic_signal2irreducible_subspaces.html">isotypic_signal2irreducible_subspaces</a></li>
 </ul>
@@ -376,10 +378,13 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/symm_learning.linalg.invariant_orthogonal_projector.html#symm_learning.linalg.invariant_orthogonal_projector" title="symm_learning.linalg.invariant_orthogonal_projector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invariant_orthogonal_projector</span></code></a>(rep_x[, ...])</p></td>
 <td><p>Computes the orthogonal projection to the invariant subspace.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/symm_learning.linalg.irrep_radii.html#symm_learning.linalg.irrep_radii" title="symm_learning.linalg.irrep_radii"><code class="xref py py-obj docutils literal notranslate"><span class="pre">irrep_radii</span></code></a>(x, rep)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/symm_learning.linalg.equiv_orthogonal_projection.html#symm_learning.linalg.equiv_orthogonal_projection" title="symm_learning.linalg.equiv_orthogonal_projection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">equiv_orthogonal_projection</span></code></a>(W, rep_x, rep_y)</p></td>
+<td><p>Orthogonally project a linear map onto <span class="math notranslate nohighlight">\(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})\)</span>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/symm_learning.linalg.irrep_radii.html#symm_learning.linalg.irrep_radii" title="symm_learning.linalg.irrep_radii"><code class="xref py py-obj docutils literal notranslate"><span class="pre">irrep_radii</span></code></a>(x, rep)</p></td>
 <td><p>Compute Euclidean radii for all irreducible-subspace features.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/symm_learning.linalg.isotypic_signal2irreducible_subspaces.html#symm_learning.linalg.isotypic_signal2irreducible_subspaces" title="symm_learning.linalg.isotypic_signal2irreducible_subspaces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isotypic_signal2irreducible_subspaces</span></code></a>(x, rep_x)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/symm_learning.linalg.isotypic_signal2irreducible_subspaces.html#symm_learning.linalg.isotypic_signal2irreducible_subspaces" title="symm_learning.linalg.isotypic_signal2irreducible_subspaces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isotypic_signal2irreducible_subspaces</span></code></a>(x, rep_x)</p></td>
 <td><p>Flatten an isotypic signal into its irreducible-subspace coordinates.</p></td>
 </tr>
 </tbody>
