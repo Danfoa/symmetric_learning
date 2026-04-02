@@ -9,13 +9,14 @@ from escnn.nn import FieldType
 
 from symm_learning.linalg import (
     _project_to_irrep_endomorphism_basis,
+    equiv_orthogonal_projection_coefficients,
     equiv_orthogonal_projection,
     invariant_orthogonal_projector,
     irrep_radii,
     isotypic_signal2irreducible_subspaces,
     lstsq,
 )
-from symm_learning.representation_theory import direct_sum
+from symm_learning.representation_theory import GroupHomomorphismBasis, direct_sum
 from symm_learning.utils import check_equivariance
 
 
@@ -290,3 +291,39 @@ def test_equiv_orthogonal_projection(group: Group, dtype: torch.dtype, device: s
         assert torch.allclose(err, torch.zeros_like(err), atol=1e-5, rtol=1e-5), (
             f"Projected map violates hom condition for {g}, max error {err.abs().max().item():.3e}"
         )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64], ids=["float32", "float64"])
+@pytest.mark.parametrize("device", _device_params())
+def test_equiv_orthogonal_projection_coefficients(group: Group, dtype: torch.dtype, device: str):
+    """Projected homomorphism coefficients should reconstruct the dense projected map."""
+    in_rep = direct_sum([group.regular_representation])
+    out_rep = direct_sum([group.regular_representation] * 2)
+    basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion="isotypic_expansion").to(device=device, dtype=dtype)
+
+    batch_size = 4
+    W_rand = torch.randn(batch_size, out_rep.size, in_rep.size, device=device, dtype=dtype)
+
+    theta_batch = equiv_orthogonal_projection_coefficients(W_rand, in_rep, out_rep)
+    theta_seq = torch.stack(
+        [equiv_orthogonal_projection_coefficients(W_rand[i], in_rep, out_rep) for i in range(batch_size)],
+        dim=0,
+    )
+    W_proj = equiv_orthogonal_projection(W_rand, in_rep, out_rep)
+    W_recon = basis(theta_batch)
+
+    _assert_meta(theta_batch, device=device, dtype=dtype)
+    assert theta_batch.shape == (batch_size, basis.dim)
+    assert torch.allclose(theta_batch, theta_seq, atol=1e-5, rtol=1e-5), (
+        f"Batched/seq coefficient mismatch, max error {(theta_batch - theta_seq).abs().max().item():.3e}"
+    )
+    assert torch.allclose(W_recon, W_proj, atol=1e-5, rtol=1e-5), (
+        f"Coefficient reconstruction mismatch, max error {(W_recon - W_proj).abs().max().item():.3e}"
+    )
