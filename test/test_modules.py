@@ -7,7 +7,6 @@ import escnn
 import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
 
-from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import backprop_sanity, check_equivariance
 from utils import assert_module_save_load_consistency
@@ -427,52 +426,6 @@ def test_bias(group: Group, mx: int):
     assert_module_save_load_consistency(bias_layer, x_roundtrip)
 
 
-# @pytest.mark.parametrize(
-#     "group",
-#     [
-#         pytest.param(CyclicGroup(5), id="cyclic5"),
-#         pytest.param(Icosahedral(), id="icosahedral"),
-#     ],
-# )
-# @pytest.mark.parametrize("mx", [1])
-# @pytest.mark.parametrize("affine", [True, False])
-# @pytest.mark.parametrize("running_stats", [True, False])
-# def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
-#     """Check the eBatchNorm1d layer is G-invariant."""
-#     import torch
-
-#     from symm_learning.nn import GSpace1D, eBatchNorm1d
-
-#     G = group
-#     gspace = GSpace1D(G)
-
-#     in_type = FieldType(gspace, [G.regular_representation] * mx)
-
-#     time = 2
-#     batch_size = 5
-#     x = torch.randn(batch_size, in_type.size, time)
-#     x = in_type(x)
-
-#     batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
-
-#     if hasattr(batchnorm_layer, "affine_transform"):
-#         # Randomize the scale and bias DoFs
-#         batchnorm_layer.affine_transform.scale_dof.data.uniform_(-1, 1)
-#         if batchnorm_layer.affine_transform.has_bias:
-#             batchnorm_layer.affine_transform.bias_dof.data.uniform_(-1, 1)
-
-#     batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
-
-#     batchnorm_layer.eval()
-
-#     # TODO: This is not passing.
-#     # y = batchnorm_layer(x).tensor
-#     # y_torch = batchnorm_layer.export()(x.tensor)
-
-#     # print(y.shape, y_torch.shape)
-#     # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5), f"{y - y_torch} should be 0"
-
-
 @pytest.mark.parametrize(
     "group",
     [
@@ -701,54 +654,63 @@ def test_rms_norm(group: Group, mx: int, affine: bool):
 @pytest.mark.parametrize("kind", [pytest.param("ema", id="ema"), pytest.param("eema", id="eema")])
 def test_ema_stats_core(kind: str):
     """Minimal smoke test for EMAStats and eEMAStats."""
+    from symm_learning.nn import EMAStats, eEMAStats
+
     import torch
 
     if kind == "ema":
         stats = EMAStats(dim_x=3, dim_y=2, momentum=0.2)
-        raw_x = torch.randn(8, stats.num_features_x)
-        raw_y = torch.randn(8, stats.num_features_y)
-
-        def prepare(x_tensor: torch.Tensor, y_tensor: torch.Tensor):
-            return x_tensor, y_tensor
-
-        def extract(output):
-            return output
-
     else:
         G = CyclicGroup(3)
         rep = G.regular_representation
         stats = eEMAStats(x_rep=rep, y_rep=rep, momentum=0.2)
-        raw_x = torch.randn(8, rep.size)
-        raw_y = torch.randn(8, rep.size)
 
-        def prepare(x_tensor: torch.Tensor, y_tensor: torch.Tensor):
-            return x_tensor, y_tensor
-
-        def extract(output):
-            return output
+    raw_x = torch.randn(8, stats.num_features_x)
+    raw_y = torch.randn(8, stats.num_features_y)
 
     # Train: outputs unchanged, stats update once
     stats.train()
-    x_input, y_input = prepare(raw_x, raw_y)
+    x_input = raw_x.clone().requires_grad_(True)
+    y_input = raw_y.clone().requires_grad_(True)
     prev_mean = stats.mean_x.clone()
     x_out, y_out = stats(x_input, y_input)
-    assert torch.equal(extract(x_out), raw_x)
-    assert torch.equal(extract(y_out), raw_y)
+    assert torch.equal(x_out, x_input)
+    assert torch.equal(y_out, y_input)
     assert stats.num_batches_tracked == 1
     assert not torch.equal(stats.mean_x, prev_mean)
+    train_loss = x_out.square().mean() + y_out.square().mean()
+    train_loss.backward()
+    assert x_input.grad is not None and torch.isfinite(x_input.grad).all()
+    assert y_input.grad is not None and torch.isfinite(y_input.grad).all()
 
-    # Eval: stats freeze
+    # Eval: stats freeze and backward still works through the identity output path.
     stats.eval()
     frozen_mean = stats.mean_x.clone()
-    stats(*prepare(raw_x, raw_y))
+    x_eval = raw_x.clone().requires_grad_(True)
+    y_eval = raw_y.clone().requires_grad_(True)
+    x_eval_out, y_eval_out = stats(x_eval, y_eval)
     assert torch.equal(stats.mean_x, frozen_mean)
+    eval_loss = x_eval_out.square().mean() + y_eval_out.square().mean()
+    eval_loss.backward()
+    assert x_eval.grad is not None and torch.isfinite(x_eval.grad).all()
+    assert y_eval.grad is not None and torch.isfinite(y_eval.grad).all()
 
-    # Export round-trip for equivariant version
     if kind == "eema":
-        exported = stats.export()
-        exported.eval()
-        x_std, y_std = exported(raw_x, raw_y)
-        assert torch.equal(x_std, raw_x)
-        assert torch.equal(y_std, raw_y)
+        cov_xx_cached = stats.cov_xx.clone()
+        stats.running_cov_xx_dof.add_(torch.randn_like(stats.running_cov_xx_dof))
+        assert torch.allclose(stats.cov_xx, cov_xx_cached), "Eval should reuse cached dense covariance expansion"
+
+        stats.train()
+        cov_xx_train = stats.cov_xx
+        assert not torch.allclose(cov_xx_train, cov_xx_cached), "Train should recompute covariance from DoFs"
+
+        stats.eval()
+        cov_xx_eval = stats.cov_xx
+        assert torch.allclose(cov_xx_eval, cov_xx_train), "Eval should cache the latest training covariance"
+
+        state = stats.state_dict()
+        assert "running_cov_xx_dof" in state and "running_cov_yy_dof" in state and "running_cov_xy_dof" in state
+        assert "running_cov_xx" not in state and "running_cov_yy" not in state and "running_cov_xy" not in state
+        assert "_cov_xx" not in state and "_cov_yy" not in state and "_cov_xy" not in state
 
     assert_module_save_load_consistency(stats, raw_x, raw_y)

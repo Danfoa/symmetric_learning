@@ -4,9 +4,12 @@ import torch
 from escnn.group import Representation
 
 import symm_learning.stats
+from symm_learning.linalg import equiv_orthogonal_projection_coefficients
+from symm_learning.nn.module import eModule
+from symm_learning.representation_theory import GroupHomomorphismBasis
 
 
-class EMAStats(torch.nn.Module):
+class EMAStats(eModule):
     r"""Exponential Moving Average (EMA) statistics tracker for paired data.
 
     This module tracks running statistics of two input tensors using exponential moving
@@ -66,6 +69,8 @@ class EMAStats(torch.nn.Module):
         >>> print(stats.mean_x.shape)  # torch.Size([10])
         >>> print(stats.cov_xy.shape)  # torch.Size([10, 5])
     """
+
+    requires_reps = False
 
     def __init__(
         self,
@@ -175,6 +180,9 @@ class EMAStats(torch.nn.Module):
         # Return inputs unchanged
         return x, y
 
+    def invalidate_cache(self) -> None:
+        """Standard EMA stats keep no derived cache."""
+
     @property
     def mean_x(self) -> torch.Tensor:
         """Running mean of input x."""
@@ -233,6 +241,13 @@ class eEMAStats(EMAStats):
         >>> stats = eEMAStats(x_rep=rep_x, y_rep=rep_y, momentum=0.1)
         >>> x_out, y_out = stats(x, y)  # Same tensors, updated statistics
         >>> standard_stats = stats.export()  # Export to standard EMAStats
+
+    Note:
+        Running covariance buffers are stored internally in the degrees of freedom of
+        :math:`\mathrm{Hom}_{\mathbb{G}}` rather than as dense matrices. In training mode, the
+        DoF statistics are updated directly. In eval mode, the dense covariance matrices are
+        expanded lazily and cached until the module changes mode, device, dtype, or reloads
+        from a checkpoint.
     """
 
     def __init__(
@@ -266,19 +281,56 @@ class eEMAStats(EMAStats):
             eps=eps,
             center_with_running_mean=center_with_running_mean,
         )
+        self._buffers.pop("running_cov_xx", None)
+        self._buffers.pop("running_cov_yy", None)
+        self._buffers.pop("running_cov_xy", None)
+        self._cov_xx = None
+        self._cov_yy = None
+        self._cov_xy = None
+        self._cov_cache_dirty = True
+
+        self.cov_xx_basis = GroupHomomorphismBasis(self._rep_x, self._rep_x, basis_expansion="isotypic_expansion")
+        self.cov_yy_basis = GroupHomomorphismBasis(self._rep_y, self._rep_y, basis_expansion="isotypic_expansion")
+        self.cov_xy_basis = GroupHomomorphismBasis(self._rep_y, self._rep_x, basis_expansion="isotypic_expansion")
+
+        dtype = self.running_mean_x.dtype
+        self.register_buffer(
+            "running_cov_xx_dof",
+            equiv_orthogonal_projection_coefficients(
+                torch.eye(self.num_features_x, dtype=dtype),
+                rep_x=self._rep_x,
+                rep_y=self._rep_x,
+            ),
+        )
+        self.register_buffer(
+            "running_cov_yy_dof",
+            equiv_orthogonal_projection_coefficients(
+                torch.eye(self.num_features_y, dtype=dtype),
+                rep_x=self._rep_y,
+                rep_y=self._rep_y,
+            ),
+        )
+        self.register_buffer(
+            "running_cov_xy_dof",
+            equiv_orthogonal_projection_coefficients(
+                torch.zeros(self.num_features_x, self.num_features_y, dtype=dtype),
+                rep_x=self._rep_y,
+                rep_y=self._rep_x,
+            ),
+        )
 
     def _compute_batch_stats(
         self, x: torch.Tensor, y: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Compute equivariant batch statistics using symm_learning.stats.
+        """Compute equivariant batch statistics using group-aware means and covariance DoFs.
 
         Args:
             x: Input tensor x of shape (N, D_x).
             y: Input tensor y of shape (N, D_y).
 
         Returns:
-            Tuple of (mean_x, mean_y, cov_xx, cov_yy, cov_xy) computed using
-            symmetry-aware estimators.
+            Tuple of ``(mean_x, mean_y, cov_xx_dof, cov_yy_dof, cov_xy_dof)`` where the
+            covariance terms are expressed in the flattened homomorphism basis.
         """
         # For means, always compute fresh batch means using group-aware method
         mean_x = symm_learning.stats.mean(x, rep_x=self._rep_x)
@@ -299,31 +351,26 @@ class eEMAStats(EMAStats):
         x_centered = x - center_x.unsqueeze(0)
         y_centered = y - center_y.unsqueeze(0)
 
-        # Compute covariances on pre-centered data (do not recenter inside cov()).
-        cov_xx = symm_learning.stats.cov(
-            x=x_centered,
-            y=x_centered,
+        # Match symm_learning.stats.cov(..., uncentered=True): centered inputs are treated
+        # as already-prepared second-moment samples and normalized by N.
+        n_samples = x_centered.shape[0]
+        cov_xx_dof = equiv_orthogonal_projection_coefficients(
+            W=torch.mm(x_centered.T, x_centered) / n_samples,
             rep_x=self._rep_x,
             rep_y=self._rep_x,
-            uncentered=True,
         )
-        cov_yy = symm_learning.stats.cov(
-            x=y_centered,
-            y=y_centered,
+        cov_yy_dof = equiv_orthogonal_projection_coefficients(
+            W=torch.mm(y_centered.T, y_centered) / n_samples,
             rep_x=self._rep_y,
             rep_y=self._rep_y,
-            uncentered=True,
         )
-        # Transpose to match expected shape (D_x, D_y)
-        cov_xy = symm_learning.stats.cov(
-            x=x_centered,
-            y=y_centered,
-            rep_x=self._rep_x,
-            rep_y=self._rep_y,
-            uncentered=True,
-        ).T
+        cov_xy_dof = equiv_orthogonal_projection_coefficients(
+            W=torch.mm(x_centered.T, y_centered) / n_samples,
+            rep_x=self._rep_y,
+            rep_y=self._rep_x,
+        )
 
-        return mean_x, mean_y, cov_xx, cov_yy, cov_xy
+        return mean_x, mean_y, cov_xx_dof, cov_yy_dof, cov_xy_dof
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Update running statistics and return inputs unchanged.
@@ -337,31 +384,92 @@ class eEMAStats(EMAStats):
         """
         assert x.shape[-1] == self.x_rep.size, f"Expected x.shape[-1]={self.x_rep.size}, got {x.shape}"
         assert y.shape[-1] == self.y_rep.size, f"Expected y.shape[-1]={self.y_rep.size}, got {y.shape}"
+        assert x.ndim == 2, f"Expected 2D tensor for x, got {x.ndim}D"
+        assert y.ndim == 2, f"Expected 2D tensor for y, got {y.ndim}D"
+        assert x.shape[0] == y.shape[0], f"Batch sizes must match: x={x.shape[0]}, y={y.shape[0]}"
 
-        # Apply EMAStats forward to the tensor data
-        x_out_tensor, y_out_tensor = super().forward(x, y)
-        return x_out_tensor, y_out_tensor
+        if self.training:
+            batch_mean_x, batch_mean_y, batch_cov_xx_dof, batch_cov_yy_dof, batch_cov_xy_dof = (
+                self._compute_batch_stats(x, y)
+            )
+            with torch.no_grad():
+                if self.num_batches_tracked == 0:
+                    self.running_mean_x.copy_(batch_mean_x)
+                    self.running_mean_y.copy_(batch_mean_y)
+                    self.running_cov_xx_dof.copy_(batch_cov_xx_dof)
+                    self.running_cov_yy_dof.copy_(batch_cov_yy_dof)
+                    self.running_cov_xy_dof.copy_(batch_cov_xy_dof)
+                else:
+                    alpha = self.momentum
+                    self.running_mean_x.mul_(1 - alpha).add_(batch_mean_x, alpha=alpha)
+                    self.running_mean_y.mul_(1 - alpha).add_(batch_mean_y, alpha=alpha)
+                    self.running_cov_xx_dof.mul_(1 - alpha).add_(batch_cov_xx_dof, alpha=alpha)
+                    self.running_cov_yy_dof.mul_(1 - alpha).add_(batch_cov_yy_dof, alpha=alpha)
+                    self.running_cov_xy_dof.mul_(1 - alpha).add_(batch_cov_xy_dof, alpha=alpha)
+                self._mark_cov_cache_dirty()
+                self.num_batches_tracked += 1
 
-    def export(self) -> EMAStats:
-        """Export to a standard EMAStats layer."""
-        exported = EMAStats(
-            dim_x=self.num_features_x,
-            dim_y=self.num_features_y,
-            momentum=self.momentum,
-            eps=self.eps,
+        return x, y
+
+    def _mark_cov_cache_dirty(self) -> None:
+        self._cov_cache_dirty = True
+
+    def _expand_covariances(self) -> None:
+        self._cov_xx = self.cov_xx_basis(self.running_cov_xx_dof)
+        self._cov_yy = self.cov_yy_basis(self.running_cov_yy_dof)
+        self._cov_xy = self.cov_xy_basis(self.running_cov_xy_dof)
+        self._cov_cache_dirty = False
+
+    def invalidate_cache(self) -> None:
+        """Clear cached dense covariance expansions."""
+        self._cov_xx = None
+        self._cov_yy = None
+        self._cov_xy = None
+        self._mark_cov_cache_dirty()
+
+    def _ensure_cov_cache(self) -> None:
+        if self._cov_cache_dirty or self._cov_xx is None or self._cov_yy is None or self._cov_xy is None:
+            self._expand_covariances()
+
+    @property
+    def cov_xx(self) -> torch.Tensor:
+        """Running covariance matrix of x expanded from the homomorphism-basis coefficients."""
+        self._ensure_cov_cache()
+        return self._cov_xx
+
+    @property
+    def cov_yy(self) -> torch.Tensor:
+        """Running covariance matrix of y expanded from the homomorphism-basis coefficients."""
+        self._ensure_cov_cache()
+        return self._cov_yy
+
+    @property
+    def cov_xy(self) -> torch.Tensor:
+        """Running cross-covariance expanded from the homomorphism-basis coefficients."""
+        self._ensure_cov_cache()
+        return self._cov_xy
+
+    def _load_from_state_dict(
+        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+    ):
+        legacy_cov_keys = {
+            "running_cov_xx": (self._rep_x, self._rep_x),
+            "running_cov_yy": (self._rep_y, self._rep_y),
+            "running_cov_xy": (self._rep_y, self._rep_x),
+        }
+        for legacy_key, (rep_in, rep_out) in legacy_cov_keys.items():
+            legacy_full_key = prefix + legacy_key
+            dof_full_key = prefix + f"{legacy_key}_dof"
+            legacy_value = state_dict.pop(legacy_full_key, None)
+            if legacy_value is not None and dof_full_key not in state_dict:
+                state_dict[dof_full_key] = equiv_orthogonal_projection_coefficients(
+                    W=legacy_value,
+                    rep_x=rep_in,
+                    rep_y=rep_out,
+                )
+        super()._load_from_state_dict(
+            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
-
-        # Transfer state
-        exported.running_mean_x.data = self.running_mean_x.clone()
-        exported.running_mean_y.data = self.running_mean_y.clone()
-        exported.running_cov_xx.data = self.running_cov_xx.clone()
-        exported.running_cov_yy.data = self.running_cov_yy.clone()
-        exported.running_cov_xy.data = self.running_cov_xy.clone()
-        exported.num_batches_tracked.data = self.num_batches_tracked.clone()
-
-        exported.eval()
-
-        return exported
 
 
 if __name__ == "__main__":
@@ -373,7 +481,7 @@ if __name__ == "__main__":
     SEED = 123
     BATCH_SIZE = 1024
     REGULAR_COPIES = 2
-    MODE = "both"  # options: eval, train, both
+    MODE = "train"  # options: eval, train, both
 
     torch.manual_seed(SEED)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
