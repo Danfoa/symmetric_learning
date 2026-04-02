@@ -9,7 +9,7 @@ lstsq
     Least squares solution constrained to equivariant linear maps.
 invariant_orthogonal_projector
     Orthogonal projection onto the G-invariant subspace.
-equiv_orthogonal_projection_isobasis
+equiv_orthogonal_projection
     Orthogonal projection onto Hom_G using precomputed isotypic-basis tensors.
 irrep_radii
     Compute Euclidean radius of each irreducible subspace.

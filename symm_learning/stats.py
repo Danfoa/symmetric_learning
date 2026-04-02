@@ -17,13 +17,11 @@ cov
 
 from __future__ import annotations
 
-import numpy as np
 import torch
 from escnn.group import Representation
 from torch import Tensor
 
-from symm_learning.linalg import invariant_orthogonal_projector
-from symm_learning.representation_theory import isotypic_decomp_rep
+from symm_learning.linalg import equiv_orthogonal_projection, invariant_orthogonal_projector
 
 
 def mean(x: Tensor, rep_x: Representation) -> Tensor:
@@ -259,177 +257,80 @@ def var_mean(x: Tensor, rep_x: Representation):
     return var_result, mean_result
 
 
-def _isotypic_cov(x: Tensor, rep_x: Representation, y: Tensor = None, rep_y: Representation = None):
-    r"""Cross-covariance between two **isotypic sub-spaces that share the same irrep**.
+def cov(
+    x: Tensor,
+    y: Tensor,
+    rep_x: Representation,
+    rep_y: Representation,
+    uncentered: bool = False,
+):
+    r"""Compute symmetry-aware cross-covariance.
 
-    If both signals live in
-    :math:`\rho_X=\bigoplus_{i=1}^{m_x}\rho_k` and
-    :math:`\rho_Y=\bigoplus_{i=1}^{m_y}\rho_k`
-    (with :math:`\rho_k` of dimension *d*), every
-    :math:`G`-equivariant linear map factorises as
+    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` be two
+    :math:`\mathbb{G}`-invariant random variables endowed with the :math:`\mathbb{G}` representations
+    :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}` respectively. This function computes the symmetry-aware
+    cross-covariance which by construction is a :math:`\mathbb{G}`-equivariant linear map in
+    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`.
 
-    .. math::
-        \operatorname{Cov}(\mathbf{X}, \mathbf{Y})
-        \;=\;\mathbf{Z}_{XY}\otimes \mathbf{I}_d,  \qquad
-        \mathbf{Z}_{XY}\in\mathbb{R}^{m_y\times m_x}.
+    Implementation: To achieve this we first compute the symmetry-agnostic empirical covariance
+    :math:`\mathbf{C}^{\text{raw}}_{yx} = \frac{1}{N-1}\sum_{n=1}^{N}\mathbf{y}^{\star}_n (\mathbf{x}^{\star}_n)^\top`.
+    By default (:attr:`uncentered=False`), centered variables use invariant means from :func:`mean`:
+    :math:`\mathbf{x}^{\star}_n = \mathbf{x}_n - \boldsymbol{\mu}_x`,
+    :math:`\mathbf{y}^{\star}_n = \mathbf{y}_n - \boldsymbol{\mu}_y`,
+    with
+    :math:`\boldsymbol{\mu}_x = \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{X}]`,
+    :math:`\boldsymbol{\mu}_y = \widehat{\mathbb{E}}_{\mathbb{G}}[\mathbf{Y}]`.
+    If :attr:`uncentered=True`, :math:`\mathbf{x}^{\star}_n=\mathbf{x}_n` and
+    :math:`\mathbf{y}^{\star}_n=\mathbf{y}_n`.
 
-    We estimate the free matrix :math:`\mathbf Z_{XY}` by
-
-    1. **centering** (skipped if the irrep is trivial);
-    2. **reshaping** the data so that each copy of the irrep becomes one
-       “channel” of length *d·N*;
-    3. **projecting** every :math:`d\times d` block onto the orthogonal basis
-       of :math:`\mathrm{End}_{\mathbb{G}}(\rho_k)` via Frobenius inner products (see
-       `arXiv:2505.19809 <https://arxiv.org/abs/2505.19809>`_);
-    4. rebuilding the block matrix that respects the constraint above.
-
-    When ``y is None`` the routine reduces to an **auto-covariance** and only
-    the symmetric (identity) basis element is kept.
-
-
-    Args:
-        x (:class:`~torch.Tensor`): shape :math:`(N,\; m_x d)` — samples drawn from ``rep_x``.
-        rep_x (:class:`~escnn.group.Representation`): isotypic representation
-            containing exactly one irrep type.
-        y (:class:`~torch.Tensor`, optional): shape :math:`(N,\; m_y d)` —
-            samples drawn from ``rep_y``.  If *None*, computes the
-            auto-covariance of *x*.
-        rep_y (:class:`~escnn.group.Representation`, optional): isotypic
-            representation matching the irrep of ``rep_x``; ignored when
-            *y* is *None*.
-
-    Returns:
-        (Tensor, Tensor):
-            - C_xy: :math:`(m_y d,\; m_x d)` projected covariance.
-            - Z_xy: :math:`(m_y,\; m_x,\; B)`, free coefficients of each cross-covariance between irrep subspaces,
-              representing basis expansion coefficients in the basis of endomorphisms of the irrep subspaces.
-              Where :math:`B = 1, 2, 4` for real, complex, quaternionic irreps, respectively.
-    """
-    irrep_id = rep_x.irreps[0]  # Irrep id of the isotypic subspace
-    assert rep_x.size == x.shape[-1], f"Expected signal shape to be (..., {rep_x.size}) got {x.shape}"
-    assert rep_x.attributes.get("is_isotypic_rep", False), f"Expected rep of a single type, got {rep_x.irreps}"
-
-    if y is not None:
-        assert rep_y.size == y.shape[-1], f"Expected signal shape to be (..., {rep_y.size}) got {y.shape}"
-        assert rep_y.attributes.get("is_isotypic_rep", False), f"Expected rep of a single type, got {rep_y.irreps}"
-
-    # Get information about the irreducible representation present in the isotypic subspace
-    irrep_dim = rep_x.attributes["irrep_dim"]
-    # irrep_end_basis := (dim(End(irrep)), dim(irrep), dim(irrep))
-    irrep_end_basis = rep_x.attributes["irrep_endomorphism_basis"].to(device=x.device, dtype=x.dtype)
-
-    if y is None:
-        rep_y = rep_x  # Use the same representation for Y
-        y = x
-
-    m_x = rep_x.attributes["irrep_multiplicity"]  # Multiplicity of the irrep in X
-    m_y = rep_y.attributes["irrep_multiplicity"]  # Multiplicity of the irrep in Y
-
-    x_iso, y_iso = x, y
-
-    is_inv_subspace = irrep_id == rep_x.group.trivial_representation.id
-    if is_inv_subspace:  # Nothing to do, return empirical covariance.
-        x_iso = x - torch.mean(x, dim=0, keepdim=True)
-        y_iso = y - torch.mean(y, dim=0, keepdim=True)
-        Cxy_iso = torch.einsum("...y,...x->yx", y_iso, x_iso) / (x_iso.shape[0] - 1)
-        return Cxy_iso, Cxy_iso  # Invariant subspace covariance is the same as the covariance matrix.
-
-    # Compute empirical cross-covariance
-    Cxy_iso = torch.einsum("...y,...x->yx", y_iso, x_iso) / (x_iso.shape[0] - 1)
-    # Reshape from (my * d, mx * d) to (my, mx, d, d)
-    Cxy_irreps = Cxy_iso.view(m_y, irrep_dim, m_x, irrep_dim).permute(0, 2, 1, 3).contiguous()
-    # Compute basis expansion coefficients of each irrep cross-covariance in basis of End(irrep) ========
-    # Frobenius inner product  <C , Ψ_b>  =  Σ_{i,j} C_{ij} Ψ_b,ij
-    Cxy_irreps_basis_coeff = torch.einsum("mnij,bij->mnb", Cxy_irreps, irrep_end_basis)  # (m_y , m_x , B)
-    # squared norms ‖Ψ_b‖²
-    basis_coeff_norms = torch.einsum("bij,bij->b", irrep_end_basis, irrep_end_basis)  # (B,)
-    Cxy_irreps_basis_coeff = Cxy_irreps_basis_coeff / basis_coeff_norms[None, None]
-
-    Cxy_irreps = torch.einsum("...b,bij->...ij", Cxy_irreps_basis_coeff, irrep_end_basis)  # (m_y , m_x , d , d)
-    # Reshape to (my * d, mx * d)
-    Cxy_iso = Cxy_irreps.permute(0, 2, 1, 3).reshape(m_y * irrep_dim, m_x * irrep_dim)
-
-    return Cxy_iso, Cxy_irreps_basis_coeff
-
-
-def cov(x: Tensor, y: Tensor, rep_x: Representation, rep_y: Representation):
-    r"""Compute the covariance between two symmetric random variables.
-
-    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` with representations
-    :math:`\rho_{\mathcal{X}}`, :math:`\rho_{\mathcal{Y}}`. The covariance is computed via the
-    :ref:`isotypic decomposition <isotypic-decomposition-example>`
-    from :func:`~symm_learning.representation_theory.isotypic_decomp_rep`.
-    Covariance contributions between different isotypic types are zero in the constrained model.
-    Hence, in the disentangled/isotypic basis the covariance can be computed in block-diagonal form:
+    The returned covariance is the orthogonal projection of :math:`\mathbf{C}^{\text{raw}}_{yx}` onto
+    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})` via
+    :func:`~symm_learning.linalg.equiv_orthogonal_projection`:
 
     .. math::
-        \begin{align}
-            \mathbf{C}_{xy} &= \mathbf{Q}_y^T (\bigoplus_{k} \mathbf{C}_{xy}^{(k)} )\mathbf{Q}_x
-            \\
-            &= \mathbf{Q}_y^T (
-            \bigoplus_{k} \sum_{b\in \mathbb{B}_k} \mathbf{Z}_b^{(k)} \otimes \mathbf{b}
-            ) \mathbf{Q}_x
-            \\
-        \end{align}
+        \mathbf{C}_{yx}
+        = \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{C}^{\text{raw}}_{yx}).
 
-    Where :math:`\mathbf{Q}_x^{\mathsf T}` and :math:`\mathbf{Q}_y^{\mathsf T}`
-    are the change-of-basis matrices to the isotypic bases of :math:`\mathcal{X}` and :math:`\mathcal{Y}`,
-    respectively; :math:`\mathbf{C}_{xy}^{(k)}` is the covariance restricted to the
-    isotypic subspaces of type *k*; and :math:`\mathbf{Z}_b^{(k)}` are the free
-    parameters—i.e. the expansion coefficients in the endomorphism basis
-    :math:`\mathbb{B}_k` of the irreducible representation of type *k*.
+    This orthogonal projector is equivalent to the Reynolds/group-average operator:
+
+    .. math::
+        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})
+        = \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}
+        \rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).
 
     Args:
-        x (:class:`~torch.Tensor`): Realizations of a random variable :math:`X`.
-        y (:class:`~torch.Tensor`): Realizations of a random variable :math:`Y`.
+        x (:class:`~torch.Tensor`): Samples of :math:`\mathbf{X}`.
+        y (:class:`~torch.Tensor`): Samples of :math:`\mathbf{Y}`.
         rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}`.
         rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}`.
+        uncentered (:class:`bool`): If ``False`` (default), subtract invariant means before covariance
+            computation. If ``True``, compute the uncentered second moment and project it.
 
     Returns:
-        :class:`~torch.Tensor`: The covariance matrix between the two random variables, of shape :math:`(D_y, D_x)`.
+        :class:`~torch.Tensor`: Projected cross-covariance :math:`\mathbf{C}_{yx}` with shape
+        :math:`(D_y, D_x)`.
 
     Shape:
-        - **x**: :math:`(N, D_x)` where :math:`D_x` is the dimension of the random variable :math:`\mathbf{X}`.
-        - **y**: :math:`(N, D_y)` where :math:`D_y` is the dimension of the random variable :math:`\mathbf{Y}`.
-
-        - **Output**: :math:`(D_y, D_x)`
-
-    Note:
-        This function calls :func:`~symm_learning.representation_theory.isotypic_decomp_rep`, which caches
-        decompositions in the group representation registry. Repeated calls with the same representations reuse
-        cached decompositions.
+        - **x**: :math:`(N, D_x)`. With `N` denoting the number of samples and `D_x` the dimension of the
+            representation space of `x`.
+        - **y**: :math:`(N, D_y)`. With `D_y` the dimension of the representation space of `y`.
+        - **Output**: :math:`(D_y, D_x)`.
     """
-    # assert X.shape[0] == Y.shape[0], "Expected equal number of samples in X and Y"
     assert x.shape[1] == rep_x.size, f"Expected X shape (N, {rep_x.size}), got {x.shape}"
     assert y.shape[1] == rep_y.size, f"Expected Y shape (N, {rep_y.size}), got {y.shape}"
     assert x.shape[-1] == rep_x.size, f"Expected X shape (..., {rep_x.size}), got {x.shape}"
     assert y.shape[-1] == rep_y.size, f"Expected Y shape (..., {rep_y.size}), got {y.shape}"
 
-    rep_X_iso = isotypic_decomp_rep(rep_x)
-    rep_Y_iso = isotypic_decomp_rep(rep_y)
-    rep_X_iso_subspaces = rep_X_iso.attributes["isotypic_reps"]
-    rep_Y_iso_subspaces = rep_Y_iso.attributes["isotypic_reps"]
-    iso_idx_X = rep_X_iso.attributes["isotypic_subspace_dims"]
-    iso_idx_Y = rep_Y_iso.attributes["isotypic_subspace_dims"]
+    if uncentered:
+        x_eff, y_eff = x, y
+    else:
+        mu_x = mean(x, rep_x)
+        mu_y = mean(y, rep_y)
+        x_eff = x - mu_x
+        y_eff = y - mu_y
 
-    # Changes of basis from the Disentangled/Isotypic-basis of X, and Y to the original basis.
-    Qx = torch.tensor(rep_X_iso.change_of_basis, device=x.device, dtype=x.dtype)
-    Qy = torch.tensor(rep_Y_iso.change_of_basis, device=y.device, dtype=y.dtype)
-
-    X_iso = torch.einsum("ij,...j->...i", Qx.T, x)
-    Y_iso = torch.einsum("ij,...j->...i", Qy.T, y)
-    Cxy_iso = torch.zeros((rep_y.size, rep_x.size), dtype=x.dtype, device=x.device)
-    for iso_id in rep_Y_iso_subspaces:
-        if iso_id not in rep_X_iso_subspaces:
-            continue  # No covariance between the isotypic subspaces of different types.
-        X_k = X_iso[..., iso_idx_X[iso_id]]
-        Y_k = Y_iso[..., iso_idx_Y[iso_id]]
-        rep_X_k = rep_X_iso_subspaces[iso_id]
-        rep_Y_k = rep_Y_iso_subspaces[iso_id]
-        # Cxy_k = D_xy_k ⊗ I_d [my * d x mx * d]
-        Cxy_k, _ = _isotypic_cov(x=X_k, y=Y_k, rep_x=rep_X_k, rep_y=rep_Y_k)
-        Cxy_iso[iso_idx_Y[iso_id], iso_idx_X[iso_id]] = Cxy_k
-
-    # Change to the original basis
-    Cxy = Qy.T @ Cxy_iso @ Qx
-    return Cxy
+    # Empirical cross-covariance (centered or uncentered) in original coordinates: [D_y, D_x]
+    Cxy_raw = torch.einsum("...y,...x->yx", y_eff, x_eff) / (x_eff.shape[0] - 1)
+    # Orthogonal projection to Hom_G(rep_x, rep_y), preserving shape [D_y, D_x].
+    Cxy_proj = equiv_orthogonal_projection(W=Cxy_raw, rep_x=rep_x, rep_y=rep_y)
+    return Cxy_proj
