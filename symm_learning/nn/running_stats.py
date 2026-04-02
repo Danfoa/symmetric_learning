@@ -10,34 +10,20 @@ from symm_learning.representation_theory import GroupHomomorphismBasis
 
 
 class EMAStats(eModule):
-    r"""Exponential Moving Average (EMA) statistics tracker for paired data.
+    r"""Exponential moving averages of first and second moments.
 
-    This module tracks running statistics of two input tensors using exponential moving
-    averages without transforming the data. It computes and maintains estimates of:
+    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` be two random variables.
+    This module tracks exponential moving averages of their batch means
+    :math:`\boldsymbol{\mu}_x`, :math:`\boldsymbol{\mu}_y`, self-covariances
+    :math:`\mathbf{C}_{xx}`, :math:`\mathbf{C}_{yy}`, and cross-covariance :math:`\mathbf{C}_{xy}`.
 
-    - :math:`\mu_x`: Mean of input tensor x
-    - :math:`\mu_y`: Mean of input tensor y
-    - :math:`\Sigma_{xx}`: Covariance matrix of x
-    - :math:`\Sigma_{yy}`: Covariance matrix of y
-    - :math:`\Sigma_{xy}`: Cross-covariance matrix between x and y
-
-    **Mathematical Formulation:**
-
-    The exponential moving average update rule for any statistic :math:`S` is:
+    For any tracked statistic :math:`\mathbf{S}`, the running update is
 
     .. math::
-        S_{\text{running}} = (1 - \alpha) \cdot S_{\text{running}} + \alpha \cdot S_{\text{batch}}
+        \mathbf{S}_{t} = (1-\alpha)\mathbf{S}_{t-1} + \alpha\,\mathbf{S}^{\text{batch}}_{t},
 
-    where :math:`\alpha` is the momentum parameter and :math:`S_{\text{batch}}` is the
-    statistic computed from the current batch.
-
-    **Covariance Computation:**
-
-    For tensors of shape :math:`(N, D)`:
-
-    - Mean: :math:`\mu = \mathbb{E}[x]` computed over batch dimension
-    - Covariance: :math:`\Sigma = \mathbb{E}[(x - \mu)(x - \mu)^T]`
-    - Cross-covariance: :math:`\Sigma_{xy} = \mathbb{E}[(x - \mu_x)(y - \mu_y)^T]`
+    where :math:`\alpha\in(0,1]` is the momentum and :math:`\mathbf{S}^{\text{batch}}_{t}` is the statistic computed
+    from the current batch.
 
     Args:
         num_features_x: Number of features in input tensor x.
@@ -53,21 +39,27 @@ class EMAStats(eModule):
         - Input y: :math:`(N, D_y)` where :math:`D_y` is num_features_y.
         - Output: Same as inputs (data is not transformed).
 
-    Attributes:
-        running_mean_x (:class:`~torch.Tensor`): Running mean of x. Shape: :math:`(D_x,)`.
-        running_mean_y (:class:`~torch.Tensor`): Running mean of y. Shape: :math:`(D_y,)`.
-        running_cov_xx (:class:`~torch.Tensor`): Running covariance of x. Shape: :math:`(D_x, D_x)`.
-        running_cov_yy (:class:`~torch.Tensor`): Running covariance of y. Shape: :math:`(D_y, D_y)`.
-        running_cov_xy (:class:`~torch.Tensor`): Running cross-covariance. Shape: :math:`(D_x, D_y)`.
-        num_batches_tracked (:class:`~torch.Tensor`): Number of batches processed.
-
     Example:
-        >>> stats = EMAStats(num_features_x=10, num_features_y=5, momentum=0.1)
-        >>> x = torch.randn(32, 10)  # Batch of 32 samples, 10 features
-        >>> y = torch.randn(32, 5)  # Batch of 32 samples, 5 features
-        >>> x_out, y_out = stats(x, y)  # x_out == x, y_out == y (no transformation)
-        >>> print(stats.mean_x.shape)  # torch.Size([10])
-        >>> print(stats.cov_xy.shape)  # torch.Size([10, 5])
+        >>> stats = EMAStats(dim_x=10, dim_y=5, momentum=0.1)
+        >>> x = torch.randn(32, 10)
+        >>> y = torch.randn(32, 5)
+        >>> x_out, y_out = stats(x, y)
+        >>> mu_x = stats.mean_x
+        >>> C_xy = stats.cov_xy
+        >>> print(mu_x.shape, C_xy.shape)
+
+    Note:
+        Whenever previously tracked statistics are reused, the historical means
+        :math:`\boldsymbol{\mu}_{x,t-1}`, :math:`\boldsymbol{\mu}_{y,t-1}` and covariance operators
+        :math:`\mathbf{C}_{xx,t-1}`, :math:`\mathbf{C}_{yy,t-1}`, :math:`\mathbf{C}_{xy,t-1}` are first detached from
+        the autograd graph. In particular, the centering mean and the previous EMA state in the update
+
+        .. math::
+            \mathbf{S}_{t} = (1-\alpha)\,\operatorname{detach}(\mathbf{S}_{t-1}) + \alpha\,\mathbf{S}^{\text{batch}}_{t}
+
+        are treated as constants with respect to the current optimization step. This truncates the computation graph
+        across batches, preventing gradients from propagating through historical running state while keeping the
+        current batch contribution differentiable.
     """
 
     requires_reps = False
@@ -102,7 +94,7 @@ class EMAStats(eModule):
     def _compute_batch_stats(
         self, x: torch.Tensor, y: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Compute batch statistics. Can be overridden for equivariant versions.
+        r"""Compute batch statistics. Can be overridden for equivariant versions.
 
         Args:
             x: Input tensor x of shape (N, D_x).
@@ -110,6 +102,13 @@ class EMAStats(eModule):
 
         Returns:
             Tuple of (mean_x, mean_y, cov_xx, cov_yy, cov_xy).
+
+        Note:
+            If covariance centering reuses the running means :math:`\boldsymbol{\mu}_{x,t-1}` and
+            :math:`\boldsymbol{\mu}_{y,t-1}`, they are replaced by
+            :math:`\operatorname{detach}(\boldsymbol{\mu}_{x,t-1})` and
+            :math:`\operatorname{detach}(\boldsymbol{\mu}_{y,t-1})`. This keeps the current batch covariance
+            differentiable only with respect to the current inputs.
         """
         # Compute batch means
         mean_x = x.mean(dim=0)
@@ -118,7 +117,8 @@ class EMAStats(eModule):
         # For covariance computation, use running means if available and enabled, otherwise batch means
         if self.center_with_running_mean and self.num_batches_tracked > 0:
             # Use running means for centering to maintain consistency with EMA
-            # Detach to prevent gradients from flowing through previous iterations
+            # Detach here so covariance gradients do not backpropagate through old EMA state.
+            # Only the current batch should contribute gradient information in this step.
             center_x = self.running_mean_x.detach()
             center_y = self.running_mean_y.detach()
         else:
@@ -139,7 +139,7 @@ class EMAStats(eModule):
         return mean_x, mean_y, cov_xx, cov_yy, cov_xy
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Update running statistics and return inputs unchanged.
+        r"""Update running statistics and return inputs unchanged.
 
         Args:
             x: Input tensor x of shape (N, num_features_x).
@@ -147,6 +147,16 @@ class EMAStats(eModule):
 
         Returns:
             Tuple (x, y) - inputs are returned unchanged.
+
+        Note:
+            For batches after the first one, the EMA update uses
+            :math:`\operatorname{detach}(\boldsymbol{\mu}_{x,t-1})`,
+            :math:`\operatorname{detach}(\boldsymbol{\mu}_{y,t-1})`,
+            :math:`\operatorname{detach}(\mathbf{C}_{xx,t-1})`,
+            :math:`\operatorname{detach}(\mathbf{C}_{yy,t-1})`, and
+            :math:`\operatorname{detach}(\mathbf{C}_{xy,t-1})` before mixing them with the current batch statistics.
+            This preserves differentiability with respect to the current batch while preventing the running buffers
+            from carrying a growing cross-batch autograd graph.
         """
         assert x.ndim == 2, f"Expected 2D tensor for x, got {x.ndim}D"
         assert y.ndim == 2, f"Expected 2D tensor for y, got {y.ndim}D"
@@ -160,14 +170,17 @@ class EMAStats(eModule):
 
             # Update running statistics with EMA
             if self.num_batches_tracked == 0:
-                # First batch: initialize with batch statistics
+                # First batch: initialize from the current batch directly. `copy_` preserves the
+                # current-step gradient path without mixing in the arbitrary initialization values.
                 self.running_mean_x.copy_(batch_mean_x)
                 self.running_mean_y.copy_(batch_mean_y)
                 self.running_cov_xx.copy_(batch_cov_xx)
                 self.running_cov_yy.copy_(batch_cov_yy)
                 self.running_cov_xy.copy_(batch_cov_xy)
             else:
-                # EMA update: detach previous running stats to prevent gradient flow into history
+                # Detach the previous EMA state so autograd sees it as a constant for this step.
+                # This avoids backpropagating through the full batch history while preserving the
+                # gradient contribution of the current batch statistic.
                 alpha = self.momentum
                 self.running_mean_x = self.running_mean_x.detach() * (1 - alpha) + batch_mean_x * alpha
                 self.running_mean_y = self.running_mean_y.detach() * (1 - alpha) + batch_mean_y * alpha
@@ -217,11 +230,47 @@ class EMAStats(eModule):
 
 
 class eEMAStats(EMAStats):
-    r"""Equivariant version of EMAStats using group-theoretic symmetry-aware statistics.
+    r"""Equivariant EMA statistics on symmetric vector spaces.
 
-    This module extends :class:`EMAStats` to work with equivariant data by computing
-    statistics that respect the symmetry structure defined by group representations.
-    It uses symmetry-aware mean and covariance computations from :mod:`symm_learning.stats`.
+    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` be two
+    :math:`\mathbb{G}`-invariant random variables taking values in the symmetric vector spaces
+    :math:`(\mathcal{X}, \rho_{\mathcal{X}})` and :math:`(\mathcal{Y}, \rho_{\mathcal{Y}})`. This module tracks
+    exponential moving averages of their symmetry-constrained first and second moments.
+
+    The running means are constrained to be :math:`\mathbb{G}`-invariant,
+
+    .. math::
+        \rho_{\mathcal{X}}(g)\boldsymbol{\mu}_x = \boldsymbol{\mu}_x,
+        \qquad
+        \rho_{\mathcal{Y}}(g)\boldsymbol{\mu}_y = \boldsymbol{\mu}_y,
+        \qquad \forall g\in\mathbb{G},
+
+    and the running covariance operators commute with the corresponding group actions,
+
+    .. math::
+        \rho_{\mathcal{X}}(g)\mathbf{C}_{xx} = \mathbf{C}_{xx}\rho_{\mathcal{X}}(g),
+        \qquad
+        \rho_{\mathcal{Y}}(g)\mathbf{C}_{yy} = \mathbf{C}_{yy}\rho_{\mathcal{Y}}(g),
+        \qquad
+        \rho_{\mathcal{X}}(g)\mathbf{C}_{xy} = \mathbf{C}_{xy}\rho_{\mathcal{Y}}(g),
+        \qquad \forall g\in\mathbb{G}.
+
+    Equivalently,
+
+    .. math::
+        \mathbf{C}_{xx} \in \mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{X}}),
+        \qquad
+        \mathbf{C}_{yy} \in \mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{Y}}),
+        \qquad
+        \mathbf{C}_{xy} \in \mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{X}}).
+
+    For any tracked statistic :math:`\mathbf{S}`, the running update is
+
+    .. math::
+        \mathbf{S}_{t} = (1-\alpha)\mathbf{S}_{t-1} + \alpha\,\mathbf{S}^{\text{batch}}_{t},
+
+    where :math:`\alpha\in(0,1]` is the momentum and :math:`\mathbf{S}^{\text{batch}}_{t}` is the statistic computed
+    from the current batch.
 
     Args:
         x_rep (:class:`~escnn.group.Representation`): Representation defining input x's group action.
@@ -240,14 +289,29 @@ class eEMAStats(EMAStats):
     Example:
         >>> stats = eEMAStats(x_rep=rep_x, y_rep=rep_y, momentum=0.1)
         >>> x_out, y_out = stats(x, y)  # Same tensors, updated statistics
-        >>> standard_stats = stats.export()  # Export to standard EMAStats
+        >>> mu_x = stats.mean_x
+        >>> mu_y = stats.mean_y
+        >>> C_xx = stats.cov_xx
+        >>> C_xy = stats.cov_xy
+        >>> print(mu_x.shape, mu_y.shape, C_xx.shape, C_xy.shape)
 
     Note:
         Running covariance buffers are stored internally in the degrees of freedom of
-        :math:`\mathrm{Hom}_{\mathbb{G}}` rather than as dense matrices. In training mode, the
-        DoF statistics are updated directly. In eval mode, the dense covariance matrices are
-        expanded lazily and cached until the module changes mode, device, dtype, or reloads
-        from a checkpoint.
+        :math:`\mathrm{Hom}_{\mathbb{G}}` rather than as dense matrices. As in :class:`EMAStats`, previously tracked
+        means :math:`\boldsymbol{\mu}_{x,t-1}`, :math:`\boldsymbol{\mu}_{y,t-1}` and covariance coefficients
+        :math:`\boldsymbol{\theta}_{xx,t-1}`, :math:`\boldsymbol{\theta}_{yy,t-1}`,
+        :math:`\boldsymbol{\theta}_{xy,t-1}` are always replaced by their detached counterparts before reuse in
+        covariance centering or in the EMA update. In training mode, the DoF statistics are updated directly using
+
+        .. math::
+            \boldsymbol{\theta}_{t}
+            = (1-\alpha)\,\operatorname{detach}(\boldsymbol{\theta}_{t-1})
+            + \alpha\,\boldsymbol{\theta}^{\text{batch}}_{t},
+
+        so gradients never propagate through older batches. The dense covariance matrices exposed by :attr:`cov_xx`,
+        :attr:`cov_yy`, and :attr:`cov_xy` are expanded from the current DoF coefficients on demand. In eval mode,
+        they are expanded lazily and cached until the module changes mode, device, dtype, or reloads from a
+        checkpoint.
     """
 
     def __init__(
@@ -312,15 +376,41 @@ class eEMAStats(EMAStats):
     def _compute_batch_stats(
         self, x: torch.Tensor, y: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Compute equivariant batch statistics using group-aware means and covariance DoFs.
+        r"""Compute invariant batch means and equivariant covariance coefficients.
 
         Args:
-            x: Input tensor x of shape (N, D_x).
-            y: Input tensor y of shape (N, D_y).
+            x: Samples of :math:`\mathbf{X}` with shape :math:`(N, D_x)`.
+            y: Samples of :math:`\mathbf{Y}` with shape :math:`(N, D_y)`.
 
         Returns:
-            Tuple of ``(mean_x, mean_y, cov_xx_dof, cov_yy_dof, cov_xy_dof)`` where the
-            covariance terms are expressed in the flattened homomorphism basis.
+            Tuple ``(\boldsymbol{\mu}_x, \boldsymbol{\mu}_y, \boldsymbol{\theta}_{xx},
+            \boldsymbol{\theta}_{yy}, \boldsymbol{\theta}_{xy})`` where
+
+            - :math:`\boldsymbol{\mu}_x \in \mathcal{X}^{\text{inv}}`
+            - :math:`\boldsymbol{\mu}_y \in \mathcal{Y}^{\text{inv}}`
+            - :math:`\boldsymbol{\theta}_{xx}` parameterizes an operator in
+              :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{X}})`
+            - :math:`\boldsymbol{\theta}_{yy}` parameterizes an operator in
+              :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{Y}})`
+            - :math:`\boldsymbol{\theta}_{xy}` parameterizes an operator in
+              :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{X}})`
+
+            with the covariance quantities expressed in the flattened homomorphism basis.
+
+        Shape:
+            - **x**: :math:`(N, D_x)`.
+            - **y**: :math:`(N, D_y)`.
+            - **Output**: ``((D_x,), (D_y,), (H_{xx},), (H_{yy},), (H_{xy},))`` where
+              :math:`H_{xx}=\dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{X}}))`,
+              :math:`H_{yy}=\dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{Y}}))`, and
+              :math:`H_{xy}=\dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{X}}))`.
+
+        Note:
+            If covariance centering reuses the running means :math:`\boldsymbol{\mu}_{x,t-1}` and
+            :math:`\boldsymbol{\mu}_{y,t-1}`, it uses
+            :math:`\operatorname{detach}(\boldsymbol{\mu}_{x,t-1})` and
+            :math:`\operatorname{detach}(\boldsymbol{\mu}_{y,t-1})` so the current covariance coefficients remain
+            differentiable only with respect to the current batch.
         """
         # For means, always compute fresh batch means using group-aware method
         mean_x = symm_learning.stats.mean(x, rep_x=self._rep_x)
@@ -329,7 +419,8 @@ class eEMAStats(EMAStats):
         # For covariances, we need to center using EMA means for consistency (if enabled)
         if self.center_with_running_mean and self.num_batches_tracked > 0:
             # Use running means for centering to maintain EMA consistency
-            # Detach to prevent gradients from flowing through previous iterations
+            # Detach here so the current covariance DoFs do not inherit an autograd path through
+            # all previously tracked EMA means.
             center_x = self.running_mean_x.detach()
             center_y = self.running_mean_y.detach()
         else:
@@ -351,14 +442,21 @@ class eEMAStats(EMAStats):
         return mean_x, mean_y, cov_xx_dof, cov_yy_dof, cov_xy_dof
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Update running statistics and return inputs unchanged.
+        r"""Update equivariant running statistics and return the inputs unchanged.
 
         Args:
-            x: Input tensor x with representation ``x_rep``.
-            y: Input tensor y with representation ``y_rep``.
+            x: Samples in :math:`\mathcal{X}` transforming according to :math:`\rho_{\mathcal{X}}`.
+            y: Samples in :math:`\mathcal{Y}` transforming according to :math:`\rho_{\mathcal{Y}}`.
 
         Returns:
-            Tuple (x, y) - inputs are returned unchanged.
+            Tuple ``(x, y)``. The activations are not transformed; only the running invariant means
+            and equivariant covariance operators are updated.
+
+        Shape:
+            - **x**: :math:`(N, D_x)`.
+            - **y**: :math:`(N, D_y)`.
+            - **Output**: ``((N, D_x), (N, D_y))``.
+
         """
         assert x.shape[-1] == self.x_rep.size, f"Expected x.shape[-1]={self.x_rep.size}, got {x.shape}"
         assert y.shape[-1] == self.y_rep.size, f"Expected y.shape[-1]={self.y_rep.size}, got {y.shape}"
@@ -370,22 +468,26 @@ class eEMAStats(EMAStats):
             batch_mean_x, batch_mean_y, batch_cov_xx_dof, batch_cov_yy_dof, batch_cov_xy_dof = (
                 self._compute_batch_stats(x, y)
             )
-            with torch.no_grad():
-                if self.num_batches_tracked == 0:
-                    self.running_mean_x.copy_(batch_mean_x)
-                    self.running_mean_y.copy_(batch_mean_y)
-                    self.running_cov_xx_dof.copy_(batch_cov_xx_dof)
-                    self.running_cov_yy_dof.copy_(batch_cov_yy_dof)
-                    self.running_cov_xy_dof.copy_(batch_cov_xy_dof)
-                else:
-                    alpha = self.momentum
-                    self.running_mean_x.mul_(1 - alpha).add_(batch_mean_x, alpha=alpha)
-                    self.running_mean_y.mul_(1 - alpha).add_(batch_mean_y, alpha=alpha)
-                    self.running_cov_xx_dof.mul_(1 - alpha).add_(batch_cov_xx_dof, alpha=alpha)
-                    self.running_cov_yy_dof.mul_(1 - alpha).add_(batch_cov_yy_dof, alpha=alpha)
-                    self.running_cov_xy_dof.mul_(1 - alpha).add_(batch_cov_xy_dof, alpha=alpha)
-                self._mark_cov_cache_dirty()
-                self.num_batches_tracked += 1
+            if self.num_batches_tracked == 0:
+                # First batch: expose the current batch statistics directly, without mixing in the
+                # initialization buffers. `copy_` keeps the current-step gradient path intact.
+                self.running_mean_x.copy_(batch_mean_x)
+                self.running_mean_y.copy_(batch_mean_y)
+                self.running_cov_xx_dof.copy_(batch_cov_xx_dof)
+                self.running_cov_yy_dof.copy_(batch_cov_yy_dof)
+                self.running_cov_xy_dof.copy_(batch_cov_xy_dof)
+            else:
+                # Detach the previous EMA state before the update so the running DoF buffers expose
+                # the latest differentiable statistic without backpropagating through older batches.
+                alpha = self.momentum
+                self.running_mean_x = self.running_mean_x.detach() * (1 - alpha) + batch_mean_x * alpha
+                self.running_mean_y = self.running_mean_y.detach() * (1 - alpha) + batch_mean_y * alpha
+                self.running_cov_xx_dof = self.running_cov_xx_dof.detach() * (1 - alpha) + batch_cov_xx_dof * alpha
+                self.running_cov_yy_dof = self.running_cov_yy_dof.detach() * (1 - alpha) + batch_cov_yy_dof * alpha
+                self.running_cov_xy_dof = self.running_cov_xy_dof.detach() * (1 - alpha) + batch_cov_xy_dof * alpha
+
+            self._mark_cov_cache_dirty()
+            self.num_batches_tracked += 1
 
         return x, y
 
@@ -410,20 +512,83 @@ class eEMAStats(EMAStats):
             self._expand_covariances()
 
     @property
+    def mean_x(self) -> torch.Tensor:
+        r"""Running invariant mean in :math:`\mathcal{X}^{\text{inv}}`.
+
+        This vector satisfies
+
+        .. math::
+            \rho_{\mathcal{X}}(g)\boldsymbol{\mu}_x = \boldsymbol{\mu}_x,
+            \qquad \forall g\in\mathbb{G}.
+        """
+        return self.running_mean_x
+
+    @property
+    def mean_y(self) -> torch.Tensor:
+        r"""Running invariant mean in :math:`\mathcal{Y}^{\text{inv}}`.
+
+        This vector satisfies
+
+        .. math::
+            \rho_{\mathcal{Y}}(g)\boldsymbol{\mu}_y = \boldsymbol{\mu}_y,
+            \qquad \forall g\in\mathbb{G}.
+        """
+        return self.running_mean_y
+
+    @property
     def cov_xx(self) -> torch.Tensor:
-        """Running covariance matrix of x expanded from the homomorphism-basis coefficients."""
+        r"""Running covariance operator in :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{X}})`.
+
+        Equivalently, the returned matrix :math:`\mathbf{C}_{xx}` satisfies
+
+        .. math::
+            \rho_{\mathcal{X}}(g)\mathbf{C}_{xx} = \mathbf{C}_{xx}\rho_{\mathcal{X}}(g),
+            \qquad \forall g\in\mathbb{G}.
+
+        Shape:
+            :math:`(D_x, D_x)`.
+        """
+        if self.training:
+            return self.cov_xx_basis(self.running_cov_xx_dof)
         self._ensure_cov_cache()
         return self._cov_xx
 
     @property
     def cov_yy(self) -> torch.Tensor:
-        """Running covariance matrix of y expanded from the homomorphism-basis coefficients."""
+        r"""Running covariance operator in :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{Y}})`.
+
+        Equivalently, the returned matrix :math:`\mathbf{C}_{yy}` satisfies
+
+        .. math::
+            \rho_{\mathcal{Y}}(g)\mathbf{C}_{yy} = \mathbf{C}_{yy}\rho_{\mathcal{Y}}(g),
+            \qquad \forall g\in\mathbb{G}.
+
+        Shape:
+            :math:`(D_y, D_y)`.
+        """
+        if self.training:
+            return self.cov_yy_basis(self.running_cov_yy_dof)
         self._ensure_cov_cache()
         return self._cov_yy
 
     @property
     def cov_xy(self) -> torch.Tensor:
-        """Running cross-covariance expanded from the homomorphism-basis coefficients."""
+        r"""Running cross-covariance operator.
+
+        The returned matrix :math:`\mathbf{C}_{xy}` maps coordinates in :math:`\mathcal{Y}` to coordinates in
+        :math:`\mathcal{X}`. It belongs to
+        :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{X}})` and satisfies the intertwining
+        constraint
+
+        .. math::
+            \rho_{\mathcal{X}}(g)\mathbf{C}_{xy} = \mathbf{C}_{xy}\rho_{\mathcal{Y}}(g),
+            \qquad \forall g\in\mathbb{G}.
+
+        Shape:
+            :math:`(D_x, D_y)`.
+        """
+        if self.training:
+            return self.cov_xy_basis(self.running_cov_xy_dof)
         self._ensure_cov_cache()
         return self._cov_xy
 

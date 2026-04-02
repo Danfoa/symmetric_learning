@@ -652,7 +652,7 @@ def test_rms_norm(group: Group, mx: int, affine: bool):
 
 
 @pytest.mark.parametrize("kind", [pytest.param("ema", id="ema"), pytest.param("eema", id="eema")])
-def test_ema_stats_core(kind: str):
+def test_ema_stats(kind: str):
     """Minimal smoke test for EMAStats and eEMAStats."""
     from symm_learning.nn import EMAStats, eEMAStats
 
@@ -668,7 +668,7 @@ def test_ema_stats_core(kind: str):
     raw_x = torch.randn(8, stats.num_features_x)
     raw_y = torch.randn(8, stats.num_features_y)
 
-    # Train: outputs unchanged, stats update once
+    # Training path is identity on the activations, but it should still update the tracked EMA state.
     stats.train()
     x_input = raw_x.clone().requires_grad_(True)
     y_input = raw_y.clone().requires_grad_(True)
@@ -683,7 +683,26 @@ def test_ema_stats_core(kind: str):
     assert x_input.grad is not None and torch.isfinite(x_input.grad).all()
     assert y_input.grad is not None and torch.isfinite(y_input.grad).all()
 
-    # Eval: stats freeze and backward still works through the identity output path.
+    # The exposed statistics are part of the training API: downstream modules can consume
+    # `mean_*` / `cov_*` inside the same optimization step. This regression check ensures the
+    # train-time statistics still backpropagate to the current batch instead of reading only
+    # detached running buffers.
+    x_stats = torch.randn_like(raw_x, requires_grad=True)
+    y_stats = torch.randn_like(raw_y, requires_grad=True)
+    stats(x_stats, y_stats)
+    stat_loss = (
+        stats.mean_x.square().mean()
+        + stats.mean_y.square().mean()
+        + stats.cov_xx.square().mean()
+        + stats.cov_yy.square().mean()
+        + stats.cov_xy.square().mean()
+    )
+    stat_loss.backward()
+    assert x_stats.grad is not None and torch.isfinite(x_stats.grad).all()
+    assert y_stats.grad is not None and torch.isfinite(y_stats.grad).all()
+
+    # Evaluation must freeze the tracked state while still letting gradients flow through the
+    # identity outputs, since the module itself does not transform the activations.
     stats.eval()
     frozen_mean = stats.mean_x.clone()
     x_eval = raw_x.clone().requires_grad_(True)
@@ -696,18 +715,88 @@ def test_ema_stats_core(kind: str):
     assert y_eval.grad is not None and torch.isfinite(y_eval.grad).all()
 
     if kind == "eema":
+        import symm_learning.stats as symm_stats
+
+        # Build a dense reference implementation of the old equivariant EMA update:
+        # 1. compute invariant means,
+        # 2. center with the current EMA mean (or batch mean on the first step),
+        # 3. compute projected dense covariances,
+        # 4. apply the EMA update in dense matrix form.
+        #
+        # The new implementation tracks the same quantities in Hom_G degrees of freedom, so the
+        # exposed dense covariances should match this oracle step by step.
+        ref_stats = eEMAStats(x_rep=rep, y_rep=rep, momentum=0.2)
+        ref_stats.train()
+        manual_mean_x = None
+        manual_mean_y = None
+        manual_cov_xx = None
+        manual_cov_yy = None
+        manual_cov_xy = None
+        batch_generator = torch.Generator().manual_seed(1234)
+        for _ in range(3):
+            x_batch = torch.randn(8, rep.size, generator=batch_generator)
+            y_batch = torch.randn(8, rep.size, generator=batch_generator)
+
+            # Invariant means used by both the old dense path and the current DoF path.
+            batch_mean_x = symm_stats.mean(x_batch, rep_x=rep)
+            batch_mean_y = symm_stats.mean(y_batch, rep_x=rep)
+            if manual_mean_x is None:
+                center_x = batch_mean_x
+                center_y = batch_mean_y
+            else:
+                # After the first batch, EMA covariances are centered with the previously tracked mean.
+                center_x = manual_mean_x
+                center_y = manual_mean_y
+            x_centered = x_batch - center_x.unsqueeze(0)
+            y_centered = y_batch - center_y.unsqueeze(0)
+            # `uncentered=True` treats the already-centered samples as second-moment inputs, which
+            # reproduces the old dense covariance computation exactly, including the 1/N scaling.
+            batch_cov_xx = symm_stats.cov(x_centered, x_centered, rep_x=rep, rep_y=rep, uncentered=True)
+            batch_cov_yy = symm_stats.cov(y_centered, y_centered, rep_x=rep, rep_y=rep, uncentered=True)
+            batch_cov_xy = symm_stats.cov(x_centered, y_centered, rep_x=rep, rep_y=rep, uncentered=True).T
+
+            if manual_mean_x is None:
+                manual_mean_x = batch_mean_x
+                manual_mean_y = batch_mean_y
+                manual_cov_xx = batch_cov_xx
+                manual_cov_yy = batch_cov_yy
+                manual_cov_xy = batch_cov_xy
+            else:
+                alpha = ref_stats.momentum
+                manual_mean_x = manual_mean_x * (1 - alpha) + batch_mean_x * alpha
+                manual_mean_y = manual_mean_y * (1 - alpha) + batch_mean_y * alpha
+                manual_cov_xx = manual_cov_xx * (1 - alpha) + batch_cov_xx * alpha
+                manual_cov_yy = manual_cov_yy * (1 - alpha) + batch_cov_yy * alpha
+                manual_cov_xy = manual_cov_xy * (1 - alpha) + batch_cov_xy * alpha
+
+            ref_stats(x_batch, y_batch)
+            # The tracked dense quantities exposed by the DoF implementation must agree with the
+            # dense oracle after every update, not just at the end of the sequence.
+            assert torch.allclose(ref_stats.mean_x, manual_mean_x, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.mean_y, manual_mean_y, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.cov_xx, manual_cov_xx, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.cov_yy, manual_cov_yy, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.cov_xy, manual_cov_xy, atol=1e-6, rtol=1e-6)
+
+        # In eval mode, the dense expansion is intentionally cached, so mutating the DoF buffer
+        # alone should not change the exposed dense covariance until the cache is invalidated.
         cov_xx_cached = stats.cov_xx.clone()
         stats.running_cov_xx_dof.add_(torch.randn_like(stats.running_cov_xx_dof))
         assert torch.allclose(stats.cov_xx, cov_xx_cached), "Eval should reuse cached dense covariance expansion"
 
+        # Returning to training invalidates the eval cache and recomputes the dense covariance
+        # from the current DoF state.
         stats.train()
         cov_xx_train = stats.cov_xx
         assert not torch.allclose(cov_xx_train, cov_xx_cached), "Train should recompute covariance from DoFs"
 
+        # Switching back to eval should freeze the latest training-time dense covariance.
         stats.eval()
         cov_xx_eval = stats.cov_xx
         assert torch.allclose(cov_xx_eval, cov_xx_train), "Eval should cache the latest training covariance"
 
+        # Only the detached DoF buffers are serialized. The dense cache is derived state and should
+        # be rebuilt on demand after load.
         state = stats.state_dict()
         assert "running_cov_xx_dof" in state and "running_cov_yy_dof" in state and "running_cov_xy_dof" in state
         assert "running_cov_xx" not in state and "running_cov_yy" not in state and "running_cov_xy" not in state
