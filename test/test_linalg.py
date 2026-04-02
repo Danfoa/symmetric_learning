@@ -9,8 +9,9 @@ from escnn.nn import FieldType
 
 from symm_learning.linalg import (
     _project_to_irrep_endomorphism_basis,
-    equiv_orthogonal_projection_coefficients,
+    equiv_linear_map,
     equiv_orthogonal_projection,
+    equiv_orthogonal_projection_coefficients,
     invariant_orthogonal_projector,
     irrep_radii,
     isotypic_signal2irreducible_subspaces,
@@ -327,3 +328,45 @@ def test_equiv_orthogonal_projection_coefficients(group: Group, dtype: torch.dty
     assert torch.allclose(W_recon, W_proj, atol=1e-5, rtol=1e-5), (
         f"Coefficient reconstruction mismatch, max error {(W_recon - W_proj).abs().max().item():.3e}"
     )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64], ids=["float32", "float64"])
+@pytest.mark.parametrize("device", _device_params())
+def test_equiv_linear_map(group: Group, dtype: torch.dtype, device: str):
+    """Coefficient expansion should match the isotypic Hom-basis forward path."""
+    in_rep = direct_sum([group.regular_representation])
+    out_rep = direct_sum([group.regular_representation] * 2)
+    basis = GroupHomomorphismBasis(in_rep, out_rep, basis_expansion="isotypic_expansion").to(device=device, dtype=dtype)
+
+    batch_size = 4
+    theta_batch = torch.randn(batch_size, basis.dim, device=device, dtype=dtype)
+
+    W_batch = equiv_linear_map(theta_batch, in_rep, out_rep)
+    W_seq = torch.stack([equiv_linear_map(theta_batch[i], in_rep, out_rep) for i in range(batch_size)], dim=0)
+    W_basis = basis(theta_batch)
+
+    _assert_meta(W_batch, device=device, dtype=dtype)
+    assert W_batch.shape == (batch_size, out_rep.size, in_rep.size)
+    assert torch.allclose(W_batch, W_seq, atol=1e-5, rtol=1e-5), (
+        f"Batched/seq synthesis mismatch, max error {(W_batch - W_seq).abs().max().item():.3e}"
+    )
+    assert torch.allclose(W_batch, W_basis, atol=1e-5, rtol=1e-5), (
+        "Standalone synthesis mismatch against GroupHomomorphismBasis, "
+        f"max error {(W_batch - W_basis).abs().max().item():.3e}"
+    )
+
+    W_single = W_batch[0]
+    for g in group.elements:
+        rho_out = torch.tensor(out_rep(g), device=device, dtype=dtype)
+        rho_in = torch.tensor(in_rep(g), device=device, dtype=dtype)
+        err = rho_out @ W_single - W_single @ rho_in
+        assert torch.allclose(err, torch.zeros_like(err), atol=1e-5, rtol=1e-5), (
+            f"Expanded map violates hom condition for {g}, max error {err.abs().max().item():.3e}"
+        )

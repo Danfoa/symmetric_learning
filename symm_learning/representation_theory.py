@@ -253,26 +253,9 @@ class GroupHomomorphismBasis(torch.nn.Module):
             W_flat = torch.matmul(w_dof, self.basis_elements.view(self.dim, -1))  # [out_rep.size * in_rep.size]
             W = W_flat.view(*leading_shape, self.out_rep.size, self.in_rep.size)
         elif self.basis_expansion == "isotypic_expansion":
-            W = w_dof.new_zeros(*leading_shape, self.out_rep.size, self.in_rep.size)
-            for irrep_id, irrep_metadata in self.iso_blocks.items():
-                m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
-                out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
-                d_k = irrep_metadata["irrep_dim"]
-                hom_basis_slice = irrep_metadata["hom_basis_slice"]
+            from symm_learning.linalg import equiv_linear_map
 
-                endo_basis_flat = getattr(self, f"endo_basis_flat_{irrep_id}")  # [S_k, d_k * d_k]
-                theta_k = w_dof[..., hom_basis_slice].view(
-                    *leading_shape, m_out * m_in, endo_basis_flat.size(0)
-                )  # [*, m_out*m_in, S_k]
-                # Compute basis expansion for this irrep block
-                coeffs = torch.matmul(theta_k, endo_basis_flat)  # [*, m_out*m_in, d_k*d_k]
-                # [m_out*m_in, d_k*d_k] -> [m_out, m_in, d_k, d_k] -> [m_out, d_k, m_in, d_k] -> [m_out*d_k, m_in*d_k]
-                block = coeffs.view(*leading_shape, m_out, m_in, d_k, d_k)
-                block = block.permute(*range(len(leading_shape)), -4, -2, -3, -1).reshape(
-                    *leading_shape, m_out * d_k, m_in * d_k
-                )
-                W[..., out_slice, in_slice] = block
-            W = self.Q_out @ (W @ self.Q_in_inv)
+            W = equiv_linear_map(w_dof=w_dof, rep_x=self.in_rep, rep_y=self.out_rep)
 
         return W
 

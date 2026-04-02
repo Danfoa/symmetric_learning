@@ -11,6 +11,8 @@ invariant_orthogonal_projector
     Orthogonal projection onto the G-invariant subspace.
 equiv_orthogonal_projection_coefficients
     Orthogonal projection onto Hom_G returned in the flattened homomorphism basis.
+equiv_linear_map
+    Construct a dense equivariant linear map from flattened homomorphism-basis coefficients.
 equiv_orthogonal_projection
     Orthogonal projection onto Hom_G using precomputed isotypic-basis tensors.
 irrep_radii
@@ -291,6 +293,66 @@ def invariant_orthogonal_projector(
     return inv_projector
 
 
+def _cached_irrep_endomorphism_basis(
+    irrep: Representation,
+    like: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    cache = irrep.attributes.setdefault("_endo_basis_flat_cache", {})
+    cache_key = (like.device.type, like.device.index, like.dtype)
+    if cache_key not in cache:
+        endo_basis = torch.as_tensor(irrep.endomorphism_basis(), device=like.device, dtype=like.dtype).contiguous()
+        endo_basis_flat = endo_basis.view(endo_basis.size(0), -1)
+        endo_norm_sq = torch.einsum("sd,sd->s", endo_basis_flat, endo_basis_flat)
+        cache[cache_key] = (endo_basis_flat, endo_norm_sq)
+    return cache[cache_key]
+
+
+def _hom_irrep_entries(
+    rep_x: Representation,
+    rep_y: Representation,
+    like: torch.Tensor,
+) -> tuple[Representation, Representation, torch.Tensor, torch.Tensor, list[dict], int]:
+    from symm_learning.representation_theory import isotypic_decomp_rep
+
+    if rep_x.group != rep_y.group:
+        raise ValueError(f"Expected same group, got {rep_x.group} and {rep_y.group}")
+
+    rep_X_iso = isotypic_decomp_rep(rep_x)
+    rep_Y_iso = isotypic_decomp_rep(rep_y)
+    iso_idx_X = rep_X_iso.attributes["isotypic_subspace_dims"]
+    iso_idx_Y = rep_Y_iso.attributes["isotypic_subspace_dims"]
+    common_irreps = sorted(set(rep_X_iso.irreps).intersection(set(rep_Y_iso.irreps)))
+    Q_out = _cached_rep_matrix(rep=rep_Y_iso, key="Q", matrix=rep_Y_iso.change_of_basis, like=like)
+    Q_in_inv = _cached_rep_matrix(rep=rep_X_iso, key="Q_inv", matrix=rep_X_iso.change_of_basis_inv, like=like)
+
+    hom_entries = []
+    dof_offset = 0
+    for irrep_id in common_irreps:
+        out_slice = iso_idx_Y[irrep_id]
+        in_slice = iso_idx_X[irrep_id]
+        m_out = rep_Y_iso._irreps_multiplicities[irrep_id]
+        m_in = rep_X_iso._irreps_multiplicities[irrep_id]
+        irrep = rep_X_iso.group.irrep(*irrep_id)
+        d_k = irrep.size
+        endo_basis_flat, endo_norm_sq = _cached_irrep_endomorphism_basis(irrep=irrep, like=like)
+        irrep_dim = m_out * m_in * endo_basis_flat.size(0)
+        hom_entries.append(
+            dict(
+                endo_basis_flat=endo_basis_flat,
+                endo_norm_sq=endo_norm_sq,
+                m_out=m_out,
+                m_in=m_in,
+                d_k=d_k,
+                out_slice=out_slice,
+                in_slice=in_slice,
+                hom_basis_slice=slice(dof_offset, dof_offset + irrep_dim),
+            )
+        )
+        dof_offset += irrep_dim
+
+    return rep_X_iso, rep_Y_iso, Q_out, Q_in_inv, hom_entries, dof_offset
+
+
 def equiv_orthogonal_projection(W: torch.Tensor, rep_x: Representation, rep_y: Representation) -> torch.Tensor:
     r"""Orthogonally project a linear map onto :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`.
 
@@ -407,6 +469,82 @@ def equiv_orthogonal_projection_coefficients(
     return torch.cat(coeff, dim=-1)
 
 
+def equiv_linear_map(w_dof: torch.Tensor, rep_x: Representation, rep_y: Representation) -> torch.Tensor:
+    r"""Expand flattened homomorphism-basis coefficients into a dense equivariant linear map.
+
+    Let :math:`\boldsymbol{\theta}` denote coefficients in the blockwise basis of
+    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})` used by
+    :func:`equiv_orthogonal_projection_coefficients`. For each common irrep type :math:`k`,
+    the isotypic block is synthesized as
+
+    .. math::
+        \tilde{\mathbf{W}}^{(k)}_{o,i}
+        = \sum_{s=1}^{S_k}\theta^{(k)}_{o,i,s}\,\mathbf{\Psi}^{(k)}_s,
+
+    where :math:`o\in[1,n_k^y]`, :math:`i\in[1,n_k^x]`,
+    and :math:`\{\mathbf{\Psi}^{(k)}_s\}_{s=1}^{S_k}` is a basis of
+    :math:`\mathrm{End}_{\mathbb{G}}(\hat{\rho}_k)`. After assembling all shared-irrep
+    blocks in isotypic coordinates, the dense map in the original basis is recovered by
+
+    .. math::
+        \mathbf{W} = \mathbf{Q}_{\mathcal{Y}}\,\tilde{\mathbf{W}}\,\mathbf{Q}_{\mathcal{X}}^T.
+
+    The flattened input ordering matches
+    :func:`equiv_orthogonal_projection_coefficients` and the
+    ``basis_expansion="isotypic_expansion"`` path of
+    :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`: within each common
+    irrep type :math:`k`, the endomorphism-basis index :math:`s` varies fastest, then the
+    input multiplicity index :math:`i`, then the output multiplicity index :math:`o`.
+
+    Args:
+        w_dof (:class:`~torch.Tensor`): Flattened homomorphism-basis coefficients of shape
+            :math:`(..., \dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})))`.
+        rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.
+        rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.
+
+    Returns:
+        :class:`~torch.Tensor`: Dense equivariant linear map(s) of shape :math:`(..., D_y, D_x)`.
+
+    Shape:
+        - **w_dof**: :math:`(..., |\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})|)`.
+        - **Output**: :math:`(..., D_y, D_x)`.
+
+    Note:
+        Repeated calls with the same representations reuse cached isotypic decompositions,
+        change-of-basis matrices, and flattened irrep endomorphism bases.
+    """
+    if w_dof.ndim == 0:
+        raise ValueError("Expected w_dof to have at least one dimension")
+
+    rep_X_iso, rep_Y_iso, Q_out, Q_in_inv, hom_entries, hom_dim = _hom_irrep_entries(
+        rep_x=rep_x, rep_y=rep_y, like=w_dof
+    )
+    if w_dof.shape[-1] != hom_dim:
+        raise ValueError(f"Expected w_dof shape (..., {hom_dim}), got {tuple(w_dof.shape)}")
+
+    leading_shape = w_dof.shape[:-1]
+    batch_axes = tuple(range(len(leading_shape)))
+    W_iso = w_dof.new_zeros(*leading_shape, rep_Y_iso.size, rep_X_iso.size)
+
+    for entry in hom_entries:
+        endo_basis_flat = entry["endo_basis_flat"]
+        m_out = entry["m_out"]
+        m_in = entry["m_in"]
+        d_k = entry["d_k"]
+        out_slice = entry["out_slice"]
+        in_slice = entry["in_slice"]
+        hom_basis_slice = entry["hom_basis_slice"]
+
+        theta_k = w_dof[..., hom_basis_slice].view(*leading_shape, m_out * m_in, endo_basis_flat.size(0))
+        block_flat = theta_k.matmul(endo_basis_flat)
+        block = block_flat.view(*leading_shape, m_out, m_in, d_k, d_k)
+        block = block.permute(*batch_axes, -4, -2, -3, -1)
+        block = block.reshape(*leading_shape, m_out * d_k, m_in * d_k)
+        W_iso[..., out_slice, in_slice] = block
+
+    return (Q_out @ W_iso) @ Q_in_inv
+
+
 def project_in_isobasis(W: torch.Tensor, rep_x: Representation, rep_y: Representation):
     r"""Move a dense linear map to isotypic coordinates and prepare blockwise projection metadata.
 
@@ -508,25 +646,10 @@ def project_in_isobasis(W: torch.Tensor, rep_x: Representation, rep_y: Represent
         - **Q_in_inv**: :math:`(D_x, D_x)`.
         - **projection_entries[k]["coeff"]**: :math:`(..., n^{y}_k n^{x}_k, S_k)`.
     """
-    from symm_learning.representation_theory import isotypic_decomp_rep
-
-    if rep_x.group != rep_y.group:
-        raise ValueError(f"Expected same group, got {rep_x.group} and {rep_y.group}")
     if W.shape[-2:] != (rep_y.size, rep_x.size):
         raise ValueError(f"Expected W shape (..., {rep_y.size}, {rep_x.size}), got {tuple(W.shape)}")
 
-    rep_X_iso = isotypic_decomp_rep(rep_x)
-    rep_Y_iso = isotypic_decomp_rep(rep_y)
-    iso_idx_X = rep_X_iso.attributes["isotypic_subspace_dims"]
-    iso_idx_Y = rep_Y_iso.attributes["isotypic_subspace_dims"]
-    common_irreps = sorted(set(rep_X_iso.irreps).intersection(set(rep_Y_iso.irreps)))
-
-    # Reuse representation-level cached change-of-basis matrices while matching W dtype/device.
-    # Shapes:
-    #   Q_out:    [d_out, d_out]  (isotypic -> original basis for output)
-    #   Q_in_inv: [d_in,  d_in ]  (original -> isotypic basis for input)
-    Q_out = _cached_rep_matrix(rep=rep_Y_iso, key="Q", matrix=rep_Y_iso.change_of_basis, like=W)
-    Q_in_inv = _cached_rep_matrix(rep=rep_X_iso, key="Q_inv", matrix=rep_X_iso.change_of_basis_inv, like=W)
+    _, _, Q_out, Q_in_inv, hom_entries, _ = _hom_irrep_entries(rep_x=rep_x, rep_y=rep_y, like=W)
     Q_out_inv = Q_out.mT
     Q_in = Q_in_inv.mT
 
@@ -538,23 +661,14 @@ def project_in_isobasis(W: torch.Tensor, rep_x: Representation, rep_y: Represent
     batch_axes = tuple(range(len(leading_shape)))
     projection_entries = []
 
-    for irrep_id in common_irreps:
-        out_slice = iso_idx_Y[irrep_id]
-        in_slice = iso_idx_X[irrep_id]
-        m_out = rep_Y_iso._irreps_multiplicities[irrep_id]
-        m_in = rep_X_iso._irreps_multiplicities[irrep_id]
-        irrep = rep_X_iso.group.irrep(*irrep_id)
-        d_k = irrep.size
-        cache = irrep.attributes.setdefault("_endo_basis_flat_cache", {})
-        cache_key = (W.device.type, W.device.index, W.dtype)
-        if cache_key not in cache:
-            endo_basis = torch.as_tensor(irrep.endomorphism_basis(), device=W.device, dtype=W.dtype).contiguous()
-            endo_basis_flat = endo_basis.view(endo_basis.size(0), -1)  # [S_k, d_k*d_k]
-            endo_norm_sq = torch.einsum("sd,sd->s", endo_basis_flat, endo_basis_flat)  # [S_k]
-            cache[cache_key] = (endo_basis_flat, endo_norm_sq)
-        else:
-            endo_basis_flat, endo_norm_sq = cache[cache_key]
-
+    for entry in hom_entries:
+        out_slice = entry["out_slice"]
+        in_slice = entry["in_slice"]
+        m_out = entry["m_out"]
+        m_in = entry["m_in"]
+        d_k = entry["d_k"]
+        endo_basis_flat = entry["endo_basis_flat"]
+        endo_norm_sq = entry["endo_norm_sq"]
         block = W_iso_in[..., out_slice, in_slice]
         block = block.view(*leading_shape, m_out, d_k, m_in, d_k)
         block = block.permute(*batch_axes, -4, -2, -3, -1)  # [..., m_out, m_in, d_k, d_k]
