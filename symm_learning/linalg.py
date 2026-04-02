@@ -9,6 +9,8 @@ lstsq
     Least squares solution constrained to equivariant linear maps.
 invariant_orthogonal_projector
     Orthogonal projection onto the G-invariant subspace.
+equiv_orthogonal_projection_isobasis
+    Orthogonal projection onto Hom_G using precomputed isotypic-basis tensors.
 irrep_radii
     Compute Euclidean radius of each irreducible subspace.
 isotypic_signal2irreducible_subspaces
@@ -299,6 +301,126 @@ def invariant_orthogonal_projector(
 
     inv_projector = Qx @ S @ Qx_T
     return inv_projector
+
+
+def equiv_orthogonal_projection(W: torch.Tensor, rep_x: Representation, rep_y: Representation) -> torch.Tensor:
+    r"""Orthogonally project a linear map onto :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`.
+
+    Let :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}` be two group representations of the
+    group :math:`\mathbb{G}`, acting on vector spaces :math:`\mathcal{X}` and :math:`\mathcal{Y}` respectively.
+    Given any linear map between the spaces :math:`\mathbf{W}: \mathbb{R}^{|\mathcal{X}|\times|\mathcal{Y}|}`,
+    this function returns the orthogonal projection of :math:`\mathbf{W}` onto the space of
+    :math:`\mathbb{G}`-equivariant linear maps between :math:`\mathcal{X}` and :math:`\mathcal{Y}`, that is onto
+    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`:
+
+    .. math::
+        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})
+        = \operatorname*{argmin}_{\mathbf{A}\in\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})}
+        \|\mathbf{W}-\mathbf{A}\|_F.
+
+    Implementation uses the isotypic decomposition and projects each common-irrep block independently:
+
+    This projection is equivalent to the Reynolds/group-average operator, but more computational and memory
+    efficient when the order of the group is large.
+
+    .. math::
+        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})
+        = \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}
+        \rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).
+
+    Args:
+        W (:class:`~torch.Tensor`): Dense map (or batch of maps) of shape
+            :math:`(..., D_y, D_x)`.
+        rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.
+        rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.
+
+    Returns:
+        :class:`~torch.Tensor`: Projected map(s) with same shape, dtype, and device as ``W``.
+
+    Shape:
+        - **W**: :math:`(..., D_y, D_x)`.
+        - **Output**: :math:`(..., D_y, D_x)`.
+    """
+    from symm_learning.representation_theory import isotypic_decomp_rep
+
+    if rep_x.group != rep_y.group:
+        raise ValueError(f"Expected same group, got {rep_x.group} and {rep_y.group}")
+    if W.shape[-2:] != (rep_y.size, rep_x.size):
+        raise ValueError(f"Expected W shape (..., {rep_y.size}, {rep_x.size}), got {tuple(W.shape)}")
+
+    rep_X_iso = isotypic_decomp_rep(rep_x)
+    rep_Y_iso = isotypic_decomp_rep(rep_y)
+    iso_idx_X = rep_X_iso.attributes["isotypic_subspace_dims"]
+    iso_idx_Y = rep_Y_iso.attributes["isotypic_subspace_dims"]
+    common_irreps = sorted(set(rep_X_iso.irreps).intersection(set(rep_Y_iso.irreps)))
+
+    # Reuse representation-level cached change-of-basis matrices while matching W dtype/device.
+    # Shapes:
+    #   Q_out:    [d_out, d_out]  (isotypic -> original basis for output)
+    #   Q_in_inv: [d_in,  d_in ]  (original -> isotypic basis for input)
+    Q_out = _cached_rep_matrix(rep=rep_Y_iso, key="Q", matrix=rep_Y_iso.change_of_basis, like=W)
+    Q_in_inv = _cached_rep_matrix(rep=rep_X_iso, key="Q_inv", matrix=rep_X_iso.change_of_basis_inv, like=W)
+    Q_out_inv = Q_out.mT
+    Q_in = Q_in_inv.mT
+
+    # Move dense map to isotypic coordinates:
+    #   W_iso_in = Q_out^{-1} W Q_in
+    # Shape stays [..., d_out, d_in].
+    W_iso_in = (Q_out_inv @ W) @ Q_in
+    W_iso = torch.zeros_like(W_iso_in)
+    leading_shape = W_iso_in.shape[:-2]
+    batch_axes = tuple(range(len(leading_shape)))
+
+    for irrep_id in common_irreps:
+        out_slice = iso_idx_Y[irrep_id]
+        in_slice = iso_idx_X[irrep_id]
+        m_out = rep_Y_iso._irreps_multiplicities[irrep_id]
+        m_in = rep_X_iso._irreps_multiplicities[irrep_id]
+        irrep = rep_X_iso.group.irrep(*irrep_id)
+        d_k = irrep.size
+        cache = irrep.attributes.setdefault("_endo_basis_flat_cache", {})
+        # Cache key by device+dtype because endomorphism basis tensors are reused across calls.
+        cache_key = (W.device.type, W.device.index, W.dtype)
+        if cache_key not in cache:
+            endo_basis = torch.as_tensor(irrep.endomorphism_basis(), device=W.device, dtype=W.dtype).contiguous()
+            endo_basis_flat = endo_basis.view(endo_basis.size(0), -1)  # [S_k, d_k*d_k]
+            endo_norm_sq = torch.einsum("sd,sd->s", endo_basis_flat, endo_basis_flat)  # [S_k]
+            cache[cache_key] = (endo_basis_flat, endo_norm_sq)
+        else:
+            endo_basis_flat, endo_norm_sq = cache[cache_key]
+
+        block = W_iso_in[..., out_slice, in_slice]
+        # Track block structure inside one common irrep type k:
+        #   [..., m_out*d_k, m_in*d_k]
+        # -> [..., m_out, d_k, m_in, d_k]
+        block = block.view(*leading_shape, m_out, d_k, m_in, d_k)
+        # Reorder to explicit pair-of-copies layout:
+        #   [..., m_out, m_in, d_k, d_k]
+        block = block.permute(*batch_axes, -4, -2, -3, -1)
+        # Flatten each d_k x d_k sub-block so we can project with matrix products:
+        #   [..., m_out*m_in, d_k*d_k]
+        block_flat = block.reshape(*leading_shape, m_out * m_in, d_k * d_k)
+
+        # Frobenius projection coefficients on End_G(irrep_k) basis:
+        #   coeff[..., p, s] = <block_flat[..., p, :], basis[s, :]> / ||basis[s, :]||^2
+        # Shapes:
+        #   coeff: [..., m_out*m_in, S_k]
+        coeff = block_flat.matmul(endo_basis_flat.mT)
+        coeff = coeff / endo_norm_sq
+        # Reconstruct projected flattened blocks:
+        #   [..., m_out*m_in, d_k*d_k]
+        block_proj_flat = coeff.matmul(endo_basis_flat)
+
+        # Undo flattening and permutation to recover block matrix in isotypic coordinates:
+        #   [..., m_out, m_in, d_k, d_k] -> [..., m_out*d_k, m_in*d_k]
+        block_proj = block_proj_flat.view(*leading_shape, m_out, m_in, d_k, d_k)
+        block_proj = block_proj.permute(*batch_axes, -4, -2, -3, -1)
+        block_proj = block_proj.reshape(*leading_shape, m_out * d_k, m_in * d_k)
+        W_iso[..., out_slice, in_slice] = block_proj
+
+    # Return projected operator in original coordinates.
+    W_proj = (Q_out @ W_iso) @ Q_in_inv
+    return W_proj
 
 
 def _project_to_irrep_endomorphism_basis(

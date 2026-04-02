@@ -13,5 +13,6 @@ linalg
 
    lstsq
    invariant_orthogonal_projector
+   equiv_orthogonal_projection
    irrep_radii
    isotypic_signal2irreducible_subspaces

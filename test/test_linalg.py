@@ -9,6 +9,7 @@ from escnn.nn import FieldType
 
 from symm_learning.linalg import (
     _project_to_irrep_endomorphism_basis,
+    equiv_orthogonal_projection,
     invariant_orthogonal_projector,
     irrep_radii,
     isotypic_signal2irreducible_subspaces,
@@ -213,3 +214,79 @@ def test_irrep_radii(group: Group, dtype: torch.dtype, device: str):  # noqa: D1
     assert x0.grad is not None
     assert torch.isfinite(x0.grad).all()
     assert torch.allclose(x0.grad, torch.zeros_like(x0.grad))
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64], ids=["float32", "float64"])
+@pytest.mark.parametrize("device", _device_params())
+def test_equiv_orthogonal_projection(group: Group, dtype: torch.dtype, device: str):
+    """Projection kernel should satisfy core projection properties on Hom_G."""
+    G = group  # Select the symmetry group instance under test (e.g., C5 or Icosahedral).
+    in_rep = direct_sum([G.regular_representation])  # Domain representation ρ_in.
+    out_rep = direct_sum([G.regular_representation] * 2)  # Codomain representation ρ_out.
+
+    B = 4  # Number of random linear maps tested in one batched call.
+    W_rand = torch.randn(B, out_rep.size, in_rep.size, device=device, dtype=dtype)  # Raw unconstrained maps.
+
+    # Compute the projection in batched mode.
+    W_proj_batch = equiv_orthogonal_projection(W_rand, in_rep, out_rep)
+    # Compute the same projection map-by-map to verify batching does not change results.
+    W_proj_seq = torch.stack(
+        [equiv_orthogonal_projection(W_rand[i], in_rep, out_rep) for i in range(B)],
+        dim=0,
+    )
+    _assert_meta(W_proj_batch, device=device, dtype=dtype)  # Projection preserves requested device and dtype.
+    assert W_proj_batch.shape == (B, out_rep.size, in_rep.size)  # Projection preserves input matrix shape.
+    # Core check: batched and sequential projection paths are numerically equivalent.
+    assert torch.allclose(W_proj_batch, W_proj_seq, atol=1e-5, rtol=1e-5), (
+        f"Batched/seq projection mismatch, max error {(W_proj_batch - W_proj_seq).abs().max().item():.3e}"
+    )
+
+    # Idempotence property of orthogonal projections: P(P(W)) = P(W).
+    W_proj_twice = equiv_orthogonal_projection(W_proj_batch, in_rep, out_rep)
+    assert torch.allclose(W_proj_batch, W_proj_twice, atol=1e-5, rtol=1e-5), (
+        f"Projection is not idempotent, max error {(W_proj_batch - W_proj_twice).abs().max().item():.3e}"
+    )
+
+    # Build an explicitly equivariant map via group-average (Reynolds operator).
+    W0 = W_rand[0]  # Seed matrix to average over its group orbit.
+    W_equiv = torch.stack(
+        [
+            # Conjugation action on maps: ρ_out(g) W ρ_in(g^{-1}).
+            # Averaging this orbit projects onto Hom_G.
+            torch.tensor(out_rep(g), device=device, dtype=dtype)
+            @ W0
+            @ torch.tensor(in_rep(~g), device=device, dtype=dtype)
+            for g in G.elements
+        ],
+        dim=0,
+    ).mean(dim=0)
+    # Explicit Reynolds-operator equivalence on an arbitrary map W0:
+    # P(W0) must equal the group-average conjugation of W0.
+    W0_proj = equiv_orthogonal_projection(W0, in_rep, out_rep)
+    assert torch.allclose(W0_proj, W_equiv, atol=1e-5, rtol=1e-5), (
+        f"Projection != Reynolds average, max error {(W0_proj - W_equiv).abs().max().item():.3e}"
+    )
+    # Project an already-equivariant map.
+    W_equiv_proj = equiv_orthogonal_projection(W_equiv, in_rep, out_rep)
+    # Fixed-point check: true equivariant maps should be unchanged by the projection.
+    assert torch.allclose(W_equiv, W_equiv_proj, atol=1e-5, rtol=1e-5), (
+        f"Projection changed an already-equivariant map, max error {(W_equiv - W_equiv_proj).abs().max().item():.3e}"
+    )
+
+    # Direct homomorphism constraint check on one projected sample:
+    # ρ_out(g) W = W ρ_in(g) for all g.
+    W_single = W_proj_batch[0]  # Any projected sample should satisfy the constraint.
+    for g in G.elements:
+        rho_out = torch.tensor(out_rep(g), device=device, dtype=dtype)  # Matrix of ρ_out(g).
+        rho_in = torch.tensor(in_rep(g), device=device, dtype=dtype)  # Matrix of ρ_in(g).
+        err = rho_out @ W_single - W_single @ rho_in  # Zero iff W_single is equivariant for this g.
+        assert torch.allclose(err, torch.zeros_like(err), atol=1e-5, rtol=1e-5), (
+            f"Projected map violates hom condition for {g}, max error {err.abs().max().item():.3e}"
+        )
