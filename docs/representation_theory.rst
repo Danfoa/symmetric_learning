@@ -3,13 +3,17 @@ representation_theory
 
 .. module:: symm_learning.representation_theory
 
-Utility functions for doing linear algebra on symmetric vector spaces, including:
-least squares solutions, group invariant projections, and
-:ref:`isotypic decomposition <isotypic-decomposition-example>`.
+Representation-theoretic utilities for symmetric vector spaces, including
+:ref:`isotypic decomposition <isotypic-decomposition-example>`, homomorphism-basis parameterizations of
+:math:`\mathbb{G}`-equivariant linear maps, and irreducible decomposition helpers.
 
-For the full decomposition definition, notation convention, and a practical
-Icosahedral example, see
+For the canonical isotypic decomposition and a practical Icosahedral example, see
 :ref:`Isotypic Decomposition <isotypic-decomposition-example>`.
+
+For the structure of equivariant linear maps and how
+:class:`~symm_learning.representation_theory.GroupHomomorphismBasis` implements Proposition I.13 and Eq. (40) from
+``main_vk.pdf``, see
+:ref:`Leveraging the structure of Equivariant Linear maps <equivariant-linear-maps-example>`.
 
 
 .. currentmodule:: symm_learning.representation_theory

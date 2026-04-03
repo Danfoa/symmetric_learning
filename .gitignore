@@ -181,3 +181,5 @@ cython_debug/
 .rsyncignore
 *AGENTS.md
 .codex
+main_vk.pdf
+tmp/
