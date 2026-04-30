@@ -6,6 +6,7 @@ from copy import deepcopy
 import escnn
 import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
+import torch
 
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import backprop_sanity, check_equivariance
@@ -586,6 +587,38 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
         forward_kwargs={"need_weights": False},
         output_transform=lambda out: out[0],
     )
+
+
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("num_heads", [1, 2, 3])
+def test_rope_multihead_attention(bias: bool, num_heads: int):
+    """Check that RoPE attention is invariant to a global shift of positions."""
+    from symm_learning.nn.activation import RoPEMultiheadAttention
+    import torch
+
+    torch.manual_seed(0)
+    model = RoPEMultiheadAttention(embed_dim=12, num_heads=num_heads, dropout=0.0, bias=bias, batch_first=True)
+    model.eval()
+
+    # Keep the support away from the borders so the signal is not affected by truncation.
+    batch_size, seq_len, embed_dim = 1, 30, 12
+    x = torch.zeros(batch_size, seq_len, embed_dim)
+    x[0, 13:17] = torch.stack(
+        (
+            torch.arange(1, embed_dim + 1, dtype=x.dtype),
+            torch.arange(embed_dim, 0, -1, dtype=x.dtype),
+            torch.arange(1, embed_dim + 1, dtype=x.dtype) * 0.5,
+            torch.arange(embed_dim, 0, -1, dtype=x.dtype) * 0.5,
+        )
+    )
+
+    positions = torch.arange(seq_len)
+    y, _ = model(x, x, x, q_positions=positions, k_positions=positions)
+
+    shifted_positions = positions + 1
+    y_shifted, _ = model(x, x, x, q_positions=shifted_positions, k_positions=shifted_positions)
+
+    torch.testing.assert_close(y_shifted, y, atol=1e-5, rtol=1e-5, msg="RoPE not invariant to a global shift")
 
 
 @pytest.mark.parametrize(
