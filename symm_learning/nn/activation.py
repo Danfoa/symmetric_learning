@@ -209,6 +209,43 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
         """
         raise NotImplementedError
 
+    def reset_parameters(self) -> None:
+        """Initialize parameters to match torch.nn.MultiheadAttention."""
+        if hasattr(self, "attn") and isinstance(self.attn, torch.nn.MultiheadAttention):
+            self.attn._reset_parameters()
+            return
+
+        weight_names = ["in_proj_weight", "q_proj_weight", "k_proj_weight", "v_proj_weight"]
+        for name in weight_names:
+            weight = getattr(self, name, None)
+            if weight is not None:
+                torch.nn.init.xavier_uniform_(weight)
+            elif hasattr(self, name.replace("_weight", "")) and isinstance(
+                getattr(self, name.replace("_weight", "")), torch.nn.Linear
+            ):
+                torch.nn.init.xavier_uniform_(getattr(self, name.replace("_weight", "")).weight)
+
+        bias_names = ["in_proj_bias", "bias_k", "bias_v"]
+        for name in bias_names:
+            bias = getattr(self, name, None)
+            if bias is not None:
+                torch.nn.init.constant_(bias, 0.0)
+            elif (
+                hasattr(self, name.replace("_bias", "").replace("bias_", "") + "_proj")
+                and isinstance(getattr(self, name.replace("_bias", "").replace("bias_", "") + "_proj"), torch.nn.Linear)
+                and getattr(self, name.replace("_bias", "").replace("bias_", "") + "_proj").bias is not None
+            ):
+                torch.nn.init.constant_(
+                    getattr(self, name.replace("_bias", "").replace("bias_", "") + "_proj").bias, 0.0
+                )
+
+        out_proj = getattr(self, "out_proj", None)
+        if out_proj is not None:
+            if getattr(out_proj, "weight", None) is not None:
+                torch.nn.init.xavier_uniform_(out_proj.weight)
+            if getattr(out_proj, "bias", None) is not None:
+                torch.nn.init.constant_(out_proj.bias, 0.0)
+
     @staticmethod
     def _normalize_positions(
         positions: torch.Tensor,

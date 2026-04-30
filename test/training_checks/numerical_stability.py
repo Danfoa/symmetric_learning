@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from escnn.group import CyclicGroup, DihedralGroup, directsum
 import symm_learning
-from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
+from symm_learning.nn.transformer.etransformer import eTransformerEncoderLayer
 from symm_learning.nn.linear import eAffine, eLinear
 from symm_learning.nn.normalization import eLayerNorm, eRMSNorm
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint

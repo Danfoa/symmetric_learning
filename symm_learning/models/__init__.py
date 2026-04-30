@@ -19,6 +19,7 @@ Examples:
 >>> model = eMLP(in_rep, out_rep, hidden_reps=[hidden_rep] * 3)
 """
 
+from .control.cond_transformer import CondTransformer
 from .diffusion.cond_transformer_regressor import CondTransformerRegressor, GenCondRegressor
 from .diffusion.econd_transformer_regressor import eCondTransformerRegressor
 from .emlp import MLP, eMLP, iMLP
@@ -34,4 +35,5 @@ __all__ = [
     "eCondTransformerRegressor",
     "CondTransformerRegressor",
     "GenCondRegressor",
+    "CondTransformer",
 ]

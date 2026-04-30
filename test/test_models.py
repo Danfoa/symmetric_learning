@@ -273,3 +273,60 @@ def test_econd_transformer_regressor(group: Group, m: int, num_attention_heads: 
         f"y_train != y_eval.Max diff: {(y_train - y_eval).abs().max().item():.6f}",
         f"eCondTransformerRegressor output in eval mode must match output in train mode with updated weights. ",
     )
+
+
+@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "rope"])
+@pytest.mark.parametrize("num_cond_layers", [0, 1])
+def test_cond_transformer_regressor(pos_encoding: str, num_cond_layers: int):
+    """Check forward and backprop pass for the baseline CondTransformerRegressor."""
+    from symm_learning.models.control.cond_transformer import CondTransformer
+
+    in_dim, out_dim, cond_dim = 4, 4, 3
+    in_horizon, cond_horizon = 5, 4
+    embedding_dim = 16
+    num_attention_heads = 2
+    batch_size = 2
+
+    model = CondTransformer(
+        in_dim=in_dim,
+        out_dim=out_dim,
+        cond_dim=cond_dim,
+        in_horizon=in_horizon,
+        cond_horizon=cond_horizon,
+        pos_encoding=pos_encoding,
+        num_layers=2,
+        num_attention_heads=num_attention_heads,
+        embedding_dim=embedding_dim,
+        num_cond_layers=num_cond_layers,
+    )
+
+    model.train()
+    optimizer = model.configure_optimizers()
+
+    X = torch.randn(batch_size, in_horizon, in_dim)
+    Z = torch.randn(batch_size, cond_horizon, cond_dim)
+    opt_step = torch.randn(batch_size)
+
+    # Forward pass
+    optimizer.zero_grad()
+    out = model(X=X, Z=Z, opt_step=opt_step)
+
+    assert out.shape == (batch_size, in_horizon, out_dim), (
+        f"Expected shape {(batch_size, in_horizon, out_dim)} got {out.shape}"
+    )
+
+    # Backward pass
+    loss = out.mean()
+    loss.backward()
+
+    # Check for valid gradients
+    has_grad = False
+    for p in model.parameters():
+        if p.grad is not None:
+            has_grad = True
+            assert not torch.isnan(p.grad).any(), "NaN in gradients"
+
+    assert has_grad, "No gradients were computed"
+
+    # Optimizer step
+    optimizer.step()
