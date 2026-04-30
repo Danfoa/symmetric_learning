@@ -148,14 +148,14 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
 
     .. math::
 
-                ilde{\mathbf{Q}} = \mathbf{Q} + \phi_\theta(\mathbf{P}_Q),
+                ilde{\mathbf{q}} = \mathbf{q} + \phi_\theta(\mathbf{P}_Q),
             \qquad
-                ilde{\mathbf{K}} = \mathbf{K} + \phi_\theta(\mathbf{P}_K),
+                ilde{\mathbf{k}} = \mathbf{k} + \phi_\theta(\mathbf{P}_K),
             \qquad
-                ilde{\mathbf{V}} = \mathbf{V}.
+                ilde{\mathbf{v}} = \mathbf{v}.
 
     A standard multi-head attention operator is then applied to
-    :math:`(\tilde{\mathbf{Q}}, \tilde{\mathbf{K}}, \tilde{\mathbf{V}})`.
+    :math:`(\tilde{\mathbf{q}}, \tilde{\mathbf{k}}, \tilde{\mathbf{v}})`.
     If the positional branch is the identity/no-op map, the module reduces to
     :class:`torch.nn.MultiheadAttention`.
 
@@ -165,10 +165,9 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
 
     Shape
     -----
-    - ``query``, ``key``, ``value``: ``(B, T, D)`` when ``batch_first=True`` or
-        ``(T, B, D)`` otherwise, matching :class:`torch.nn.MultiheadAttention`.
-    - ``q_positions``, ``k_positions``: ``(T,)`` or ``(B, T)``.
-    - ``q_position_mask``, ``k_position_mask``: ``(T,)`` or ``(B, T)`` boolean masks.
+    - ``query``, ``key``, ``value``: ``(B, P, D)``.
+    - ``q_positions``, ``k_positions``: ``(P,)`` or ``(B, P)``.
+    - ``q_position_mask``, ``k_position_mask``: ``(P,)`` or ``(B, P)`` boolean masks.
     - ``attn_mask``: any attention mask layout accepted by
         :class:`torch.nn.MultiheadAttention`.
     - ``key_padding_mask``: ``(B, S)`` boolean or additive padding mask.
@@ -210,8 +209,54 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def _normalize_positions(
+        positions: torch.Tensor,
+        position_mask: torch.Tensor | None,
+        *,
+        batch_size: int,
+        seq_len: int,
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        """Normalize position tensors and validate their layout.
 
-class AbsPosMultiheadAttention(PositionalAttentionBase):
+        The helper accepts positions with shape ``(P,)`` or ``(B, P)`` and checks
+        that the sequence length matches ``seq_len`` and the batch dimension is
+        either ``1`` or ``batch_size``. If a mask is provided, it must have the
+        same rank and shape as ``positions`` before any singleton batch expansion.
+        The returned mask is expanded together with ``positions`` when needed.
+        """
+        if positions.ndim == 1:
+            positions = positions.unsqueeze(0)
+        elif positions.ndim != 2:
+            raise ValueError(f"Expected positions tensor with shape (P,) or (B, P), got {tuple(positions.shape)}")
+
+        if positions.shape[-1] != seq_len:
+            raise ValueError(f"Position length {positions.shape[-1]} does not match sequence length {seq_len}")
+        if positions.shape[0] not in (1, batch_size):
+            raise ValueError(f"Position batch size {positions.shape[0]} must be 1 or match batch size {batch_size}")
+        if positions.shape[0] == 1 and batch_size != 1:
+            positions = positions.expand(batch_size, -1)
+
+        if position_mask is None:
+            return positions, None
+
+        if position_mask.ndim == 1:
+            position_mask = position_mask.unsqueeze(0)
+        elif position_mask.ndim != 2:
+            raise ValueError(f"Expected position_mask with shape (P,) or (B, P), got {tuple(position_mask.shape)}")
+        if position_mask.shape[-1] != seq_len:
+            raise ValueError(f"Position mask length {position_mask.shape[-1]} does not match sequence length {seq_len}")
+        if position_mask.shape[0] not in (1, batch_size):
+            raise ValueError(
+                f"Position mask batch size {position_mask.shape[0]} must be 1 or match batch size {batch_size}"
+            )
+        if position_mask.shape[0] == 1 and batch_size != 1:
+            position_mask = position_mask.expand(batch_size, -1)
+
+        return positions, position_mask
+
+
+class AdditivePosMultiheadAttention(PositionalAttentionBase):
     r"""Wrap :class:`torch.nn.MultiheadAttention` and add positional features to Q/K only.
 
     The positional submodule maps coordinates to an additive update of the query
@@ -219,20 +264,19 @@ class AbsPosMultiheadAttention(PositionalAttentionBase):
 
     .. math::
 
-            \mathbf{Q}' = \mathbf{Q} + E_\theta(\mathbf{P}_Q),
+            \mathbf{q}' = \mathbf{q} + E_\theta(\mathbf{P}_Q),
             \qquad
-            \mathbf{K}' = \mathbf{K} + E_\theta(\mathbf{P}_K),
+            \mathbf{k}' = \mathbf{k} + E_\theta(\mathbf{P}_K),
             \qquad
-            \mathbf{V}' = \mathbf{V}.
+            \mathbf{v}' = \mathbf{v}.
 
     The values are never position-modulated. When ``E_\theta`` is the identity/
     no-op branch, this is exactly ordinary multi-head attention.
 
     Shape
     -----
-    - ``query``, ``key``, ``value``: ``(B, T, D)`` if ``batch_first=True`` or
-        ``(T, B, D)`` otherwise.
-    - ``q_positions``, ``k_positions``: ``(T,)`` or ``(B, T)``.
+    - ``query``, ``key``, ``value``: ``(B, T, D)``.
+    - ``q_positions``, ``k_positions``: ``(P,)`` or ``(B, P)``.
     - ``q_position_mask``, ``k_position_mask``: boolean masks with the same shape
         as the corresponding position tensor.
     - Returns: the attention output and, optionally, attention weights.
@@ -240,7 +284,8 @@ class AbsPosMultiheadAttention(PositionalAttentionBase):
     Attributes:
     ----------
     position_encoder:
-        Module used to turn explicit position coordinates into additive features.
+        Module taking a tensor of positions of shape ``(P,)`` or ``(B, P)`` and returning
+        positional embeddings of shape ``(P, D)`` or ``(B, P, D)``.
     attn:
         Internal :class:`torch.nn.MultiheadAttention` backend.
     embed_dim:
@@ -263,6 +308,20 @@ class AbsPosMultiheadAttention(PositionalAttentionBase):
         device=None,
         dtype=None,
     ) -> None:
+        r"""Initialize additive positional attention with a wrapped multi-head backend.
+
+        Args:
+            embed_dim (:class:`int`): Model width ``D``.
+            num_heads (:class:`int`): Number of attention heads.
+            position_encoder (:class:`torch.nn.Module`): Module mapping positions
+                to additive embeddings.
+            dropout (:class:`float`): Dropout probability on attention weights. Default: 0.0.
+            bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.
+            batch_first (:class:`bool`): If ``True``, then the input and output tensors are provided as
+                ``(batch, seq, feature)``. Default: ``True``.
+            device (:class:`torch.device`, optional): Parameter factory options.
+            dtype (:class:`torch.dtype`, optional): Parameter factory options.
+        """
         super().__init__()
         self.position_encoder = position_encoder
         self.attn = torch.nn.MultiheadAttention(
@@ -276,7 +335,7 @@ class AbsPosMultiheadAttention(PositionalAttentionBase):
         )
         self.embed_dim = embed_dim
         self.num_heads = num_heads
-        self.batch_first = batch_first
+        self.batch_first = True
 
     def forward(
         self,
@@ -303,22 +362,8 @@ class AbsPosMultiheadAttention(PositionalAttentionBase):
         - Returns: ``(output, attn_weights)`` from the wrapped
           :class:`torch.nn.MultiheadAttention`.
         """
-        query = query + _position_update(
-            query,
-            positions=q_positions,
-            position_mask=q_position_mask,
-            position_encoder=self.position_encoder,
-            batch_first=self.batch_first,
-            embed_dim=self.embed_dim,
-        )
-        key = key + _position_update(
-            key,
-            positions=k_positions,
-            position_mask=k_position_mask,
-            position_encoder=self.position_encoder,
-            batch_first=self.batch_first,
-            embed_dim=self.embed_dim,
-        )
+        query = query + self._position_update(query, q_positions, q_position_mask)
+        key = key + self._position_update(key, k_positions, k_position_mask)
         return self.attn(
             query,
             key,
@@ -328,6 +373,43 @@ class AbsPosMultiheadAttention(PositionalAttentionBase):
             need_weights=need_weights,
             is_causal=is_causal,
         )
+
+    def _position_update(
+        self,
+        x: torch.Tensor,
+        positions: torch.Tensor | None,
+        position_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if positions is None:
+            return torch.zeros_like(x)
+
+        batch_size, seq_len, _ = x.shape
+
+        positions, position_mask = self._normalize_positions(
+            positions,
+            position_mask,
+            batch_size=batch_size,
+            seq_len=seq_len,
+        )
+
+        encoded_positions = positions.masked_fill(~position_mask, 0) if position_mask is not None else positions
+        pos_emb = self.position_encoder(encoded_positions)
+        if pos_emb.ndim == 2:
+            expected_shape = (seq_len, self.embed_dim)
+            if pos_emb.shape != expected_shape:
+                raise ValueError(f"Expected positional embedding shape {expected_shape}, got {tuple(pos_emb.shape)}")
+            pos_emb = pos_emb.unsqueeze(0)
+            if batch_size != 1:
+                pos_emb = pos_emb.expand(batch_size, -1, -1)
+        else:
+            expected_shape = (batch_size, seq_len, self.embed_dim)
+            if pos_emb.ndim != 3 or pos_emb.shape != expected_shape:
+                raise ValueError(f"Expected positional embedding shape {expected_shape}, got {tuple(pos_emb.shape)}")
+
+        if position_mask is not None:
+            pos_emb = pos_emb * position_mask.unsqueeze(-1)
+
+        return pos_emb
 
 
 class RoPEMultiheadAttention(PositionalAttentionBase):
@@ -339,11 +421,11 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
 
     .. math::
 
-            \mathbf{Q}_r' = R(\mathbf{P}_Q)\,\mathbf{Q}_r,
+            \mathbf{q}_r' = R(\mathbf{P}_Q)\,\mathbf{q}_r,
             \qquad
-            \mathbf{K}_r' = R(\mathbf{P}_K)\,\mathbf{K}_r,
+            \mathbf{k}_r' = R(\mathbf{P}_K)\,\mathbf{k}_r,
             \qquad
-            \mathbf{V}' = \mathbf{V},
+            \mathbf{v}' = \mathbf{v},
 
     where ``R`` is the block-wise 2D rotation induced by the sine/cosine tables.
     The attention scores are then
@@ -351,15 +433,15 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
     .. math::
 
             \mathbf{A} = \operatorname{softmax}\left(
-            \frac{\mathbf{Q}'\mathbf{K}'^\top}{\sqrt{d_h}} + \mathbf{M}\right),
+            \frac{\mathbf{q}'\mathbf{k}'^\top}{\sqrt{d_h}} + \mathbf{M}\right),
             \qquad
-            \mathbf{O} = \mathbf{A}\mathbf{V}'.
+            \mathbf{O} = \mathbf{A}\mathbf{v}'.
 
     Shape
     -----
     - ``query``, ``key``, ``value``: ``(B, T, D)`` if ``batch_first=True`` or
         ``(T, B, D)`` otherwise.
-    - ``q_positions``, ``k_positions``: ``(T,)`` or ``(B, T)``.
+    - ``q_positions``, ``k_positions``: ``(P,)`` or ``(B, P)``.
     - ``q_position_mask``, ``k_position_mask``: boolean masks with the same shape
         as the corresponding position tensor.
     - Returns: ``(output, attn_weights)`` where ``output`` has the same leading
@@ -395,6 +477,19 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         device=None,
         dtype=None,
     ) -> None:
+        r"""Initialize the rotary-position attention block.
+
+        Args:
+            embed_dim (:class:`int`): Model width ``D``.
+            num_heads (:class:`int`): Number of attention heads.
+            dropout (:class:`float`): Dropout probability on attention weights. Default: 0.0.
+            bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.
+            rope_base (:class:`float`): Frequency base used to build the rotary spectrum. Default: ``10000.0``.
+            batch_first (:class:`bool`): If ``True``, then the input and output tensors are provided as
+                ``(batch, seq, feature)``. Default: ``True``.
+            device (:class:`torch.device`, optional): Parameter factory options.
+            dtype (:class:`torch.dtype`, optional): Parameter factory options.
+        """
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
         if embed_dim <= 0:
@@ -448,11 +543,6 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         - Returns: ``(output, attn_weights)`` with the same leading layout as the
           input and optional attention weights when requested.
         """
-        if not self.batch_first:
-            query = query.transpose(0, 1)
-            key = key.transpose(0, 1)
-            value = value.transpose(0, 1)
-
         q = self._split_heads(self.q_proj(query))
         k = self._split_heads(self.k_proj(key))
         v = self._split_heads(self.v_proj(value))
@@ -553,162 +643,13 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         return torch.matmul(attn_weights, v), attn_weights.mean(dim=1)
 
 
-def _position_update(
-    x: torch.Tensor,
-    *,
-    positions: torch.Tensor | None,
-    position_mask: torch.Tensor | None,
-    position_encoder: torch.nn.Module,
-    batch_first: bool,
-    embed_dim: int,
-) -> torch.Tensor:
-    if positions is None:
-        return torch.zeros_like(x)
-    if batch_first:
-        batch_size, seq_len = x.shape[0], x.shape[1]
-        return position_features(
-            position_encoder,
-            positions,
-            batch_size=batch_size,
-            seq_len=seq_len,
-            embed_dim=embed_dim,
-            reference=x,
-            position_mask=position_mask,
-        )
-
-    pos_update = position_features(
-        position_encoder,
-        positions,
-        batch_size=x.shape[1],
-        seq_len=x.shape[0],
-        embed_dim=embed_dim,
-        reference=x.transpose(0, 1),
-        position_mask=position_mask,
-    )
-    return pos_update.transpose(0, 1)
-
-
-def position_features(
-    position_encoder: torch.nn.Module,
-    positions: torch.Tensor | None,
-    *,
-    batch_size: int,
-    seq_len: int,
-    embed_dim: int,
-    reference: torch.Tensor,
-    position_mask: torch.Tensor | None = None,
-) -> torch.Tensor | None:
-    r"""Encode position coordinates into broadcastable additive features.
-
-    Shape
-    -----
-    - ``positions``: ``(T,)`` or ``(B, T)``.
-    - ``reference``: tensor used only for dtype/device alignment, typically the
-        query/key tensor that will receive the positional update.
-    - Returns: positional features with shape ``(B, T, D)``.
-    """
-    if positions is None:
-        return None
-
-    positions, position_mask = canonicalize_positions(positions, position_mask, batch_size=batch_size, seq_len=seq_len)
-    encoded_positions = positions.masked_fill(~position_mask, 0.0) if position_mask is not None else positions
-    pos_emb = position_encoder(encoded_positions)
-    pos_emb = _expand_position_features(pos_emb, batch_size=batch_size, seq_len=seq_len, embed_dim=embed_dim)
-    pos_emb = pos_emb.to(device=reference.device, dtype=reference.dtype)
-
-    if position_mask is not None:
-        pos_emb = pos_emb * position_mask.to(device=reference.device, dtype=reference.dtype).unsqueeze(-1)
-    return pos_emb
-
-
-def canonicalize_positions(
-    positions: torch.Tensor,
-    position_mask: torch.Tensor | None,
-    *,
-    batch_size: int,
-    seq_len: int,
-) -> tuple[torch.Tensor, torch.Tensor | None]:
-    r"""Normalize position coordinates and optional masks to ``(B, T)`` layout.
-
-    Shape
-    -----
-    - ``positions``: ``(T,)`` or ``(B, T)``.
-    - ``position_mask``: ``(T,)`` or ``(B, T)`` boolean mask, or ``None``.
-    - Returns: a position tensor with batch size ``1`` or ``B`` and an optional
-        boolean mask with the same shape.
-    """
-    if positions.ndim == 1:
-        positions = positions.unsqueeze(0)
-    elif positions.ndim != 2:
-        raise ValueError(f"Expected positions with shape (T,) or (B, T), got {tuple(positions.shape)}")
-
-    if positions.shape[-1] != seq_len:
-        raise ValueError(f"Position length {positions.shape[-1]} does not match sequence length {seq_len}")
-    if positions.shape[0] not in (1, batch_size):
-        raise ValueError(f"Position batch size {positions.shape[0]} must be 1 or match batch size {batch_size}")
-    if positions.shape[0] == 1 and batch_size != 1:
-        positions = positions.expand(batch_size, -1)
-
-    if position_mask is None:
-        return positions, None
-
-    if position_mask.ndim == 1:
-        position_mask = position_mask.unsqueeze(0)
-    elif position_mask.ndim != 2:
-        raise ValueError(f"Expected position_mask with shape (T,) or (B, T), got {tuple(position_mask.shape)}")
-    if position_mask.shape[-1] != seq_len:
-        raise ValueError(f"Position mask length {position_mask.shape[-1]} does not match sequence length {seq_len}")
-    if position_mask.shape[0] not in (1, batch_size):
-        raise ValueError(
-            f"Position mask batch size {position_mask.shape[0]} must be 1 or match batch size {batch_size}"
-        )
-    if position_mask.shape[0] == 1 and batch_size != 1:
-        position_mask = position_mask.expand(batch_size, -1)
-
-    return positions, position_mask.to(device=positions.device, dtype=torch.bool)
-
-
-def _expand_position_features(
-    pos_emb: torch.Tensor,
-    *,
-    batch_size: int,
-    seq_len: int,
-    embed_dim: int,
-) -> torch.Tensor:
-    r"""Broadcast encoder outputs to ``(B, T, D)`` when needed.
-
-    Shape
-    -----
-    - ``pos_emb``: ``(T, D)``, ``(1, T, D)``, or ``(B, T, D)``.
-    - Returns: broadcast positional features with shape ``(B, T, D)``.
-    """
-    if pos_emb.ndim == 2:
-        if pos_emb.shape != (seq_len, embed_dim):
-            raise ValueError(f"Expected positional embedding shape {(seq_len, embed_dim)}, got {tuple(pos_emb.shape)}")
-        pos_emb = pos_emb.unsqueeze(0).expand(batch_size, -1, -1)
-    elif pos_emb.ndim == 3:
-        if pos_emb.shape[-2:] != (seq_len, embed_dim):
-            raise ValueError(
-                f"Expected positional embedding trailing shape {(seq_len, embed_dim)}, got {tuple(pos_emb.shape)}"
-            )
-        if pos_emb.shape[0] not in (1, batch_size):
-            raise ValueError(
-                f"Positional embedding batch size {pos_emb.shape[0]} must be 1 or match batch size {batch_size}"
-            )
-        if pos_emb.shape[0] == 1 and batch_size != 1:
-            pos_emb = pos_emb.expand(batch_size, -1, -1)
-    else:
-        raise ValueError(f"Expected positional embedding with 2 or 3 dimensions, got {tuple(pos_emb.shape)}")
-    return pos_emb
-
-
 class RotaryEmbedding(torch.nn.Module):
     r"""Precompute the cosine and sine tables used by rotary embeddings.
 
     Shape
     -----
-    - ``positions``: ``(T,)`` or ``(B, T)``.
-    - Returns: ``(cos, sin)`` with shape ``(T, dim / 2)`` or ``(B, T, dim / 2)``.
+    - ``positions``: ``(P,)`` or ``(B, P)``.
+    - Returns: ``(cos, sin)`` with shape ``(P, dim / 2)`` or ``(B, P, dim / 2)``.
 
     Attributes:
     ----------
@@ -727,6 +668,14 @@ class RotaryEmbedding(torch.nn.Module):
         device=None,
         dtype=None,
     ) -> None:
+        r"""Initialize the RoPE table builder.
+
+        Args:
+            dim (:class:`int`): Number of channels rotated by RoPE.
+            base (:class:`float`): Frequency base used to build the inverse frequency spectrum.
+            device (:class:`torch.device`, optional): Buffer factory options.
+            dtype (:class:`torch.dtype`, optional): Buffer factory options.
+        """
         super().__init__()
         if dim <= 0 or dim % 2 != 0:
             raise ValueError(f"Rotary dim must be a positive even integer, got {dim}")
@@ -739,39 +688,40 @@ class RotaryEmbedding(torch.nn.Module):
 
     def forward(self, positions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Return the RoPE cosine and sine tables for the provided positions."""
-        positions = positions.to(device=self.inv_freq.device, dtype=self.inv_freq.dtype)
         angles = positions.unsqueeze(-1) * self.inv_freq
         return angles.cos(), angles.sin()
 
     def apply_rope(
         self,
         x: torch.Tensor,
-        positions: torch.Tensor | None = None,
+        positions: torch.Tensor,
         position_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        r"""Apply rotary position embeddings to the first ``dim`` channels of ``x``.
+        r"""Apply rotary position embeddings to the entire head embedding of ``x``.
 
         Shape
         -----
         - ``x``: ``(B, H, T, D)``.
-        - ``positions``: ``(T,)`` or ``(B, T)``.
+        - ``positions``: ``(P,)`` or ``(B, P)``.
         - ``position_mask``: optional boolean mask with the same layout as
           ``positions``.
-        - Returns: ``x`` with the leading ``dim`` channels rotated in place.
+        - Returns: ``x`` with every head channel rotated in place.
         """
-        if positions is None:
-            return x
         if x.ndim != 4:
             raise ValueError(f"Expected x with shape (B, H, T, D), got {tuple(x.shape)}")
 
-        positions, position_mask = canonicalize_positions(
-            positions, position_mask, batch_size=x.shape[0], seq_len=x.shape[2]
+        batch_size, _, seq_len, head_dim = x.shape
+        positions, position_mask = PositionalAttentionBase._normalize_positions(
+            positions,
+            position_mask,
+            batch_size=batch_size,
+            seq_len=seq_len,
         )
         if position_mask is not None:
-            positions = positions.masked_fill(~position_mask, 0.0)
+            positions = positions.masked_fill(~position_mask, 0)
 
-        if self.dim != x.shape[-1]:
-            raise ValueError(f"RotaryEmbedding.dim={self.dim} must match the head dimension {x.shape[-1]}")
+        if self.dim != head_dim:
+            raise ValueError(f"RotaryEmbedding.dim={self.dim} must match the head dimension {head_dim}")
 
         cos, sin = self(positions)
         cos = cos.unsqueeze(1).repeat_interleave(2, dim=-1).to(dtype=x.dtype)
@@ -784,7 +734,7 @@ class RotaryEmbedding(torch.nn.Module):
 
         if position_mask is not None:
             # Leave padded positions unchanged so masking does not inject a phase rotation.
-            keep_mask = position_mask.to(device=x.device, dtype=torch.bool).unsqueeze(1).unsqueeze(-1)
+            keep_mask = position_mask.unsqueeze(1).unsqueeze(-1)
             x = torch.where(keep_mask, x_rotated, x)
         else:
             x = x_rotated

@@ -593,7 +593,7 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
 @pytest.mark.parametrize("num_heads", [1, 2, 3])
 def test_rope_multihead_attention(bias: bool, num_heads: int):
     """Check that RoPE attention is invariant to a global shift of positions."""
-    from symm_learning.nn.activation import RoPEMultiheadAttention
+    from symm_learning.nn.activation import RoPEMultiheadAttention, RotaryEmbedding
     import torch
 
     torch.manual_seed(0)
@@ -619,6 +619,20 @@ def test_rope_multihead_attention(bias: bool, num_heads: int):
     y_shifted, _ = model(x, x, x, q_positions=shifted_positions, k_positions=shifted_positions)
 
     torch.testing.assert_close(y_shifted, y, atol=1e-5, rtol=1e-5, msg="RoPE not invariant to a global shift")
+
+    rope = RotaryEmbedding(dim=model.head_dim)
+    rope_input = torch.randn(2, num_heads, seq_len, model.head_dim)
+    rope_mask = torch.ones(seq_len, dtype=torch.bool)
+    rope_mask[7] = False
+    rope_output = rope.apply_rope(rope_input, positions=positions, position_mask=rope_mask)
+
+    torch.testing.assert_close(
+        rope_output[:, :, 7],
+        rope_input[:, :, 7],
+        atol=0.0,
+        rtol=0.0,
+        msg="Masked RoPE positions should remain unchanged",
+    )
 
 
 @pytest.mark.parametrize(
