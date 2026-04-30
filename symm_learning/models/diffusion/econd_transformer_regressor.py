@@ -28,8 +28,8 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
 
     Tokens transforming according to ``in_rep`` are embedded into an ``embedding_rep`` space built from copies of the
     regular representation so that
-    :class:`~symm_learning.models.transformer.etransformer.eTransformerEncoderLayer`/
-    :class:`~symm_learning.models.transformer.etransformer.eTransformerDecoderLayer` can be used
+    :class:`~symm_learning.nn.transformer.etransformer.eTransformerEncoderLayer`/
+    :class:`~symm_learning.nn.transformer.etransformer.eTransformerDecoderLayer` can be used
     directly. Positional encodings and timestep embeddings are projected onto the invariant subspace so they can be
     added to equivariant tokens without breaking symmetry.
 
@@ -117,7 +117,7 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
 
         # Encoder parameterized as an equivariant MLP or a Transformer
         if num_cond_layers > 0:
-            encoder_layer = symm_learning.models.eTransformerEncoderLayer(
+            encoder_layer = symm_learning.nn.eTransformerEncoderLayer(
                 in_rep=self.embedding_rep,
                 nhead=num_attention_heads,
                 dim_feedforward=4 * embedding_dim,
@@ -144,7 +144,7 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
                 symm_learning.nn.eLinear(in_rep=hidden_rep, out_rep=self.embedding_rep, bias=True, init_scheme=None),
             )
 
-        decoder_layer = symm_learning.models.eTransformerDecoderLayer(
+        decoder_layer = symm_learning.nn.eTransformerDecoderLayer(
             in_rep=self.embedding_rep,
             nhead=num_attention_heads,
             dim_feedforward=4 * embedding_dim,
@@ -204,7 +204,7 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         # Initalize conditional encoder layers.
         if isinstance(self.encoder, torch.nn.TransformerEncoder):
             for i, layer in enumerate(self.encoder.layers, start=1):
-                assert isinstance(layer, symm_learning.models.eTransformerEncoderLayer)
+                assert isinstance(layer, symm_learning.nn.eTransformerEncoderLayer)
                 logger.debug(f"Resetting encoder layer {i}:[{layer.__class__.__name__}] with scheme: {scheme}")
                 layer.reset_parameters(scheme=scheme)
         else:  # eMLP.
@@ -214,7 +214,7 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
                     module.reset_parameters(scheme=scheme)
         # Initialize decoder layers.
         for i, layer in enumerate(self.decoder.layers, start=1):
-            assert isinstance(layer, symm_learning.models.eTransformerDecoderLayer)
+            assert isinstance(layer, symm_learning.nn.eTransformerDecoderLayer)
             logger.debug(f"Resetting decoder layer {i}:[{layer.__class__.__name__}] with scheme: {scheme}")
             layer.reset_parameters(scheme=scheme)
 

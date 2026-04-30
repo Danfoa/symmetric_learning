@@ -22,7 +22,7 @@ class GenCondRegressor(torch.nn.Module, ABC):
         \mathbb{P}(X \mid Z)
 
     Let :math:`\mathcal{X}=\mathbb{R}^{d_x}`, :math:`\mathcal{Z}=\mathbb{R}^{d_z}`, and
-    :math:`\mathcal{Y}=\mathbb{R}^{d_v}`.
+    :math:`\mathcaleTransformerEncoderLayer{Y}=\mathbb{R}^{d_v}`.
     Where :math:`X = [x_0,\ldots,x_{T_x}] \in \mathcal{X}^{T_x}` is the input/data sample composed of a
     trajectory of :math:`T_x` points, and :math:`Z = [z_0,\ldots,z_{T_z}] \in \mathcal{Z}^{T_z}` is the
     conditioning/observation variable composed of :math:`T_z` points.
@@ -367,7 +367,7 @@ class CondTransformerRegressor(GenCondRegressor):
         return out
 
 
-def test():  # noqa: D103
+if __name__ == "__main__":  # noqa: D103
     torch.manual_seed(0)
     from tqdm import tqdm
 
@@ -381,7 +381,7 @@ def test():  # noqa: D103
     batch_size = 512
     num_batches = 30
 
-    def build_model():
+    def build_model():  # noqa: D103
         model = CondTransformerRegressor(
             in_dim=dx,
             out_dim=dv,
@@ -398,7 +398,7 @@ def test():  # noqa: D103
     Z_batches = [torch.randn(batch_size, Tz, dz, device=device, dtype=dtype) for _ in range(num_batches)]
     opt_steps = [torch.tensor(float(i % Tx), device=device, dtype=dtype) for i in range(num_batches)]
 
-    def benchmark(model, skip_first: bool = False):
+    def benchmark(model, skip_first: bool = False):  # noqa: D103
         optimizer = model.configure_optimizers()
         measurements: list[float] = []
         for idx, (x, z, step) in tqdm(enumerate(zip(X_batches, Z_batches, opt_steps))):
@@ -427,7 +427,3 @@ def test():  # noqa: D103
     compiled_model = torch.compile(build_model())
     compiled_time = benchmark(compiled_model, skip_first=True)
     print(f"Compiled avg forward+backward step time: {compiled_time:.3f} [s] (excluding first batch)")
-
-
-if __name__ == "__main__":
-    test()

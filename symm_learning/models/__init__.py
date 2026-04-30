@@ -24,7 +24,6 @@ from .diffusion.econd_transformer_regressor import eCondTransformerRegressor
 from .emlp import MLP, eMLP, iMLP
 from .time_cnn.cnn_encoder import TimeCNNEncoder
 from .time_cnn.ecnn_encoder import eTimeCNNEncoder
-from .transformer.etransformer import eTransformerDecoderLayer, eTransformerEncoderLayer
 
 __all__ = [
     "eMLP",
@@ -32,8 +31,6 @@ __all__ = [
     "MLP",
     "eTimeCNNEncoder",
     "TimeCNNEncoder",
-    "eTransformerEncoderLayer",
-    "eTransformerDecoderLayer",
     "eCondTransformerRegressor",
     "CondTransformerRegressor",
     "GenCondRegressor",

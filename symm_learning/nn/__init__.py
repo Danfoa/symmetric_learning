@@ -38,6 +38,13 @@ from .module import eModule
 from .normalization import eBatchNorm1d, eLayerNorm, eRMSNorm
 from .pooling import IrrepSubspaceNormPooling
 from .running_stats import EMAStats, eEMAStats
+from .transformer.etransformer import eTransformerDecoderLayer, eTransformerEncoderLayer
+from .transformer.transformer import (
+    PosEmbTransformerDecoder,
+    PosEmbTransformerDecoderLayer,
+    PosEmbTransformerEncoder,
+    PosEmbTransformerEncoderLayer,
+)
 
 __all__ = [
     "Change2DisentangledBasis",
@@ -54,4 +61,10 @@ __all__ = [
     "eLinear",
     "eLayerNorm",
     "eRMSNorm",
+    "eTransformerDecoderLayer",
+    "eTransformerEncoderLayer",
+    "PosEmbTransformerDecoder",
+    "PosEmbTransformerDecoderLayer",
+    "PosEmbTransformerEncoder",
+    "PosEmbTransformerEncoderLayer",
 ]
