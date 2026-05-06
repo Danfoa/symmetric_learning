@@ -262,6 +262,8 @@ class CondTransformer(GenCondRegressor):
         elif isinstance(module, torch.nn.LayerNorm):
             torch.nn.init.zeros_(module.bias)
             torch.nn.init.ones_(module.weight)
+        elif isinstance(module, torch.nn.RMSNorm):
+            torch.nn.init.ones_(module.weight)
         elif isinstance(module, CondTransformer):
             pass  # No standalone pos_emb parameter to init in this variant
         elif isinstance(module, RotaryEmbedding):
@@ -276,7 +278,7 @@ class CondTransformer(GenCondRegressor):
         decay = set()
         no_decay = set()
         whitelist_weight_modules = (torch.nn.Linear, torch.nn.MultiheadAttention)
-        blacklist_weight_modules = (torch.nn.LayerNorm, torch.nn.Embedding)
+        blacklist_weight_modules = (torch.nn.LayerNorm, torch.nn.RMSNorm, torch.nn.Embedding)
         for mn, m in self.named_modules():
             for pn, p in m.named_parameters():
                 fpn = "%s.%s" % (mn, pn) if mn else pn

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Callable
+from typing import Literal
 
 import torch
 import torch.nn.functional as F
@@ -55,6 +56,7 @@ class PosEmbTransformerEncoderLayer(torch.nn.Module):
         activation: str | Callable[[torch.Tensor], torch.Tensor] = F.gelu,
         layer_norm_eps: float = 1e-5,
         norm_first: bool = False,
+        norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
         device=None,
         dtype=None,
@@ -69,6 +71,7 @@ class PosEmbTransformerEncoderLayer(torch.nn.Module):
             activation (:class:`str` | callable): Feed-forward activation. Default: :func:`torch.nn.functional.gelu`.
             layer_norm_eps (:class:`float`): LayerNorm epsilon. Default: ``1e-5``.
             norm_first (:class:`bool`): If ``True``, apply LayerNorm before each residual branch. Default: ``False``.
+            norm_module (:class:`str`): Normalization layer type (``'layernorm'`` or ``'rmsnorm'``). Default: ``'rmsnorm'``.
             bias (:class:`bool`): If ``True``, use learnable normalization biases. Default: ``True``.
             device (:class:`torch.device`, optional): Parameter factory options.
             dtype (:class:`torch.dtype`, optional): Parameter factory options.
@@ -85,8 +88,14 @@ class PosEmbTransformerEncoderLayer(torch.nn.Module):
         )
 
         self.norm_first = norm_first
-        self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
-        self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+        if norm_module == "layernorm":
+            self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+            self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+        elif norm_module == "rmsnorm":
+            self.norm1 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
+            self.norm2 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
+        else:
+            raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
         self.attn_dropout = torch.nn.Dropout(dropout)
 
     def forward(
@@ -226,6 +235,7 @@ class PosEmbTransformerDecoderLayer(torch.nn.Module):
         activation: str | Callable[[torch.Tensor], torch.Tensor] = F.gelu,
         layer_norm_eps: float = 1e-5,
         norm_first: bool = False,
+        norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
         device=None,
         dtype=None,
@@ -243,6 +253,7 @@ class PosEmbTransformerDecoderLayer(torch.nn.Module):
             activation (:class:`str` | callable): Feed-forward activation. Default: :func:`torch.nn.functional.gelu`.
             layer_norm_eps (:class:`float`): LayerNorm epsilon. Default: ``1e-5``.
             norm_first (:class:`bool`): If ``True``, apply LayerNorm before each residual branch. Default: ``False``.
+            norm_module (:class:`str`): Normalization layer type (``'layernorm'`` or ``'rmsnorm'``). Default: ``'rmsnorm'``.
             bias (:class:`bool`): If ``True``, use learnable normalization biases. Default: ``True``.
             device (:class:`torch.device`, optional): Parameter factory options.
             dtype (:class:`torch.dtype`, optional): Parameter factory options.
@@ -260,9 +271,16 @@ class PosEmbTransformerDecoderLayer(torch.nn.Module):
         )
 
         self.norm_first = norm_first
-        self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
-        self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
-        self.norm3 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+        if norm_module == "layernorm":
+            self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+            self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+            self.norm3 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+        elif norm_module == "rmsnorm":
+            self.norm1 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
+            self.norm2 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
+            self.norm3 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
+        else:
+            raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
         self.attn_dropout = torch.nn.Dropout(dropout)
 
     def forward(
@@ -581,12 +599,23 @@ def _get_activation_module(activation: str | Callable) -> torch.nn.Module:
     if isinstance(activation, torch.nn.Module):
         return activation
     if callable(activation):
-        return torch.nn.GELU() if activation is F.gelu else torch.nn.ReLU()
+        return _FunctionalActivation(activation)
     if activation == "relu":
         return torch.nn.ReLU()
     if activation == "gelu":
         return torch.nn.GELU()
     raise RuntimeError(f"activation should be relu/gelu, not {activation}")
+
+
+class _FunctionalActivation(torch.nn.Module):
+    """Wrap a tensor activation callable as a module for sequential feed-forward blocks."""
+
+    def __init__(self, activation: Callable[[torch.Tensor], torch.Tensor]) -> None:
+        super().__init__()
+        self.activation = activation
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.activation(x)
 
 
 def _get_seq_len(src: torch.Tensor) -> int | None:
