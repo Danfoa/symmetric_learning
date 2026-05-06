@@ -275,7 +275,7 @@ def test_econd_transformer_regressor(group: Group, m: int, num_attention_heads: 
     )
 
 
-@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "rope"])
+@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "rope"])
 @pytest.mark.parametrize("num_cond_layers", [0, 1])
 def test_cond_transformer_regressor(pos_encoding: str, num_cond_layers: int):
     """Check forward and backprop pass for the baseline CondTransformerRegressor."""

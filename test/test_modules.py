@@ -699,7 +699,7 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
     if mx % num_heads != 0:
         pytest.skip(f"mx={mx} not divisible by num_heads={num_heads}")
 
-    attn = eMultiheadAttention(in_rep=rep, num_heads=num_heads, bias=bias, batch_first=True, dropout=0.0)
+    attn = eMultiheadAttention(in_rep=rep, num_heads=num_heads, bias=bias, dropout=0.0)
 
     # Wrapper for check_equivariance: self-attention expects (query, key, value) but we test with q=k=v=x
     class SelfAttentionWrapper(torch.nn.Module):
@@ -758,13 +758,55 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
 
 @pytest.mark.parametrize("bias", [True, False])
 @pytest.mark.parametrize("num_heads", [1, 2, 3])
+def test_additive_pos_multihead_attention(bias: bool, num_heads: int):
+    """Check that omitted positions default to ``torch.arange(seq_len)``."""
+    import torch
+
+    from symm_learning.nn.activation import AdditivePosMultiheadAttention
+
+    class AbsolutePositionalEmbedding(torch.nn.Module):
+        def __init__(self, max_len: int, embed_dim: int):
+            super().__init__()
+            self.embedding = torch.nn.Parameter(torch.randn(max_len, embed_dim))
+
+        def forward(self, positions: torch.Tensor) -> torch.Tensor:
+            return self.embedding[positions.long()]
+
+    torch.manual_seed(0)
+    model = AdditivePosMultiheadAttention(
+        embed_dim=12,
+        num_heads=num_heads,
+        max_len=32,
+        dropout=0.0,
+        bias=bias,
+    )
+    with torch.no_grad():
+        model.pos_emb.copy_(AbsolutePositionalEmbedding(max_len=32, embed_dim=12).embedding)
+    model.eval()
+
+    x = torch.randn(2, 8, 12)
+    positions = torch.arange(x.shape[1])
+    y_default, _ = model(x, x, x)
+    y_explicit, _ = model(x, x, x, q_positions=positions, k_positions=positions)
+
+    torch.testing.assert_close(
+        y_default,
+        y_explicit,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="Additive positional attention should default to arange positions",
+    )
+
+
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("num_heads", [1, 2, 3])
 def test_rope_multihead_attention(bias: bool, num_heads: int):
     """Check that RoPE attention is invariant to a global shift of positions."""
     from symm_learning.nn.activation import RoPEMultiheadAttention, RotaryEmbedding
     import torch
 
     torch.manual_seed(0)
-    model = RoPEMultiheadAttention(embed_dim=12, num_heads=num_heads, dropout=0.0, bias=bias, batch_first=True)
+    model = RoPEMultiheadAttention(embed_dim=12, num_heads=num_heads, dropout=0.0, bias=bias)
     model.eval()
 
     # Keep the support away from the borders so the signal is not affected by truncation.
@@ -780,7 +822,16 @@ def test_rope_multihead_attention(bias: bool, num_heads: int):
     )
 
     positions = torch.arange(seq_len)
+    y_default, _ = model(x, x, x)
     y, _ = model(x, x, x, q_positions=positions, k_positions=positions)
+
+    torch.testing.assert_close(
+        y_default,
+        y,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="RoPE attention should default to arange positions",
+    )
 
     shifted_positions = positions + 1
     y_shifted, _ = model(x, x, x, q_positions=shifted_positions, k_positions=shifted_positions)
@@ -799,6 +850,58 @@ def test_rope_multihead_attention(bias: bool, num_heads: int):
         atol=0.0,
         rtol=0.0,
         msg="Masked RoPE positions should remain unchanged",
+    )
+
+
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("num_heads", [1, 2, 3])
+def test_additive_relative_multihead_attention(bias: bool, num_heads: int):
+    """Check that relative-bias attention is invariant to a global shift of positions."""
+    import torch
+
+    from symm_learning.nn.activation import AdditiveRelMultiheadAttention
+
+    torch.manual_seed(0)
+    model = AdditiveRelMultiheadAttention(
+        embed_dim=12,
+        num_heads=num_heads,
+        max_distance=32,
+        dropout=0.0,
+        bias=bias,
+    )
+    model.eval()
+
+    batch_size, seq_len, embed_dim = 2, 8, 12
+    x = torch.randn(batch_size, seq_len, embed_dim)
+    positions = torch.arange(seq_len)
+
+    y_default, _ = model(x, x, x)
+    y, _ = model(x, x, x, q_positions=positions, k_positions=positions)
+    y_shifted, _ = model(x, x, x, q_positions=positions + 5, k_positions=positions + 5)
+
+    torch.testing.assert_close(
+        y_default,
+        y,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="Relative-bias attention should default to arange positions",
+    )
+
+    torch.testing.assert_close(
+        y_shifted,
+        y,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="Relative-bias attention should depend only on pairwise position differences",
+    )
+
+    assert_module_save_load_consistency(
+        model,
+        x,
+        x,
+        x,
+        forward_kwargs={"q_positions": positions, "k_positions": positions, "need_weights": False},
+        output_transform=lambda out: out[0],
     )
 
 

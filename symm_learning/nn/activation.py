@@ -45,7 +45,6 @@ class eMultiheadAttention(eModule, torch.nn.MultiheadAttention):
         num_heads: int,
         dropout: float = 0.0,
         bias: bool = True,
-        batch_first: bool = False,
         add_bias_kv: bool = False,
         add_zero_attn: bool = False,
         device=None,
@@ -60,8 +59,6 @@ class eMultiheadAttention(eModule, torch.nn.MultiheadAttention):
             num_heads (:class:`int`): Number of parallel attention heads.
             dropout (:class:`float`): Dropout probability on attention weights. Default: 0.0.
             bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.
-            batch_first (:class:`bool`): If ``True``, then the input and output tensors are provided as
-                (batch, seq, feature). Default: ``False``.
             add_bias_kv (:class:`bool`): **Not supported**. Must be ``False``.
             add_zero_attn (:class:`bool`): **Not supported**. Must be ``False``.
             device (:class:`torch.device`, optional): Parameter factory options.
@@ -91,7 +88,7 @@ class eMultiheadAttention(eModule, torch.nn.MultiheadAttention):
             bias=bias,
             add_bias_kv=add_bias_kv,
             add_zero_attn=add_zero_attn,
-            batch_first=batch_first,
+            batch_first=True,
             device=device,
             dtype=dtype,
         )
@@ -167,6 +164,7 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
     -----
     - ``query``, ``key``, ``value``: ``(B, P, D)``.
     - ``q_positions``, ``k_positions``: ``(P,)`` or ``(B, P)``.
+      When omitted, they default to ``torch.arange(P)`` for the corresponding sequence.
     - ``q_position_mask``, ``k_position_mask``: ``(P,)`` or ``(B, P)`` boolean masks.
     - ``attn_mask``: any attention mask layout accepted by
         :class:`torch.nn.MultiheadAttention`.
@@ -247,6 +245,18 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
                 torch.nn.init.constant_(out_proj.bias, 0.0)
 
     @staticmethod
+    def _positions_or_arange(
+        positions: torch.Tensor | None,
+        *,
+        seq_len: int,
+        device: torch.device,
+    ) -> torch.Tensor:
+        r"""Use explicit positions when provided, otherwise default to ``0, \ldots, P-1``."""
+        if positions is None:
+            return torch.arange(seq_len, device=device)
+        return positions
+
+    @staticmethod
     def _normalize_positions(
         positions: torch.Tensor,
         position_mask: torch.Tensor | None,
@@ -296,8 +306,8 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
 class AdditivePosMultiheadAttention(PositionalAttentionBase):
     r"""Wrap :class:`torch.nn.MultiheadAttention` and add positional features to Q/K only.
 
-    The positional submodule maps coordinates to an additive update of the query
-    and key streams,
+    A learned table maps coordinates to an additive update of the query and key
+    streams,
 
     .. math::
 
@@ -320,17 +330,15 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
 
     Attributes:
     ----------
-    position_encoder:
-        Module taking a tensor of positions of shape ``(P,)`` or ``(B, P)`` and returning
-        positional embeddings of shape ``(P, D)`` or ``(B, P, D)``.
+    pos_emb:
+        Learnable table with shape ``(max_len, D)`` storing the absolute
+        positional embeddings.
     attn:
         Internal :class:`torch.nn.MultiheadAttention` backend.
     embed_dim:
         Model width ``D``.
     num_heads:
         Number of attention heads.
-    batch_first:
-        Whether the attention backend expects ``(B, T, D)`` inputs.
     """
 
     def __init__(
@@ -338,10 +346,9 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
         embed_dim: int,
         num_heads: int,
         *,
-        position_encoder: torch.nn.Module,
+        max_len: int,
         dropout: float = 0.0,
         bias: bool = True,
-        batch_first: bool = True,
         device=None,
         dtype=None,
     ) -> None:
@@ -350,29 +357,28 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
         Args:
             embed_dim (:class:`int`): Model width ``D``.
             num_heads (:class:`int`): Number of attention heads.
-            position_encoder (:class:`torch.nn.Module`): Module mapping positions
-                to additive embeddings.
+            max_len (:class:`int`): Maximum supported sequence length.
             dropout (:class:`float`): Dropout probability on attention weights. Default: 0.0.
             bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.
-            batch_first (:class:`bool`): If ``True``, then the input and output tensors are provided as
-                ``(batch, seq, feature)``. Default: ``True``.
             device (:class:`torch.device`, optional): Parameter factory options.
             dtype (:class:`torch.dtype`, optional): Parameter factory options.
         """
         super().__init__()
-        self.position_encoder = position_encoder
+        if max_len <= 0:
+            raise ValueError(f"max_len must be positive, got {max_len}")
         self.attn = torch.nn.MultiheadAttention(
             embed_dim,
             num_heads,
             dropout=dropout,
             bias=bias,
-            batch_first=batch_first,
+            batch_first=True,
             device=device,
             dtype=dtype,
         )
         self.embed_dim = embed_dim
+        self.max_len = max_len
         self.num_heads = num_heads
-        self.batch_first = True
+        self.pos_emb = torch.nn.Parameter(torch.zeros(max_len, embed_dim, device=device, dtype=dtype))
 
     def forward(
         self,
@@ -417,10 +423,8 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
         positions: torch.Tensor | None,
         position_mask: torch.Tensor | None,
     ) -> torch.Tensor:
-        if positions is None:
-            return torch.zeros_like(x)
-
         batch_size, seq_len, _ = x.shape
+        positions = self._positions_or_arange(positions, seq_len=seq_len, device=x.device)
 
         positions, position_mask = self._normalize_positions(
             positions,
@@ -430,7 +434,7 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
         )
 
         encoded_positions = positions.masked_fill(~position_mask, 0) if position_mask is not None else positions
-        pos_emb = self.position_encoder(encoded_positions)
+        pos_emb = self.pos_emb[encoded_positions.long()]
         if pos_emb.ndim == 2:
             expected_shape = (seq_len, self.embed_dim)
             if pos_emb.shape != expected_shape:
@@ -447,6 +451,240 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
             pos_emb = pos_emb * position_mask.unsqueeze(-1)
 
         return pos_emb
+
+
+class AdditiveRelMultiheadAttention(PositionalAttentionBase):
+    r"""Wrap :class:`torch.nn.MultiheadAttention` and subtract a relative-position bias from the logits.
+
+    A learned table maps pairwise relative distances to an additive correction
+    of the attention scores,
+
+    .. math::
+
+            \mathbf{A}_{ij} =
+            \frac{\mathbf{q}_i^\top \mathbf{k}_j}{\sqrt{d_h}}
+            - \phi_\theta(\mathbf{P}_{Q, i} - \mathbf{P}_{K, j}),
+
+    while the value stream remains unchanged. Since the correction depends only
+    on relative offsets, the attention module is time-translation equivariant.
+
+    Shape
+    -----
+    - ``query``, ``key``, ``value``: ``(B, T, D)``.
+    - ``q_positions``, ``k_positions``: ``(P,)`` or ``(B, P)``.
+    - ``q_position_mask``, ``k_position_mask``: boolean masks with the same shape
+        as the corresponding position tensor.
+    - Returns: the attention output and, optionally, attention weights.
+
+    Attributes:
+    ----------
+    rel_bias:
+        Learnable table with shape ``(2 * max_distance + 1,)`` storing the
+        scalar bias for each clipped relative offset.
+    attn:
+        Internal :class:`torch.nn.MultiheadAttention` backend.
+    embed_dim:
+        Model width ``D``.
+    num_heads:
+        Number of attention heads.
+
+    """
+
+    def __init__(
+        self,
+        embed_dim: int,
+        num_heads: int,
+        *,
+        max_distance: int,
+        dropout: float = 0.0,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+    ) -> None:
+        r"""Initialize relative-bias attention with a wrapped multi-head backend.
+
+        Args:
+            embed_dim (:class:`int`): Model width ``D``.
+            num_heads (:class:`int`): Number of attention heads.
+            max_distance (:class:`int`): Maximum relative distance represented
+                explicitly before clipping.
+            dropout (:class:`float`): Dropout probability on attention weights. Default: 0.0.
+            bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.
+            device (:class:`torch.device`, optional): Parameter factory options.
+            dtype (:class:`torch.dtype`, optional): Parameter factory options.
+
+        """
+        super().__init__()
+        if max_distance < 0:
+            raise ValueError(f"max_distance must be non-negative, got {max_distance}")
+        self.attn = torch.nn.MultiheadAttention(
+            embed_dim,
+            num_heads,
+            dropout=dropout,
+            bias=bias,
+            batch_first=True,
+            device=device,
+            dtype=dtype,
+        )
+        self.embed_dim = embed_dim
+        self.max_distance = max_distance
+        self.num_heads = num_heads
+        self.rel_bias = torch.nn.Parameter(torch.zeros(2 * max_distance + 1, device=device, dtype=dtype))
+
+    def forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        *,
+        q_positions: torch.Tensor | None = None,
+        k_positions: torch.Tensor | None = None,
+        q_position_mask: torch.Tensor | None = None,
+        k_position_mask: torch.Tensor | None = None,
+        attn_mask: torch.Tensor | None = None,
+        key_padding_mask: torch.Tensor | None = None,
+        need_weights: bool = False,
+        is_causal: bool = False,
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        r"""Subtract the relative-position bias from the attention logits.
+
+        Shape
+        -----
+        - ``query``, ``key``, ``value``: see :class:`PositionalAttentionBase`.
+        - Returns: ``(output, attn_weights)`` from the wrapped
+          :class:`torch.nn.MultiheadAttention`.
+        """
+        batch_size = query.shape[0]
+        tgt_len = query.shape[1]
+        src_len = key.shape[1]
+        q_positions = self._positions_or_arange(q_positions, seq_len=tgt_len, device=query.device)
+        k_positions = self._positions_or_arange(k_positions, seq_len=src_len, device=key.device)
+
+        rel_bias = self._relative_bias(
+            q_positions,
+            k_positions,
+            q_position_mask,
+            k_position_mask,
+            batch_size=batch_size,
+            tgt_len=tgt_len,
+            src_len=src_len,
+            target_dtype=query.dtype,
+        )
+        attn_mask = F._canonical_mask(
+            mask=attn_mask,
+            mask_name="attn_mask",
+            other_type=None,
+            other_name="",
+            target_type=query.dtype,
+            check_other=False,
+        )
+        if rel_bias is not None:
+            attn_mask = -rel_bias if attn_mask is None else attn_mask - rel_bias
+
+        return self.attn(
+            query,
+            key,
+            value,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            need_weights=need_weights,
+            is_causal=is_causal,
+        )
+
+    def _relative_bias(
+        self,
+        q_positions: torch.Tensor | None,
+        k_positions: torch.Tensor | None,
+        q_position_mask: torch.Tensor | None,
+        k_position_mask: torch.Tensor | None,
+        *,
+        batch_size: int,
+        tgt_len: int,
+        src_len: int,
+        target_dtype: torch.dtype,
+    ) -> torch.Tensor | None:
+        if q_positions is None or k_positions is None:
+            return None
+
+        positions_shared_across_batch = self._positions_are_shared_across_batch(
+            q_positions, q_position_mask
+        ) and self._positions_are_shared_across_batch(k_positions, k_position_mask)
+        q_positions, q_position_mask = self._normalize_positions(
+            q_positions,
+            q_position_mask,
+            batch_size=batch_size,
+            seq_len=tgt_len,
+        )
+        k_positions, k_position_mask = self._normalize_positions(
+            k_positions,
+            k_position_mask,
+            batch_size=batch_size,
+            seq_len=src_len,
+        )
+
+        if positions_shared_across_batch:
+            q_positions = q_positions[0]
+            k_positions = k_positions[0]
+            rel_positions = q_positions.unsqueeze(-1) - k_positions.unsqueeze(-2)
+            pair_mask = None
+            if q_position_mask is not None or k_position_mask is not None:
+                q_valid = (
+                    torch.ones(tgt_len, device=rel_positions.device, dtype=torch.bool)
+                    if q_position_mask is None
+                    else q_position_mask[0]
+                )
+                k_valid = (
+                    torch.ones(src_len, device=rel_positions.device, dtype=torch.bool)
+                    if k_position_mask is None
+                    else k_position_mask[0]
+                )
+                pair_mask = q_valid.unsqueeze(-1) & k_valid.unsqueeze(-2)
+        else:
+            rel_positions = q_positions.unsqueeze(-1) - k_positions.unsqueeze(-2)
+            pair_mask = None
+            if q_position_mask is not None or k_position_mask is not None:
+                q_valid = (
+                    torch.ones(batch_size, tgt_len, device=rel_positions.device, dtype=torch.bool)
+                    if q_position_mask is None
+                    else q_position_mask
+                )
+                k_valid = (
+                    torch.ones(batch_size, src_len, device=rel_positions.device, dtype=torch.bool)
+                    if k_position_mask is None
+                    else k_position_mask
+                )
+                pair_mask = q_valid.unsqueeze(-1) & k_valid.unsqueeze(-2)
+
+        rel_bias = self._relative_bias_values(rel_positions).to(dtype=target_dtype)
+        if rel_bias.ndim == 3:
+            rel_bias = rel_bias.repeat_interleave(self.num_heads, dim=0)
+        elif not positions_shared_across_batch:
+            rel_bias = rel_bias.unsqueeze(0).expand(batch_size * self.num_heads, -1, -1)
+
+        if pair_mask is None:
+            return rel_bias
+        if rel_bias.ndim == 2:
+            return rel_bias * pair_mask.to(dtype=rel_bias.dtype)
+        if pair_mask.ndim == 2:
+            pair_mask = pair_mask.unsqueeze(0).expand(batch_size * self.num_heads, -1, -1)
+        else:
+            pair_mask = pair_mask.repeat_interleave(self.num_heads, dim=0)
+        return rel_bias * pair_mask.to(dtype=rel_bias.dtype)
+
+    @staticmethod
+    def _positions_are_shared_across_batch(
+        positions: torch.Tensor,
+        position_mask: torch.Tensor | None,
+    ) -> bool:
+        shared_positions = positions.ndim == 1 or (positions.ndim == 2 and positions.shape[0] == 1)
+        if position_mask is None:
+            return shared_positions
+        shared_mask = position_mask.ndim == 1 or (position_mask.ndim == 2 and position_mask.shape[0] == 1)
+        return shared_positions and shared_mask
+
+    def _relative_bias_values(self, rel_positions: torch.Tensor) -> torch.Tensor:
+        clipped_positions = rel_positions.clamp(-self.max_distance, self.max_distance).long() + self.max_distance
+        return self.rel_bias[clipped_positions]
 
 
 class RoPEMultiheadAttention(PositionalAttentionBase):
@@ -476,8 +714,7 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
 
     Shape
     -----
-    - ``query``, ``key``, ``value``: ``(B, T, D)`` if ``batch_first=True`` or
-        ``(T, B, D)`` otherwise.
+    - ``query``, ``key``, ``value``: ``(B, T, D)``.
     - ``q_positions``, ``k_positions``: ``(P,)`` or ``(B, P)``.
     - ``q_position_mask``, ``k_position_mask``: boolean masks with the same shape
         as the corresponding position tensor.
@@ -494,8 +731,6 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         Width of each head, ``head_dim = embed_dim / num_heads``.
     dropout:
         Dropout probability applied to attention weights during training.
-    batch_first:
-        Whether the module expects ``(B, T, D)`` inputs.
     q_proj, k_proj, v_proj, out_proj:
         Learnable linear projections used to form queries, keys, values, and the
         final output.
@@ -510,7 +745,6 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         dropout: float = 0.0,
         bias: bool = True,
         rope_base: float = 10000.0,
-        batch_first: bool = True,
         device=None,
         dtype=None,
     ) -> None:
@@ -522,8 +756,6 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
             dropout (:class:`float`): Dropout probability on attention weights. Default: 0.0.
             bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.
             rope_base (:class:`float`): Frequency base used to build the rotary spectrum. Default: ``10000.0``.
-            batch_first (:class:`bool`): If ``True``, then the input and output tensors are provided as
-                ``(batch, seq, feature)``. Default: ``True``.
             device (:class:`torch.device`, optional): Parameter factory options.
             dtype (:class:`torch.dtype`, optional): Parameter factory options.
         """
@@ -549,7 +781,6 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.dropout = dropout
-        self.batch_first = batch_first
         self.head_dim = head_dim
         self.q_proj = torch.nn.Linear(embed_dim, embed_dim, bias=bias, **factory_kwargs)
         self.k_proj = torch.nn.Linear(embed_dim, embed_dim, bias=bias, **factory_kwargs)
@@ -580,6 +811,8 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         - Returns: ``(output, attn_weights)`` with the same leading layout as the
           input and optional attention weights when requested.
         """
+        q_positions = self._positions_or_arange(q_positions, seq_len=query.shape[1], device=query.device)
+        k_positions = self._positions_or_arange(k_positions, seq_len=key.shape[1], device=key.device)
         q = self._split_heads(self.q_proj(query))
         k = self._split_heads(self.k_proj(key))
         v = self._split_heads(self.v_proj(value))
@@ -618,8 +851,6 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
             attn_weights = None
 
         output = self.out_proj(self._merge_heads(output))
-        if not self.batch_first:
-            output = output.transpose(0, 1)
         return output, attn_weights
 
     def _split_heads(self, x: torch.Tensor) -> torch.Tensor:

@@ -9,6 +9,7 @@ from symm_learning.models.diffusion.cond_transformer_regressor import GenCondReg
 from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 from symm_learning.nn.activation import (
     AdditivePosMultiheadAttention,
+    AdditiveRelMultiheadAttention,
     PositionalAttentionBase,
     RoPEMultiheadAttention,
     RotaryEmbedding,
@@ -34,8 +35,13 @@ class CondTransformer(GenCondRegressor):
 
     ``"additive_absolute"``
         Uses :class:`~symm_learning.nn.activation.AdditivePosMultiheadAttention`. A learned
-        :class:`torch.nn.Embedding` maps integer positions to additive updates that are added
-        to the query and key streams before standard multi-head attention.
+        table maps integer positions to additive updates that are added to the
+        query and key streams before standard multi-head attention.
+
+    ``"additive_relative"``
+        Uses :class:`~symm_learning.nn.activation.AdditiveRelMultiheadAttention`. A learned
+        table maps relative token distances to additive score biases, yielding a
+        time-translation-equivariant attention rule.
 
     ``"rope"``
         Uses :class:`~symm_learning.nn.activation.RoPEMultiheadAttention`. Rotary position
@@ -58,7 +64,8 @@ class CondTransformer(GenCondRegressor):
         cond_dim (:class:`int`): Dimensionality of each conditioning element in :math:`Z`.
         in_horizon (:class:`int`): Maximum length of :math:`X`.
         cond_horizon (:class:`int`): Maximum length of :math:`Z` (excluding the optimisation-step token).
-        pos_encoding (:class:`str`): Positional encoding strategy: ``"additive_absolute"`` or ``"rope"``.
+        pos_encoding (:class:`str`): Positional encoding strategy: ``"additive_absolute"``,
+            ``"additive_relative"``, ``"rope"``, or ``"none"``.
         num_layers (:class:`int`): Number of Transformer decoder layers.
         num_attention_heads (:class:`int`): Number of attention heads in Multi-Head Attention blocks.
         embedding_dim (:class:`int`): Dimensionality of token embeddings.
@@ -75,7 +82,7 @@ class CondTransformer(GenCondRegressor):
         cond_dim: int,
         in_horizon: int,
         cond_horizon: int,
-        pos_encoding: Literal["additive_absolute", "rope"] = "additive_absolute",
+        pos_encoding: Literal["additive_absolute", "additive_relative", "rope", "none"] = "additive_absolute",
         num_layers: int = 6,
         num_attention_heads: int = 6,
         embedding_dim: int = 768,
@@ -83,6 +90,7 @@ class CondTransformer(GenCondRegressor):
         p_drop_attn: float = 0.1,
         causal_attn: bool = False,
         num_cond_layers: int = 0,
+        **pos_encoding_kwargs,
     ) -> None:
         super().__init__(in_dim=in_dim, out_dim=out_dim, cond_dim=cond_dim)
 
@@ -102,27 +110,43 @@ class CondTransformer(GenCondRegressor):
         self.opt_time_emb = SinusoidalPosEmb(embedding_dim)
 
         # -- Build attention modules based on pos_encoding --
-        def _build_attn() -> AdditivePosMultiheadAttention | RoPEMultiheadAttention:
+        max_pos_len = max(self.in_horizon, self.cond_horizon)
+        max_rel_distance = self.in_horizon + self.cond_horizon - 2
+
+        def _build_attn() -> PositionalAttentionBase | torch.nn.MultiheadAttention:
             if pos_encoding == "additive_absolute":
                 return AdditivePosMultiheadAttention(
                     embed_dim=embedding_dim,
                     num_heads=num_attention_heads,
-                    position_encoder=self._build_additive_pos_encoder(
-                        max(self.in_horizon, self.cond_horizon), embedding_dim
-                    ),
+                    max_len=max_pos_len,
                     dropout=p_drop_attn,
-                    batch_first=True,
+                )
+            elif pos_encoding == "additive_relative":
+                return AdditiveRelMultiheadAttention(
+                    embed_dim=embedding_dim,
+                    num_heads=num_attention_heads,
+                    max_distance=max_rel_distance,
+                    dropout=p_drop_attn,
                 )
             elif pos_encoding == "rope":
                 return RoPEMultiheadAttention(
                     embed_dim=embedding_dim,
                     num_heads=num_attention_heads,
                     dropout=p_drop_attn,
+                    rope_base=pos_encoding_kwargs.get("rope_base", 100),
+                )
+            elif pos_encoding == "none":
+                return torch.nn.MultiheadAttention(
+                    embed_dim=embedding_dim,
+                    num_heads=num_attention_heads,
+                    dropout=p_drop_attn,
                     batch_first=True,
-                    rope_base=16,
                 )
             else:
-                raise ValueError(f"Unknown pos_encoding={pos_encoding!r}. Expected 'additive_absolute' or 'rope'.")
+                raise ValueError(
+                    f"Unknown pos_encoding={pos_encoding!r}. Expected "
+                    "'additive_absolute', 'additive_relative', 'rope', or 'none'."
+                )
 
         # Conditioning encoder
         self.encoder = None
@@ -179,20 +203,6 @@ class CondTransformer(GenCondRegressor):
 
     # -- helpers --
 
-    @staticmethod
-    def _build_additive_pos_encoder(max_len: int, embedding_dim: int) -> torch.nn.Module:
-        """Build a learned embedding table mapping integer positions to D-dim vectors."""
-
-        class AbsolutePositionalEmbedding(torch.nn.Module):
-            def __init__(self, max_len: int, embedding_dim: int):
-                super().__init__()
-                self.pos_emb = torch.nn.Parameter(torch.zeros(max_len, embedding_dim))
-
-            def forward(self, positions):
-                return self.pos_emb[positions]
-
-        return AbsolutePositionalEmbedding(max_len, embedding_dim)
-
     def _init_weights(self, module):
         ignore_types = (
             torch.nn.Dropout,
@@ -245,13 +255,15 @@ class CondTransformer(GenCondRegressor):
                 torch.nn.init.normal_(module.out_proj.weight, mean=0.0, std=0.02)
                 if module.out_proj.bias is not None:
                     torch.nn.init.zeros_(module.out_proj.bias)
+            if hasattr(module, "pos_emb"):
+                torch.nn.init.normal_(module.pos_emb, mean=0.0, std=0.02)
+            if hasattr(module, "rel_bias"):
+                torch.nn.init.normal_(module.rel_bias, mean=0.0, std=0.02)
         elif isinstance(module, torch.nn.LayerNorm):
             torch.nn.init.zeros_(module.bias)
             torch.nn.init.ones_(module.weight)
         elif isinstance(module, CondTransformer):
             pass  # No standalone pos_emb parameter to init in this variant
-        elif module.__class__.__name__ in ["AbsolutePositionalEmbedding"]:
-            torch.nn.init.normal_(module.pos_emb, mean=0.0, std=0.02)
         elif isinstance(module, RotaryEmbedding):
             pass  # Rotary embeddings are deterministic and have no learnable parameters
         elif isinstance(module, ignore_types):
@@ -276,7 +288,7 @@ class CondTransformer(GenCondRegressor):
                     no_decay.add(fpn)
                 elif pn.endswith("weight") and isinstance(m, whitelist_weight_modules):
                     decay.add(fpn)
-                elif pn.endswith("weight") and isinstance(m, blacklist_weight_modules):
+                elif pn.endswith("weight") and isinstance(m, blacklist_weight_modules) or pn in {"pos_emb", "rel_bias"}:
                     no_decay.add(fpn)
 
         # validate that we considered every parameter
@@ -322,6 +334,7 @@ class CondTransformer(GenCondRegressor):
 
         Returns:
             :class:`~torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
+
         """
         # 1. Inference-time optimisation step embedding (k). First conditioning token.
         if isinstance(opt_step, torch.Tensor):
@@ -337,14 +350,24 @@ class CondTransformer(GenCondRegressor):
         cond_horizon = cond_embeddings.shape[1]
         cond_tokens = self.drop(cond_embeddings)
 
-        # Build integer position indices for the conditioning and input sequences
-        cond_positions = torch.arange(cond_horizon, device=X.device)  # (T_cond,)
+        # Build integer position indices for the conditioning and input sequences.
+        # Under RoPE, observation history lives on the past-to-present timeline while the action
+        # trajectory starts at the present, so the last observation and first action both sit at time 0.
         cond_position_mask = torch.cat(
             [
                 torch.tensor([False], device=X.device, dtype=torch.bool),
                 torch.ones(cond_horizon - 1, device=X.device, dtype=torch.bool),
             ]
         )
+        if self.pos_encoding in {"rope", "additive_relative"}:
+            cond_positions = torch.cat(
+                [
+                    torch.zeros(1, device=X.device, dtype=torch.long),
+                    torch.arange(-(cond_horizon - 2), 1, device=X.device),
+                ]
+            )
+        else:
+            cond_positions = torch.arange(cond_horizon, device=X.device)  # (T_cond,)
 
         input_horizon = X.shape[1]
         input_positions = torch.arange(input_horizon, device=X.device)  # (T_x,)
@@ -391,7 +414,7 @@ if __name__ == "__main__":  # noqa: D103
     batch_size = 512
     num_batches = 30
 
-    for pos_enc in ("additive_absolute", "rope"):
+    for pos_enc in ("additive_absolute", "additive_relative", "rope"):
         print(f"\n{'=' * 60}")
         print(f"Testing pos_encoding={pos_enc!r}")
         print(f"{'=' * 60}")
