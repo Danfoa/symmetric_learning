@@ -1,0 +1,8 @@
+﻿eCondTransformer
+================
+
+.. currentmodule:: symm_learning.models
+
+.. autoclass:: eCondTransformer
+   :members:
+   :show-inheritance:

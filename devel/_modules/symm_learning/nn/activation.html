@@ -495,6 +495,8 @@
         <span class="c1">#     constant_(self.out_proj.bias, 0.0)</span>
 
 
+<div class="viewcode-block" id="PositionalAttentionBase">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.PositionalAttentionBase.html#symm_learning.nn.activation.PositionalAttentionBase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PositionalAttentionBase</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Abstract interface for attention blocks with explicit positional branches.</span>
 
@@ -538,6 +540,8 @@
 <span class="sd">    positional encoder and attention parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+<div class="viewcode-block" id="PositionalAttentionBase.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.PositionalAttentionBase.html#symm_learning.nn.activation.PositionalAttentionBase.forward">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -564,8 +568,11 @@
 <span class="sd">        - Returns: ``(output, attn_weights)`` where ``attn_weights`` is ``None``</span>
 <span class="sd">            unless ``need_weights=True``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
+
+<div class="viewcode-block" id="PositionalAttentionBase.reset_parameters">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.PositionalAttentionBase.html#symm_learning.nn.activation.PositionalAttentionBase.reset_parameters">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize parameters to match torch.nn.MultiheadAttention.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;attn&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MultiheadAttention</span><span class="p">):</span>
@@ -601,7 +608,8 @@
             <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">out_proj</span><span class="p">,</span> <span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_uniform_</span><span class="p">(</span><span class="n">out_proj</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">out_proj</span><span class="p">,</span> <span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">out_proj</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">out_proj</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div>
+
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_positions_or_arange</span><span class="p">(</span>
@@ -659,9 +667,12 @@
         <span class="k">if</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">batch_size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">position_mask</span> <span class="o">=</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">positions</span><span class="p">,</span> <span class="n">position_mask</span>
+        <span class="k">return</span> <span class="n">positions</span><span class="p">,</span> <span class="n">position_mask</span></div>
 
 
+
+<div class="viewcode-block" id="AdditivePosMultiheadAttention">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.AdditivePosMultiheadAttention.html#symm_learning.nn.activation.AdditivePosMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AdditivePosMultiheadAttention</span><span class="p">(</span><span class="n">PositionalAttentionBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Wrap :class:`torch.nn.MultiheadAttention` and add positional features to Q/K only.</span>
 
@@ -739,6 +750,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">num_heads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">))</span>
 
+<div class="viewcode-block" id="AdditivePosMultiheadAttention.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.AdditivePosMultiheadAttention.html#symm_learning.nn.activation.AdditivePosMultiheadAttention.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">query</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
@@ -774,7 +787,8 @@
             <span class="n">key_padding_mask</span><span class="o">=</span><span class="n">key_padding_mask</span><span class="p">,</span>
             <span class="n">need_weights</span><span class="o">=</span><span class="n">need_weights</span><span class="p">,</span>
             <span class="n">is_causal</span><span class="o">=</span><span class="n">is_causal</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_position_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -809,9 +823,12 @@
         <span class="k">if</span> <span class="n">position_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">pos_emb</span> <span class="o">=</span> <span class="n">pos_emb</span> <span class="o">*</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">pos_emb</span>
+        <span class="k">return</span> <span class="n">pos_emb</span></div>
 
 
+
+<div class="viewcode-block" id="eAdditivePosMultiheadAttention">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.eAdditivePosMultiheadAttention.html#symm_learning.nn.activation.eAdditivePosMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">eAdditivePosMultiheadAttention</span><span class="p">(</span><span class="n">eModule</span><span class="p">,</span> <span class="n">PositionalAttentionBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant additive positional attention with invariant query/key updates.&quot;&quot;&quot;</span>
 
@@ -920,9 +937,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span></div>
 
 
+
+<div class="viewcode-block" id="AdditiveRelMultiheadAttention">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.AdditiveRelMultiheadAttention.html#symm_learning.nn.activation.AdditiveRelMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AdditiveRelMultiheadAttention</span><span class="p">(</span><span class="n">PositionalAttentionBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Wrap :class:`torch.nn.MultiheadAttention` and subtract a relative-position bias from the logits.</span>
 
@@ -1001,6 +1021,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">num_heads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rel_bias</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">max_distance</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">))</span>
 
+<div class="viewcode-block" id="AdditiveRelMultiheadAttention.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.AdditiveRelMultiheadAttention.html#symm_learning.nn.activation.AdditiveRelMultiheadAttention.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">query</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
@@ -1059,7 +1081,8 @@
             <span class="n">key_padding_mask</span><span class="o">=</span><span class="n">key_padding_mask</span><span class="p">,</span>
             <span class="n">need_weights</span><span class="o">=</span><span class="n">need_weights</span><span class="p">,</span>
             <span class="n">is_causal</span><span class="o">=</span><span class="n">is_causal</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_relative_bias</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1154,9 +1177,12 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_relative_bias_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rel_positions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">clipped_positions</span> <span class="o">=</span> <span class="n">rel_positions</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_bias</span><span class="p">[</span><span class="n">clipped_positions</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_bias</span><span class="p">[</span><span class="n">clipped_positions</span><span class="p">]</span></div>
 
 
+
+<div class="viewcode-block" id="eAdditiveRelMultiheadAttention">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.eAdditiveRelMultiheadAttention.html#symm_learning.nn.activation.eAdditiveRelMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">eAdditiveRelMultiheadAttention</span><span class="p">(</span><span class="n">eModule</span><span class="p">,</span> <span class="n">PositionalAttentionBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant relative-bias attention with an equivariant attention backend.&quot;&quot;&quot;</span>
 
@@ -1344,9 +1370,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rel_bias</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span></div>
 
 
+
+<div class="viewcode-block" id="RoPEMultiheadAttention">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RoPEMultiheadAttention.html#symm_learning.nn.activation.RoPEMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RoPEMultiheadAttention</span><span class="p">(</span><span class="n">PositionalAttentionBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Multi-head attention with rotary position embeddings applied to Q and K.</span>
 
@@ -1448,6 +1477,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">embed_dim</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rotary_emb</span> <span class="o">=</span> <span class="n">RotaryEmbedding</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">rope_base</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
 
+<div class="viewcode-block" id="RoPEMultiheadAttention.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RoPEMultiheadAttention.html#symm_learning.nn.activation.RoPEMultiheadAttention.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">query</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
@@ -1511,7 +1542,8 @@
             <span class="n">attn_weights</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_merge_heads</span><span class="p">(</span><span class="n">output</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">output</span><span class="p">,</span> <span class="n">attn_weights</span>
+        <span class="k">return</span> <span class="n">output</span><span class="p">,</span> <span class="n">attn_weights</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_split_heads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
@@ -1568,9 +1600,12 @@
         <span class="n">attn_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">attn_scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="n">attn_weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">attn_weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">attn_weights</span><span class="p">,</span> <span class="n">v</span><span class="p">),</span> <span class="n">attn_weights</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">attn_weights</span><span class="p">,</span> <span class="n">v</span><span class="p">),</span> <span class="n">attn_weights</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
 
 
+
+<div class="viewcode-block" id="RotaryEmbedding">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RotaryEmbedding.html#symm_learning.nn.activation.RotaryEmbedding">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RotaryEmbedding</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Precompute the cosine and sine tables used by rotary embeddings.</span>
 
@@ -1614,11 +1649,16 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;inv_freq&quot;</span><span class="p">,</span> <span class="n">inv_freq</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
+<div class="viewcode-block" id="RotaryEmbedding.forward">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RotaryEmbedding.html#symm_learning.nn.activation.RotaryEmbedding.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">positions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the RoPE cosine and sine tables for the provided positions.&quot;&quot;&quot;</span>
         <span class="n">angles</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_freq</span>
-        <span class="k">return</span> <span class="n">angles</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">angles</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">angles</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">angles</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span></div>
 
+
+<div class="viewcode-block" id="RotaryEmbedding.apply_rope">
+<a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RotaryEmbedding.html#symm_learning.nn.activation.RotaryEmbedding.apply_rope">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">apply_rope</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
@@ -1667,7 +1707,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">x_rotated</span>
 
-        <span class="k">return</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+</div>
+
 </pre></div>
 
                 </article>

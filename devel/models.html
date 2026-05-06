@@ -48,7 +48,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="eMLP" href="generated/symm_learning.models.eMLP.html" />
-    <link rel="prev" title="eEMAStats" href="generated/symm_learning.nn.running_stats.eEMAStats.html" />
+    <link rel="prev" title="TransformerDecoder" href="generated/symm_learning.nn.TransformerDecoder.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.7.5" />
@@ -317,7 +317,11 @@
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.MLP.html">MLP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.eTimeCNNEncoder.html">eTimeCNNEncoder</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.TimeCNNEncoder.html">TimeCNNEncoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.eCondTransformer.html">eCondTransformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.CondTransformer.html">CondTransformer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.GenCondRegressor.html">GenCondRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.eConditionalUnet1D.html">eConditionalUnet1D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.models.ConditionalUnet1D.html">ConditionalUnet1D</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="stats.html">stats</a></li>
@@ -402,8 +406,20 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/symm_learning.models.TimeCNNEncoder.html#symm_learning.models.TimeCNNEncoder" title="symm_learning.models.TimeCNNEncoder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeCNNEncoder</span></code></a>(in_dim, out_dim, ...[, ...])</p></td>
 <td><p>1D CNN baseline encoder for inputs of shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">in_dim,</span> <span class="pre">H)</span></code>.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/symm_learning.models.eCondTransformer.html#symm_learning.models.eCondTransformer" title="symm_learning.models.eCondTransformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eCondTransformer</span></code></a>(in_rep, cond_rep, out_rep, ...)</p></td>
+<td><p>Equivariant encoder/decoder Transformer with configurable positional attention.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/symm_learning.models.CondTransformer.html#symm_learning.models.CondTransformer" title="symm_learning.models.CondTransformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CondTransformer</span></code></a>(in_dim, out_dim, cond_dim, ...)</p></td>
+<td><p>Encoder/decoder Transformer with configurable positional attention.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/symm_learning.models.GenCondRegressor.html#symm_learning.models.GenCondRegressor" title="symm_learning.models.GenCondRegressor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GenCondRegressor</span></code></a>(in_dim, out_dim, cond_dim)</p></td>
 <td><p>Generative Conditional Regressor module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/symm_learning.models.eConditionalUnet1D.html#symm_learning.models.eConditionalUnet1D" title="symm_learning.models.eConditionalUnet1D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eConditionalUnet1D</span></code></a>(in_rep, local_cond_rep[, ...])</p></td>
+<td><p>Equivariant U-Net for 1D signals with global conditioning and FiLM.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/symm_learning.models.ConditionalUnet1D.html#symm_learning.models.ConditionalUnet1D" title="symm_learning.models.ConditionalUnet1D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConditionalUnet1D</span></code></a>(input_dim[, ...])</p></td>
+<td><p>A 1D/Time U-Net for predicting conditional score/velocity fields.</p></td>
 </tr>
 </tbody>
 </table>
@@ -421,12 +437,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="generated/symm_learning.nn.running_stats.eEMAStats.html"
+       href="generated/symm_learning.nn.TransformerDecoder.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">eEMAStats</p>
+        <p class="prev-next-title">TransformerDecoder</p>
       </div>
     </a>
     <a class="right-next"

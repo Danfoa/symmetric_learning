@@ -1,0 +1,8 @@
+﻿AdditivePosMultiheadAttention
+=============================
+
+.. currentmodule:: symm_learning.nn.activation
+
+.. autoclass:: AdditivePosMultiheadAttention
+   :members:
+   :show-inheritance:

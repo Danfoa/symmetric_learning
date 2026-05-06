@@ -1,0 +1,8 @@
+﻿AdditiveRelMultiheadAttention
+=============================
+
+.. currentmodule:: symm_learning.nn.activation
+
+.. autoclass:: AdditiveRelMultiheadAttention
+   :members:
+   :show-inheritance:

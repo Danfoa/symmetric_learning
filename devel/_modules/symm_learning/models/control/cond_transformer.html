@@ -522,6 +522,8 @@
     <span class="k">return</span> <span class="n">self_att_mask</span><span class="p">,</span> <span class="n">cross_att_mask</span>
 
 
+<div class="viewcode-block" id="CondTransformer">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.CondTransformer.html#symm_learning.models.CondTransformer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CondTransformer</span><span class="p">(</span><span class="n">GenCondRegressor</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Encoder/decoder Transformer with configurable positional attention.</span>
 
@@ -808,6 +810,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Unaccounted module </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">module</span><span class="p">))</span>
 
+<div class="viewcode-block" id="CondTransformer.get_optim_groups">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.CondTransformer.html#symm_learning.models.CondTransformer.get_optim_groups">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_optim_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weight_decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create optimizer groups separating parameters that receive weight decay from those that don&#39;t.&quot;&quot;&quot;</span>
         <span class="n">decay</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
@@ -848,16 +852,22 @@
                 <span class="s2">&quot;weight_decay&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">]</span>
-        <span class="k">return</span> <span class="n">optim_groups</span>
+        <span class="k">return</span> <span class="n">optim_groups</span></div>
 
+
+<div class="viewcode-block" id="CondTransformer.configure_optimizers">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.CondTransformer.html#symm_learning.models.CondTransformer.configure_optimizers">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">configure_optimizers</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">weight_decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span> <span class="n">betas</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">)</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create optimizer groups separating parameters that receive weight decay from those that don&#39;t.&quot;&quot;&quot;</span>
         <span class="n">optim_groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_optim_groups</span><span class="p">(</span><span class="n">weight_decay</span><span class="o">=</span><span class="n">weight_decay</span><span class="p">)</span>
         <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">optim_groups</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">,</span> <span class="n">betas</span><span class="o">=</span><span class="n">betas</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">optimizer</span>
+        <span class="k">return</span> <span class="n">optimizer</span></div>
 
+
+<div class="viewcode-block" id="CondTransformer.forward">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.CondTransformer.html#symm_learning.models.CondTransformer.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">opt_step</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Z</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Forward pass of the conditional transformer regressor, approximating V_k = f(X_k, Z, k).</span>
 
@@ -919,7 +929,9 @@
         <span class="c1"># 5. Regression head projecting to output dimension.</span>
         <span class="n">out_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span><span class="p">(</span><span class="n">out_tokens</span><span class="p">)</span>
         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">out_tokens</span><span class="p">)</span>  <span class="c1"># (B,Tx, out_dim := d_v)</span>
-        <span class="k">return</span> <span class="n">out</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+</div>
+
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>  <span class="c1"># noqa: D103</span>

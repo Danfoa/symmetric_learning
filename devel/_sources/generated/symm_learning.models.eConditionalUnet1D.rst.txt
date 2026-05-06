@@ -1,0 +1,8 @@
+﻿eConditionalUnet1D
+==================
+
+.. currentmodule:: symm_learning.models
+
+.. autoclass:: eConditionalUnet1D
+   :members:
+   :show-inheritance:

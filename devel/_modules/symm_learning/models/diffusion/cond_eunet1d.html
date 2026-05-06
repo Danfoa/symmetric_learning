@@ -1,0 +1,951 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" data-theme="light">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>symm_learning.models.diffusion.cond_eunet1d &#8212; Symmetric Learning v0.7.5 Docs [devel]</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=cf6ff117" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../../../_static/documentation_options.js?v=a674670e"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/models/diffusion/cond_eunet1d';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="icon" href="../../../../_static/logo_v1_without_text.svg"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.7.5" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="light">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+    
+    <img src="../../../../_static/logo_v1_with_text.svg" class="logo__image only-light" alt=""/>
+    <img src="../../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">v0.7.5 - devel</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../index.html">
+    Home
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../reference.html">
+    Reference API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">symm_learning.models.diffusion.cond_eunet1d</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for symm_learning.models.diffusion.cond_eunet1d</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">ceil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.models.diffusion.cond_unet1d</span><span class="w"> </span><span class="kn">import</span> <span class="n">SinusoidalPosEmb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">IrrepSubspaceNormPooling</span><span class="p">,</span> <span class="n">eAffine</span><span class="p">,</span> <span class="n">eConv1d</span><span class="p">,</span> <span class="n">eConvTranspose1d</span><span class="p">,</span> <span class="n">eRMSNorm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">eModule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">direct_sum</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_eChannelRMSNorm</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply eRMSNorm over channels for tensors shaped (B, C, L).&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span> <span class="o">=</span> <span class="n">rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">eRMSNorm</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span> <span class="n">equiv_affine</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># (B, L, C)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">eConditionalResidualBlock1D</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Channel-equivariant conditional residual block with FiLM modulation.</span>
+
+<span class="sd">    This block applies two equivariant convolutional layers with a residual</span>
+<span class="sd">    connection. The output of the first convolutional block is modulated by a</span>
+<span class="sd">    conditioning tensor using an equivariant FiLM (Feature-wise Linear Modulation)</span>
+<span class="sd">    layer. The FiLM layer applies an equivariant affine transformation, where the</span>
+<span class="sd">    scale and bias parameters are predicted by an invariant neural network from the</span>
+<span class="sd">    conditioning tensor.</span>
+
+<span class="sd">    The scale transformation is applied in the spectral domain, with a separate</span>
+<span class="sd">    learnable parameter for each irreducible representation (irrep). The bias</span>
+<span class="sd">    is applied only to the invariant (trivial) subspaces of the representation.</span>
+<span class="sd">    See details in :class:`~symm_learning.nn.eAffine`.</span>
+
+<span class="sd">    Functional constraint:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        f(\rho_{\mathcal{X}}(g)\mathbf{x},\,\rho_{\mathcal{C}}(g)\mathbf{c})</span>
+<span class="sd">        = \rho_{\mathcal{Y}}(g)\,f(\mathbf{x},\mathbf{c}),</span>
+<span class="sd">        \quad \forall g\in\mathbb{G}.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">out_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">cond_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">cond_predict_scale</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;xavier_uniform&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize the conditional residual block.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}` acting on the</span>
+<span class="sd">                channel axis.</span>
+<span class="sd">            out_rep (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\text{out}}` for the</span>
+<span class="sd">                convolutions and residual.</span>
+<span class="sd">            cond_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{cond}}` of the</span>
+<span class="sd">                conditioning vector used to predict FiLM parameters.</span>
+<span class="sd">            kernel_size (int, optional): Spatial kernel size for the equivariant convolutions. Defaults to 3.</span>
+<span class="sd">            cond_predict_scale (bool, optional): Whether the FiLM encoder predicts scale parameters.</span>
+<span class="sd">                Currently must be ``True``. Defaults to True.</span>
+<span class="sd">            activation (torch.nn.Module, optional): Non-linearity applied after each normalization. Defaults to ``ReLU``</span>
+<span class="sd">            normalize (bool, optional): If ``True``, apply channel-wise equivariant RMS normalization. Defaults to True.</span>
+<span class="sd">            init_scheme (str | None, optional): Weight initialization scheme for convolutions.</span>
+<span class="sd">                Defaults to ``\&quot;xavier_uniform\&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span> <span class="o">=</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">cond_rep</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cond_predict_scale</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Currently only cond_predict_scale=True is supported.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">eConv1d</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">kernel_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span> <span class="o">=</span> <span class="n">eConv1d</span><span class="p">(</span><span class="n">out_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">kernel_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">_eChannelRMSNorm</span><span class="p">(</span><span class="n">out_rep</span><span class="p">)</span> <span class="k">if</span> <span class="n">normalize</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">_eChannelRMSNorm</span><span class="p">(</span><span class="n">out_rep</span><span class="p">)</span> <span class="k">if</span> <span class="n">normalize</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">act</span> <span class="o">=</span> <span class="n">activation</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="n">eAffine</span><span class="p">(</span><span class="n">in_rep</span><span class="o">=</span><span class="n">out_rep</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">film_dims</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">num_scale_dof</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">num_bias_dof</span>
+
+        <span class="c1"># Invariant encoder of FiLM modulation parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_encoder</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">IrrepSubspaceNormPooling</span><span class="p">(</span><span class="n">in_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">),</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cond_rep</span><span class="o">.</span><span class="n">irreps</span><span class="p">),</span> <span class="n">out_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">film_dims</span><span class="p">),</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Mish</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">residual_conv</span> <span class="o">=</span> <span class="p">(</span>  <span class="c1"># Final conv for residual addition if needed.</span>
+            <span class="n">eConv1d</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span> <span class="k">if</span> <span class="n">in_rep</span> <span class="o">!=</span> <span class="n">out_rep</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply two equivariant conv blocks with FiLM modulation and a residual connection.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (:class:`~torch.Tensor`): Input of shape ``(B, in_rep.size, L)`` where ``B`` is batch and ``L`` is</span>
+<span class="sd">                sequence length.</span>
+<span class="sd">            cond (:class:`~torch.Tensor`): Conditioning tensor of shape ``(B, cond_rep.size)`` used to predict FiLM</span>
+<span class="sd">                parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`~torch.Tensor`: Output tensor of shape ``(B, out_rep.size, L)`` after modulation and residual</span>
+<span class="sd">                addition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected channel dim </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Cond dim mismatch </span><span class="si">{</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">B</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># (B, C, L)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">act</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">film_dims</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">film_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_encoder</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>  <span class="c1"># (B, film_dims)</span>
+            <span class="n">scale_dof</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
+                <span class="n">film_params</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">num_scale_dof</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">num_scale_dof</span><span class="p">)</span>
+            <span class="p">)</span>  <span class="c1"># (B, num_scale_dof) -&gt; (B, L, num_scale_dof)</span>
+            <span class="n">bias_dof</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
+                <span class="n">film_params</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">num_scale_dof</span> <span class="p">:],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="o">.</span><span class="n">num_bias_dof</span><span class="p">)</span>
+            <span class="p">)</span>  <span class="c1"># (B, num_bias_dof) -&gt; (B, L, num_bias_dof)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">(</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>  <span class="c1"># (B, C, L) -&gt; (B, L, C)</span>
+                <span class="n">scale_dof</span><span class="o">=</span><span class="n">scale_dof</span><span class="p">,</span>
+                <span class="n">bias_dof</span><span class="o">=</span><span class="n">bias_dof</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># (B, L, C) -&gt; (B, C, L)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">act</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual_conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual_conv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="n">out</span> <span class="o">+</span> <span class="n">res</span>
+
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_equivariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span>
+        <span class="n">device</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+            <span class="n">rho_in</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">rho_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">rho_cond</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">z</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">z</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">gx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_in</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+            <span class="n">gz</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bj-&gt;bi&quot;</span><span class="p">,</span> <span class="n">rho_cond</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+            <span class="n">y_expected</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gz</span><span class="p">)</span>
+            <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_out</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">gy</span><span class="p">,</span> <span class="n">y_expected</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Equivariance failed for group element </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2"> with max error </span><span class="si">{</span><span class="p">(</span><span class="n">gy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y_expected</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+
+<div class="viewcode-block" id="eConditionalUnet1D">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.eConditionalUnet1D.html#symm_learning.models.eConditionalUnet1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">eConditionalUnet1D</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant U-Net for 1D signals with global conditioning and FiLM.</span>
+
+<span class="sd">    The model defines:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbf{f}_{\mathbf{\theta}}:</span>
+<span class="sd">        \mathcal{X}^{L} \times \mathcal{Z}_{\mathrm{local}}^{L} \times \mathcal{Z}_{\mathrm{global}} \times \mathbb{R}</span>
+<span class="sd">        \to \mathcal{X}^{L}.</span>
+
+<span class="sd">    Functional equivariance constraint:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{x},\,\rho_{\mathcal{Z}}(g)\mathbf{z},\,t)</span>
+<span class="sd">        = \rho_{\mathcal{X}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{x},\mathbf{z},t),</span>
+<span class="sd">        \quad \forall g\in\mathbb{G}.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+        <span class="n">local_cond_rep</span><span class="p">:</span> <span class="n">Representation</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">global_cond_rep</span><span class="p">:</span> <span class="n">Representation</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">diffusion_step_embed_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
+        <span class="n">down_dims</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1024</span><span class="p">),</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">cond_predict_scale</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">downsample</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;stride&quot;</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;xavier_uniform&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">downsample</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;stride&quot;</span><span class="p">,</span> <span class="s2">&quot;pooling&quot;</span><span class="p">},</span> <span class="s2">&quot;downsample must be &#39;stride&#39; or &#39;pooling&#39;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">in_rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">global_cond_rep</span> <span class="o">=</span> <span class="n">global_cond_rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_cond_rep</span> <span class="o">=</span> <span class="n">local_cond_rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span> <span class="o">=</span> <span class="n">downsample</span>
+
+        <span class="n">G</span> <span class="o">=</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
+        <span class="n">reg_rep</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span>
+        <span class="n">trivial_rep</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">trivial_representation</span>
+
+        <span class="n">down_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">down_dims</span><span class="p">)</span>
+        <span class="c1"># all_dims = [in_rep.size] + down_dims</span>
+        <span class="n">reps</span> <span class="o">=</span> <span class="p">[</span><span class="n">in_rep</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">direct_sum</span><span class="p">([</span><span class="n">reg_rep</span><span class="p">]</span> <span class="o">*</span> <span class="n">ceil</span><span class="p">(</span><span class="n">d</span> <span class="o">/</span> <span class="n">reg_rep</span><span class="o">.</span><span class="n">size</span><span class="p">))</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">down_dims</span><span class="p">]</span>
+
+        <span class="n">diffusion_step_encoder</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">SinusoidalPosEmb</span><span class="p">(</span><span class="n">diffusion_step_embed_dim</span><span class="p">),</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">diffusion_step_embed_dim</span><span class="p">,</span> <span class="n">diffusion_step_embed_dim</span> <span class="o">*</span> <span class="mi">4</span><span class="p">),</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Mish</span><span class="p">(),</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">diffusion_step_embed_dim</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="n">diffusion_step_embed_dim</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">global_cond_rep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cond_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">global_cond_rep</span><span class="p">,</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">trivial_rep</span><span class="p">]</span> <span class="o">*</span> <span class="n">diffusion_step_embed_dim</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cond_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">trivial_rep</span><span class="p">]</span> <span class="o">*</span> <span class="n">diffusion_step_embed_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span> <span class="o">=</span> <span class="n">cond_rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffusion_step_encoder</span> <span class="o">=</span> <span class="n">diffusion_step_encoder</span>
+
+        <span class="n">block_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span>
+            <span class="n">cond_predict_scale</span><span class="o">=</span><span class="n">cond_predict_scale</span><span class="p">,</span>
+            <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">,</span>
+            <span class="n">normalize</span><span class="o">=</span><span class="n">normalize</span><span class="p">,</span>
+            <span class="n">init_scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">conv_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span>
+
+        <span class="n">in_out_reps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">reps</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">reps</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+
+        <span class="n">local_cond_encoder</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">local_cond_rep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">first_out_rep</span> <span class="o">=</span> <span class="n">in_out_reps</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">local_cond_encoder</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                        <span class="n">in_rep</span><span class="o">=</span><span class="n">local_cond_rep</span><span class="p">,</span>
+                        <span class="n">out_rep</span><span class="o">=</span><span class="n">first_out_rep</span><span class="p">,</span>
+                        <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                        <span class="n">in_rep</span><span class="o">=</span><span class="n">local_cond_rep</span><span class="p">,</span>
+                        <span class="n">out_rep</span><span class="o">=</span><span class="n">first_out_rep</span><span class="p">,</span>
+                        <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_cond_encoder</span> <span class="o">=</span> <span class="n">local_cond_encoder</span>
+
+        <span class="n">mid_rep</span> <span class="o">=</span> <span class="n">reps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid_modules</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                    <span class="n">mid_rep</span><span class="p">,</span>
+                    <span class="n">mid_rep</span><span class="p">,</span>
+                    <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                    <span class="n">mid_rep</span><span class="p">,</span>
+                    <span class="n">mid_rep</span><span class="p">,</span>
+                    <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">down_modules</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">rep_in</span><span class="p">,</span> <span class="n">rep_out</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">in_out_reps</span><span class="p">):</span>
+            <span class="n">is_last</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_out_reps</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">down_modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                            <span class="n">rep_in</span><span class="p">,</span>
+                            <span class="n">rep_out</span><span class="p">,</span>
+                            <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                        <span class="p">),</span>
+                        <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                            <span class="n">rep_out</span><span class="p">,</span>
+                            <span class="n">rep_out</span><span class="p">,</span>
+                            <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                        <span class="p">),</span>
+                        <span class="n">eConv1d</span><span class="p">(</span>
+                            <span class="n">rep_out</span><span class="p">,</span>
+                            <span class="n">rep_out</span><span class="p">,</span>
+                            <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                            <span class="n">stride</span><span class="o">=</span><span class="mi">2</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">is_last</span> <span class="ow">and</span> <span class="n">downsample</span> <span class="o">==</span> <span class="s2">&quot;stride&quot;</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+                            <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">conv_kwargs</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">downsample</span> <span class="o">==</span> <span class="s2">&quot;stride&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_last</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="p">(</span>
+                            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MaxPool1d</span><span class="p">(</span><span class="n">kernel_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">downsample</span> <span class="o">==</span> <span class="s2">&quot;pooling&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_last</span>
+                            <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+                        <span class="p">),</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_modules</span> <span class="o">=</span> <span class="n">down_modules</span>
+
+        <span class="n">up_modules</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="n">current_rep</span> <span class="o">=</span> <span class="n">in_out_reps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># deepest representation</span>
+        <span class="n">up_pairs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">in_out_reps</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>  <span class="c1"># skip shallowest pair</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">target_rep</span><span class="p">,</span> <span class="n">skip_rep</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">((</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">up_pairs</span><span class="p">):</span>
+            <span class="n">is_last</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">up_pairs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">upsample_in_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">current_rep</span><span class="p">,</span> <span class="n">skip_rep</span><span class="p">])</span>  <span class="c1"># concat current + skip</span>
+            <span class="n">out_rep</span> <span class="o">=</span> <span class="n">target_rep</span>
+            <span class="n">up_modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                            <span class="n">upsample_in_rep</span><span class="p">,</span>
+                            <span class="n">out_rep</span><span class="p">,</span>
+                            <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                        <span class="p">),</span>
+                        <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+                            <span class="n">out_rep</span><span class="p">,</span>
+                            <span class="n">out_rep</span><span class="p">,</span>
+                            <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">block_kwargs</span><span class="p">,</span>
+                        <span class="p">),</span>
+                        <span class="n">eConvTranspose1d</span><span class="p">(</span>
+                            <span class="n">out_rep</span><span class="p">,</span>
+                            <span class="n">out_rep</span><span class="p">,</span>
+                            <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                            <span class="n">stride</span><span class="o">=</span><span class="mi">2</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">is_last</span> <span class="ow">and</span> <span class="n">downsample</span> <span class="o">==</span> <span class="s2">&quot;stride&quot;</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+                            <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">conv_kwargs</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">downsample</span> <span class="o">==</span> <span class="s2">&quot;stride&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_last</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="p">(</span>
+                            <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Upsample</span><span class="p">(</span><span class="n">scale_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">downsample</span> <span class="o">==</span> <span class="s2">&quot;pooling&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_last</span>
+                            <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+                        <span class="p">),</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">current_rep</span> <span class="o">=</span> <span class="n">out_rep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_modules</span> <span class="o">=</span> <span class="n">up_modules</span>
+
+        <span class="n">first_rep</span> <span class="o">=</span> <span class="n">in_out_reps</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">final_norm</span> <span class="o">=</span> <span class="n">_eChannelRMSNorm</span><span class="p">(</span><span class="n">first_rep</span><span class="p">)</span> <span class="k">if</span> <span class="n">normalize</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final_conv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">eConv1d</span><span class="p">(</span><span class="n">first_rep</span><span class="p">,</span> <span class="n">first_rep</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">kernel_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">conv_kwargs</span><span class="p">),</span>
+            <span class="n">final_norm</span><span class="p">,</span>
+            <span class="n">activation</span><span class="p">,</span>
+            <span class="n">eConv1d</span><span class="p">(</span><span class="n">first_rep</span><span class="p">,</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">conv_kwargs</span><span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="eConditionalUnet1D.forward">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.eConditionalUnet1D.html#symm_learning.models.eConditionalUnet1D.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sample</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">timestep</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">local_cond</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">film_cond</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a forward pass of the equivariant U-Net.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sample (:class:`~torch.Tensor`): Input signal shaped ``(B, in_rep.size, L)``.</span>
+<span class="sd">            timestep (torch.Tensor | float | int): Diffusion step; scalar or batch, broadcast to ``B``.</span>
+<span class="sd">            local_cond (torch.Tensor | None, optional): Local conditioning signal shaped</span>
+<span class="sd">                ``(B, local_cond_rep.size, L)`` when provided.</span>
+<span class="sd">            film_cond (torch.Tensor | None, optional): Global conditioning vector shaped</span>
+<span class="sd">                ``(B, global_cond_rep.size)`` to drive FiLM.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`~torch.Tensor`: Output tensor shaped ``(B, in_rep.size, L)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">sample</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected channels </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">sample</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">device</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">timestep</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">timestep</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="n">film_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffusion_step_encoder</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">film_feature</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">film_cond</span><span class="p">,</span> <span class="n">film_diff</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">film_cond</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">film_diff</span>
+        <span class="k">assert</span> <span class="n">film_feature</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="n">h_local</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_cond_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">local_cond</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resnet_a</span><span class="p">,</span> <span class="n">resnet_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_cond_encoder</span>
+            <span class="n">x_loc</span> <span class="o">=</span> <span class="n">resnet_a</span><span class="p">(</span><span class="n">local_cond</span><span class="p">,</span> <span class="n">film_feature</span><span class="p">)</span>
+            <span class="n">h_local</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_loc</span><span class="p">)</span>
+            <span class="n">x_loc</span> <span class="o">=</span> <span class="n">resnet_b</span><span class="p">(</span><span class="n">local_cond</span><span class="p">,</span> <span class="n">film_feature</span><span class="p">)</span>
+            <span class="n">h_local</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_loc</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">sample</span>
+        <span class="n">skips</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">res1</span><span class="p">,</span> <span class="n">res2</span><span class="p">,</span> <span class="n">down</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">down_modules</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">res1</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">film_feature</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">h_local</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">h_local</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">res2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">film_feature</span><span class="p">)</span>
+            <span class="n">skips</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">down</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">mid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid_modules</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">mid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">film_feature</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">res1</span><span class="p">,</span> <span class="n">res2</span><span class="p">,</span> <span class="n">up</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">up_modules</span><span class="p">):</span>
+            <span class="n">skip</span> <span class="o">=</span> <span class="n">skips</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">skip</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">res1</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">film_feature</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">up_modules</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">h_local</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">h_local</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">res2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">film_feature</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">up</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+
+
+<div class="viewcode-block" id="eConditionalUnet1D.check_equivariance">
+<a class="viewcode-back" href="../../../../generated/symm_learning.models.eConditionalUnet1D.html#symm_learning.models.eConditionalUnet1D.check_equivariance">[docs]</a>
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_equivariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">):</span>  <span class="c1"># noqa: D102</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check equivariance under channel actions of the underlying fiber group.&quot;&quot;&quot;</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">.</span><span class="n">device</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">.</span><span class="n">dtype</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">local_cond</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_cond_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_cond_rep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">global_cond</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_cond_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_cond_rep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">timestep</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">local_cond</span><span class="o">=</span><span class="n">local_cond</span><span class="p">,</span> <span class="n">film_cond</span><span class="o">=</span><span class="n">global_cond</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+            <span class="n">rho_in</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">gx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_in</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+            <span class="n">g_local</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">local_cond</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">rho_local</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">local_cond_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">g_local</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_local</span><span class="p">,</span> <span class="n">local_cond</span><span class="p">)</span>
+
+            <span class="n">g_global</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">global_cond</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">rho_global</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">global_cond_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">g_global</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bj-&gt;bi&quot;</span><span class="p">,</span> <span class="n">rho_global</span><span class="p">,</span> <span class="n">global_cond</span><span class="p">)</span>
+
+            <span class="n">y_expected</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">timestep</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">local_cond</span><span class="o">=</span><span class="n">g_local</span><span class="p">,</span> <span class="n">film_cond</span><span class="o">=</span><span class="n">g_global</span><span class="p">)</span>
+
+            <span class="n">rho_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">gy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,bjl-&gt;bil&quot;</span><span class="p">,</span> <span class="n">rho_out</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">gy</span><span class="p">,</span> <span class="n">y_expected</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Equivariance failed for group element </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2"> with max error </span><span class="si">{</span><span class="p">(</span><span class="n">gy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y_expected</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div>
+</div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># Example usage</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">CyclicGroup</span>
+
+    <span class="n">diffusion_step_embed_dim</span> <span class="o">=</span> <span class="mi">32</span>
+
+    <span class="n">G</span> <span class="o">=</span> <span class="n">CyclicGroup</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">mx</span><span class="p">,</span> <span class="n">my</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span>
+    <span class="n">in_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="n">mx</span><span class="p">)</span>
+    <span class="n">out_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="n">my</span><span class="p">)</span>
+    <span class="n">cond_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Testing eConditionalResidualBlock1D ------------------------------------------&quot;</span><span class="p">)</span>
+    <span class="n">res_block</span> <span class="o">=</span> <span class="n">eConditionalResidualBlock1D</span><span class="p">(</span>
+        <span class="n">in_rep</span><span class="o">=</span><span class="n">in_rep</span><span class="p">,</span>
+        <span class="n">out_rep</span><span class="o">=</span><span class="n">out_rep</span><span class="p">,</span>
+        <span class="n">cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+        <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">cond_predict_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">res_block</span><span class="o">.</span><span class="n">check_equivariance</span><span class="p">(</span><span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Testing eConditionalUnet1D ----------------------------------------------------&quot;</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">eConditionalUnet1D</span><span class="p">(</span>
+        <span class="n">in_rep</span><span class="o">=</span><span class="n">in_rep</span><span class="p">,</span>
+        <span class="n">local_cond_rep</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">global_cond_rep</span><span class="o">=</span><span class="n">cond_rep</span><span class="p">,</span>
+        <span class="n">diffusion_step_embed_dim</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+        <span class="n">down_dims</span><span class="o">=</span><span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">],</span>
+        <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">cond_predict_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">check_equivariance</span><span class="p">(</span><span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Daniel Felipe Ordoñez Apraez.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

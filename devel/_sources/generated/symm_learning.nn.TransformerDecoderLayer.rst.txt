@@ -1,0 +1,8 @@
+﻿TransformerDecoderLayer
+=======================
+
+.. currentmodule:: symm_learning.nn
+
+.. autoclass:: TransformerDecoderLayer
+   :members:
+   :show-inheritance:
