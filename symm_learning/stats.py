@@ -295,8 +295,15 @@ def cov(
         = \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{C}^{\text{raw}}_{yx}).
 
     This orthogonal projector is equivalent to the Reynolds/group-average operator:
+        \mathbf{C}_{yx}
+        = \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{C}^{\text{raw}}_{yx}).
+
+    This orthogonal projector is equivalent to the Reynolds/group-average operator:
 
     .. math::
+        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})
+        = \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}
+        \rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).
         \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})
         = \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}
         \rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).
@@ -304,16 +311,26 @@ def cov(
     Args:
         x (:class:`~torch.Tensor`): Samples of :math:`\mathbf{X}`.
         y (:class:`~torch.Tensor`): Samples of :math:`\mathbf{Y}`.
+        x (:class:`~torch.Tensor`): Samples of :math:`\mathbf{X}`.
+        y (:class:`~torch.Tensor`): Samples of :math:`\mathbf{Y}`.
         rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}`.
         rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}`.
+        uncentered (:class:`bool`): If ``False`` (default), subtract invariant means before covariance
+            computation. If ``True``, compute the uncentered second moment and project it.
         uncentered (:class:`bool`): If ``False`` (default), subtract invariant means before covariance
             computation. If ``True``, compute the uncentered second moment and project it.
 
     Returns:
         :class:`~torch.Tensor`: Projected cross-covariance :math:`\mathbf{C}_{yx}` with shape
         :math:`(D_y, D_x)`.
+        :class:`~torch.Tensor`: Projected cross-covariance :math:`\mathbf{C}_{yx}` with shape
+        :math:`(D_y, D_x)`.
 
     Shape:
+        - **x**: :math:`(N, D_x)`. With `N` denoting the number of samples and `D_x` the dimension of the
+            representation space of `x`.
+        - **y**: :math:`(N, D_y)`. With `D_y` the dimension of the representation space of `y`.
+        - **Output**: :math:`(D_y, D_x)`.
         - **x**: :math:`(N, D_x)`. With `N` denoting the number of samples and `D_x` the dimension of the
             representation space of `x`.
         - **y**: :math:`(N, D_y)`. With `D_y` the dimension of the representation space of `y`.

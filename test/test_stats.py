@@ -11,6 +11,7 @@ from torch import Tensor
 
 from symm_learning.representation_theory import direct_sum, isotypic_decomp_rep
 from symm_learning.stats import cov, mean, var_mean
+from symm_learning.stats import cov, mean, var_mean
 
 
 @pytest.mark.parametrize(
@@ -147,11 +148,23 @@ def test_cov(group: Group):  # noqa: D103
     assert torch.allclose(Cxy_rand_unc, Cxy_rand_reynolds_unc, atol=1e-6, rtol=1e-5), (
         f"uncentered cov != Reynolds in random basis, max error {(Cxy_rand_unc - Cxy_rand_reynolds_unc).abs().max().item():.3e}"
     )
+    assert torch.allclose(Cxy_rand, Cxy_rand_reynolds, atol=1e-6, rtol=1e-5), (
+        f"cov != Reynolds in random basis, max error {(Cxy_rand - Cxy_rand_reynolds).abs().max().item():.3e}"
+    )
+    assert torch.allclose(Cxy_rand_unc, Cxy_rand_reynolds_unc, atol=1e-6, rtol=1e-5), (
+        f"uncentered cov != Reynolds in random basis, max error {(Cxy_rand_unc - Cxy_rand_reynolds_unc).abs().max().item():.3e}"
+    )
 
     # Test that r.v with different irrep types have no covariance. ===========================================
     irrep_id1, irrep_id2 = list(G._irreps.keys())[:2]
     x_rep = direct_sum([G._irreps[irrep_id1]] * mx)
     y_rep = direct_sum([G._irreps[irrep_id2]] * my)
+    X = torch.randn(batch_size, x_rep.size, dtype=dtype)
+    Y = torch.randn(batch_size, y_rep.size, dtype=dtype)
+    Cxy = cov(X, Y, x_rep, y_rep, uncentered=False).cpu().numpy()
+    Cxy_unc = cov(X, Y, x_rep, y_rep, uncentered=True).cpu().numpy()
+    assert np.allclose(Cxy, 0), f"Expected centered Cxy = 0, got {Cxy}"
+    assert np.allclose(Cxy_unc, 0), f"Expected uncentered Cxy = 0, got {Cxy_unc}"
     X = torch.randn(batch_size, x_rep.size, dtype=dtype)
     Y = torch.randn(batch_size, y_rep.size, dtype=dtype)
     Cxy = cov(X, Y, x_rep, y_rep, uncentered=False).cpu().numpy()
