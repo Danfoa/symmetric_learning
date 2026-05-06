@@ -35,11 +35,15 @@ __all__ = [
     "Change2DisentangledBasis",
     "eMultivariateNormal",
     "IrrepSubspaceNormPooling",
+    # Activation
     "AdditivePosMultiheadAttention",
     "AdditiveRelMultiheadAttention",
     "eAdditivePosMultiheadAttention",
     "eAdditiveRelMultiheadAttention",
+    "PositionalAttentionBase",
     "eMultiheadAttention",
+    "RoPEMultiheadAttention",
+    "RotaryEmbedding",
     "eBatchNorm1d",
     "eAffine",
     "eConv1d",
@@ -48,14 +52,20 @@ __all__ = [
     "EMAStats",
     "eEMAStats",
     "eLinear",
+    "InvariantBias",
+    "impose_linear_equivariance",
     "eLayerNorm",
     "eRMSNorm",
+    # Transformer
     "eTransformerDecoderLayer",
     "eTransformerEncoderLayer",
     "TransformerDecoder",
     "TransformerDecoderLayer",
     "TransformerEncoder",
     "TransformerEncoderLayer",
+    # Parametrizations
+    "InvariantConstraint",
+    "CommutingConstraint",
 ]  # noqa: F822
 
 
@@ -65,12 +75,17 @@ _MODULE_MAP = {
     "eMultiheadAttention": "symm_learning.nn.activation",
     "AdditivePosMultiheadAttention": "symm_learning.nn.activation",
     "AdditiveRelMultiheadAttention": "symm_learning.nn.activation",
+    "PositionalAttentionBase": "symm_learning.nn.activation",
+    "RoPEMultiheadAttention": "symm_learning.nn.activation",
+    "RotaryEmbedding": "symm_learning.nn.activation",
     "eConv1d": "symm_learning.nn.conv",
     "eConvTranspose1d": "symm_learning.nn.conv",
     "Change2DisentangledBasis": "symm_learning.nn.disentangled",
     "eMultivariateNormal": "symm_learning.nn.distributions",
     "eAffine": "symm_learning.nn.linear",
     "eLinear": "symm_learning.nn.linear",
+    "InvariantBias": "symm_learning.nn.linear",
+    "impose_linear_equivariance": "symm_learning.nn.linear",
     "eModule": "symm_learning.nn.module",
     "eBatchNorm1d": "symm_learning.nn.normalization",
     "eLayerNorm": "symm_learning.nn.normalization",
@@ -84,6 +99,8 @@ _MODULE_MAP = {
     "TransformerDecoderLayer": "symm_learning.nn.transformer.transformer",
     "TransformerEncoder": "symm_learning.nn.transformer.transformer",
     "TransformerEncoderLayer": "symm_learning.nn.transformer.transformer",
+    "InvariantConstraint": "symm_learning.nn.parametrizations",
+    "CommutingConstraint": "symm_learning.nn.parametrizations",
 }
 
 

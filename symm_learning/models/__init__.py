@@ -10,8 +10,10 @@ eTimeCNNEncoder, TimeCNNEncoder
     1D CNN encoders for time-series data with optional equivariance constraints.
 eTransformerEncoderLayer, eTransformerDecoderLayer
     Equivariant Transformer layers preserving group symmetries in attention.
-eCondTransformerRegressor, CondTransformerRegressor
+eCondTransformer, CondTransformer
     Conditional Transformer regressors for sequence-to-sequence tasks (e.g., diffusion).
+eConditionalUnet1D, ConditionalUnet1D
+    Conditional UNet1D architectures for sequence-to-sequence tasks (e.g., diffusion).
 
 Examples:
 --------
@@ -28,19 +30,19 @@ __all__ = [
     "eTimeCNNEncoder",
     "TimeCNNEncoder",
     "eCondTransformer",
-    "eCondTransformerRegressor",
-    "CondTransformerRegressor",
-    "GenCondRegressor",
     "CondTransformer",
+    "GenCondRegressor",
+    "eConditionalUnet1D",
+    "ConditionalUnet1D",
 ]  # noqa: F822
 
 
 _MODULE_MAP = {
     "CondTransformer": "symm_learning.models.control.cond_transformer",
     "eCondTransformer": "symm_learning.models.control.econd_transformer",
-    "CondTransformerRegressor": "symm_learning.models.diffusion.cond_transformer_regressor",
-    "eCondTransformerRegressor": "symm_learning.models.diffusion.econd_transformer_regressor",
     "GenCondRegressor": "symm_learning.models.control.cond_transformer",
+    "eConditionalUnet1D": "symm_learning.models.diffusion.cond_eunet1d",
+    "ConditionalUnet1D": "symm_learning.models.diffusion.cond_unet1d",
     "MLP": "symm_learning.models.emlp",
     "eMLP": "symm_learning.models.emlp",
     "iMLP": "symm_learning.models.emlp",
