@@ -29,27 +29,16 @@ Examples:
 >>> layer = eLinear(in_rep, out_rep)  # Equivariant linear layer
 """
 
-from .activation import eMultiheadAttention
-from .conv import eConv1d, eConvTranspose1d
-from .disentangled import Change2DisentangledBasis
-from .distributions import eMultivariateNormal
-from .linear import eAffine, eLinear
-from .module import eModule
-from .normalization import eBatchNorm1d, eLayerNorm, eRMSNorm
-from .pooling import IrrepSubspaceNormPooling
-from .running_stats import EMAStats, eEMAStats
-from .transformer.etransformer import eTransformerDecoderLayer, eTransformerEncoderLayer
-from .transformer.transformer import (
-    PosEmbTransformerDecoder,
-    PosEmbTransformerDecoderLayer,
-    PosEmbTransformerEncoder,
-    PosEmbTransformerEncoderLayer,
-)
+from importlib import import_module
 
 __all__ = [
     "Change2DisentangledBasis",
     "eMultivariateNormal",
     "IrrepSubspaceNormPooling",
+    "AdditivePosMultiheadAttention",
+    "AdditiveRelMultiheadAttention",
+    "eAdditivePosMultiheadAttention",
+    "eAdditiveRelMultiheadAttention",
     "eMultiheadAttention",
     "eBatchNorm1d",
     "eAffine",
@@ -67,4 +56,39 @@ __all__ = [
     "PosEmbTransformerDecoderLayer",
     "PosEmbTransformerEncoder",
     "PosEmbTransformerEncoderLayer",
-]
+]  # noqa: F822
+
+
+_MODULE_MAP = {
+    "eAdditivePosMultiheadAttention": "symm_learning.nn.activation",
+    "eAdditiveRelMultiheadAttention": "symm_learning.nn.activation",
+    "eMultiheadAttention": "symm_learning.nn.activation",
+    "AdditivePosMultiheadAttention": "symm_learning.nn.activation",
+    "AdditiveRelMultiheadAttention": "symm_learning.nn.activation",
+    "eConv1d": "symm_learning.nn.conv",
+    "eConvTranspose1d": "symm_learning.nn.conv",
+    "Change2DisentangledBasis": "symm_learning.nn.disentangled",
+    "eMultivariateNormal": "symm_learning.nn.distributions",
+    "eAffine": "symm_learning.nn.linear",
+    "eLinear": "symm_learning.nn.linear",
+    "eModule": "symm_learning.nn.module",
+    "eBatchNorm1d": "symm_learning.nn.normalization",
+    "eLayerNorm": "symm_learning.nn.normalization",
+    "eRMSNorm": "symm_learning.nn.normalization",
+    "IrrepSubspaceNormPooling": "symm_learning.nn.pooling",
+    "EMAStats": "symm_learning.nn.running_stats",
+    "eEMAStats": "symm_learning.nn.running_stats",
+    "eTransformerDecoderLayer": "symm_learning.nn.transformer.etransformer",
+    "eTransformerEncoderLayer": "symm_learning.nn.transformer.etransformer",
+    "PosEmbTransformerDecoder": "symm_learning.nn.transformer.transformer",
+    "PosEmbTransformerDecoderLayer": "symm_learning.nn.transformer.transformer",
+    "PosEmbTransformerEncoder": "symm_learning.nn.transformer.transformer",
+    "PosEmbTransformerEncoderLayer": "symm_learning.nn.transformer.transformer",
+}
+
+
+def __getattr__(name: str):
+    if name not in _MODULE_MAP:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = import_module(_MODULE_MAP[name])
+    return getattr(module, name)

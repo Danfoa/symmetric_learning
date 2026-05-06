@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import logging
 import re
+from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Optional
@@ -92,9 +93,8 @@ def _resolve_version() -> str:
 # Patch eagerly on package import so any module using escnn reps shares the singleton caches.
 _ensure_group_deepcopy_singleton()
 
-from symm_learning import linalg, models, nn, representation_theory, stats, utils  # noqa: F401
-
 __version__ = _resolve_version()
+
 
 __all__ = [
     "__version__",
@@ -104,4 +104,20 @@ __all__ = [
     "representation_theory",
     "stats",
     "utils",
-]
+]  # noqa: F822
+
+
+_MODULE_MAP = {
+    "linalg": "symm_learning.linalg",
+    "models": "symm_learning.models",
+    "nn": "symm_learning.nn",
+    "representation_theory": "symm_learning.representation_theory",
+    "stats": "symm_learning.stats",
+    "utils": "symm_learning.utils",
+}
+
+
+def __getattr__(name: str):
+    if name not in _MODULE_MAP:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return import_module(_MODULE_MAP[name])

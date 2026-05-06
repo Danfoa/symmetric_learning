@@ -19,12 +19,7 @@ Examples:
 >>> model = eMLP(in_rep, out_rep, hidden_reps=[hidden_rep] * 3)
 """
 
-from .control.cond_transformer import CondTransformer
-from .diffusion.cond_transformer_regressor import CondTransformerRegressor, GenCondRegressor
-from .diffusion.econd_transformer_regressor import eCondTransformerRegressor
-from .emlp import MLP, eMLP, iMLP
-from .time_cnn.cnn_encoder import TimeCNNEncoder
-from .time_cnn.ecnn_encoder import eTimeCNNEncoder
+from importlib import import_module
 
 __all__ = [
     "eMLP",
@@ -36,4 +31,24 @@ __all__ = [
     "CondTransformerRegressor",
     "GenCondRegressor",
     "CondTransformer",
-]
+]  # noqa: F822
+
+
+_MODULE_MAP = {
+    "CondTransformer": "symm_learning.models.control.cond_transformer",
+    "CondTransformerRegressor": "symm_learning.models.diffusion.cond_transformer_regressor",
+    "eCondTransformerRegressor": "symm_learning.models.diffusion.econd_transformer_regressor",
+    "GenCondRegressor": "symm_learning.models.diffusion.cond_transformer_regressor",
+    "MLP": "symm_learning.models.emlp",
+    "eMLP": "symm_learning.models.emlp",
+    "iMLP": "symm_learning.models.emlp",
+    "TimeCNNEncoder": "symm_learning.models.time_cnn.cnn_encoder",
+    "eTimeCNNEncoder": "symm_learning.models.time_cnn.ecnn_encoder",
+}
+
+
+def __getattr__(name: str):
+    if name not in _MODULE_MAP:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = import_module(_MODULE_MAP[name])
+    return getattr(module, name)
