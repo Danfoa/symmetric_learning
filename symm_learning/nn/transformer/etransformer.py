@@ -95,7 +95,6 @@ class eTransformerEncoderLayer(eModule):
             num_heads=nhead,
             dropout=dropout,
             bias=bias,
-            batch_first=batch_first,
             device=device,
             dtype=dtype,
             init_scheme=init_scheme,
@@ -122,7 +121,6 @@ class eTransformerEncoderLayer(eModule):
         self.norm2 = norm_cls(self.out_rep, eps=layer_norm_eps, equiv_affine=True, **norm_kwargs)
 
         self.norm_first = norm_first
-        self.batch_first = batch_first
 
         if isinstance(activation, str):
             activation = _get_activation_fn(activation)
@@ -281,7 +279,6 @@ class eTransformerDecoderLayer(eModule):
             num_heads=nhead,
             dropout=dropout,
             bias=bias,
-            batch_first=batch_first,
             device=device,
             dtype=dtype,
             init_scheme=init_scheme,
@@ -291,7 +288,6 @@ class eTransformerDecoderLayer(eModule):
             num_heads=nhead,
             dropout=dropout,
             bias=bias,
-            batch_first=batch_first,
             device=device,
             dtype=dtype,
             init_scheme=init_scheme,
@@ -321,7 +317,6 @@ class eTransformerDecoderLayer(eModule):
         if isinstance(activation, str):
             activation = _get_activation_fn(activation)
         self.activation = activation
-        self.batch_first = batch_first
 
         if init_scheme is not None:
             self.reset_parameters(scheme=init_scheme)
@@ -529,7 +524,7 @@ if __name__ == "__main__":
         test_pkg.__path__ = [str(test_dir)]
         sys.modules["test"] = test_pkg
 
-    from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
+    from symm_learning.nn.transformer.etransformer import eTransformerEncoderLayer
     from symm_learning.utils import (
         bytes_to_mb,
         check_equivariance,

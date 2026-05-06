@@ -599,3 +599,39 @@ class eAffine(eModule):
     def num_bias_dof(self) -> int:
         """Number of bias degrees of freedom (length of ``bias_dof``) for invariant irreps."""
         return self._num_bias_dof
+
+
+if __name__ == "__main__":
+    import escnn
+
+    from symm_learning.representation_theory import direct_sum
+    from symm_learning.utils import run_module_pair_profile
+
+    SEED = 123
+    BATCH_SIZE = 1024
+    REGULAR_COPIES = 5
+    MODE = "eval"  # options: eval, train, both
+
+    torch.manual_seed(SEED)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device.type == "cuda":
+        torch.cuda.manual_seed_all(SEED)
+
+    G = escnn.group.Icosahedral()
+    rep = direct_sum([G.regular_representation] * REGULAR_COPIES)
+
+    elinear = eLinear(in_rep=rep, out_rep=rep, bias=False).to(device)
+    linear = torch.nn.Linear(in_features=rep.size, out_features=rep.size, bias=False).to(device)
+    x = torch.randn(BATCH_SIZE, rep.size, device=device)
+
+    run_module_pair_profile(
+        lhs_name="eLinear",
+        lhs=elinear,
+        rhs_name="Linear",
+        rhs=linear,
+        x=x,
+        group_name=G.name,
+        mode=MODE,
+        profile_active_steps=500,
+        profile_warmup_steps=30,
+    )

@@ -6,8 +6,8 @@ from copy import deepcopy
 import escnn
 import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
+import torch
 
-from symm_learning.nn import EMAStats, eEMAStats
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import backprop_sanity, check_equivariance
 from utils import assert_module_save_load_consistency
@@ -68,6 +68,173 @@ def test_change2disentangled(group: Group):  # noqa: D103
     )
 
     assert_module_save_load_consistency(change_layer, y)
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [2])
+@pytest.mark.parametrize("num_heads", [1, 2])
+@pytest.mark.parametrize("num_layers", [1, 5])
+def test_etransformer_decoder(group: Group, mx: int, num_heads: int, num_layers: int):
+    """Check equivariance and fast inference consistency of eTransformerDecoderLayer."""
+    from symm_learning.nn import eTransformerDecoderLayer
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+
+    decoder_kwargs = dict(
+        in_rep=rep,
+        nhead=num_heads,
+        dim_feedforward=rep.size * 4,
+        dropout=0.0,  # dropout=0 for train/eval consistency
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+        norm_module="rmsnorm",
+        bias=True,
+    )
+
+    # Create single layer or stacked layers
+    if num_layers == 1:
+        decoder = eTransformerDecoderLayer(**decoder_kwargs)
+    else:
+        base_layer = eTransformerDecoderLayer(**decoder_kwargs)
+        decoder = torch.nn.TransformerDecoder(decoder_layer=base_layer, num_layers=num_layers)
+
+    # Equivariance check
+    decoder.eval()
+    if num_layers == 1:
+        decoder.check_equivariance(atol=1e-4, rtol=1e-4)
+    else:
+        # For stacked layers, use manual equivariance check
+        def act(rep_local, g, tensor):
+            mat = torch.tensor(rep_local(g), dtype=tensor.dtype, device=tensor.device)
+            return torch.einsum("ij,...j->...i", mat, tensor)
+
+        B, tgt_len, mem_len = 3, 2, 3
+        for _ in range(5):
+            g = G.sample()
+            tgt = torch.randn(B, tgt_len, rep.size)
+            mem = torch.randn(B, mem_len, rep.size)
+            out = decoder(tgt=tgt, memory=mem)
+            g_out = decoder(tgt=act(rep, g, tgt), memory=act(rep, g, mem))
+            g_out_exp = act(rep, g, out)
+            assert torch.allclose(g_out, g_out_exp, atol=1e-3, rtol=1e-3), (
+                f"Decoder stack equivariance failed, max err {(g_out - g_out_exp).abs().max().item():.3e}"
+            )
+
+    # Fast inference consistency test
+    B, tgt_len, mem_len = 4, 3, 5
+    tgt = torch.randn(B, tgt_len, rep.size)
+    mem = torch.randn(B, mem_len, rep.size)
+
+    # 1. Update weights with some arbitrary loss
+    decoder.train()
+    decoder.zero_grad()
+    y = decoder(tgt, mem) if num_layers == 1 else decoder(tgt=tgt, memory=mem)
+    target = torch.randn_like(y)
+    loss = torch.nn.functional.mse_loss(y, target)
+    loss.backward()
+    with torch.no_grad():
+        for p in decoder.parameters():
+            if p.grad is not None:
+                p -= 0.1 * p.grad
+
+    # 2. Forward in train mode with updated weights
+    decoder.zero_grad()
+    y_train = decoder(tgt, mem) if num_layers == 1 else decoder(tgt=tgt, memory=mem)
+
+    # 3. Forward in eval mode
+    decoder.eval()
+    y_eval = decoder(tgt, mem) if num_layers == 1 else decoder(tgt=tgt, memory=mem)
+
+    assert torch.allclose(y_train, y_eval, atol=1e-5, rtol=1e-5), (
+        f"eTransformerDecoder output in eval mode must match train mode (layers={num_layers})"
+    )
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
+@pytest.mark.parametrize("mx", [2])
+@pytest.mark.parametrize("num_heads", [1, 2])
+@pytest.mark.parametrize("num_layers", [1, 5])
+def test_etransformer_encoder(group: Group, mx: int, num_heads: int, num_layers: int):
+    """Check equivariance and fast inference consistency of eTransformerEncoderLayer."""
+    from symm_learning.nn.transformer.etransformer import eTransformerEncoderLayer
+
+    G = group
+    rep = direct_sum([G.regular_representation] * mx)
+
+    encoder_kwargs = dict(
+        in_rep=rep,
+        nhead=num_heads,
+        dim_feedforward=rep.size * 4,
+        dropout=0.0,  # dropout=0 for train/eval consistency
+        activation="relu",
+        norm_first=True,
+        batch_first=True,
+        norm_module="rmsnorm",
+        bias=True,
+    )
+
+    # Create single layer or stacked layers
+    if num_layers == 1:
+        encoder = eTransformerEncoderLayer(**encoder_kwargs)
+    else:
+        base_layer = eTransformerEncoderLayer(**encoder_kwargs)
+        encoder = torch.nn.TransformerEncoder(
+            encoder_layer=base_layer, num_layers=num_layers, enable_nested_tensor=False
+        )
+
+    # Equivariance check
+    encoder.eval()
+    check_equivariance(
+        encoder,
+        input_dim=3,
+        module_name=f"eTransformerEncoder(layers={num_layers})",
+        in_rep=rep,
+        out_rep=rep,
+        atol=1e-4,
+        rtol=1e-4,
+    )
+
+    # Fast inference consistency test
+    B, L = 4, 5
+    x = torch.randn(B, L, rep.size)
+
+    # 1. Update weights with some arbitrary loss
+    encoder.train()
+    encoder.zero_grad()
+    y = encoder(x)
+    target = torch.randn_like(y)
+    loss = torch.nn.functional.mse_loss(y, target)
+    loss.backward()
+    with torch.no_grad():
+        for p in encoder.parameters():
+            if p.grad is not None:
+                p -= 0.1 * p.grad
+
+    # 2. Forward in train mode with updated weights
+    encoder.zero_grad()
+    y_train = encoder(x)
+
+    # 3. Forward in eval mode
+    encoder.eval()
+    y_eval = encoder(x)
+
+    assert torch.allclose(y_train, y_eval, atol=1e-5, rtol=1e-5), (
+        f"eTransformerEncoder output in eval mode must match train mode (layers={num_layers})"
+    )
 
 
 @pytest.mark.parametrize(
@@ -427,52 +594,6 @@ def test_bias(group: Group, mx: int):
     assert_module_save_load_consistency(bias_layer, x_roundtrip)
 
 
-# @pytest.mark.parametrize(
-#     "group",
-#     [
-#         pytest.param(CyclicGroup(5), id="cyclic5"),
-#         pytest.param(Icosahedral(), id="icosahedral"),
-#     ],
-# )
-# @pytest.mark.parametrize("mx", [1])
-# @pytest.mark.parametrize("affine", [True, False])
-# @pytest.mark.parametrize("running_stats", [True, False])
-# def test_batchnorm1d(group: Group, mx: int, affine: bool, running_stats: bool):
-#     """Check the eBatchNorm1d layer is G-invariant."""
-#     import torch
-
-#     from symm_learning.nn import GSpace1D, eBatchNorm1d
-
-#     G = group
-#     gspace = GSpace1D(G)
-
-#     in_type = FieldType(gspace, [G.regular_representation] * mx)
-
-#     time = 2
-#     batch_size = 5
-#     x = torch.randn(batch_size, in_type.size, time)
-#     x = in_type(x)
-
-#     batchnorm_layer = eBatchNorm1d(in_type, affine=affine, track_running_stats=running_stats)
-
-#     if hasattr(batchnorm_layer, "affine_transform"):
-#         # Randomize the scale and bias DoFs
-#         batchnorm_layer.affine_transform.scale_dof.data.uniform_(-1, 1)
-#         if batchnorm_layer.affine_transform.has_bias:
-#             batchnorm_layer.affine_transform.bias_dof.data.uniform_(-1, 1)
-
-#     batchnorm_layer.check_equivariance(atol=1e-5, rtol=1e-5)
-
-#     batchnorm_layer.eval()
-
-#     # TODO: This is not passing.
-#     # y = batchnorm_layer(x).tensor
-#     # y_torch = batchnorm_layer.export()(x.tensor)
-
-#     # print(y.shape, y_torch.shape)
-#     # assert torch.allclose(y, y_torch, atol=1e-5, rtol=1e-5), f"{y - y_torch} should be 0"
-
-
 @pytest.mark.parametrize(
     "group",
     [
@@ -578,7 +699,7 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
     if mx % num_heads != 0:
         pytest.skip(f"mx={mx} not divisible by num_heads={num_heads}")
 
-    attn = eMultiheadAttention(in_rep=rep, num_heads=num_heads, bias=bias, batch_first=True, dropout=0.0)
+    attn = eMultiheadAttention(in_rep=rep, num_heads=num_heads, bias=bias, dropout=0.0)
 
     # Wrapper for check_equivariance: self-attention expects (query, key, value) but we test with q=k=v=x
     class SelfAttentionWrapper(torch.nn.Module):
@@ -631,6 +752,155 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
         x,
         x,
         forward_kwargs={"need_weights": False},
+        output_transform=lambda out: out[0],
+    )
+
+
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("num_heads", [1, 2, 3])
+def test_additive_pos_multihead_attention(bias: bool, num_heads: int):
+    """Check that omitted positions default to ``torch.arange(seq_len)``."""
+    import torch
+
+    from symm_learning.nn.activation import AdditivePosMultiheadAttention
+
+    class AbsolutePositionalEmbedding(torch.nn.Module):
+        def __init__(self, max_len: int, embed_dim: int):
+            super().__init__()
+            self.embedding = torch.nn.Parameter(torch.randn(max_len, embed_dim))
+
+        def forward(self, positions: torch.Tensor) -> torch.Tensor:
+            return self.embedding[positions.long()]
+
+    torch.manual_seed(0)
+    model = AdditivePosMultiheadAttention(
+        embed_dim=12,
+        num_heads=num_heads,
+        max_len=32,
+        dropout=0.0,
+        bias=bias,
+    )
+    with torch.no_grad():
+        model.pos_emb.copy_(AbsolutePositionalEmbedding(max_len=32, embed_dim=12).embedding)
+    model.eval()
+
+    x = torch.randn(2, 8, 12)
+    positions = torch.arange(x.shape[1])
+    y_default, _ = model(x, x, x)
+    y_explicit, _ = model(x, x, x, q_positions=positions, k_positions=positions)
+
+    torch.testing.assert_close(
+        y_default,
+        y_explicit,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="Additive positional attention should default to arange positions",
+    )
+
+
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("num_heads", [1, 2, 3])
+def test_rope_multihead_attention(bias: bool, num_heads: int):
+    """Check that RoPE attention is invariant to a global shift of positions."""
+    from symm_learning.nn.activation import RoPEMultiheadAttention, RotaryEmbedding
+    import torch
+
+    torch.manual_seed(0)
+    model = RoPEMultiheadAttention(embed_dim=12, num_heads=num_heads, dropout=0.0, bias=bias)
+    model.eval()
+
+    # Keep the support away from the borders so the signal is not affected by truncation.
+    batch_size, seq_len, embed_dim = 1, 30, 12
+    x = torch.zeros(batch_size, seq_len, embed_dim)
+    x[0, 13:17] = torch.stack(
+        (
+            torch.arange(1, embed_dim + 1, dtype=x.dtype),
+            torch.arange(embed_dim, 0, -1, dtype=x.dtype),
+            torch.arange(1, embed_dim + 1, dtype=x.dtype) * 0.5,
+            torch.arange(embed_dim, 0, -1, dtype=x.dtype) * 0.5,
+        )
+    )
+
+    positions = torch.arange(seq_len)
+    y_default, _ = model(x, x, x)
+    y, _ = model(x, x, x, q_positions=positions, k_positions=positions)
+
+    torch.testing.assert_close(
+        y_default,
+        y,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="RoPE attention should default to arange positions",
+    )
+
+    shifted_positions = positions + 1
+    y_shifted, _ = model(x, x, x, q_positions=shifted_positions, k_positions=shifted_positions)
+
+    torch.testing.assert_close(y_shifted, y, atol=1e-5, rtol=1e-5, msg="RoPE not invariant to a global shift")
+
+    rope = RotaryEmbedding(dim=model.head_dim)
+    rope_input = torch.randn(2, num_heads, seq_len, model.head_dim)
+    rope_mask = torch.ones(seq_len, dtype=torch.bool)
+    rope_mask[7] = False
+    rope_output = rope.apply_rope(rope_input, positions=positions, position_mask=rope_mask)
+
+    torch.testing.assert_close(
+        rope_output[:, :, 7],
+        rope_input[:, :, 7],
+        atol=0.0,
+        rtol=0.0,
+        msg="Masked RoPE positions should remain unchanged",
+    )
+
+
+@pytest.mark.parametrize("bias", [True, False])
+@pytest.mark.parametrize("num_heads", [1, 2, 3])
+def test_additive_relative_multihead_attention(bias: bool, num_heads: int):
+    """Check that relative-bias attention is invariant to a global shift of positions."""
+    import torch
+
+    from symm_learning.nn.activation import AdditiveRelMultiheadAttention
+
+    torch.manual_seed(0)
+    model = AdditiveRelMultiheadAttention(
+        embed_dim=12,
+        num_heads=num_heads,
+        max_distance=32,
+        dropout=0.0,
+        bias=bias,
+    )
+    model.eval()
+
+    batch_size, seq_len, embed_dim = 2, 8, 12
+    x = torch.randn(batch_size, seq_len, embed_dim)
+    positions = torch.arange(seq_len)
+
+    y_default, _ = model(x, x, x)
+    y, _ = model(x, x, x, q_positions=positions, k_positions=positions)
+    y_shifted, _ = model(x, x, x, q_positions=positions + 5, k_positions=positions + 5)
+
+    torch.testing.assert_close(
+        y_default,
+        y,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="Relative-bias attention should default to arange positions",
+    )
+
+    torch.testing.assert_close(
+        y_shifted,
+        y,
+        atol=1e-5,
+        rtol=1e-5,
+        msg="Relative-bias attention should depend only on pairwise position differences",
+    )
+
+    assert_module_save_load_consistency(
+        model,
+        x,
+        x,
+        x,
+        forward_kwargs={"q_positions": positions, "k_positions": positions, "need_weights": False},
         output_transform=lambda out: out[0],
     )
 
@@ -699,56 +969,154 @@ def test_rms_norm(group: Group, mx: int, affine: bool):
 
 
 @pytest.mark.parametrize("kind", [pytest.param("ema", id="ema"), pytest.param("eema", id="eema")])
-def test_ema_stats_core(kind: str):
+def test_ema_stats(kind: str):
     """Minimal smoke test for EMAStats and eEMAStats."""
+    from symm_learning.nn import EMAStats, eEMAStats
+
     import torch
 
     if kind == "ema":
         stats = EMAStats(dim_x=3, dim_y=2, momentum=0.2)
-        raw_x = torch.randn(8, stats.num_features_x)
-        raw_y = torch.randn(8, stats.num_features_y)
-
-        def prepare(x_tensor: torch.Tensor, y_tensor: torch.Tensor):
-            return x_tensor, y_tensor
-
-        def extract(output):
-            return output
-
     else:
         G = CyclicGroup(3)
         rep = G.regular_representation
         stats = eEMAStats(x_rep=rep, y_rep=rep, momentum=0.2)
-        raw_x = torch.randn(8, rep.size)
-        raw_y = torch.randn(8, rep.size)
 
-        def prepare(x_tensor: torch.Tensor, y_tensor: torch.Tensor):
-            return x_tensor, y_tensor
+    raw_x = torch.randn(8, stats.num_features_x)
+    raw_y = torch.randn(8, stats.num_features_y)
 
-        def extract(output):
-            return output
-
-    # Train: outputs unchanged, stats update once
+    # Training path is identity on the activations, but it should still update the tracked EMA state.
     stats.train()
-    x_input, y_input = prepare(raw_x, raw_y)
+    x_input = raw_x.clone().requires_grad_(True)
+    y_input = raw_y.clone().requires_grad_(True)
     prev_mean = stats.mean_x.clone()
     x_out, y_out = stats(x_input, y_input)
-    assert torch.equal(extract(x_out), raw_x)
-    assert torch.equal(extract(y_out), raw_y)
+    assert torch.equal(x_out, x_input)
+    assert torch.equal(y_out, y_input)
     assert stats.num_batches_tracked == 1
     assert not torch.equal(stats.mean_x, prev_mean)
+    train_loss = x_out.square().mean() + y_out.square().mean()
+    train_loss.backward()
+    assert x_input.grad is not None and torch.isfinite(x_input.grad).all()
+    assert y_input.grad is not None and torch.isfinite(y_input.grad).all()
 
-    # Eval: stats freeze
+    # The exposed statistics are part of the training API: downstream modules can consume
+    # `mean_*` / `cov_*` inside the same optimization step. This regression check ensures the
+    # train-time statistics still backpropagate to the current batch instead of reading only
+    # detached running buffers.
+    x_stats = torch.randn_like(raw_x, requires_grad=True)
+    y_stats = torch.randn_like(raw_y, requires_grad=True)
+    stats(x_stats, y_stats)
+    stat_loss = (
+        stats.mean_x.square().mean()
+        + stats.mean_y.square().mean()
+        + stats.cov_xx.square().mean()
+        + stats.cov_yy.square().mean()
+        + stats.cov_xy.square().mean()
+    )
+    stat_loss.backward()
+    assert x_stats.grad is not None and torch.isfinite(x_stats.grad).all()
+    assert y_stats.grad is not None and torch.isfinite(y_stats.grad).all()
+
+    # Evaluation must freeze the tracked state while still letting gradients flow through the
+    # identity outputs, since the module itself does not transform the activations.
     stats.eval()
     frozen_mean = stats.mean_x.clone()
-    stats(*prepare(raw_x, raw_y))
+    x_eval = raw_x.clone().requires_grad_(True)
+    y_eval = raw_y.clone().requires_grad_(True)
+    x_eval_out, y_eval_out = stats(x_eval, y_eval)
     assert torch.equal(stats.mean_x, frozen_mean)
+    eval_loss = x_eval_out.square().mean() + y_eval_out.square().mean()
+    eval_loss.backward()
+    assert x_eval.grad is not None and torch.isfinite(x_eval.grad).all()
+    assert y_eval.grad is not None and torch.isfinite(y_eval.grad).all()
 
-    # Export round-trip for equivariant version
     if kind == "eema":
-        exported = stats.export()
-        exported.eval()
-        x_std, y_std = exported(raw_x, raw_y)
-        assert torch.equal(x_std, raw_x)
-        assert torch.equal(y_std, raw_y)
+        import symm_learning.stats as symm_stats
+
+        # Build a dense reference implementation of the old equivariant EMA update:
+        # 1. compute invariant means,
+        # 2. center with the current EMA mean (or batch mean on the first step),
+        # 3. compute projected dense covariances,
+        # 4. apply the EMA update in dense matrix form.
+        #
+        # The new implementation tracks the same quantities in Hom_G degrees of freedom, so the
+        # exposed dense covariances should match this oracle step by step.
+        ref_stats = eEMAStats(x_rep=rep, y_rep=rep, momentum=0.2)
+        ref_stats.train()
+        manual_mean_x = None
+        manual_mean_y = None
+        manual_cov_xx = None
+        manual_cov_yy = None
+        manual_cov_xy = None
+        batch_generator = torch.Generator().manual_seed(1234)
+        for _ in range(3):
+            x_batch = torch.randn(8, rep.size, generator=batch_generator)
+            y_batch = torch.randn(8, rep.size, generator=batch_generator)
+
+            # Invariant means used by both the old dense path and the current DoF path.
+            batch_mean_x = symm_stats.mean(x_batch, rep_x=rep)
+            batch_mean_y = symm_stats.mean(y_batch, rep_x=rep)
+            if manual_mean_x is None:
+                center_x = batch_mean_x
+                center_y = batch_mean_y
+            else:
+                # After the first batch, EMA covariances are centered with the previously tracked mean.
+                center_x = manual_mean_x
+                center_y = manual_mean_y
+            x_centered = x_batch - center_x.unsqueeze(0)
+            y_centered = y_batch - center_y.unsqueeze(0)
+            # `uncentered=True` treats the already-centered samples as second-moment inputs, which
+            # reproduces the old dense covariance computation exactly, including the 1/N scaling.
+            batch_cov_xx = symm_stats.cov(x_centered, x_centered, rep_x=rep, rep_y=rep, uncentered=True)
+            batch_cov_yy = symm_stats.cov(y_centered, y_centered, rep_x=rep, rep_y=rep, uncentered=True)
+            batch_cov_xy = symm_stats.cov(x_centered, y_centered, rep_x=rep, rep_y=rep, uncentered=True).T
+
+            if manual_mean_x is None:
+                manual_mean_x = batch_mean_x
+                manual_mean_y = batch_mean_y
+                manual_cov_xx = batch_cov_xx
+                manual_cov_yy = batch_cov_yy
+                manual_cov_xy = batch_cov_xy
+            else:
+                alpha = ref_stats.momentum
+                manual_mean_x = manual_mean_x * (1 - alpha) + batch_mean_x * alpha
+                manual_mean_y = manual_mean_y * (1 - alpha) + batch_mean_y * alpha
+                manual_cov_xx = manual_cov_xx * (1 - alpha) + batch_cov_xx * alpha
+                manual_cov_yy = manual_cov_yy * (1 - alpha) + batch_cov_yy * alpha
+                manual_cov_xy = manual_cov_xy * (1 - alpha) + batch_cov_xy * alpha
+
+            ref_stats(x_batch, y_batch)
+            # The tracked dense quantities exposed by the DoF implementation must agree with the
+            # dense oracle after every update, not just at the end of the sequence.
+            assert torch.allclose(ref_stats.mean_x, manual_mean_x, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.mean_y, manual_mean_y, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.cov_xx, manual_cov_xx, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.cov_yy, manual_cov_yy, atol=1e-6, rtol=1e-6)
+            assert torch.allclose(ref_stats.cov_xy, manual_cov_xy, atol=1e-6, rtol=1e-6)
+
+        # In eval mode, the dense expansion is intentionally cached, so mutating the DoF buffer
+        # alone should not change the exposed dense covariance until the cache is invalidated.
+        cov_xx_cached = stats.cov_xx.clone()
+        stats.running_cov_xx_dof.add_(torch.randn_like(stats.running_cov_xx_dof))
+        assert torch.allclose(stats.cov_xx, cov_xx_cached), "Eval should reuse cached dense covariance expansion"
+
+        # Returning to training invalidates the eval cache and recomputes the dense covariance
+        # from the current DoF state.
+        stats.train()
+        cov_xx_train = stats.cov_xx
+        assert not torch.allclose(cov_xx_train, cov_xx_cached), "Train should recompute covariance from DoFs"
+
+        # Switching back to eval should freeze the latest training-time dense covariance.
+        stats.eval()
+        cov_xx_eval = stats.cov_xx
+        assert torch.allclose(cov_xx_eval, cov_xx_train), "Eval should cache the latest training covariance"
+
+        # Only the detached DoF buffers are serialized. The dense cache is derived state and should
+        # be rebuilt on demand after load.
+        state = stats.state_dict()
+        assert "running_cov_xx_dof" in state and "running_cov_yy_dof" in state and "running_cov_xy_dof" in state
+        assert "running_cov_xx" not in state and "running_cov_yy" not in state and "running_cov_xy" not in state
+        assert "_cov_xx" not in state and "_cov_yy" not in state and "_cov_xy" not in state
 
     assert_module_save_load_consistency(stats, raw_x, raw_y)

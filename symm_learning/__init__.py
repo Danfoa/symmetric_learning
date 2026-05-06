@@ -18,7 +18,13 @@ representation_theory
     Tools for group representations and irreducible decompositions.
 """
 
+from __future__ import annotations
+
 import logging
+import re
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +59,45 @@ def _ensure_group_deepcopy_singleton() -> None:
     _deepcopy_patched = True
 
 
+def _version_from_pyproject() -> Optional[str]:
+    """Read the package version from pyproject.toml in source checkouts."""
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    if not pyproject.is_file():
+        return None
+
+    content = pyproject.read_text(encoding="utf-8")
+    if "[project]" not in content:
+        return None
+
+    project_block = content.split("[project]", maxsplit=1)[1]
+    project_block = re.split(r"^\[", project_block, maxsplit=1, flags=re.MULTILINE)[0]
+    match = re.search(r'^version\s*=\s*"([^"]+)"\s*$', project_block, flags=re.MULTILINE)
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def _resolve_version() -> str:
+    """Resolve package version from installed metadata or source pyproject."""
+    source_version = _version_from_pyproject()
+    if source_version is not None:
+        return source_version
+
+    try:
+        return version("symm-learning")
+    except PackageNotFoundError:
+        return "0+unknown"
+
+
 # Patch eagerly on package import so any module using escnn reps shares the singleton caches.
 _ensure_group_deepcopy_singleton()
 
 from symm_learning import linalg, models, nn, representation_theory, stats, utils  # noqa: F401
 
+__version__ = _resolve_version()
+
 __all__ = [
+    "__version__",
     "linalg",
     "models",
     "nn",

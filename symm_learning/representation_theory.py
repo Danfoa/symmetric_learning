@@ -38,6 +38,7 @@ import torch
 from escnn.group import Group, GroupElement, Representation
 from scipy.linalg import block_diag
 
+from symm_learning.linalg import IsotypicTensorCache
 from symm_learning.utils import CallableDict
 
 logger = logging.getLogger(__name__)
@@ -49,22 +50,49 @@ _cache_ = {}
 class GroupHomomorphismBasis(torch.nn.Module):
     r"""Basis handler for :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`.
 
-    This module provides:
+    Let :math:`(\mathcal{X}, \rho_{\mathcal{X}})` and :math:`(\mathcal{Y}, \rho_{\mathcal{Y}})` be two
+    :math:`\mathbb{G}`-symmetric vector spaces. After rewriting both representations in their canonical
+    :ref:`isotypic decomposition <isotypic-decomposition-example>`, every equivariant linear map
+    :math:`\mathbf{W}\in\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})` admits a block
+    decomposition of the form
+
+    .. math::
+        \tilde{\mathbf{W}}
+        = \mathbf{Q}_{\mathcal{Y}}^T \mathbf{W} \mathbf{Q}_{\mathcal{X}}
+        = \bigoplus_{k\in\mathcal{K}_{\mathcal{X}\mathcal{Y}}} \tilde{\mathbf{W}}^{(k)},
+
+    where :math:`\mathcal{K}_{\mathcal{X}\mathcal{Y}}` contains the irrep types shared by
+    :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}`. This is the structural statement summarized in
+    Proposition I.13 of ``main_vk.pdf`` and exploited throughout this class.
+
+    For each shared irrep type :math:`k`, let :math:`m_k^{\mathcal{X}}` and :math:`m_k^{\mathcal{Y}}` denote the
+    multiplicities of :math:`\hat{\rho}_k` in :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}`, and let
+    :math:`\{\mathbf{\Psi}^{(k)}_s\}_{s=1}^{S_k}` be a basis of
+    :math:`\operatorname{End}_\mathbb{G}(\hat{\rho}_k)`. Then each isotypic block further decomposes into
+    :math:`m_k^{\mathcal{Y}} \times m_k^{\mathcal{X}}` endomorphism blocks:
+
+    .. math::
+        \tilde{\mathbf{W}}^{(k)}_{j,i}
+        = \sum_{s=1}^{S_k}\theta_{j,i,s}^{(k)}\,\mathbf{\Psi}^{(k)}_s,
+        \qquad
+        \tilde{\mathbf{W}}^{(k)}
+        = \sum_{s=1}^{S_k}\mathbf{\Theta}^{(k)}_s \otimes \mathbf{\Psi}^{(k)}_s,
+
+    with :math:`\mathbf{\Theta}^{(k)}_s\in\mathbb{R}^{m_k^{\mathcal{Y}}\times m_k^{\mathcal{X}}}`. Equation (40)
+    in ``main_vk.pdf`` describes the possible endomorphism bases for real, complex, and quaternionic irrep types, so
+    :math:`S_k = \dim(\operatorname{End}_\mathbb{G}(\hat{\rho}_k))` is typically :math:`1`, :math:`2`, or :math:`4`.
+
+    Consequently, the dimension of the equivariant subspace is
+
+    .. math::
+        \dim\!\left(\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})\right)
+        = \sum_{k\in\mathcal{K}_{\mathcal{X}\mathcal{Y}}} m_k^{\mathcal{Y}} m_k^{\mathcal{X}} S_k.
+
+    This module turns that structure into a practical parameterization. It provides:
 
     1. Synthesis of equivariant maps from basis coefficients.
     2. Orthogonal projection of dense matrices onto the equivariant subspace.
-
-    Using the :ref:`isotypic decomposition <isotypic-decomposition-example>`
-    (:func:`~symm_learning.representation_theory.isotypic_decomp_rep`) of
-    :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}`, each shared irrep type :math:`k` contributes a block
-    with structure
-
-    .. math::
-        \mathbf{A}^{(k)}_{o,i} = \sum_{s=1}^{S_k}\theta^{(k)}_{s,o,i}\,\mathbf{\Psi}^{(k)}_s,
-
-    where :math:`\{\mathbf{\Psi}^{(k)}_s\}_{s=1}^{S_k}` is a basis of
-    :math:`\operatorname{End}_\mathbb{G}(\hat{\rho}_k)`. This induces
-    :math:`m^{\text{out}}_k m^{\text{in}}_k S_k` degrees of freedom for type :math:`k`.
+    3. Block-wise metadata exposing how the degrees of freedom are partitioned across shared irrep types.
 
     Core utilities:
 
@@ -75,6 +103,10 @@ class GroupHomomorphismBasis(torch.nn.Module):
     - :meth:`initialize_params`: sample valid initialization either in coefficient space or as a dense equivariant
       matrix.
 
+    The tutorial :ref:`Leveraging the structure of Equivariant Linear maps <equivariant-linear-maps-example>`
+    summarizes this decomposition and shows how it matches the implementation in
+    :class:`GroupHomomorphismBasis`.
+
     .. rubric:: Examples
 
     Build and synthesize an equivariant matrix with :meth:`forward`.
@@ -83,17 +115,23 @@ class GroupHomomorphismBasis(torch.nn.Module):
 
         >>> from escnn.group import CyclicGroup
         >>> G = CyclicGroup(4)
-        >>> rep = direct_sum([G.regular_representation] * 2)
-        >>> basis = GroupHomomorphismBasis(rep, rep)
-        >>> w_dof = torch.randn(basis.dim)
+        >>> rep_x = direct_sum([G.regular_representation] * 2)
+        >>> rep_y = direct_sum([G.regular_representation] * 3)
+        >>> basis = GroupHomomorphismBasis(rep_x, rep_y, basis_expansion="isotypic_expansion")
+        >>> irrep_id = next(k for k, meta in basis.iso_blocks.items() if meta["dim_endo_basis"] > 1)
+        >>> block = basis.iso_blocks[irrep_id]
+        >>> theta_k = torch.randn(block["mul_out"] * block["mul_in"], block["dim_endo_basis"])
+        >>> w_dof = torch.zeros(basis.dim)
+        >>> w_dof[block["hom_basis_slice"]] = theta_k.reshape(-1)
         >>> W = basis(w_dof)
-        >>> # W satisfies rho(g) @ W == W @ rho(g) for all g in G
+        >>> # theta_k stores the coefficients of the block associated with irrep_id
+        >>> # W satisfies rho_y(g) @ W == W @ rho_x(g) for all g in G
 
     Project an unconstrained matrix with :meth:`orthogonal_projection`.
 
     .. code-block:: pycon
 
-        >>> W0 = torch.randn(rep.size, rep.size)
+        >>> W0 = torch.randn(rep_y.size, rep_x.size)
         >>> W_proj = basis.orthogonal_projection(W0)
         >>> # W_proj is the closest equivariant matrix to W0 in Frobenius norm
 
@@ -118,16 +156,15 @@ class GroupHomomorphismBasis(torch.nn.Module):
             irreps shared by in_rep/out_rep, keys:
 
             - out_slice / in_slice: slice selecting the isotypic coordinates in out/in reps.
-            - mul_out / mul_in: multiplicities of the irrep in out/in reps.
+            - mul_out / mul_in: multiplicities :math:`m_k^{\mathcal{Y}}` and :math:`m_k^{\mathcal{X}}`.
             - irrep_dim: Dimension of the irreducible representation :math:`d_k`.
-            - endomorphism_basis: basis of :math:`\operatorname{End}_\mathbb{G}(\hat{\rho}_k)` with shape
-              :math:`(S_k, d_k, d_k)`.
+            - dim_endo_basis: :math:`S_k = \dim(\operatorname{End}_\mathbb{G}(\hat{\rho}_k))`.
             - dim_hom_basis: Dimension of the homomorphism between isotypic spaces of type :math:`k`, i.e.
-              :math:`\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}})) = m_{out}
-              \cdot m_{in} \cdot S_k`.
+              :math:`m_k^{\mathcal{Y}} m_k^{\mathcal{X}} S_k`.
             - hom_basis_slice: slice containing the degrees of freedom associated to
-              :math:`\dim(\operatorname{Hom}_\mathbb{G}(\rho_k^{\mathcal{X}}, \rho_k^{\mathcal{Y}}))` from a vector of
-              shape :math:`(\dim(\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})),)`.
+              :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}^{(k)}, \rho_{\mathcal{Y}}^{(k)})` inside the
+              flattened coefficient vector. The exact flat ordering is backend-dependent, but the slice is always
+              compatible with :meth:`forward` and :meth:`projection_coefficients` of the same instance.
         basis_elements (:class:`~torch.Tensor`): Full dense basis stack
             ``(dim, out_rep.size, in_rep.size)`` when ``basis_expansion="memory_heavy"``.
         basis_norm_sq (:class:`~torch.Tensor`): Squared Frobenius norms of basis elements when
@@ -136,10 +173,10 @@ class GroupHomomorphismBasis(torch.nn.Module):
             ``(S_k, d_k*d_k)`` when ``basis_expansion="isotypic_expansion"``.
         endo_basis_norm_sq_<irrep_id> (:class:`~torch.Tensor`): Per-irrep squared norms of the flattened
             endomorphism bases with isotypic expansion.
-        Q_in_inv (:class:`~torch.Tensor`): Change-of-basis matrix :math:`Q_{in}^{-1}` cached as buffer for
-            isotypic expansion.
-        Q_out (:class:`~torch.Tensor`): Change-of-basis matrix :math:`Q_{out}` cached as buffer for
-            isotypic expansion.
+        Q_in_inv (:class:`~torch.Tensor`): Cached matrix :math:`\mathbf{Q}_{\mathcal{X}}^T` mapping the original
+            input coordinates to isotypic coordinates when ``basis_expansion="isotypic_expansion"``.
+        Q_out (:class:`~torch.Tensor`): Cached matrix :math:`\mathbf{Q}_{\mathcal{Y}}` mapping from isotypic
+            coordinates back to the original output basis when ``basis_expansion="isotypic_expansion"``.
     """
 
     def __init__(
@@ -149,18 +186,20 @@ class GroupHomomorphismBasis(torch.nn.Module):
 
         Args:
             in_rep: Input representation :math:`\rho_{\mathcal{X}}` whose
-                :ref:`isotypic decomposition <isotypic-decomposition-example>` has size `in_rep.size`.
-                The change of basis is applied in-place and used to define the rows of the basis matrices.
+                :ref:`isotypic decomposition <isotypic-decomposition-example>` has size ``in_rep.size``.
+                Internally, the representation is rewritten in canonical isotypic ordering before any basis metadata is
+                constructed.
             out_rep: Output representation :math:`\rho_{\mathcal{Y}}`, treated analogously to `in_rep` with total size
-                `out_rep.size`.
+                ``out_rep.size``.
             basis_expansion: Strategy for realizing the basis. ``"memory_heavy"`` stores the full stack of basis
-              elements with shape `(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)`, maximizing speed at the
-              cost of one dense matrix per basis element. ``"isotypic_expansion"`` keeps only the tiny irrep
-              endomorphism bases `(S_k, d_k, d_k)` and reconstructs on the fly—much lighter on memory, moderately
-              slower.
+                elements with shape
+                ``(dim(Hom_G(in_rep, out_rep)), out_rep.size, in_rep.size)``, maximizing speed at the cost of one
+                dense matrix per basis element. ``"isotypic_expansion"`` keeps only the small irrep endomorphism bases
+                ``(S_k, d_k, d_k)`` and reconstructs the dense matrix on the fly, which is much lighter on memory and
+                exposes the isotypic block structure more directly.
 
         Raises:
-            AssertionError: If `in_rep` and `out_rep` do not belong to the same symmetry group.
+            AssertionError: If ``in_rep`` and ``out_rep`` do not belong to the same symmetry group.
         """
         super().__init__()
         assert in_rep.group == out_rep.group, f"in group: {in_rep.group} != out group: {out_rep.group}"
@@ -184,18 +223,17 @@ class GroupHomomorphismBasis(torch.nn.Module):
             # Multiplicities of the irrep of type k=irrep_id in in_rep and out_rep
             mul_out = self.out_rep._irreps_multiplicities[irrep_id]
             mul_in = self.in_rep._irreps_multiplicities[irrep_id]
-            # Endomorphism basis of the irrep End_G(k=irrep_id)
-            irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype)  # [D_k, d_k, d_k]
+            dim_endo_basis = len(irrep.endomorphism_basis())
             # Dimension of basis of homomorphisms between the two isotypic subspaces of type k=irrep_id
-            dim_irrep_hom_basis = mul_out * mul_in * irrep_end_basis.size(0)  # dim(Hom_G(V_k^{in}, V_k^{out}))
+            dim_irrep_hom_basis = mul_out * mul_in * dim_endo_basis  # dim(Hom_G(V_k^{in}, V_k^{out}))
             # Store block info for inference time use.
             self.iso_blocks[irrep_id] = dict(
                 out_slice=out_slice,
                 in_slice=in_slice,
-                endomorphism_basis=irrep_end_basis,
                 mul_out=mul_out,
                 mul_in=mul_in,
                 irrep_dim=irrep.size,
+                dim_endo_basis=dim_endo_basis,
                 dim_hom_basis=dim_irrep_hom_basis,
                 hom_basis_slice=slice(dof_offset, dof_offset + dim_irrep_hom_basis),
             )
@@ -208,34 +246,50 @@ class GroupHomomorphismBasis(torch.nn.Module):
             basis_elements = self._build_fullsize_homomorphism_basis()
             # Register contiguous buffer such that flattening returns a view.
             # This register is memory heavy as fuck, but enables ultra fast forward/backward passes.
-            self.register_buffer("basis_elements", basis_elements.contiguous())
+            self.register_buffer("basis_elements", basis_elements.contiguous(), persistent=False)
             basis_norm_sq = torch.einsum("sab,sab->s", self.basis_elements, self.basis_elements)
-            self.register_buffer("basis_norm_sq", basis_norm_sq)
+            self.register_buffer("basis_norm_sq", basis_norm_sq, persistent=False)
         elif self.basis_expansion == "isotypic_expansion":
             # We store as buffers only each irrep endomorphism basis.
             # This is ultra memory efficient, but mildly slower at runtime.
-            for irrep_id, irrep_metadata in self.iso_blocks.items():
-                endo_basis = irrep_metadata["endomorphism_basis"].contiguous()  # [S_k, d_k, d_k]
+            for irrep_id in self.iso_blocks:
+                irrep = self.G.irrep(*irrep_id)
+                endo_basis = torch.tensor(irrep.endomorphism_basis(), dtype=dtype).contiguous()  # [S_k, d_k, d_k]
                 endo_basis_flat = endo_basis.view(endo_basis.size(0), -1)
-                self.register_buffer(f"endo_basis_flat_{irrep_id}", endo_basis_flat)
+                self.register_buffer(f"endo_basis_flat_{irrep_id}", endo_basis_flat, persistent=False)
                 endo_basis_norm_sq = torch.einsum("sd,sd->s", endo_basis_flat, endo_basis_flat)
-                self.register_buffer(f"endo_basis_norm_sq_{irrep_id}", endo_basis_norm_sq)
-            self.register_buffer("Q_in_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype))
-            self.register_buffer("Q_out", torch.tensor(self.out_rep.change_of_basis, dtype=dtype))
+                self.register_buffer(f"endo_basis_norm_sq_{irrep_id}", endo_basis_norm_sq, persistent=False)
+            self.register_buffer(
+                "Q_in_inv", torch.tensor(self.in_rep.change_of_basis_inv, dtype=dtype), persistent=False
+            )
+            self.register_buffer("Q_out", torch.tensor(self.out_rep.change_of_basis, dtype=dtype), persistent=False)
         else:
             raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
 
     def forward(self, w_dof: torch.Tensor) -> torch.Tensor:
-        r"""Return equivariant linear map from coefficients.
+        r"""Return a dense equivariant linear map from flattened coefficients.
 
         The returned matrix satisfies
 
         .. math::
             \rho_{\mathcal{Y}}(g)\mathbf{W} = \mathbf{W}\rho_{\mathcal{X}}(g), \quad \forall g\in\mathbb{G}.
 
+        In the isotypic basis, the map is assembled block by block as
+
+        .. math::
+            \tilde{\mathbf{W}}^{(k)}_{j,i}
+            = \sum_{s=1}^{S_k}\theta_{j,i,s}^{(k)}\,\mathbf{\Psi}^{(k)}_s,
+
+        and then returned to the original coordinates through
+
+        .. math::
+            \mathbf{W} = \mathbf{Q}_{\mathcal{Y}} \tilde{\mathbf{W}} \mathbf{Q}_{\mathcal{X}}^T.
+
         Args:
             w_dof (:class:`~torch.Tensor`): Basis expansion coefficients of shape ``(D,)`` or ``(..., D)``, where
-                ``D = dim(Hom_G(in_rep, out_rep))``.
+                ``D = dim(Hom_G(in_rep, out_rep))``. The flat layout is the one expected by the selected
+                ``basis_expansion`` backend, and is always compatible with :meth:`projection_coefficients` from the
+                same instance.
 
         Returns:
             :class:`~torch.Tensor`: Dense matrix of shape
@@ -253,28 +307,24 @@ class GroupHomomorphismBasis(torch.nn.Module):
             W_flat = torch.matmul(w_dof, self.basis_elements.view(self.dim, -1))  # [out_rep.size * in_rep.size]
             W = W_flat.view(*leading_shape, self.out_rep.size, self.in_rep.size)
         elif self.basis_expansion == "isotypic_expansion":
-            W = w_dof.new_zeros(*leading_shape, self.out_rep.size, self.in_rep.size)
-            for irrep_id, irrep_metadata in self.iso_blocks.items():
-                m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
-                out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
-                d_k = irrep_metadata["irrep_dim"]
-                hom_basis_slice = irrep_metadata["hom_basis_slice"]
+            from symm_learning.linalg import equiv_linear_map
 
-                endo_basis_flat = getattr(self, f"endo_basis_flat_{irrep_id}")  # [S_k, d_k * d_k]
-                theta_k = w_dof[..., hom_basis_slice].view(
-                    *leading_shape, m_out * m_in, endo_basis_flat.size(0)
-                )  # [*, m_out*m_in, S_k]
-                # Compute basis expansion for this irrep block
-                coeffs = torch.matmul(theta_k, endo_basis_flat)  # [*, m_out*m_in, d_k*d_k]
-                # [m_out*m_in, d_k*d_k] -> [m_out, m_in, d_k, d_k] -> [m_out, d_k, m_in, d_k] -> [m_out*d_k, m_in*d_k]
-                block = coeffs.view(*leading_shape, m_out, m_in, d_k, d_k)
-                block = block.permute(*range(len(leading_shape)), -4, -2, -3, -1).reshape(
-                    *leading_shape, m_out * d_k, m_in * d_k
-                )
-                W[..., out_slice, in_slice] = block
-            W = self.Q_out @ (W @ self.Q_in_inv)
+            W = equiv_linear_map(w_dof=w_dof, rep_x=self.in_rep, rep_y=self.out_rep, tensor_cache=self.tensor_cache)
 
         return W
+
+    @property
+    def tensor_cache(self) -> IsotypicTensorCache:
+        """Structured tensor cache for the isotypic-expansion linalg kernels."""
+        if self.basis_expansion != "isotypic_expansion":
+            raise RuntimeError("tensor_cache is only available for basis_expansion='isotypic_expansion'")
+
+        return IsotypicTensorCache(
+            Q_out=self.Q_out,
+            Q_in_inv=self.Q_in_inv,
+            endo_basis_flat={irrep_id: getattr(self, f"endo_basis_flat_{irrep_id}") for irrep_id in self.iso_blocks},
+            endo_norm_sq={irrep_id: getattr(self, f"endo_basis_norm_sq_{irrep_id}") for irrep_id in self.iso_blocks},
+        )
 
     def orthogonal_projection(self, W: torch.Tensor) -> torch.Tensor:
         r"""Project a dense matrix onto :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`.
@@ -319,39 +369,55 @@ class GroupHomomorphismBasis(torch.nn.Module):
             return W_proj_flat.view(*W.shape)
 
         if self.basis_expansion == "isotypic_expansion":
-            Q_out_inv = self.Q_out.mT
-            Q_in = self.Q_in_inv.mT
-            W_iso_in = (Q_out_inv @ W) @ Q_in  # [..., d_out, d_in] in isotypic basis
-            W_iso = torch.zeros_like(W_iso_in)  # accumulator in isotypic basis
-            leading_shape = W_iso_in.shape[:-2]  # batch (possibly empty) dims
+            from symm_learning.linalg import equiv_orthogonal_projection
 
-            for irrep_id, irrep_metadata in self.iso_blocks.items():
-                m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
-                out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
-                d_k = irrep_metadata["irrep_dim"]
-                endo_basis_flat = getattr(self, f"endo_basis_flat_{irrep_id}")
-                endo_norm_sq = getattr(self, f"endo_basis_norm_sq_{irrep_id}")
-
-                block = W_iso_in[..., out_slice, in_slice]
-                block = block.view(*leading_shape, m_out, d_k, m_in, d_k)
-                block = block.permute(*range(len(leading_shape)), -4, -2, -3, -1)  # [..., m_out, m_in, d_k, d_k]
-                block_flat = block.reshape(*leading_shape, m_out * m_in, d_k * d_k)  # [..., m_out*m_in, d_k^2]
-
-                # coeff[..., (o,i), s] = <block_{o,i}, E_s> / ||E_s||^2
-                coeff = block_flat.matmul(endo_basis_flat.mT)
-                coeff = coeff / endo_norm_sq
-                block_proj_flat = coeff.matmul(endo_basis_flat)  # [..., m_out*m_in, d_k^2]
-
-                block_proj = block_proj_flat.view(*leading_shape, m_out, m_in, d_k, d_k)
-                block_proj = block_proj.permute(*range(len(leading_shape)), -4, -2, -3, -1)
-                block_proj = block_proj.reshape(*leading_shape, m_out * d_k, m_in * d_k)
-                W_iso_block = W_iso[..., out_slice, in_slice]
-                W_iso_block.copy_(block_proj)
-
-            W_proj = (self.Q_out @ W_iso) @ self.Q_in_inv  # back to original basis
-            return W_proj
+            return equiv_orthogonal_projection(
+                W=W,
+                rep_x=self.in_rep,
+                rep_y=self.out_rep,
+                tensor_cache=self.tensor_cache,
+            )
 
         raise NotImplementedError(f"Basis expansion '{self.basis_expansion}' not implemented yet.")
+
+    def projection_coefficients(self, W: torch.Tensor) -> torch.Tensor:
+        r"""Return homomorphism-basis coefficients of the orthogonal projection of ``W``.
+
+        This method first computes the Frobenius-orthogonal projection
+
+        .. math::
+            \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})
+            \in \operatorname{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}}),
+
+        and then returns the flattened coefficients of that projection in the basis used by this
+        :class:`GroupHomomorphismBasis` instance. The resulting vector can be passed back to :meth:`forward` to
+        reconstruct the dense projected matrix exactly up to numerical precision.
+
+        Args:
+            W (:class:`~torch.Tensor`): Dense matrix or batch of matrices of shape
+                ``(..., out_rep.size, in_rep.size)``.
+
+        Returns:
+            :class:`~torch.Tensor`: Flattened coefficient vector(s) of shape ``(..., dim)``.
+        """
+        from symm_learning.linalg import equiv_orthogonal_projection_coefficients
+
+        if W.shape[-2:] != (self.out_rep.size, self.in_rep.size):
+            raise ValueError(f"Expected weight shape (..., {self.out_rep.size}, {self.in_rep.size}), got {W.shape}")
+
+        if self.basis_expansion == "memory_heavy":
+            basis_flat = self.basis_elements.view(self.dim, -1)
+            W_flat = W.view(*W.shape[:-2], -1)
+            return W_flat.matmul(basis_flat.mT) / self.basis_norm_sq
+
+        if self.basis_expansion == "isotypic_expansion":
+            return equiv_orthogonal_projection_coefficients(
+                W=W,
+                rep_x=self.in_rep,
+                rep_y=self.out_rep,
+                tensor_cache=self.tensor_cache,
+            )
+        return equiv_orthogonal_projection_coefficients(W=W, rep_x=self.in_rep, rep_y=self.out_rep)
 
     @property
     def dim(self) -> int:
@@ -378,9 +444,10 @@ class GroupHomomorphismBasis(torch.nn.Module):
         else:
             logger.debug(f"Building full-size basis for Hom_G({self.in_rep}, {self.out_rep})")
             basis_elements_iso_basis = []
-            for _, irrep_metadata in self.iso_blocks.items():
-                irrep_end_basis = irrep_metadata["endomorphism_basis"]
-                dim_end_basis = irrep_end_basis.size(0)
+            for irrep_id, irrep_metadata in self.iso_blocks.items():
+                irrep = self.G.irrep(*irrep_id)
+                irrep_end_basis = torch.tensor(irrep.endomorphism_basis(), dtype=torch.get_default_dtype())
+                dim_end_basis = irrep_metadata["dim_endo_basis"]
                 mul_out, mul_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
                 out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
                 irrep_dim = irrep_metadata["irrep_dim"]
@@ -461,21 +528,13 @@ class GroupHomomorphismBasis(torch.nn.Module):
         device = buffer.device if buffer is not None else None
         dtype = buffer.dtype if buffer is not None else torch.get_default_dtype()
 
-        if return_dense:
-            W_iso = torch.zeros((*leading_shape, self.out_rep.size, self.in_rep.size), dtype=dtype, device=device)
-        else:
-            w_dof = torch.zeros((*leading_shape, self.dim), dtype=dtype, device=device)
+        w_dof = torch.zeros((*leading_shape, self.dim), dtype=dtype, device=device)
 
         for _, irrep_metadata in self.iso_blocks.items():
-            # for out_slice, in_slice, endo_basis, m_out, m_in, irrep_dim in self.irreps_meta:
-            endo_basis = irrep_metadata["endomorphism_basis"]
             m_out, m_in = irrep_metadata["mul_out"], irrep_metadata["mul_in"]
-            out_slice, in_slice = irrep_metadata["out_slice"], irrep_metadata["in_slice"]
-            irrep_dim = irrep_metadata["irrep_dim"]
             hom_basis_slice = irrep_metadata["hom_basis_slice"]
 
-            dim_endo_basis = endo_basis.size(0)
-            dtype, device = endo_basis.dtype, endo_basis.device
+            dim_endo_basis = irrep_metadata["dim_endo_basis"]
             # fans for this irrep
             fan_in = dim_endo_basis * m_in
             fan_out = dim_endo_basis * m_out
@@ -496,21 +555,11 @@ class GroupHomomorphismBasis(torch.nn.Module):
             else:
                 raise ValueError(f"Unknown scheme: {scheme}")
 
-            if return_dense:
-                # Expand irrep block (m_out * irrep_dim, m_in * irrep_dim)
-                block = torch.einsum("...soi,sab->...oaib", theta, endo_basis).reshape(
-                    *leading_shape, m_out * irrep_dim, m_in * irrep_dim
-                )
-                W_iso[..., out_slice, in_slice] = block
-            else:
-                w_dof[..., hom_basis_slice] = theta.reshape(*leading_shape, -1)
+            w_dof[..., hom_basis_slice] = theta.reshape(*leading_shape, -1)
 
-        if return_dense:  # Change to original coordinates
-            Q_in_inv = torch.tensor(self.in_rep.change_of_basis_inv, dtype=W_iso.dtype, device=W_iso.device)
-            Q_out = torch.tensor(self.out_rep.change_of_basis, dtype=W_iso.dtype, device=W_iso.device)
-            return torch.einsum("ab,...bc,cd->...ad", Q_out, W_iso, Q_in_inv)
-        else:
-            return w_dof
+        if return_dense:
+            return self(w_dof)
+        return w_dof
 
     def extra_repr(self):  # noqa: D102
         return f"basis_expansion={self.basis_expansion}\nin_rep={self.in_rep}\nout_rep={self.out_rep}"

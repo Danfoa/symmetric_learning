@@ -198,173 +198,6 @@ def test_econd_transformer_regressor(
 @pytest.mark.parametrize(
     "group",
     [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-@pytest.mark.parametrize("mx", [2])
-@pytest.mark.parametrize("num_heads", [1, 2])
-@pytest.mark.parametrize("num_layers", [1, 5])
-def test_etransformer_encoder(group: Group, mx: int, num_heads: int, num_layers: int):
-    """Check equivariance and fast inference consistency of eTransformerEncoderLayer."""
-    from symm_learning.models.transformer.etransformer import eTransformerEncoderLayer
-
-    G = group
-    rep = direct_sum([G.regular_representation] * mx)
-
-    encoder_kwargs = dict(
-        in_rep=rep,
-        nhead=num_heads,
-        dim_feedforward=rep.size * 4,
-        dropout=0.0,  # dropout=0 for train/eval consistency
-        activation="relu",
-        norm_first=True,
-        batch_first=True,
-        norm_module="rmsnorm",
-        bias=True,
-    )
-
-    # Create single layer or stacked layers
-    if num_layers == 1:
-        encoder = eTransformerEncoderLayer(**encoder_kwargs)
-    else:
-        base_layer = eTransformerEncoderLayer(**encoder_kwargs)
-        encoder = torch.nn.TransformerEncoder(
-            encoder_layer=base_layer, num_layers=num_layers, enable_nested_tensor=False
-        )
-
-    # Equivariance check
-    encoder.eval()
-    check_equivariance(
-        encoder,
-        input_dim=3,
-        module_name=f"eTransformerEncoder(layers={num_layers})",
-        in_rep=rep,
-        out_rep=rep,
-        atol=1e-4,
-        rtol=1e-4,
-    )
-
-    # Fast inference consistency test
-    B, L = 4, 5
-    x = torch.randn(B, L, rep.size)
-
-    # 1. Update weights with some arbitrary loss
-    encoder.train()
-    encoder.zero_grad()
-    y = encoder(x)
-    target = torch.randn_like(y)
-    loss = torch.nn.functional.mse_loss(y, target)
-    loss.backward()
-    with torch.no_grad():
-        for p in encoder.parameters():
-            if p.grad is not None:
-                p -= 0.1 * p.grad
-
-    # 2. Forward in train mode with updated weights
-    encoder.zero_grad()
-    y_train = encoder(x)
-
-    # 3. Forward in eval mode
-    encoder.eval()
-    y_eval = encoder(x)
-
-    assert torch.allclose(y_train, y_eval, atol=1e-5, rtol=1e-5), (
-        f"eTransformerEncoder output in eval mode must match train mode (layers={num_layers})"
-    )
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-@pytest.mark.parametrize("mx", [2])
-@pytest.mark.parametrize("num_heads", [1, 2])
-@pytest.mark.parametrize("num_layers", [1, 5])
-def test_etransformer_decoder(group: Group, mx: int, num_heads: int, num_layers: int):
-    """Check equivariance and fast inference consistency of eTransformerDecoderLayer."""
-    from symm_learning.models.transformer.etransformer import eTransformerDecoderLayer
-
-    G = group
-    rep = direct_sum([G.regular_representation] * mx)
-
-    decoder_kwargs = dict(
-        in_rep=rep,
-        nhead=num_heads,
-        dim_feedforward=rep.size * 4,
-        dropout=0.0,  # dropout=0 for train/eval consistency
-        activation="relu",
-        norm_first=True,
-        batch_first=True,
-        norm_module="rmsnorm",
-        bias=True,
-    )
-
-    # Create single layer or stacked layers
-    if num_layers == 1:
-        decoder = eTransformerDecoderLayer(**decoder_kwargs)
-    else:
-        base_layer = eTransformerDecoderLayer(**decoder_kwargs)
-        decoder = torch.nn.TransformerDecoder(decoder_layer=base_layer, num_layers=num_layers)
-
-    # Equivariance check
-    decoder.eval()
-    if num_layers == 1:
-        decoder.check_equivariance(atol=1e-4, rtol=1e-4)
-    else:
-        # For stacked layers, use manual equivariance check
-        def act(rep_local, g, tensor):
-            mat = torch.tensor(rep_local(g), dtype=tensor.dtype, device=tensor.device)
-            return torch.einsum("ij,...j->...i", mat, tensor)
-
-        B, tgt_len, mem_len = 3, 2, 3
-        for _ in range(5):
-            g = G.sample()
-            tgt = torch.randn(B, tgt_len, rep.size)
-            mem = torch.randn(B, mem_len, rep.size)
-            out = decoder(tgt=tgt, memory=mem)
-            g_out = decoder(tgt=act(rep, g, tgt), memory=act(rep, g, mem))
-            g_out_exp = act(rep, g, out)
-            assert torch.allclose(g_out, g_out_exp, atol=1e-3, rtol=1e-3), (
-                f"Decoder stack equivariance failed, max err {(g_out - g_out_exp).abs().max().item():.3e}"
-            )
-
-    # Fast inference consistency test
-    B, tgt_len, mem_len = 4, 3, 5
-    tgt = torch.randn(B, tgt_len, rep.size)
-    mem = torch.randn(B, mem_len, rep.size)
-
-    # 1. Update weights with some arbitrary loss
-    decoder.train()
-    decoder.zero_grad()
-    y = decoder(tgt, mem) if num_layers == 1 else decoder(tgt=tgt, memory=mem)
-    target = torch.randn_like(y)
-    loss = torch.nn.functional.mse_loss(y, target)
-    loss.backward()
-    with torch.no_grad():
-        for p in decoder.parameters():
-            if p.grad is not None:
-                p -= 0.1 * p.grad
-
-    # 2. Forward in train mode with updated weights
-    decoder.zero_grad()
-    y_train = decoder(tgt, mem) if num_layers == 1 else decoder(tgt=tgt, memory=mem)
-
-    # 3. Forward in eval mode
-    decoder.eval()
-    y_eval = decoder(tgt, mem) if num_layers == 1 else decoder(tgt=tgt, memory=mem)
-
-    assert torch.allclose(y_train, y_eval, atol=1e-5, rtol=1e-5), (
-        f"eTransformerDecoder output in eval mode must match train mode (layers={num_layers})"
-    )
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
         pytest.param(CyclicGroup(2), id="cyclic2"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
@@ -440,3 +273,60 @@ def test_econd_transformer_regressor(group: Group, m: int, num_attention_heads: 
         f"y_train != y_eval.Max diff: {(y_train - y_eval).abs().max().item():.6f}",
         f"eCondTransformerRegressor output in eval mode must match output in train mode with updated weights. ",
     )
+
+
+@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "rope"])
+@pytest.mark.parametrize("num_cond_layers", [0, 1])
+def test_cond_transformer_regressor(pos_encoding: str, num_cond_layers: int):
+    """Check forward and backprop pass for the baseline CondTransformerRegressor."""
+    from symm_learning.models.control.cond_transformer import CondTransformer
+
+    in_dim, out_dim, cond_dim = 4, 4, 3
+    in_horizon, cond_horizon = 5, 4
+    embedding_dim = 16
+    num_attention_heads = 2
+    batch_size = 2
+
+    model = CondTransformer(
+        in_dim=in_dim,
+        out_dim=out_dim,
+        cond_dim=cond_dim,
+        in_horizon=in_horizon,
+        cond_horizon=cond_horizon,
+        pos_encoding=pos_encoding,
+        num_layers=2,
+        num_attention_heads=num_attention_heads,
+        embedding_dim=embedding_dim,
+        num_cond_layers=num_cond_layers,
+    )
+
+    model.train()
+    optimizer = model.configure_optimizers()
+
+    X = torch.randn(batch_size, in_horizon, in_dim)
+    Z = torch.randn(batch_size, cond_horizon, cond_dim)
+    opt_step = torch.randn(batch_size)
+
+    # Forward pass
+    optimizer.zero_grad()
+    out = model(X=X, Z=Z, opt_step=opt_step)
+
+    assert out.shape == (batch_size, in_horizon, out_dim), (
+        f"Expected shape {(batch_size, in_horizon, out_dim)} got {out.shape}"
+    )
+
+    # Backward pass
+    loss = out.mean()
+    loss.backward()
+
+    # Check for valid gradients
+    has_grad = False
+    for p in model.parameters():
+        if p.grad is not None:
+            has_grad = True
+            assert not torch.isnan(p.grad).any(), "NaN in gradients"
+
+    assert has_grad, "No gradients were computed"
+
+    # Optimizer step
+    optimizer.step()

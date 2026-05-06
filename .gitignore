@@ -179,4 +179,6 @@ cython_debug/
 
 .github/chatmodes/
 .rsyncignore
-*AGENTS.md
+.codex
+main_vk.pdf
+tmp/
