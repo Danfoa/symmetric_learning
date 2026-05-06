@@ -2,11 +2,12 @@
 
 from importlib import import_module
 
-__all__ = ["CondTransformer"]  # noqa: F822
+__all__ = ["CondTransformer", "eCondTransformer"]  # noqa: F822
 
 
 _MODULE_MAP = {
     "CondTransformer": "symm_learning.models.control.cond_transformer",
+    "eCondTransformer": "symm_learning.models.control.econd_transformer",
 }
 
 

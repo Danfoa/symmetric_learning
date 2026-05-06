@@ -27,6 +27,7 @@ __all__ = [
     "MLP",
     "eTimeCNNEncoder",
     "TimeCNNEncoder",
+    "eCondTransformer",
     "eCondTransformerRegressor",
     "CondTransformerRegressor",
     "GenCondRegressor",
@@ -36,9 +37,10 @@ __all__ = [
 
 _MODULE_MAP = {
     "CondTransformer": "symm_learning.models.control.cond_transformer",
+    "eCondTransformer": "symm_learning.models.control.econd_transformer",
     "CondTransformerRegressor": "symm_learning.models.diffusion.cond_transformer_regressor",
     "eCondTransformerRegressor": "symm_learning.models.diffusion.econd_transformer_regressor",
-    "GenCondRegressor": "symm_learning.models.diffusion.cond_transformer_regressor",
+    "GenCondRegressor": "symm_learning.models.control.cond_transformer",
     "MLP": "symm_learning.models.emlp",
     "eMLP": "symm_learning.models.emlp",
     "iMLP": "symm_learning.models.emlp",

@@ -58,8 +58,6 @@ class TransformerEncoderLayer(torch.nn.Module):
         norm_first: bool = False,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
-        device=None,
-        dtype=None,
     ) -> None:
         r"""Initialize the encoder layer.
 
@@ -76,25 +74,24 @@ class TransformerEncoderLayer(torch.nn.Module):
             device (:class:`torch.device`, optional): Parameter factory options.
             dtype (:class:`torch.dtype`, optional): Parameter factory options.
         """  # noqa: E501
-        factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
         self.self_attn = self_attn
         assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module got {type(activation)}"
         self.feed_forward_block = torch.nn.Sequential(
-            torch.nn.Linear(d_model, dim_feedforward, bias=bias, **factory_kwargs),
+            torch.nn.Linear(d_model, dim_feedforward, bias=bias),
             activation,
             torch.nn.Dropout(dropout),
-            torch.nn.Linear(dim_feedforward, d_model, bias=bias, **factory_kwargs),
+            torch.nn.Linear(dim_feedforward, d_model, bias=bias),
             torch.nn.Dropout(dropout),
         )
 
         self.norm_first = norm_first
         if norm_module == "layernorm":
-            self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
-            self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+            self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias)
+            self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias)
         elif norm_module == "rmsnorm":
-            self.norm1 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
-            self.norm2 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
+            self.norm1 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps)
+            self.norm2 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps)
         else:
             raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
         self.attn_dropout = torch.nn.Dropout(dropout)
@@ -238,8 +235,6 @@ class TransformerDecoderLayer(torch.nn.Module):
         norm_first: bool = False,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
-        device=None,
-        dtype=None,
     ) -> None:
         r"""Initialize the decoder layer.
 
@@ -259,29 +254,28 @@ class TransformerDecoderLayer(torch.nn.Module):
             device (:class:`torch.device`, optional): Parameter factory options.
             dtype (:class:`torch.dtype`, optional): Parameter factory options.
         """  # noqa: E501
-        factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
         self.self_attn = self_attn
         self.multihead_attn = multihead_attn
 
         assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module got {type(activation)}"
         self.feed_forward_block = torch.nn.Sequential(
-            torch.nn.Linear(d_model, dim_feedforward, bias=bias, **factory_kwargs),
+            torch.nn.Linear(d_model, dim_feedforward, bias=bias),
             activation,
             torch.nn.Dropout(dropout),
-            torch.nn.Linear(dim_feedforward, d_model, bias=bias, **factory_kwargs),
+            torch.nn.Linear(dim_feedforward, d_model, bias=bias),
             torch.nn.Dropout(dropout),
         )
 
         self.norm_first = norm_first
         if norm_module == "layernorm":
-            self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
-            self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
-            self.norm3 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias, **factory_kwargs)
+            self.norm1 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias)
+            self.norm2 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias)
+            self.norm3 = torch.nn.LayerNorm(d_model, eps=layer_norm_eps, bias=bias)
         elif norm_module == "rmsnorm":
-            self.norm1 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
-            self.norm2 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
-            self.norm3 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps, **factory_kwargs)
+            self.norm1 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps)
+            self.norm2 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps)
+            self.norm3 = torch.nn.RMSNorm(d_model, eps=layer_norm_eps)
         else:
             raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
         self.attn_dropout = torch.nn.Dropout(dropout)

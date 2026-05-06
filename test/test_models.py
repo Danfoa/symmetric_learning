@@ -135,72 +135,6 @@ def test_time_ecnn(group: Group, mx: int, hidden_channels: list[int], mlp_hidden
 @pytest.mark.parametrize(
     "group",
     [
-        pytest.param(CyclicGroup(5), id="cyclic5"),
-        pytest.param(Icosahedral(), id="icosahedral"),
-    ],
-)
-@pytest.mark.parametrize("m", [2])
-@pytest.mark.parametrize("horizons", [(10, 5)])
-@pytest.mark.parametrize("num_layers", [2])
-@pytest.mark.parametrize("num_cond_layers", [2])
-@pytest.mark.parametrize("num_attention_heads", [0, 4])
-@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "none"])
-def test_econd_transformer_regressor_equivariance(
-    group: Group,
-    m: int,
-    horizons: tuple[int, int],
-    num_layers: int,
-    num_cond_layers: int,
-    num_attention_heads: int,
-    pos_encoding: str,
-):
-    """Port equivariance checks from eCondTransformerRegressor __main__ into pytest."""
-    from symm_learning.models.diffusion.econd_transformer_regressor import eCondTransformerRegressor
-
-    G = group
-    in_rep = direct_sum([G.regular_representation] * m)
-    cond_rep = in_rep
-    out_rep = in_rep
-
-    in_horizon, cond_horizon = horizons
-    embedding_dim = G.order() * m * 4
-    regular_copies = embedding_dim // G.order()
-
-    kwargs = dict(
-        in_rep=in_rep,
-        cond_rep=cond_rep,
-        out_rep=out_rep,
-        in_horizon=in_horizon,
-        cond_horizon=cond_horizon,
-        num_layers=num_layers,
-        num_attention_heads=num_attention_heads,
-        embedding_dim=embedding_dim,
-        num_cond_layers=num_cond_layers,
-        pos_encoding=pos_encoding,
-        p_drop_emb=0.1,
-        p_drop_attn=0.1,
-        causal_attn=False,
-    )
-
-    if num_attention_heads < 1 or regular_copies % num_attention_heads != 0:
-        with pytest.raises(ValueError):
-            eCondTransformerRegressor(**kwargs)
-        return
-
-    model = eCondTransformerRegressor(**kwargs)
-    model.eval()
-    model.check_equivariance(
-        batch_size=2,
-        in_len=min(3, in_horizon),
-        cond_len=min(2, cond_horizon),
-        atol=1e-3,
-        rtol=1e-3,
-    )
-
-
-@pytest.mark.parametrize(
-    "group",
-    [
         pytest.param(CyclicGroup(2), id="cyclic2"),
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
@@ -209,11 +143,11 @@ def test_econd_transformer_regressor_equivariance(
 @pytest.mark.parametrize("num_attention_heads", [1, 2])
 @pytest.mark.parametrize("cond_layers", [0, 1])
 @pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "none"])
-def test_econd_transformer_regressor_train_eval(
+def test_econd_transformer_regressor(
     group: Group, m: int, num_attention_heads: int, cond_layers: int, pos_encoding: str
 ):
     """Check fast inference consistency of eCondTransformerRegressor."""
-    from symm_learning.models.diffusion.econd_transformer_regressor import eCondTransformerRegressor
+    from symm_learning.models.control.econd_transformer import eCondTransformer
 
     G = group
     in_rep = direct_sum([G.regular_representation] * m)
@@ -228,7 +162,7 @@ def test_econd_transformer_regressor_train_eval(
     if regular_copies % num_attention_heads != 0:
         pytest.skip(f"regular_copies={regular_copies} not divisible by num_attention_heads={num_attention_heads}")
 
-    model = eCondTransformerRegressor(
+    model = eCondTransformer(
         in_rep=in_rep,
         cond_rep=cond_rep,
         out_rep=out_rep,
@@ -284,7 +218,9 @@ def test_econd_transformer_regressor_train_eval(
 
 @pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "rope"])
 @pytest.mark.parametrize("num_cond_layers", [0, 1])
-def test_cond_transformer_regressor(pos_encoding: str, num_cond_layers: int):
+@pytest.mark.parametrize("norm_first", [True, False])
+@pytest.mark.parametrize("norm_module", ["layernorm", "rmsnorm"])
+def test_cond_transformer_regressor(pos_encoding: str, num_cond_layers: int, norm_first: bool, norm_module: str):
     """Check forward and backprop pass for the baseline CondTransformerRegressor."""
     from symm_learning.models.control.cond_transformer import CondTransformer
 
@@ -305,6 +241,8 @@ def test_cond_transformer_regressor(pos_encoding: str, num_cond_layers: int):
         num_attention_heads=num_attention_heads,
         embedding_dim=embedding_dim,
         num_cond_layers=num_cond_layers,
+        norm_first=norm_first,
+        norm_module=norm_module,
     )
 
     model.train()
@@ -336,4 +274,66 @@ def test_cond_transformer_regressor(pos_encoding: str, num_cond_layers: int):
     assert has_grad, "No gradients were computed"
 
     # Optimizer step
+    optimizer.step()
+
+
+@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "none"])
+@pytest.mark.parametrize("num_cond_layers", [0, 1])
+@pytest.mark.parametrize("norm_first", [True, False])
+@pytest.mark.parametrize("norm_module", ["layernorm", "rmsnorm"])
+def test_econd_transformer(pos_encoding: str, num_cond_layers: int, norm_first: bool, norm_module: str):
+    """Check forward, backward, and equivariance for the control-side eCondTransformer."""
+    from symm_learning.models.control.econd_transformer import eCondTransformer
+
+    G = CyclicGroup(2)
+    m = 2
+    in_rep = direct_sum([G.regular_representation] * m)
+    cond_rep = in_rep
+    out_rep = in_rep
+
+    in_horizon, cond_horizon = 5, 4
+    embedding_dim = G.order() * m * 4
+    batch_size = 2
+
+    model = eCondTransformer(
+        in_rep=in_rep,
+        cond_rep=cond_rep,
+        out_rep=out_rep,
+        in_horizon=in_horizon,
+        cond_horizon=cond_horizon,
+        num_layers=2,
+        num_attention_heads=2,
+        embedding_dim=embedding_dim,
+        num_cond_layers=num_cond_layers,
+        pos_encoding=pos_encoding,
+        p_drop_emb=0.0,
+        p_drop_attn=0.0,
+        norm_first=norm_first,
+        norm_module=norm_module,
+    )
+
+    model.eval()
+    model.check_equivariance(batch_size=2, in_len=3, cond_len=2, atol=1e-4, rtol=1e-4)
+
+    model.train()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    X = torch.randn(batch_size, in_horizon, in_rep.size)
+    Z = torch.randn(batch_size, cond_horizon, cond_rep.size)
+    opt_step = torch.randn(batch_size)
+
+    optimizer.zero_grad()
+    out = model(X=X, Z=Z, opt_step=opt_step)
+    assert out.shape == (batch_size, in_horizon, out_rep.size), (
+        f"Expected shape {(batch_size, in_horizon, out_rep.size)} got {out.shape}"
+    )
+
+    loss = out.mean()
+    loss.backward()
+    has_grad = False
+    for p in model.parameters():
+        if p.grad is not None:
+            has_grad = True
+            assert not torch.isnan(p.grad).any(), "NaN in gradients"
+    assert has_grad, "No gradients were computed"
+
     optimizer.step()

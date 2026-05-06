@@ -12,8 +12,6 @@ from escnn.group import Representation
 # from torch.nn import Transformer
 from symm_learning.nn.activation import (
     PositionalAttentionBase,
-    eAdditivePosMultiheadAttention,
-    eAdditiveRelMultiheadAttention,
     eMultiheadAttention,
 )
 from symm_learning.nn.linear import eLinear
@@ -24,61 +22,11 @@ from symm_learning.representation_theory import direct_sum
 logger = logging.getLogger(__name__)
 
 
-def _build_equivariant_attention(
-    *,
-    in_rep: Representation,
-    num_heads: int,
-    pos_encoding: Literal["additive_absolute", "additive_relative", "none"],
-    max_len: int | None,
-    max_distance: int | None,
-    dropout: float,
-    bias: bool,
-    device,
-    dtype,
-    init_scheme: str | None,
-) -> eMultiheadAttention | PositionalAttentionBase:
-    if pos_encoding == "additive_absolute":
-        return eAdditivePosMultiheadAttention(
-            in_rep=in_rep,
-            num_heads=num_heads,
-            max_len=max_len,
-            dropout=dropout,
-            bias=bias,
-            device=device,
-            dtype=dtype,
-            init_scheme=init_scheme,
-        )
-    if pos_encoding == "additive_relative":
-        return eAdditiveRelMultiheadAttention(
-            in_rep=in_rep,
-            num_heads=num_heads,
-            max_distance=max_distance,
-            dropout=dropout,
-            bias=bias,
-            device=device,
-            dtype=dtype,
-            init_scheme=init_scheme,
-        )
-    if pos_encoding == "none":
-        return eMultiheadAttention(
-            in_rep=in_rep,
-            num_heads=num_heads,
-            dropout=dropout,
-            bias=bias,
-            device=device,
-            dtype=dtype,
-            init_scheme=init_scheme,
-        )
-    raise ValueError(
-        f"Unknown pos_encoding={pos_encoding!r}. Expected 'additive_absolute', 'additive_relative', or 'none'."
-    )
-
-
 class eTransformerEncoderLayer(eModule):
     r"""Equivariant Transformer encoder layer with the same API as ``torch.nn.TransformerEncoderLayer``.
 
     Applies equivariant multi-head attention (plain :class:`~symm_learning.nn.activation.eMultiheadAttention`
-    or any :class:`~symm_learning.nn.activation.PositionalAttentionBase` backend selected via ``pos_encoding``)
+    or any caller-provided :class:`~symm_learning.nn.activation.PositionalAttentionBase` backend)
     followed by an equivariant feed-forward block built from :class:`~symm_learning.nn.linear.eLinear` layers
     and equivariant normalization (:class:`~symm_learning.nn.normalization.eRMSNorm` by default, or
     :class:`~symm_learning.nn.normalization.eLayerNorm`), mirroring PyTorch's ordering
@@ -104,7 +52,7 @@ class eTransformerEncoderLayer(eModule):
     def __init__(
         self,
         in_rep: Representation,
-        nhead: int,
+        self_attn: eMultiheadAttention | PositionalAttentionBase,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
         activation: torch.nn.Module = torch.nn.GELU(),
@@ -112,10 +60,6 @@ class eTransformerEncoderLayer(eModule):
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
-        self_attn: eMultiheadAttention | PositionalAttentionBase | None = None,
-        pos_encoding: Literal["additive_absolute", "additive_relative", "none"] = "none",
-        max_len: int | None = None,
-        max_distance: int | None = None,
         device=None,
         dtype=None,
         init_scheme: str | None = "xavier_uniform",
@@ -124,7 +68,7 @@ class eTransformerEncoderLayer(eModule):
 
         Args:
             in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}`.
-            nhead: Number of attention heads.
+            self_attn: Pre-built equivariant self-attention module.
             dim_feedforward: Hidden dimension of the feedforward network.
             dropout: Dropout probability.
             activation: Activation module. Default: ``torch.nn.GELU()``.
@@ -132,12 +76,6 @@ class eTransformerEncoderLayer(eModule):
             norm_first: If ``True``, apply normalization before attention/feedforward.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
             bias: Whether to use bias in linear layers.
-            self_attn: Optional pre-built equivariant attention module. When omitted,
-                ``pos_encoding`` selects the backend to instantiate.
-            pos_encoding: Positional attention backend (``"additive_absolute"``,
-                ``"additive_relative"``, or ``"none"``).
-            max_len: Maximum sequence length for absolute positional attention.
-            max_distance: Maximum relative distance for relative-bias attention.
             device: Tensor device.
             dtype: Tensor dtype.
             init_scheme: Initialization scheme for equivariant layers.
@@ -154,23 +92,10 @@ class eTransformerEncoderLayer(eModule):
         self.embedding_rep = direct_sum([G.regular_representation] * num_hidden_reps)
         self.hidden_dim = self.embedding_rep.size
         self.requested_dim_feedforward = dim_feedforward
-        self.pos_encoding = pos_encoding
+        self.self_attn = self_attn
 
-        self.self_attn = self_attn or _build_equivariant_attention(
-            in_rep=self.in_rep,
-            num_heads=nhead,
-            pos_encoding=pos_encoding,
-            max_len=max_len,
-            max_distance=max_distance,
-            dropout=dropout,
-            bias=bias,
-            device=device,
-            dtype=dtype,
-            init_scheme=init_scheme,
-        )
-
-        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
-        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
+        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias, init_scheme=init_scheme)
+        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias, init_scheme=init_scheme)
 
         self.dropout = torch.nn.Dropout(dropout)
         self.dropout1 = torch.nn.Dropout(dropout)
@@ -179,7 +104,6 @@ class eTransformerEncoderLayer(eModule):
         if norm_module == "layernorm":
             norm_cls = eLayerNorm
             norm_kwargs = {"bias": bias} | factory_kwargs
-            raise ValueError("eLayerNorm is numerically unstable. Use eRMSNorm instead for now.")
         elif norm_module == "rmsnorm":
             norm_cls = eRMSNorm
             norm_kwargs = factory_kwargs
@@ -350,7 +274,7 @@ class eTransformerDecoderLayer(eModule):
     r"""Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
 
     Combines an equivariant self-attention block (plain :class:`~symm_learning.nn.activation.eMultiheadAttention`
-    or any :class:`~symm_learning.nn.activation.PositionalAttentionBase` backend selected via ``pos_encoding``),
+    or any caller-provided :class:`~symm_learning.nn.activation.PositionalAttentionBase` backend),
     an equivariant cross-attention block, and the same :class:`~symm_learning.nn.linear.eLinear`/equivariant
     normalization (:class:`~symm_learning.nn.normalization.eRMSNorm` or
     :class:`~symm_learning.nn.normalization.eLayerNorm`) feed-forward structure used by the encoder so every
@@ -375,7 +299,8 @@ class eTransformerDecoderLayer(eModule):
     def __init__(
         self,
         in_rep: Representation,
-        nhead: int,
+        self_attn: eMultiheadAttention | PositionalAttentionBase,
+        multihead_attn: eMultiheadAttention | PositionalAttentionBase,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
         activation: torch.nn.Module = torch.nn.GELU(),
@@ -383,20 +308,14 @@ class eTransformerDecoderLayer(eModule):
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
-        self_attn: eMultiheadAttention | PositionalAttentionBase | None = None,
-        multihead_attn: eMultiheadAttention | PositionalAttentionBase | None = None,
-        pos_encoding: Literal["additive_absolute", "additive_relative", "none"] = "none",
-        max_len: int | None = None,
-        max_distance: int | None = None,
-        device=None,
-        dtype=None,
         init_scheme: str | None = "xavier_uniform",
     ) -> None:
         r"""Create an equivariant Transformer decoder layer.
 
         Args:
             in_rep (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\text{in}}`.
-            nhead: Number of attention heads.
+            self_attn: Pre-built target self-attention module.
+            multihead_attn: Pre-built target-to-memory attention module.
             dim_feedforward: Hidden dimension of the feedforward network.
             dropout: Dropout probability.
             activation: Activation module. Default: ``torch.nn.GELU()``.
@@ -404,14 +323,6 @@ class eTransformerDecoderLayer(eModule):
             norm_first: If ``True``, apply normalization before attention/feedforward.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
             bias: Whether to use bias in linear layers.
-            self_attn: Optional pre-built target self-attention module. When omitted,
-                ``pos_encoding`` selects the backend to instantiate.
-            multihead_attn: Optional pre-built target-to-memory attention module. When omitted,
-                ``pos_encoding`` selects the backend to instantiate.
-            pos_encoding: Positional attention backend (``"additive_absolute"``,
-                ``"additive_relative"``, or ``"none"``).
-            max_len: Maximum sequence length for absolute positional attention.
-            max_distance: Maximum relative distance for relative-bias attention.
             device: Tensor device.
             dtype: Tensor dtype.
             init_scheme: Initialization scheme for equivariant layers.
@@ -421,52 +332,26 @@ class eTransformerDecoderLayer(eModule):
             raise ValueError(f"dim_feedforward must be positive, got {dim_feedforward}")
 
         self.in_rep, self.out_rep = in_rep, in_rep
-        factory_kwargs = {"device": device, "dtype": dtype or torch.get_default_dtype()}
 
         G = in_rep.group
         num_hidden_reps = max(1, ceil(dim_feedforward / G.order()))
         self.embedding_rep = direct_sum([G.regular_representation] * num_hidden_reps)
         self.hidden_dim = self.embedding_rep.size
         self.requested_dim_feedforward = dim_feedforward
-        self.pos_encoding = pos_encoding
+        self.self_attn = self_attn
+        self.multihead_attn = multihead_attn
 
-        self.self_attn = self_attn or _build_equivariant_attention(
-            in_rep=self.in_rep,
-            num_heads=nhead,
-            pos_encoding=pos_encoding,
-            max_len=max_len,
-            max_distance=max_distance,
-            dropout=dropout,
-            bias=bias,
-            device=device,
-            dtype=dtype,
-            init_scheme=init_scheme,
-        )
-        self.multihead_attn = multihead_attn or _build_equivariant_attention(
-            in_rep=self.in_rep,
-            num_heads=nhead,
-            pos_encoding=pos_encoding,
-            max_len=max_len,
-            max_distance=max_distance,
-            dropout=dropout,
-            bias=bias,
-            device=device,
-            dtype=dtype,
-            init_scheme=init_scheme,
-        )
-        self.cross_attn = self.multihead_attn
-
-        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
+        self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias, init_scheme=init_scheme)
         self.dropout = torch.nn.Dropout(dropout)
-        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
+        self.linear2 = eLinear(self.embedding_rep, self.out_rep, bias, init_scheme=init_scheme)
 
         self.norm_first = norm_first
         if norm_module == "layernorm":
             norm_cls = eLayerNorm
-            norm_kwargs = {"bias": bias} | factory_kwargs
+            norm_kwargs = {"bias": bias}
         elif norm_module == "rmsnorm":
             norm_cls = eRMSNorm
-            norm_kwargs = factory_kwargs
+            norm_kwargs = {}
         else:
             raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
         self.norm1 = norm_cls(self.in_rep, eps=layer_norm_eps, equiv_affine=True, **norm_kwargs)
@@ -762,10 +647,10 @@ if __name__ == "__main__":
 
     encoder_kwargs = dict(
         in_rep=in_rep,
-        nhead=1,
+        self_attn=eMultiheadAttention(in_rep=in_rep, num_heads=1, dropout=0.1, bias=True),
         dim_feedforward=in_rep.size * 4,
         dropout=0.1,
-        activation="relu",
+        activation=torch.nn.ReLU(),
         norm_first=True,
     )
     etransformer = eTransformerEncoderLayer(**encoder_kwargs)
@@ -811,10 +696,11 @@ if __name__ == "__main__":
 
     decoder_kwargs = dict(
         in_rep=in_rep,
-        nhead=1,
+        self_attn=eMultiheadAttention(in_rep=in_rep, num_heads=1, dropout=0.0, bias=True),
+        multihead_attn=eMultiheadAttention(in_rep=in_rep, num_heads=1, dropout=0.0, bias=True),
         dim_feedforward=in_rep.size * 2,
         dropout=0.0,
-        activation="relu",
+        activation=torch.nn.ReLU(),
         norm_first=True,
     )
     tdecoder = eTransformerDecoderLayer(**decoder_kwargs)
@@ -876,20 +762,21 @@ if __name__ == "__main__":
 
     bench_encoder_kwargs = dict(
         in_rep=in_rep,
-        nhead=1,
+        self_attn=eMultiheadAttention(in_rep=in_rep, num_heads=1, dropout=0.1, bias=True),
         dim_feedforward=requested_dim_feedforward,
         dropout=0.1,
-        activation="relu",
+        activation=torch.nn.ReLU(),
         norm_first=True,
         norm_module="rmsnorm",
         bias=True,
     )
     bench_decoder_kwargs = dict(
         in_rep=in_rep,
-        nhead=1,
+        self_attn=eMultiheadAttention(in_rep=in_rep, num_heads=1, dropout=0.1, bias=True),
+        multihead_attn=eMultiheadAttention(in_rep=in_rep, num_heads=1, dropout=0.1, bias=True),
         dim_feedforward=requested_dim_feedforward,
         dropout=0.1,
-        activation="relu",
+        activation=torch.nn.ReLU(),
         norm_first=True,
         norm_module="rmsnorm",
         bias=True,
@@ -905,7 +792,7 @@ if __name__ == "__main__":
             "Torch Encoder",
             torch.nn.TransformerEncoderLayer(
                 d_model=in_rep.size,
-                nhead=bench_encoder_kwargs["nhead"],
+                nhead=1,
                 dim_feedforward=effective_dim_feedforward,
                 dropout=bench_encoder_kwargs["dropout"],
                 activation=bench_encoder_kwargs["activation"],
@@ -921,7 +808,7 @@ if __name__ == "__main__":
             "Torch Decoder",
             torch.nn.TransformerDecoderLayer(
                 d_model=in_rep.size,
-                nhead=bench_decoder_kwargs["nhead"],
+                nhead=1,
                 dim_feedforward=effective_dim_feedforward,
                 dropout=bench_decoder_kwargs["dropout"],
                 activation=bench_decoder_kwargs["activation"],

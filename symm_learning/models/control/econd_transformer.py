@@ -10,8 +10,13 @@ from escnn.group import Representation
 
 import symm_learning
 from symm_learning.linalg import invariant_orthogonal_projector
-from symm_learning.models.diffusion.cond_transformer_regressor import GenCondRegressor
-from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.models.control.cond_transformer import (
+    GenCondRegressor,
+    SinusoidalPosEmb,
+    build_causal_attention_masks,
+    build_cond_positions,
+    build_input_positions,
+)
 from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import module_memory
@@ -19,33 +24,63 @@ from symm_learning.utils import module_memory
 logger = logging.getLogger(__name__)
 
 
-class eCondTransformerRegressor(eModule, GenCondRegressor):
-    r"""Equivariant analogue of the conditional transformer regressor baseline.
+class eCondTransformer(eModule, GenCondRegressor):
+    r"""Equivariant encoder/decoder Transformer with configurable positional attention.
 
-    This module mirrors
-    :class:`~symm_learning.models.diffusion.cond_transformer_regressor.CondTransformerRegressor`
-    while enforcing equivariance constraints.
+    Let :math:`A := \texttt{num\_cond\_layers}` and :math:`B := \texttt{num\_layers}`. This module is the
+    equivariant counterpart of :class:`~symm_learning.models.control.cond_transformer.CondTransformer`: an
+    encoder/decoder Transformer with :math:`A` conditioning encoder layers and :math:`B` decoder layers,
+    following the architecture introduced in *Attention Is All You Need* by Vaswani, Shazeer, Parmar,
+    Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin (NeurIPS 2017), while constraining every learnable map
+    to respect the prescribed group actions.
 
-    Tokens transforming according to ``in_rep`` are embedded into an ``embedding_rep`` space built from copies of the
-    regular representation so that
-    :class:`~symm_learning.nn.transformer.etransformer.eTransformerEncoderLayer`/
-    :class:`~symm_learning.nn.transformer.etransformer.eTransformerDecoderLayer` can be used
-    directly. Positional encodings and timestep embeddings are projected onto the invariant subspace so they can be
-    added to equivariant tokens without breaking symmetry.
-
-    The model defines:
+    The conditioning stream is assembled as
 
     .. math::
-        \mathbf{f}_{\mathbf{\theta}}:
-        \mathcal{X}^{T_x} \times \mathcal{Z}^{T_z} \times \mathbb{R}
-        \to \mathcal{Y}^{T_x}.
+        [k, \mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}],
 
-    Functional equivariance constraint:
+    where :math:`k` is the inference-time optimisation step token and
+    :math:`\mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}` are the conditioning tokens ordered from oldest
+    to most recent observation. The decoder predicts the target sequence
 
     .. math::
-        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{X}_k,\, \rho_{\mathcal{Z}}(g)\mathbf{Z},\, k)
+        [\mathbf{x}_{0}, \ldots, \mathbf{x}_{T_x - 1}],
+
+    ordered from the first action to the last action in the predicted horizon.
+
+    Supported positional encodings are:
+
+    ``"additive_absolute"``
+        Uses :class:`~symm_learning.nn.activation.eAdditivePosMultiheadAttention`. Learned absolute
+        positions are added in the equivariant embedding space before self-attention or cross-attention.
+
+    ``"additive_relative"``
+        Uses :class:`~symm_learning.nn.activation.eAdditiveRelMultiheadAttention`. Learned relative
+        distance biases are injected into attention logits, preserving the time-translation structure of the
+        sequence while keeping the feature maps equivariant.
+
+    ``"none"``
+        Uses :class:`~symm_learning.nn.activation.eMultiheadAttention` with no explicit positional encoding.
+
+    Temporal assumptions:
+
+    * :math:`Z` must already be ordered in time from past to present.
+    * :math:`X` must already be ordered from the first predicted action to the last predicted action.
+    * For ``"additive_relative"``, the last conditioning token :math:`\mathbf{z}_{0}` and the first action
+      token :math:`\mathbf{x}_{0}` are both placed at time index :math:`0`, so cross-attention is anchored
+      at the present time.
+    * The optimisation-step token :math:`k` is prepended to the conditioning memory, but it is not treated as
+      part of the observation timeline.
+
+    Equivariance is enforced by embedding tokens into a representation space built from copies of the regular
+    representation, projecting the scalar step embedding onto the invariant subspace, and using equivariant
+    encoder, decoder, normalization, and head layers throughout. The resulting conditional map satisfies
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{X}_k,\,
+        \rho_{\mathcal{Z}}(g)\mathbf{Z},\, k)
         = \rho_{\mathcal{Y}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{X}_k,\mathbf{Z},k),
-        \quad \forall g\in\mathbb{G}.
+        \qquad \forall g \in \mathbb{G}.
     """
 
     def __init__(
@@ -63,6 +98,7 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         causal_attn: bool = False,
         num_cond_layers: int = 0,
         pos_encoding: Literal["additive_absolute", "additive_relative", "none"] = "additive_absolute",
+        norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         init_scheme: str = "xavier_uniform",
     ) -> None:
@@ -87,6 +123,7 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
                 If 0, an eMLP is used instead.
             pos_encoding: Positional attention backend (``"additive_absolute"``,
                 ``"additive_relative"``, or ``"none"``).
+            norm_first: Whether to apply normalization before each residual branch.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
             init_scheme: Initialization scheme for equivariant layers.
         """
@@ -119,19 +156,49 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         max_pos_len = max(self.in_horizon, self.cond_token_horizon)
         max_rel_distance = self.in_horizon + self.cond_token_horizon - 2
 
-        # Encoder parameterized as an equivariant MLP or a Transformer
+        def _build_attn():
+            if pos_encoding == "additive_absolute":
+                return symm_learning.nn.eAdditivePosMultiheadAttention(
+                    in_rep=self.embedding_rep,
+                    num_heads=num_attention_heads,
+                    max_len=max_pos_len,
+                    dropout=p_drop_attn,
+                    bias=True,
+                    init_scheme=None,
+                )
+            elif pos_encoding == "additive_relative":
+                return symm_learning.nn.eAdditiveRelMultiheadAttention(
+                    in_rep=self.embedding_rep,
+                    num_heads=num_attention_heads,
+                    max_distance=max_rel_distance,
+                    dropout=p_drop_attn,
+                    bias=True,
+                    init_scheme=None,
+                )
+            elif pos_encoding == "none":
+                return symm_learning.nn.eMultiheadAttention(
+                    in_rep=self.embedding_rep,
+                    num_heads=num_attention_heads,
+                    dropout=p_drop_attn,
+                    bias=True,
+                    init_scheme=None,
+                )
+            else:
+                raise ValueError(
+                    f"Unknown pos_encoding={pos_encoding!r}. Expected "
+                    "'additive_absolute', 'additive_relative', or 'none'."
+                )
+
+        # Conditioning encoder
         if num_cond_layers > 0:
             encoder_layer = symm_learning.nn.eTransformerEncoderLayer(
                 in_rep=self.embedding_rep,
-                nhead=num_attention_heads,
+                self_attn=_build_attn(),
                 dim_feedforward=4 * embedding_dim,
                 dropout=p_drop_attn,
-                activation="gelu",
-                norm_first=True,  # important for stability.
-                norm_module=norm_module,  # important for stability.
-                pos_encoding=pos_encoding,
-                max_len=max_pos_len,
-                max_distance=max_rel_distance,
+                activation=torch.nn.GELU(),
+                norm_first=norm_first,
+                norm_module=norm_module,
                 init_scheme=None,
             )
             logger.debug(
@@ -150,17 +217,16 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
                 symm_learning.nn.eLinear(in_rep=hidden_rep, out_rep=self.embedding_rep, bias=True, init_scheme=None),
             )
 
+        # Decoder
         decoder_layer = symm_learning.nn.eTransformerDecoderLayer(
             in_rep=self.embedding_rep,
-            nhead=num_attention_heads,
+            self_attn=_build_attn(),
+            multihead_attn=_build_attn(),
             dim_feedforward=4 * embedding_dim,
             dropout=p_drop_attn,
-            activation="gelu",
-            norm_first=True,  # important for stability.
-            norm_module=norm_module,  # important for stability.
-            pos_encoding=pos_encoding,
-            max_len=max_pos_len,
-            max_distance=max_rel_distance,
+            activation=torch.nn.GELU(),
+            norm_first=norm_first,
+            norm_module=norm_module,
             init_scheme=None,
         )
         logger.debug(f"Initializing {num_layers} layers of eTransformerDecoderLayer")
@@ -170,24 +236,16 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         # Cross-attention is used to compute updates to the action vector based on the conditioing tokens
         # composed of a inference-time optimization step token and the observation conditioning tokens.
         if causal_attn:
-            # causal mask to ensure that attention is only applied to the left in the input sequence
-            # torch.nn.Transformer uses additive mask as opposed to multiplicative mask in minGPT
-            # therefore, the upper triangle should be -inf and others (including diag) should be 0.
-            mask = (torch.triu(torch.ones(in_horizon, in_horizon)) == 1).transpose(0, 1)
-            mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("self_att_mask", mask)
-
-            t, s = torch.meshgrid(torch.arange(in_horizon), torch.arange(self.cond_token_horizon), indexing="ij")
-            mask = t >= (s - 1)
-            mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("cross_att_mask", mask)
+            self_att_mask, cross_att_mask = build_causal_attention_masks(in_horizon, self.cond_token_horizon)
+            self.register_buffer("self_att_mask", self_att_mask)
+            self.register_buffer("cross_att_mask", cross_att_mask)
         else:
             self.self_att_mask = None
             self.cross_att_mask = None
 
+        # Decoder head
         if norm_module == "layernorm":
             self.layer_norm = symm_learning.nn.eLayerNorm(self.embedding_rep, eps=1e-5, equiv_affine=True, bias=True)
-            raise ValueError("eLayerNorm is numerically unstable. Use eRMSNorm instead for now.")
         else:  # rmsnorm
             self.layer_norm = symm_learning.nn.eRMSNorm(self.embedding_rep, eps=1e-5, equiv_affine=True)
         self.head = symm_learning.nn.eLinear(self.embedding_rep, out_rep, bias=True, init_scheme=None)
@@ -304,21 +362,10 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         cond_embeddings = torch.cat([opt_time_emb, z_cond_emb], dim=1)
         cond_tokens = self.dropout(cond_embeddings)
         cond_token_horizon = cond_embeddings.shape[1]
-        cond_position_mask = torch.cat(
-            [
-                torch.tensor([False], device=X.device, dtype=torch.bool),
-                torch.ones(cond_token_horizon - 1, device=X.device, dtype=torch.bool),
-            ]
+        cond_positions, cond_position_mask = build_cond_positions(
+            self.pos_encoding, cond_token_horizon, device=X.device
         )
-        if self.pos_encoding == "additive_relative":
-            cond_positions = torch.cat(
-                [
-                    torch.zeros(1, device=X.device, dtype=torch.long),
-                    torch.arange(-(cond_token_horizon - 2), 1, device=X.device),
-                ]
-            )
-        else:
-            cond_positions = torch.arange(cond_token_horizon, device=X.device)
+
         if isinstance(self.encoder, symm_learning.nn.TransformerEncoder):
             cond_tokens = self.encoder(
                 cond_tokens,
@@ -447,7 +494,7 @@ if __name__ == "__main__":
     Tx, Tz = 8, 6
 
     start_time = time.time()
-    model = eCondTransformerRegressor(
+    model = eCondTransformer(
         in_rep=in_rep,
         cond_rep=cond_rep,
         out_rep=out_rep,

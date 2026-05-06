@@ -7,6 +7,7 @@ import escnn
 import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
 import torch
+import symm_learning
 
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import backprop_sanity, check_equivariance
@@ -89,7 +90,8 @@ def test_etransformer_decoder(group: Group, mx: int, num_heads: int, num_layers:
 
     decoder_kwargs = dict(
         in_rep=rep,
-        nhead=num_heads,
+        self_attn=symm_learning.nn.eMultiheadAttention(in_rep=rep, num_heads=num_heads, dropout=0.0, bias=True),
+        multihead_attn=symm_learning.nn.eMultiheadAttention(in_rep=rep, num_heads=num_heads, dropout=0.0, bias=True),
         dim_feedforward=rep.size * 4,
         dropout=0.0,  # dropout=0 for train/eval consistency
         activation=torch.nn.ReLU(),
@@ -161,7 +163,7 @@ def test_etransformer_encoder(group: Group, mx: int, num_heads: int, num_layers:
 
     encoder_kwargs = dict(
         in_rep=rep,
-        nhead=num_heads,
+        self_attn=symm_learning.nn.eMultiheadAttention(in_rep=rep, num_heads=num_heads, dropout=0.0, bias=True),
         dim_feedforward=rep.size * 4,
         dropout=0.0,  # dropout=0 for train/eval consistency
         activation=torch.nn.ReLU(),
