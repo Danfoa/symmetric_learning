@@ -94,7 +94,6 @@ def test_etransformer_decoder(group: Group, mx: int, num_heads: int, num_layers:
         dropout=0.0,  # dropout=0 for train/eval consistency
         activation="relu",
         norm_first=True,
-        batch_first=True,
         norm_module="rmsnorm",
         bias=True,
     )
@@ -182,7 +181,6 @@ def test_etransformer_encoder(group: Group, mx: int, num_heads: int, num_layers:
         dropout=0.0,  # dropout=0 for train/eval consistency
         activation="relu",
         norm_first=True,
-        batch_first=True,
         norm_module="rmsnorm",
         bias=True,
     )

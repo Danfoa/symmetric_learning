@@ -10,13 +10,80 @@ import torch.nn.functional as F
 from escnn.group import Representation
 
 # from torch.nn import Transformer
-from symm_learning.nn.activation import eMultiheadAttention
+from symm_learning.nn.activation import (
+    PositionalAttentionBase,
+    eAdditivePosMultiheadAttention,
+    eAdditiveRelMultiheadAttention,
+    eMultiheadAttention,
+)
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.module import eModule
 from symm_learning.nn.normalization import eLayerNorm, eRMSNorm
 from symm_learning.representation_theory import direct_sum
 
 logger = logging.getLogger(__name__)
+
+
+def _build_equivariant_attention(
+    *,
+    in_rep: Representation,
+    num_heads: int,
+    pos_encoding: Literal["additive_absolute", "additive_relative", "none"],
+    max_len: int | None,
+    max_distance: int | None,
+    dropout: float,
+    bias: bool,
+    device,
+    dtype,
+    init_scheme: str | None,
+) -> eMultiheadAttention | PositionalAttentionBase:
+    if pos_encoding == "additive_absolute":
+        if max_len is None:
+            raise ValueError("max_len must be provided when pos_encoding='additive_absolute'")
+        return eAdditivePosMultiheadAttention(
+            in_rep=in_rep,
+            num_heads=num_heads,
+            max_len=max_len,
+            dropout=dropout,
+            bias=bias,
+            device=device,
+            dtype=dtype,
+            init_scheme=init_scheme,
+        )
+    if pos_encoding == "additive_relative":
+        if max_distance is None:
+            raise ValueError("max_distance must be provided when pos_encoding='additive_relative'")
+        return eAdditiveRelMultiheadAttention(
+            in_rep=in_rep,
+            num_heads=num_heads,
+            max_distance=max_distance,
+            dropout=dropout,
+            bias=bias,
+            device=device,
+            dtype=dtype,
+            init_scheme=init_scheme,
+        )
+    if pos_encoding == "none":
+        return eMultiheadAttention(
+            in_rep=in_rep,
+            num_heads=num_heads,
+            dropout=dropout,
+            bias=bias,
+            device=device,
+            dtype=dtype,
+            init_scheme=init_scheme,
+        )
+    raise ValueError(
+        f"Unknown pos_encoding={pos_encoding!r}. Expected 'additive_absolute', 'additive_relative', or 'none'."
+    )
+
+
+def _reset_attention_module(
+    attn: eMultiheadAttention | PositionalAttentionBase,
+    *,
+    scheme: str,
+) -> None:
+    attn.reset_parameters(scheme=scheme)
 
 
 class eTransformerEncoderLayer(eModule):
@@ -52,10 +119,13 @@ class eTransformerEncoderLayer(eModule):
         dropout: float = 0.1,
         activation: str | Callable[[torch.Tensor], torch.Tensor] = F.relu,
         layer_norm_eps: float = 1e-5,
-        batch_first: bool = True,
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
+        self_attn: eMultiheadAttention | PositionalAttentionBase | None = None,
+        pos_encoding: Literal["additive_absolute", "additive_relative", "none"] = "none",
+        max_len: int | None = None,
+        max_distance: int | None = None,
         device=None,
         dtype=None,
         init_scheme: str | None = "xavier_uniform",
@@ -69,10 +139,15 @@ class eTransformerEncoderLayer(eModule):
             dropout: Dropout probability.
             activation: Activation function (``'relu'`` or ``'gelu'``).
             layer_norm_eps: Epsilon for layer normalization.
-            batch_first: If ``True``, input/output shape is ``(B, T, D)``.
             norm_first: If ``True``, apply normalization before attention/feedforward.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
             bias: Whether to use bias in linear layers.
+            self_attn: Optional pre-built equivariant attention module. When omitted,
+                ``pos_encoding`` selects the backend to instantiate.
+            pos_encoding: Positional attention backend (``"additive_absolute"``,
+                ``"additive_relative"``, or ``"none"``).
+            max_len: Maximum sequence length for absolute positional attention.
+            max_distance: Maximum relative distance for relative-bias attention.
             device: Tensor device.
             dtype: Tensor dtype.
             init_scheme: Initialization scheme for equivariant layers.
@@ -89,10 +164,14 @@ class eTransformerEncoderLayer(eModule):
         self.embedding_rep = direct_sum([G.regular_representation] * num_hidden_reps)
         self.hidden_dim = self.embedding_rep.size
         self.requested_dim_feedforward = dim_feedforward
+        self.pos_encoding = pos_encoding
 
-        self.self_attn = eMultiheadAttention(
+        self.self_attn = self_attn or _build_equivariant_attention(
             in_rep=self.in_rep,
             num_heads=nhead,
+            pos_encoding=pos_encoding,
+            max_len=max_len,
+            max_distance=max_distance,
             dropout=dropout,
             bias=bias,
             device=device,
@@ -135,15 +214,19 @@ class eTransformerEncoderLayer(eModule):
         src_mask: torch.Tensor | None = None,
         src_key_padding_mask: torch.Tensor | None = None,
         is_causal: bool = False,
+        *,
+        src_positions: torch.Tensor | None = None,
+        src_position_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         r"""Pass the input through the equivariant encoder layer.
 
         Args:
-            src: input sequence of shape ``(T, B, D)`` or ``(B, T, D)`` depending on ``batch_first``,
-                with last dimension equal to ``in_rep.size``.
+            src: input sequence of shape ``(B, T, D)`` with last dimension equal to ``in_rep.size``.
             src_mask: optional attention mask for the input sequence.
             src_key_padding_mask: optional padding mask for the batch.
             is_causal: if ``True``, applies a causal mask to the self-attention block.
+            src_positions: Optional source-token positions for positional attention backends.
+            src_position_mask: Optional boolean mask for valid source positions.
         """
         src_key_padding_mask = F._canonical_mask(
             mask=src_key_padding_mask,
@@ -163,10 +246,27 @@ class eTransformerEncoderLayer(eModule):
 
         x = src
         if self.norm_first:
-            x = x + self._self_attention_block(self.norm1(x), src_mask, src_key_padding_mask, is_causal=is_causal)
+            x = x + self._self_attention_block(
+                self.norm1(x),
+                src_mask,
+                src_key_padding_mask,
+                is_causal=is_causal,
+                positions=src_positions,
+                position_mask=src_position_mask,
+            )
             x = x + self._feed_forward_block(self.norm2(x))
         else:
-            x = self.norm1(x + self._self_attention_block(x, src_mask, src_key_padding_mask, is_causal=is_causal))
+            x = self.norm1(
+                x
+                + self._self_attention_block(
+                    x,
+                    src_mask,
+                    src_key_padding_mask,
+                    is_causal=is_causal,
+                    positions=src_positions,
+                    position_mask=src_position_mask,
+                )
+            )
             x = self.norm2(x + self._feed_forward_block(x))
 
         return x
@@ -177,7 +277,17 @@ class eTransformerEncoderLayer(eModule):
         attn_mask: torch.Tensor | None = None,
         key_padding_mask: torch.Tensor | None = None,
         is_causal: bool = False,
+        positions: torch.Tensor | None = None,
+        position_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
+        kwargs = {}
+        if isinstance(self.self_attn, PositionalAttentionBase):
+            kwargs.update(
+                q_positions=positions,
+                k_positions=positions,
+                q_position_mask=position_mask,
+                k_position_mask=position_mask,
+            )
         x = self.self_attn(
             x,
             x,
@@ -186,6 +296,7 @@ class eTransformerEncoderLayer(eModule):
             key_padding_mask=key_padding_mask,
             need_weights=False,
             is_causal=is_causal,
+            **kwargs,
         )[0]
         return self.dropout1(x)
 
@@ -200,8 +311,7 @@ class eTransformerEncoderLayer(eModule):
         self.linear2.reset_parameters(scheme)
         self.norm1.reset_parameters()
         self.norm2.reset_parameters()
-        # Reset attention layers:
-        self.self_attn.reset_parameters(scheme)
+        _reset_attention_module(self.self_attn, scheme=scheme)
 
 
 class eTransformerDecoderLayer(eModule):
@@ -236,10 +346,14 @@ class eTransformerDecoderLayer(eModule):
         dropout: float = 0.1,
         activation: str | Callable[[torch.Tensor], torch.Tensor] = F.relu,
         layer_norm_eps: float = 1e-5,
-        batch_first: bool = True,
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
+        self_attn: eMultiheadAttention | PositionalAttentionBase | None = None,
+        multihead_attn: eMultiheadAttention | PositionalAttentionBase | None = None,
+        pos_encoding: Literal["additive_absolute", "additive_relative", "none"] = "none",
+        max_len: int | None = None,
+        max_distance: int | None = None,
         device=None,
         dtype=None,
         init_scheme: str | None = "xavier_uniform",
@@ -253,10 +367,17 @@ class eTransformerDecoderLayer(eModule):
             dropout: Dropout probability.
             activation: Activation function (``'relu'`` or ``'gelu'``).
             layer_norm_eps: Epsilon for layer normalization.
-            batch_first: If ``True``, input/output shape is ``(B, T, D)``.
             norm_first: If ``True``, apply normalization before attention/feedforward.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
             bias: Whether to use bias in linear layers.
+            self_attn: Optional pre-built target self-attention module. When omitted,
+                ``pos_encoding`` selects the backend to instantiate.
+            multihead_attn: Optional pre-built target-to-memory attention module. When omitted,
+                ``pos_encoding`` selects the backend to instantiate.
+            pos_encoding: Positional attention backend (``"additive_absolute"``,
+                ``"additive_relative"``, or ``"none"``).
+            max_len: Maximum sequence length for absolute positional attention.
+            max_distance: Maximum relative distance for relative-bias attention.
             device: Tensor device.
             dtype: Tensor dtype.
             init_scheme: Initialization scheme for equivariant layers.
@@ -273,25 +394,33 @@ class eTransformerDecoderLayer(eModule):
         self.embedding_rep = direct_sum([G.regular_representation] * num_hidden_reps)
         self.hidden_dim = self.embedding_rep.size
         self.requested_dim_feedforward = dim_feedforward
+        self.pos_encoding = pos_encoding
 
-        self.self_attn = eMultiheadAttention(
+        self.self_attn = self_attn or _build_equivariant_attention(
             in_rep=self.in_rep,
             num_heads=nhead,
+            pos_encoding=pos_encoding,
+            max_len=max_len,
+            max_distance=max_distance,
             dropout=dropout,
             bias=bias,
             device=device,
             dtype=dtype,
             init_scheme=init_scheme,
         )
-        self.cross_attn = eMultiheadAttention(
+        self.multihead_attn = multihead_attn or _build_equivariant_attention(
             in_rep=self.in_rep,
             num_heads=nhead,
+            pos_encoding=pos_encoding,
+            max_len=max_len,
+            max_distance=max_distance,
             dropout=dropout,
             bias=bias,
             device=device,
             dtype=dtype,
             init_scheme=init_scheme,
         )
+        self.cross_attn = self.multihead_attn
 
         self.linear1 = eLinear(self.in_rep, self.embedding_rep, bias, init_scheme=init_scheme).to(**factory_kwargs)
         self.dropout = torch.nn.Dropout(dropout)
@@ -331,14 +460,18 @@ class eTransformerDecoderLayer(eModule):
         memory_key_padding_mask: torch.Tensor | None = None,
         tgt_is_causal: bool = False,
         memory_is_causal: bool = False,
+        *,
+        tgt_positions: torch.Tensor | None = None,
+        memory_positions: torch.Tensor | None = None,
+        tgt_position_mask: torch.Tensor | None = None,
+        memory_position_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         r"""Pass the input through the equivariant decoder layer.
 
         Args:
-            tgt: target/query tensor of shape ``(T, B, D)`` or ``(B, T, D)`` matching
-                ``batch_first``. The last dimension must equal ``in_rep.size``.
-            memory: encoder memory tensor of shape ``(S, B, D)`` or ``(B, S, D)``
-                (same ``batch_first``). We assume this tensor transforms under the
+            tgt: target/query tensor of shape ``(B, T, D)``. The last dimension
+                must equal ``in_rep.size``.
+            memory: encoder memory tensor of shape ``(B, S, D)``. We assume this tensor transforms under the
                 *same representation* as ``tgt``; i.e., it is typically the output
                 of an equivariant encoder with representation ``in_rep``.
             tgt_mask: optional target attention mask (same semantics as PyTorch’s API).
@@ -347,6 +480,10 @@ class eTransformerDecoderLayer(eModule):
             memory_key_padding_mask: optional padding mask for the memory batch.
             tgt_is_causal: if ``True``, applies a causal mask to the target self-attention.
             memory_is_causal: if ``True``, applies a causal mask to the cross-attention.
+            tgt_positions: Optional target-token positions for positional attention backends.
+            memory_positions: Optional memory-token positions for positional attention backends.
+            tgt_position_mask: Optional boolean mask for valid target positions.
+            memory_position_mask: Optional boolean mask for valid memory positions.
         """
         tgt_key_padding_mask = F._canonical_mask(
             mask=tgt_key_padding_mask,
@@ -382,15 +519,51 @@ class eTransformerDecoderLayer(eModule):
 
         x = tgt
         if self.norm_first:
-            x = x + self._self_attention_block(self.norm1(x), tgt_mask, tgt_key_padding_mask, tgt_is_causal)
+            x = x + self._self_attention_block(
+                self.norm1(x),
+                tgt_mask,
+                tgt_key_padding_mask,
+                tgt_is_causal,
+                positions=tgt_positions,
+                position_mask=tgt_position_mask,
+            )
             x = x + self._multihead_attention_block(
-                self.norm2(x), memory, memory_mask, memory_key_padding_mask, memory_is_causal
+                self.norm2(x),
+                memory,
+                memory_mask,
+                memory_key_padding_mask,
+                memory_is_causal,
+                q_positions=tgt_positions,
+                k_positions=memory_positions,
+                q_position_mask=tgt_position_mask,
+                k_position_mask=memory_position_mask,
             )
             x = x + self._feed_forward_block(self.norm3(x))
         else:
-            x = self.norm1(x + self._self_attention_block(x, tgt_mask, tgt_key_padding_mask, tgt_is_causal))
+            x = self.norm1(
+                x
+                + self._self_attention_block(
+                    x,
+                    tgt_mask,
+                    tgt_key_padding_mask,
+                    tgt_is_causal,
+                    positions=tgt_positions,
+                    position_mask=tgt_position_mask,
+                )
+            )
             x = self.norm2(
-                x + self._multihead_attention_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+                x
+                + self._multihead_attention_block(
+                    x,
+                    memory,
+                    memory_mask,
+                    memory_key_padding_mask,
+                    memory_is_causal,
+                    q_positions=tgt_positions,
+                    k_positions=memory_positions,
+                    q_position_mask=tgt_position_mask,
+                    k_position_mask=memory_position_mask,
+                )
             )
             x = self.norm3(x + self._feed_forward_block(x))
 
@@ -402,7 +575,17 @@ class eTransformerDecoderLayer(eModule):
         attn_mask: torch.Tensor | None = None,
         key_padding_mask: torch.Tensor | None = None,
         is_causal: bool = False,
+        positions: torch.Tensor | None = None,
+        position_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
+        kwargs = {}
+        if isinstance(self.self_attn, PositionalAttentionBase):
+            kwargs.update(
+                q_positions=positions,
+                k_positions=positions,
+                q_position_mask=position_mask,
+                k_position_mask=position_mask,
+            )
         x = self.self_attn(
             x,
             x,
@@ -411,6 +594,7 @@ class eTransformerDecoderLayer(eModule):
             key_padding_mask=key_padding_mask,
             need_weights=False,
             is_causal=is_causal,
+            **kwargs,
         )[0]
         return self.dropout1(x)
 
@@ -421,8 +605,20 @@ class eTransformerDecoderLayer(eModule):
         attn_mask: torch.Tensor | None = None,
         key_padding_mask: torch.Tensor | None = None,
         is_causal: bool = False,
+        q_positions: torch.Tensor | None = None,
+        k_positions: torch.Tensor | None = None,
+        q_position_mask: torch.Tensor | None = None,
+        k_position_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        x = self.cross_attn(
+        kwargs = {}
+        if isinstance(self.multihead_attn, PositionalAttentionBase):
+            kwargs.update(
+                q_positions=q_positions,
+                k_positions=k_positions,
+                q_position_mask=q_position_mask,
+                k_position_mask=k_position_mask,
+            )
+        x = self.multihead_attn(
             x,
             mem,
             mem,
@@ -430,6 +626,7 @@ class eTransformerDecoderLayer(eModule):
             key_padding_mask=key_padding_mask,
             need_weights=False,
             is_causal=is_causal,
+            **kwargs,
         )[0]
         return self.dropout2(x)
 
@@ -446,9 +643,9 @@ class eTransformerDecoderLayer(eModule):
         self.norm1.reset_parameters()
         self.norm2.reset_parameters()
         self.norm3.reset_parameters()
-        # Reset attention layers:
-        self.self_attn.reset_parameters(scheme)
-        self.cross_attn.reset_parameters(scheme)
+        _reset_attention_module(self.self_attn, scheme=scheme)
+        if self.multihead_attn is not self.self_attn:
+            _reset_attention_module(self.multihead_attn, scheme=scheme)
 
     @torch.no_grad()
     def check_equivariance(
@@ -545,7 +742,6 @@ if __name__ == "__main__":
         dropout=0.1,
         activation="relu",
         norm_first=True,
-        batch_first=True,
     )
     etransformer = eTransformerEncoderLayer(**encoder_kwargs)
     etransformer.eval()  # disable dropout for the test
@@ -595,7 +791,6 @@ if __name__ == "__main__":
         dropout=0.0,
         activation="relu",
         norm_first=True,
-        batch_first=True,
     )
     tdecoder = eTransformerDecoderLayer(**decoder_kwargs)
     tdecoder.eval()
@@ -661,7 +856,6 @@ if __name__ == "__main__":
         dropout=0.1,
         activation="relu",
         norm_first=True,
-        batch_first=True,
         norm_module="rmsnorm",
         bias=True,
     )
@@ -672,7 +866,6 @@ if __name__ == "__main__":
         dropout=0.1,
         activation="relu",
         norm_first=True,
-        batch_first=True,
         norm_module="rmsnorm",
         bias=True,
     )
@@ -691,7 +884,7 @@ if __name__ == "__main__":
                 dim_feedforward=effective_dim_feedforward,
                 dropout=bench_encoder_kwargs["dropout"],
                 activation=bench_encoder_kwargs["activation"],
-                batch_first=bench_encoder_kwargs["batch_first"],
+                batch_first=True,
                 norm_first=bench_encoder_kwargs["norm_first"],
                 bias=bench_encoder_kwargs["bias"],
             ).to(device),
@@ -707,7 +900,7 @@ if __name__ == "__main__":
                 dim_feedforward=effective_dim_feedforward,
                 dropout=bench_decoder_kwargs["dropout"],
                 activation=bench_decoder_kwargs["activation"],
-                batch_first=bench_decoder_kwargs["batch_first"],
+                batch_first=True,
                 norm_first=bench_decoder_kwargs["norm_first"],
                 bias=bench_decoder_kwargs["bias"],
             ).to(device),

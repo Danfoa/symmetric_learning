@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from escnn.group import Representation
 from torch.nn.utils import parametrize
 
+from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.module import eModule
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
@@ -453,6 +454,117 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
         return pos_emb
 
 
+class eAdditivePosMultiheadAttention(eModule, PositionalAttentionBase):
+    r"""Equivariant additive positional attention with invariant query/key updates."""
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        num_heads: int,
+        *,
+        max_len: int,
+        dropout: float = 0.0,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+        init_scheme: str | None = "xavier_normal",
+    ) -> None:
+        super().__init__()
+        if max_len <= 0:
+            raise ValueError(f"max_len must be positive, got {max_len}")
+
+        self.in_rep, self.out_rep = in_rep, in_rep
+        self.embed_dim = in_rep.size
+        self.max_len = max_len
+        self.num_heads = num_heads
+        self.attn = eMultiheadAttention(
+            in_rep=in_rep,
+            num_heads=num_heads,
+            dropout=dropout,
+            bias=bias,
+            device=device,
+            dtype=dtype,
+            init_scheme=init_scheme,
+        )
+        self.register_buffer("invariant_projector", invariant_orthogonal_projector(in_rep))
+        self.pos_emb = torch.nn.Parameter(torch.zeros(max_len, in_rep.size, device=device, dtype=dtype))
+
+    def forward(  # noqa: D102
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        *,
+        q_positions: torch.Tensor | None = None,
+        k_positions: torch.Tensor | None = None,
+        q_position_mask: torch.Tensor | None = None,
+        k_position_mask: torch.Tensor | None = None,
+        attn_mask: torch.Tensor | None = None,
+        key_padding_mask: torch.Tensor | None = None,
+        need_weights: bool = False,
+        is_causal: bool = False,
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        query = query + self._position_update(query, q_positions, q_position_mask)
+        key = key + self._position_update(key, k_positions, k_position_mask)
+        return self.attn(
+            query,
+            key,
+            value,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            need_weights=need_weights,
+            is_causal=is_causal,
+        )
+
+    def _position_update(
+        self,
+        x: torch.Tensor,
+        positions: torch.Tensor | None,
+        position_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        batch_size, seq_len, _ = x.shape
+        positions = self._positions_or_arange(positions, seq_len=seq_len, device=x.device)
+
+        positions, position_mask = self._normalize_positions(
+            positions,
+            position_mask,
+            batch_size=batch_size,
+            seq_len=seq_len,
+        )
+
+        encoded_positions = positions.masked_fill(~position_mask, 0) if position_mask is not None else positions
+        pos_emb = self.pos_emb[encoded_positions.long()]
+        if pos_emb.ndim == 2:
+            expected_shape = (seq_len, self.embed_dim)
+            if pos_emb.shape != expected_shape:
+                raise ValueError(f"Expected positional embedding shape {expected_shape}, got {tuple(pos_emb.shape)}")
+            pos_emb = pos_emb.unsqueeze(0)
+            if batch_size != 1:
+                pos_emb = pos_emb.expand(batch_size, -1, -1)
+        else:
+            expected_shape = (batch_size, seq_len, self.embed_dim)
+            if pos_emb.ndim != 3 or pos_emb.shape != expected_shape:
+                raise ValueError(f"Expected positional embedding shape {expected_shape}, got {tuple(pos_emb.shape)}")
+
+        pos_emb = torch.einsum(
+            "ij,...j->...i",
+            self.invariant_projector.to(device=pos_emb.device, dtype=pos_emb.dtype),
+            pos_emb,
+        )
+        if position_mask is not None:
+            pos_emb = pos_emb * position_mask.unsqueeze(-1)
+
+        return pos_emb
+
+    @torch.no_grad()
+    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+        self.attn.reset_parameters(scheme=scheme)
+        self.pos_emb.zero_()
+
+    def invalidate_cache(self) -> None:  # noqa: D102
+        self.attn.invalidate_cache()
+
+
 class AdditiveRelMultiheadAttention(PositionalAttentionBase):
     r"""Wrap :class:`torch.nn.MultiheadAttention` and subtract a relative-position bias from the logits.
 
@@ -685,6 +797,196 @@ class AdditiveRelMultiheadAttention(PositionalAttentionBase):
     def _relative_bias_values(self, rel_positions: torch.Tensor) -> torch.Tensor:
         clipped_positions = rel_positions.clamp(-self.max_distance, self.max_distance).long() + self.max_distance
         return self.rel_bias[clipped_positions]
+
+
+class eAdditiveRelMultiheadAttention(eModule, PositionalAttentionBase):
+    r"""Equivariant relative-bias attention with an equivariant attention backend."""
+
+    def __init__(
+        self,
+        in_rep: Representation,
+        num_heads: int,
+        *,
+        max_distance: int,
+        dropout: float = 0.0,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+        init_scheme: str | None = "xavier_normal",
+    ) -> None:
+        super().__init__()
+        if max_distance < 0:
+            raise ValueError(f"max_distance must be non-negative, got {max_distance}")
+
+        self.in_rep, self.out_rep = in_rep, in_rep
+        self.embed_dim = in_rep.size
+        self.max_distance = max_distance
+        self.num_heads = num_heads
+        self.attn = eMultiheadAttention(
+            in_rep=in_rep,
+            num_heads=num_heads,
+            dropout=dropout,
+            bias=bias,
+            device=device,
+            dtype=dtype,
+            init_scheme=init_scheme,
+        )
+        self.rel_bias = torch.nn.Parameter(torch.zeros(2 * max_distance + 1, device=device, dtype=dtype))
+
+    def forward(  # noqa: D102
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        *,
+        q_positions: torch.Tensor | None = None,
+        k_positions: torch.Tensor | None = None,
+        q_position_mask: torch.Tensor | None = None,
+        k_position_mask: torch.Tensor | None = None,
+        attn_mask: torch.Tensor | None = None,
+        key_padding_mask: torch.Tensor | None = None,
+        need_weights: bool = False,
+        is_causal: bool = False,
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        batch_size = query.shape[0]
+        tgt_len = query.shape[1]
+        src_len = key.shape[1]
+        q_positions = self._positions_or_arange(q_positions, seq_len=tgt_len, device=query.device)
+        k_positions = self._positions_or_arange(k_positions, seq_len=src_len, device=key.device)
+
+        rel_bias = self._relative_bias(
+            q_positions,
+            k_positions,
+            q_position_mask,
+            k_position_mask,
+            batch_size=batch_size,
+            tgt_len=tgt_len,
+            src_len=src_len,
+            target_dtype=query.dtype,
+        )
+        attn_mask = F._canonical_mask(
+            mask=attn_mask,
+            mask_name="attn_mask",
+            other_type=None,
+            other_name="",
+            target_type=query.dtype,
+            check_other=False,
+        )
+        if rel_bias is not None:
+            attn_mask = -rel_bias if attn_mask is None else attn_mask - rel_bias
+
+        return self.attn(
+            query,
+            key,
+            value,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            need_weights=need_weights,
+            is_causal=is_causal,
+        )
+
+    def _relative_bias(
+        self,
+        q_positions: torch.Tensor | None,
+        k_positions: torch.Tensor | None,
+        q_position_mask: torch.Tensor | None,
+        k_position_mask: torch.Tensor | None,
+        *,
+        batch_size: int,
+        tgt_len: int,
+        src_len: int,
+        target_dtype: torch.dtype,
+    ) -> torch.Tensor | None:
+        if q_positions is None or k_positions is None:
+            return None
+
+        positions_shared_across_batch = self._positions_are_shared_across_batch(
+            q_positions, q_position_mask
+        ) and self._positions_are_shared_across_batch(k_positions, k_position_mask)
+        q_positions, q_position_mask = self._normalize_positions(
+            q_positions,
+            q_position_mask,
+            batch_size=batch_size,
+            seq_len=tgt_len,
+        )
+        k_positions, k_position_mask = self._normalize_positions(
+            k_positions,
+            k_position_mask,
+            batch_size=batch_size,
+            seq_len=src_len,
+        )
+
+        if positions_shared_across_batch:
+            q_positions = q_positions[0]
+            k_positions = k_positions[0]
+            rel_positions = q_positions.unsqueeze(-1) - k_positions.unsqueeze(-2)
+            pair_mask = None
+            if q_position_mask is not None or k_position_mask is not None:
+                q_valid = (
+                    torch.ones(tgt_len, device=rel_positions.device, dtype=torch.bool)
+                    if q_position_mask is None
+                    else q_position_mask[0]
+                )
+                k_valid = (
+                    torch.ones(src_len, device=rel_positions.device, dtype=torch.bool)
+                    if k_position_mask is None
+                    else k_position_mask[0]
+                )
+                pair_mask = q_valid.unsqueeze(-1) & k_valid.unsqueeze(-2)
+        else:
+            rel_positions = q_positions.unsqueeze(-1) - k_positions.unsqueeze(-2)
+            pair_mask = None
+            if q_position_mask is not None or k_position_mask is not None:
+                q_valid = (
+                    torch.ones(batch_size, tgt_len, device=rel_positions.device, dtype=torch.bool)
+                    if q_position_mask is None
+                    else q_position_mask
+                )
+                k_valid = (
+                    torch.ones(batch_size, src_len, device=rel_positions.device, dtype=torch.bool)
+                    if k_position_mask is None
+                    else k_position_mask
+                )
+                pair_mask = q_valid.unsqueeze(-1) & k_valid.unsqueeze(-2)
+
+        rel_bias = self._relative_bias_values(rel_positions).to(dtype=target_dtype)
+        if rel_bias.ndim == 3:
+            rel_bias = rel_bias.repeat_interleave(self.num_heads, dim=0)
+        elif not positions_shared_across_batch:
+            rel_bias = rel_bias.unsqueeze(0).expand(batch_size * self.num_heads, -1, -1)
+
+        if pair_mask is None:
+            return rel_bias
+        if rel_bias.ndim == 2:
+            return rel_bias * pair_mask.to(dtype=rel_bias.dtype)
+        if pair_mask.ndim == 2:
+            pair_mask = pair_mask.unsqueeze(0).expand(batch_size * self.num_heads, -1, -1)
+        else:
+            pair_mask = pair_mask.repeat_interleave(self.num_heads, dim=0)
+        return rel_bias * pair_mask.to(dtype=rel_bias.dtype)
+
+    @staticmethod
+    def _positions_are_shared_across_batch(
+        positions: torch.Tensor,
+        position_mask: torch.Tensor | None,
+    ) -> bool:
+        shared_positions = positions.ndim == 1 or (positions.ndim == 2 and positions.shape[0] == 1)
+        if position_mask is None:
+            return shared_positions
+        shared_mask = position_mask.ndim == 1 or (position_mask.ndim == 2 and position_mask.shape[0] == 1)
+        return shared_positions and shared_mask
+
+    def _relative_bias_values(self, rel_positions: torch.Tensor) -> torch.Tensor:
+        clipped_positions = rel_positions.clamp(-self.max_distance, self.max_distance).long() + self.max_distance
+        return self.rel_bias[clipped_positions]
+
+    @torch.no_grad()
+    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+        self.attn.reset_parameters(scheme=scheme)
+        self.rel_bias.zero_()
+
+    def invalidate_cache(self) -> None:  # noqa: D102
+        self.attn.invalidate_cache()
 
 
 class RoPEMultiheadAttention(PositionalAttentionBase):

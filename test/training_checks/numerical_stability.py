@@ -339,16 +339,16 @@ if __name__ == "__main__":
     )
 
     et_encoder_norm_first_layernorm = eTransformerEncoderLayer(
-        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=True, norm_module="layernorm"
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, norm_first=True, norm_module="layernorm"
     )
     et_encoder_norm_last_layernorm = eTransformerEncoderLayer(
-        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=False, norm_module="layernorm"
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, norm_first=False, norm_module="layernorm"
     )
     et_encoder_norm_first_rmsnorm = eTransformerEncoderLayer(
-        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=True, norm_module="rmsnorm"
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, norm_first=True, norm_module="rmsnorm"
     )
     et_encoder_norm_last_rmsnorm = eTransformerEncoderLayer(
-        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, batch_first=True, norm_first=False, norm_module="rmsnorm"
+        in_rep=rep, nhead=1, dim_feedforward=rep.size * 4, norm_first=False, norm_module="rmsnorm"
     )
     for et_module in [
         et_encoder_norm_first_layernorm,
