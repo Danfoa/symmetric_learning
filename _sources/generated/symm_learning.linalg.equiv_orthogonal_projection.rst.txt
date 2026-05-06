@@ -1,0 +1,6 @@
+﻿equiv\_orthogonal\_projection
+=============================
+
+.. currentmodule:: symm_learning.linalg
+
+.. autofunction:: equiv_orthogonal_projection
