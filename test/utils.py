@@ -288,3 +288,33 @@ def assert_module_save_load_consistency(
             _assert_output_close(expected, actual_parent, atol=atol, rtol=rtol)
     finally:
         module.train(original_mode)
+
+
+class SelfAttentionWrapper(torch.nn.Module):
+    """Adapt self-attention modules to a 2D ``(B, D)`` or 3D ``(B, L, D)`` contract."""
+
+    def __init__(self, attn_module: torch.nn.Module):
+        super().__init__()
+        self.attn = attn_module
+        if hasattr(attn_module, "in_rep"):
+            self.in_rep = attn_module.in_rep
+        if hasattr(attn_module, "out_rep"):
+            self.out_rep = attn_module.out_rep
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        import inspect
+
+        x_expand = x.unsqueeze(1) if x.ndim == 2 else x
+
+        sig = inspect.signature(self.attn.forward)
+        params = list(sig.parameters.keys())
+
+        if "tgt" in params and "memory" in params:
+            memory = x_expand.expand(-1, 3, -1)  # specific test length
+            out = self.attn(tgt=x_expand, memory=memory)
+        elif "query" in params and "key" in params and "value" in params:
+            out, _ = self.attn(x_expand, x_expand, x_expand, need_weights=False)
+        else:
+            out = self.attn(x_expand)
+
+        return out.squeeze(1) if x.ndim == 2 else out

@@ -8,6 +8,7 @@ A collection of neural network modules that are equivariant to group actions, sp
 .. toctree::
    :maxdepth: 2
 
+   nn/module
    nn/activation
    nn/conv
    nn/disentangled
@@ -17,3 +18,4 @@ A collection of neural network modules that are equivariant to group actions, sp
    nn/normalization
    nn/parametrizations
    nn/running_stats
+   nn/transformer

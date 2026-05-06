@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
+import math
+from abc import ABC, abstractmethod
 from typing import Literal
 
 import torch
 
-from symm_learning.models.diffusion.cond_transformer_regressor import GenCondRegressor
-from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 from symm_learning.nn.activation import (
     AdditivePosMultiheadAttention,
     AdditiveRelMultiheadAttention,
@@ -15,23 +15,182 @@ from symm_learning.nn.activation import (
     RotaryEmbedding,
 )
 from symm_learning.nn.transformer.transformer import (
-    PosEmbTransformerDecoder,
-    PosEmbTransformerDecoderLayer,
-    PosEmbTransformerEncoder,
-    PosEmbTransformerEncoderLayer,
+    TransformerDecoder,
+    TransformerDecoderLayer,
+    TransformerEncoder,
+    TransformerEncoderLayer,
 )
 
 logger = logging.getLogger(__name__)
 
+NormModule = Literal["layernorm", "rmsnorm"]
+PosEncoding = Literal["additive_absolute", "additive_relative", "rope", "none"]
+
+
+class GenCondRegressor(torch.nn.Module, ABC):
+    r"""Generative Conditional Regressor module.
+
+    This is an abstract module inteded to be used as the backbone of a conditional flow-matching/diffusion process which
+    enables sampling from the conditional probability distribution:
+
+    .. math::
+        \mathbb{P}(X \mid Z)
+
+    Let :math:`\mathcal{X}=\mathbb{R}^{d_x}`, :math:`\mathcal{Z}=\mathbb{R}^{d_z}`, and
+    :math:`\mathcaleTransformerEncoderLayer{Y}=\mathbb{R}^{d_v}`.
+    Where :math:`X = [x_0,\ldots,x_{T_x}] \in \mathcal{X}^{T_x}` is the input/data sample composed of a
+    trajectory of :math:`T_x` points, and :math:`Z = [z_0,\ldots,z_{T_z}] \in \mathcal{Z}^{T_z}` is the
+    conditioning/observation variable composed of :math:`T_z` points.
+
+    The module parameterizes a conditional vector-valued regression map:
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}: \mathcal{X}^{T_x} \times \mathcal{Z}^{T_z} \times \mathbb{R}
+        \to \mathcal{Y}^{T_x},
+
+    with
+
+    .. math::
+        V_k = \mathbf{f}_{\mathbf{\theta}}(X_k, Z, k).
+
+    Where :math:`k` denotes the inference-time optimization timestep (i.e., the step of the flow-matching/diffusion)
+    process, :math:`X_k` is the noisy version of the data sample at step `k`, and
+    :math:`V_k \in (\mathbb{R}^{d_v})^{T_x}` is the target regression vector-valued variable.
+    For diffusion models :math:`V_k` typically corresponds to the score functional of
+    :math:`\mathbb{P}_k(X \mid Z)`, while for flow-matching models it typically corresponds
+    to the flow-matching velocity vector field.
+
+    This abstract base class does not impose equivariance/invariance constraints by itself.
+    """
+
+    def __init__(self, in_dim: int, out_dim: int, cond_dim: int):
+        super().__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.cond_dim = cond_dim
+
+    @abstractmethod
+    def forward(self, X: torch.Tensor, opt_step: torch.Tensor | float | int, Z: torch.Tensor):
+        r"""Forward pass of the generative conditional regressor.
+
+        Args:
+            X (:class:`~torch.Tensor`): The input/data sample composed of a trajectory of `T_x` points in a
+                `d_x`-dimensional space. Shape: `(B, T_x, d_x)`, where `B` is the batch size.
+            opt_step (:class:`~torch.Tensor` | :class:`float` | :class:`int`): The optimization step(s) `k` at which to
+                evaluate the regressor. Can be a single scalar or a tensor of shape `(B,)`.
+            Z (:class:`~torch.Tensor`): The conditioning/observation variable composed of `T_z` points in a
+                `d_z`-dimensional space. Shape: `(B, T_z, d_z)`, where `B` is the batch size.
+
+        Returns:
+            :class:`~torch.Tensor`: The output regression variable of shape `(B, T_x, d_v)`.
+        """
+        pass
+
+
+class SinusoidalPosEmb(torch.nn.Module):
+    """Sinusoidal positional embedding layer.
+
+    This layer encodes a scalar input (e.g., a diffusion/transport timestep) into a high-dimensional
+    vector using a combination of sine and cosine functions of varying frequencies. This technique,
+    introduced in the "Attention Is All You Need" paper, allows the model to easily attend
+    to relative positions and is effective for representing periodic or sequential data.
+
+    The embedding is calculated as follows:
+        emb(x, 2i) = sin(x / 10000^(2i/dim))
+        emb(x, 2i+1) = cos(x / 10000^(2i/dim))
+    where `x` is the input scalar, `dim` is the embedding dimension, and `i` is the channel index.
+
+    The `forward` method implements this by first calculating the frequency term `1 / 10000^(2i/dim)`
+    and then multiplying the input `x` by these frequencies. This creates the argument for the
+    sine and cosine functions, effectively encoding the position `x` across the embedding dimension.
+
+    Args:
+        dim (:class:`int`): The dimension of the embedding.
+    """
+
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
+
+    def forward(self, x):  # noqa: D102
+        device = x.device
+        half_dim = self.dim // 2
+        emb = math.log(10000) / max((half_dim - 1), 1)
+        emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
+        emb = x[:, None] * emb[None, :]
+        emb = torch.cat((emb.sin(), emb.cos()), dim=-1)
+        return emb
+
+
+def build_cond_positions(
+    pos_encoding: PosEncoding,
+    cond_horizon: int,
+    *,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Build conditioning-token positions and a mask selecting timeline tokens."""
+    cond_position_mask = torch.cat([torch.tensor([False]), torch.ones(cond_horizon - 1)])
+    if pos_encoding in {"rope", "additive_relative"}:
+        cond_positions = torch.cat([torch.zeros(1), torch.arange(-(cond_horizon - 2), 1)])
+    else:
+        cond_positions = torch.arange(cond_horizon, device=device)
+
+    cond_positions = cond_positions.to(device=device, dtype=torch.long)
+    cond_position_mask = cond_position_mask.to(device=device, dtype=torch.bool)
+    return cond_positions, cond_position_mask.to(device=device, dtype=torch.bool)
+
+
+def build_input_positions(input_horizon: int, *, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+    """Build decoder target positions and the corresponding validity mask."""
+    input_positions = torch.arange(input_horizon, device=device)
+    input_position_mask = torch.ones(input_horizon, device=device, dtype=torch.bool)
+    return input_positions, input_position_mask
+
+
+def build_causal_attention_masks(in_horizon: int, cond_horizon: int) -> tuple[torch.Tensor, torch.Tensor]:
+    """Build additive causal masks for decoder self-attention and cross-attention."""
+    self_att_mask = (torch.triu(torch.ones(in_horizon, in_horizon)) == 1).transpose(0, 1)
+    self_att_mask = (
+        self_att_mask.float().masked_fill(self_att_mask == 0, float("-inf")).masked_fill(self_att_mask == 1, float(0.0))
+    )
+
+    t, s = torch.meshgrid(torch.arange(in_horizon), torch.arange(cond_horizon), indexing="ij")
+    cross_att_mask = t >= (s - 1)
+    cross_att_mask = (
+        cross_att_mask.float()
+        .masked_fill(cross_att_mask == 0, float("-inf"))
+        .masked_fill(cross_att_mask == 1, float(0.0))
+    )
+    return self_att_mask, cross_att_mask
+
 
 class CondTransformer(GenCondRegressor):
-    r"""Transformer-based conditional regressor with configurable positional encoding.
+    r"""Encoder/decoder Transformer with configurable positional attention.
 
-    A variant of :class:`~symm_learning.models.diffusion.cond_transformer_regressor.CondTransformerRegressor`
-    that uses the positional-attention transformer layers from :mod:`symm_learning.nn.transformer` and
-    lets the user select the positional encoding strategy.
+    This module is an encoder/decoder Transformer with `num_cond_layers` conditioning encoder layers and
+    `num_layers` decoder layers, following the architecture introduced in *Attention Is All You Need* by
+    Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin (NeurIPS 2017),
+    with two task-specific changes:
 
-    Two strategies are supported:
+    1. the conditioning memory is built from an optimisation/transport-step token together with the conditioning
+       sequence, and
+    2. the attention blocks support several positional encoding schemes.
+
+    The conditioning stream is assembled as
+
+    .. math::
+        [k, \mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}],
+
+    where :math:`k` is the inference-time optimisation/transport step token and
+    :math:`\mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}` are the conditioning tokens ordered from oldest
+    to most recent observation. The decoder predicts the target sequence
+
+    .. math::
+        [\mathbf{x}_{0}, \ldots, \mathbf{x}_{T_x - 1}],
+
+    ordered from the first action to the last action in the predicted horizon.
+
+    Supported positional encodings are:
 
     ``"additive_absolute"``
         Uses :class:`~symm_learning.nn.activation.AdditivePosMultiheadAttention`. A learned
@@ -48,7 +207,20 @@ class CondTransformer(GenCondRegressor):
         embeddings are applied per-head to the query and key projections, leaving values
         untouched.
 
-    The overall architecture follows the same conditioning scheme as the diffusion variant:
+    ``"none"``
+        Uses :class:`~torch.nn.MultiheadAttention` with no explicit positional encoding.
+
+    Temporal assumptions:
+
+    * :math:`Z` must already be ordered in time from past to present.
+    * :math:`X` must already be ordered from the first predicted action to the last predicted action.
+    * For ``"additive_relative"`` and ``"rope"``, the last conditioning token
+      :math:`\mathbf{z}_{0}` and the first action token :math:`\mathbf{x}_{0}` are both placed at time
+      index :math:`0`, so cross-attention is anchored at the present time.
+    * The optimisation-step token :math:`k` is prepended to the conditioning memory, but it is not treated as
+      part of the observation timeline.
+
+    The architecture is implemented as follows:
 
     * The inference-time optimisation step ``k`` is sinusoidally embedded and prepended as the
       first conditioning token.
@@ -73,6 +245,8 @@ class CondTransformer(GenCondRegressor):
         p_drop_attn (:class:`float`): Dropout applied inside attention blocks.
         causal_attn (:class:`bool`): Whether to use causal attention in self-attention and cross-attention layers.
         num_cond_layers (:class:`int`): Number of encoder layers dedicated to conditioning tokens.
+        norm_first (:class:`bool`): Whether to apply normalization before each residual branch.
+        norm_module (:class:`str`): Final and per-layer normalization type: ``"layernorm"`` or ``"rmsnorm"``.
     """
 
     def __init__(
@@ -82,7 +256,7 @@ class CondTransformer(GenCondRegressor):
         cond_dim: int,
         in_horizon: int,
         cond_horizon: int,
-        pos_encoding: Literal["additive_absolute", "additive_relative", "rope", "none"] = "additive_absolute",
+        pos_encoding: PosEncoding = "additive_absolute",
         num_layers: int = 6,
         num_attention_heads: int = 6,
         embedding_dim: int = 768,
@@ -90,6 +264,8 @@ class CondTransformer(GenCondRegressor):
         p_drop_attn: float = 0.1,
         causal_attn: bool = False,
         num_cond_layers: int = 0,
+        norm_first: bool = True,
+        norm_module: NormModule = "rmsnorm",
         **pos_encoding_kwargs,
     ) -> None:
         super().__init__(in_dim=in_dim, out_dim=out_dim, cond_dim=cond_dim)
@@ -109,7 +285,6 @@ class CondTransformer(GenCondRegressor):
         self.cond_emb = torch.nn.Linear(cond_dim, embedding_dim)
         self.opt_time_emb = SinusoidalPosEmb(embedding_dim)
 
-        # -- Build attention modules based on pos_encoding --
         max_pos_len = max(self.in_horizon, self.cond_horizon)
         max_rel_distance = self.in_horizon + self.cond_horizon - 2
 
@@ -151,15 +326,16 @@ class CondTransformer(GenCondRegressor):
         # Conditioning encoder
         self.encoder = None
         if num_cond_layers > 0:
-            enc_layer = PosEmbTransformerEncoderLayer(
+            enc_layer = TransformerEncoderLayer(
                 d_model=embedding_dim,
                 self_attn=_build_attn(),
                 dim_feedforward=4 * embedding_dim,
                 dropout=p_drop_attn,
-                activation="gelu",
-                norm_first=False,
+                activation=torch.nn.GELU(),
+                norm_first=norm_first,
+                norm_module=norm_module,
             )
-            self.encoder = PosEmbTransformerEncoder(encoder_layer=enc_layer, num_layers=num_cond_layers)
+            self.encoder = TransformerEncoder(encoder_layer=enc_layer, num_layers=num_cond_layers)
         else:
             self.encoder = torch.nn.Sequential(
                 torch.nn.Linear(embedding_dim, 4 * embedding_dim),
@@ -168,33 +344,34 @@ class CondTransformer(GenCondRegressor):
             )
 
         # Decoder
-        dec_layer = PosEmbTransformerDecoderLayer(
+        dec_layer = TransformerDecoderLayer(
             d_model=embedding_dim,
             self_attn=_build_attn(),
             multihead_attn=_build_attn(),
             dim_feedforward=4 * embedding_dim,
             dropout=p_drop_attn,
-            activation="gelu",
-            norm_first=False,
+            activation=torch.nn.GELU(),
+            norm_first=norm_first,
+            norm_module=norm_module,
         )
-        self.decoder = PosEmbTransformerDecoder(decoder_layer=dec_layer, num_layers=num_layers)
+        self.decoder = TransformerDecoder(decoder_layer=dec_layer, num_layers=num_layers)
 
         # Self-Attention and Cross-Attention mask.
         if causal_attn:
-            mask = (torch.triu(torch.ones(self.in_horizon, self.in_horizon)) == 1).transpose(0, 1)
-            mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("self_att_mask", mask)
-
-            t, s = torch.meshgrid(torch.arange(self.in_horizon), torch.arange(self.cond_horizon), indexing="ij")
-            mask = t >= (s - 1)  # add one dimension since opt-time is the first token in cond
-            mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("cross_att_mask", mask)
+            self_att_mask, cross_att_mask = build_causal_attention_masks(self.in_horizon, self.cond_horizon)
+            self.register_buffer("self_att_mask", self_att_mask)
+            self.register_buffer("cross_att_mask", cross_att_mask)
         else:
             self.self_att_mask = None
             self.cross_att_mask = None
 
         # Decoder head
-        self.layer_norm = torch.nn.LayerNorm(embedding_dim)
+        if norm_module == "layernorm":
+            self.layer_norm = torch.nn.LayerNorm(embedding_dim, eps=1e-5, bias=True)
+        elif norm_module == "rmsnorm":
+            self.layer_norm = torch.nn.RMSNorm(embedding_dim, eps=1e-5)
+        else:
+            raise ValueError(f"norm_module must be 'layernorm' or 'rmsnorm', got {norm_module}")
         self.head = torch.nn.Linear(embedding_dim, out_dim)
 
         # init
@@ -207,10 +384,10 @@ class CondTransformer(GenCondRegressor):
         ignore_types = (
             torch.nn.Dropout,
             SinusoidalPosEmb,
-            PosEmbTransformerEncoderLayer,
-            PosEmbTransformerDecoderLayer,
-            PosEmbTransformerEncoder,
-            PosEmbTransformerDecoder,
+            TransformerEncoderLayer,
+            TransformerDecoderLayer,
+            TransformerEncoder,
+            TransformerDecoder,
             AdditivePosMultiheadAttention,
             RoPEMultiheadAttention,
             torch.nn.TransformerEncoderLayer,
@@ -262,6 +439,8 @@ class CondTransformer(GenCondRegressor):
         elif isinstance(module, torch.nn.LayerNorm):
             torch.nn.init.zeros_(module.bias)
             torch.nn.init.ones_(module.weight)
+        elif isinstance(module, torch.nn.RMSNorm):
+            torch.nn.init.ones_(module.weight)
         elif isinstance(module, CondTransformer):
             pass  # No standalone pos_emb parameter to init in this variant
         elif isinstance(module, RotaryEmbedding):
@@ -276,7 +455,7 @@ class CondTransformer(GenCondRegressor):
         decay = set()
         no_decay = set()
         whitelist_weight_modules = (torch.nn.Linear, torch.nn.MultiheadAttention)
-        blacklist_weight_modules = (torch.nn.LayerNorm, torch.nn.Embedding)
+        blacklist_weight_modules = (torch.nn.LayerNorm, torch.nn.RMSNorm, torch.nn.Embedding)
         for mn, m in self.named_modules():
             for pn, p in m.named_parameters():
                 fpn = "%s.%s" % (mn, pn) if mn else pn
@@ -353,28 +532,13 @@ class CondTransformer(GenCondRegressor):
         # Build integer position indices for the conditioning and input sequences.
         # Under RoPE, observation history lives on the past-to-present timeline while the action
         # trajectory starts at the present, so the last observation and first action both sit at time 0.
-        cond_position_mask = torch.cat(
-            [
-                torch.tensor([False], device=X.device, dtype=torch.bool),
-                torch.ones(cond_horizon - 1, device=X.device, dtype=torch.bool),
-            ]
-        )
-        if self.pos_encoding in {"rope", "additive_relative"}:
-            cond_positions = torch.cat(
-                [
-                    torch.zeros(1, device=X.device, dtype=torch.long),
-                    torch.arange(-(cond_horizon - 2), 1, device=X.device),
-                ]
-            )
-        else:
-            cond_positions = torch.arange(cond_horizon, device=X.device)  # (T_cond,)
+        cond_positions, cond_position_mask = build_cond_positions(self.pos_encoding, cond_horizon, device=X.device)
 
         input_horizon = X.shape[1]
-        input_positions = torch.arange(input_horizon, device=X.device)  # (T_x,)
-        input_position_mask = torch.ones(input_horizon, device=X.device, dtype=torch.bool)
+        input_positions, input_position_mask = build_input_positions(input_horizon, device=X.device)
 
         # Transformer encoder of conditioning tokens
-        if isinstance(self.encoder, PosEmbTransformerEncoder):
+        if isinstance(self.encoder, TransformerEncoder):
             cond_tokens = self.encoder(cond_tokens, src_positions=cond_positions, src_position_mask=cond_position_mask)
         else:
             cond_tokens = self.encoder(cond_tokens)  # MLP fallback

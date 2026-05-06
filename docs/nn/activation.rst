@@ -10,3 +10,10 @@ activation
    :recursive:
 
    eMultiheadAttention
+   AdditivePosMultiheadAttention
+   AdditiveRelMultiheadAttention
+   eAdditivePosMultiheadAttention
+   eAdditiveRelMultiheadAttention
+   PositionalAttentionBase
+   RoPEMultiheadAttention
+   RotaryEmbedding

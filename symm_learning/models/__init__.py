@@ -10,8 +10,10 @@ eTimeCNNEncoder, TimeCNNEncoder
     1D CNN encoders for time-series data with optional equivariance constraints.
 eTransformerEncoderLayer, eTransformerDecoderLayer
     Equivariant Transformer layers preserving group symmetries in attention.
-eCondTransformerRegressor, CondTransformerRegressor
+eCondTransformer, CondTransformer
     Conditional Transformer regressors for sequence-to-sequence tasks (e.g., diffusion).
+eConditionalUnet1D, ConditionalUnet1D
+    Conditional UNet1D architectures for sequence-to-sequence tasks (e.g., diffusion).
 
 Examples:
 --------
@@ -19,12 +21,7 @@ Examples:
 >>> model = eMLP(in_rep, out_rep, hidden_reps=[hidden_rep] * 3)
 """
 
-from .control.cond_transformer import CondTransformer
-from .diffusion.cond_transformer_regressor import CondTransformerRegressor, GenCondRegressor
-from .diffusion.econd_transformer_regressor import eCondTransformerRegressor
-from .emlp import MLP, eMLP, iMLP
-from .time_cnn.cnn_encoder import TimeCNNEncoder
-from .time_cnn.ecnn_encoder import eTimeCNNEncoder
+from importlib import import_module
 
 __all__ = [
     "eMLP",
@@ -32,8 +29,30 @@ __all__ = [
     "MLP",
     "eTimeCNNEncoder",
     "TimeCNNEncoder",
-    "eCondTransformerRegressor",
-    "CondTransformerRegressor",
-    "GenCondRegressor",
+    "eCondTransformer",
     "CondTransformer",
-]
+    "GenCondRegressor",
+    "eConditionalUnet1D",
+    "ConditionalUnet1D",
+]  # noqa: F822
+
+
+_MODULE_MAP = {
+    "CondTransformer": "symm_learning.models.control.cond_transformer",
+    "eCondTransformer": "symm_learning.models.control.econd_transformer",
+    "GenCondRegressor": "symm_learning.models.control.cond_transformer",
+    "eConditionalUnet1D": "symm_learning.models.diffusion.cond_eunet1d",
+    "ConditionalUnet1D": "symm_learning.models.diffusion.cond_unet1d",
+    "MLP": "symm_learning.models.emlp",
+    "eMLP": "symm_learning.models.emlp",
+    "iMLP": "symm_learning.models.emlp",
+    "TimeCNNEncoder": "symm_learning.models.time_cnn.cnn_encoder",
+    "eTimeCNNEncoder": "symm_learning.models.time_cnn.ecnn_encoder",
+}
+
+
+def __getattr__(name: str):
+    if name not in _MODULE_MAP:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = import_module(_MODULE_MAP[name])
+    return getattr(module, name)

@@ -7,6 +7,7 @@ import escnn
 import pytest
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, Representation, directsum
 import torch
+import symm_learning
 
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import backprop_sanity, check_equivariance
@@ -89,12 +90,12 @@ def test_etransformer_decoder(group: Group, mx: int, num_heads: int, num_layers:
 
     decoder_kwargs = dict(
         in_rep=rep,
-        nhead=num_heads,
+        self_attn=symm_learning.nn.eMultiheadAttention(in_rep=rep, num_heads=num_heads, dropout=0.0, bias=True),
+        multihead_attn=symm_learning.nn.eMultiheadAttention(in_rep=rep, num_heads=num_heads, dropout=0.0, bias=True),
         dim_feedforward=rep.size * 4,
         dropout=0.0,  # dropout=0 for train/eval consistency
-        activation="relu",
+        activation=torch.nn.ReLU(),
         norm_first=True,
-        batch_first=True,
         norm_module="rmsnorm",
         bias=True,
     )
@@ -111,22 +112,7 @@ def test_etransformer_decoder(group: Group, mx: int, num_heads: int, num_layers:
     if num_layers == 1:
         decoder.check_equivariance(atol=1e-4, rtol=1e-4)
     else:
-        # For stacked layers, use manual equivariance check
-        def act(rep_local, g, tensor):
-            mat = torch.tensor(rep_local(g), dtype=tensor.dtype, device=tensor.device)
-            return torch.einsum("ij,...j->...i", mat, tensor)
-
-        B, tgt_len, mem_len = 3, 2, 3
-        for _ in range(5):
-            g = G.sample()
-            tgt = torch.randn(B, tgt_len, rep.size)
-            mem = torch.randn(B, mem_len, rep.size)
-            out = decoder(tgt=tgt, memory=mem)
-            g_out = decoder(tgt=act(rep, g, tgt), memory=act(rep, g, mem))
-            g_out_exp = act(rep, g, out)
-            assert torch.allclose(g_out, g_out_exp, atol=1e-3, rtol=1e-3), (
-                f"Decoder stack equivariance failed, max err {(g_out - g_out_exp).abs().max().item():.3e}"
-            )
+        base_layer.check_equivariance(atol=1e-4, rtol=1e-4)
 
     # Fast inference consistency test
     B, tgt_len, mem_len = 4, 3, 5
@@ -177,12 +163,11 @@ def test_etransformer_encoder(group: Group, mx: int, num_heads: int, num_layers:
 
     encoder_kwargs = dict(
         in_rep=rep,
-        nhead=num_heads,
+        self_attn=symm_learning.nn.eMultiheadAttention(in_rep=rep, num_heads=num_heads, dropout=0.0, bias=True),
         dim_feedforward=rep.size * 4,
         dropout=0.0,  # dropout=0 for train/eval consistency
-        activation="relu",
+        activation=torch.nn.ReLU(),
         norm_first=True,
-        batch_first=True,
         norm_module="rmsnorm",
         bias=True,
     )
@@ -198,15 +183,10 @@ def test_etransformer_encoder(group: Group, mx: int, num_heads: int, num_layers:
 
     # Equivariance check
     encoder.eval()
-    check_equivariance(
-        encoder,
-        input_dim=3,
-        module_name=f"eTransformerEncoder(layers={num_layers})",
-        in_rep=rep,
-        out_rep=rep,
-        atol=1e-4,
-        rtol=1e-4,
-    )
+    if num_layers == 1:
+        encoder.check_equivariance(atol=1e-4, rtol=1e-4)
+    else:
+        base_layer.check_equivariance(atol=1e-4, rtol=1e-4)
 
     # Fast inference consistency test
     B, L = 4, 5

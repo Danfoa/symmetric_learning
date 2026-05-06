@@ -10,8 +10,13 @@ from escnn.group import Representation
 
 import symm_learning
 from symm_learning.linalg import invariant_orthogonal_projector
-from symm_learning.models.diffusion.cond_transformer_regressor import GenCondRegressor
-from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
+from symm_learning.models.control.cond_transformer import (
+    GenCondRegressor,
+    SinusoidalPosEmb,
+    build_causal_attention_masks,
+    build_cond_positions,
+    build_input_positions,
+)
 from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 from symm_learning.utils import module_memory
@@ -19,33 +24,63 @@ from symm_learning.utils import module_memory
 logger = logging.getLogger(__name__)
 
 
-class eCondTransformerRegressor(eModule, GenCondRegressor):
-    r"""Equivariant analogue of the conditional transformer regressor baseline.
+class eCondTransformer(eModule, GenCondRegressor):
+    r"""Equivariant encoder/decoder Transformer with configurable positional attention.
 
-    This module mirrors
-    :class:`~symm_learning.models.diffusion.cond_transformer_regressor.CondTransformerRegressor`
-    while enforcing equivariance constraints.
+    Let :math:`A := \texttt{num\_cond\_layers}` and :math:`B := \texttt{num\_layers}`. This module is the
+    equivariant counterpart of :class:`~symm_learning.models.control.cond_transformer.CondTransformer`: an
+    encoder/decoder Transformer with :math:`A` conditioning encoder layers and :math:`B` decoder layers,
+    following the architecture introduced in *Attention Is All You Need* by Vaswani, Shazeer, Parmar,
+    Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin (NeurIPS 2017), while constraining every learnable map
+    to respect the prescribed group actions.
 
-    Tokens transforming according to ``in_rep`` are embedded into an ``embedding_rep`` space built from copies of the
-    regular representation so that
-    :class:`~symm_learning.nn.transformer.etransformer.eTransformerEncoderLayer`/
-    :class:`~symm_learning.nn.transformer.etransformer.eTransformerDecoderLayer` can be used
-    directly. Positional encodings and timestep embeddings are projected onto the invariant subspace so they can be
-    added to equivariant tokens without breaking symmetry.
-
-    The model defines:
+    The conditioning stream is assembled as
 
     .. math::
-        \mathbf{f}_{\mathbf{\theta}}:
-        \mathcal{X}^{T_x} \times \mathcal{Z}^{T_z} \times \mathbb{R}
-        \to \mathcal{Y}^{T_x}.
+        [k, \mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}],
 
-    Functional equivariance constraint:
+    where :math:`k` is the inference-time optimisation step token and
+    :math:`\mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}` are the conditioning tokens ordered from oldest
+    to most recent observation. The decoder predicts the target sequence
 
     .. math::
-        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{X}_k,\, \rho_{\mathcal{Z}}(g)\mathbf{Z},\, k)
+        [\mathbf{x}_{0}, \ldots, \mathbf{x}_{T_x - 1}],
+
+    ordered from the first action to the last action in the predicted horizon.
+
+    Supported positional encodings are:
+
+    ``"additive_absolute"``
+        Uses :class:`~symm_learning.nn.activation.eAdditivePosMultiheadAttention`. Learned absolute
+        positions are added in the equivariant embedding space before self-attention or cross-attention.
+
+    ``"additive_relative"``
+        Uses :class:`~symm_learning.nn.activation.eAdditiveRelMultiheadAttention`. Learned relative
+        distance biases are injected into attention logits, preserving the time-translation structure of the
+        sequence while keeping the feature maps equivariant.
+
+    ``"none"``
+        Uses :class:`~symm_learning.nn.activation.eMultiheadAttention` with no explicit positional encoding.
+
+    Temporal assumptions:
+
+    * :math:`Z` must already be ordered in time from past to present.
+    * :math:`X` must already be ordered from the first predicted action to the last predicted action.
+    * For ``"additive_relative"``, the last conditioning token :math:`\mathbf{z}_{0}` and the first action
+      token :math:`\mathbf{x}_{0}` are both placed at time index :math:`0`, so cross-attention is anchored
+      at the present time.
+    * The optimisation-step token :math:`k` is prepended to the conditioning memory, but it is not treated as
+      part of the observation timeline.
+
+    Equivariance is enforced by embedding tokens into a representation space built from copies of the regular
+    representation, projecting the scalar step embedding onto the invariant subspace, and using equivariant
+    encoder, decoder, normalization, and head layers throughout. The resulting conditional map satisfies
+
+    .. math::
+        \mathbf{f}_{\mathbf{\theta}}(\rho_{\mathcal{X}}(g)\mathbf{X}_k,\,
+        \rho_{\mathcal{Z}}(g)\mathbf{Z},\, k)
         = \rho_{\mathcal{Y}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{X}_k,\mathbf{Z},k),
-        \quad \forall g\in\mathbb{G}.
+        \qquad \forall g \in \mathbb{G}.
     """
 
     def __init__(
@@ -62,6 +97,8 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         p_drop_attn: float = 0.1,
         causal_attn: bool = False,
         num_cond_layers: int = 0,
+        pos_encoding: Literal["additive_absolute", "additive_relative", "none"] = "additive_absolute",
+        norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         init_scheme: str = "xavier_uniform",
     ) -> None:
@@ -84,6 +121,9 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
             causal_attn: Whether to mask future tokens (causal masking).
             num_cond_layers: Number of transformer encoder layers for processing conditioning tokens.
                 If 0, an eMLP is used instead.
+            pos_encoding: Positional attention backend (``"additive_absolute"``,
+                ``"additive_relative"``, or ``"none"``).
+            norm_first: Whether to apply normalization before each residual branch.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
             init_scheme: Initialization scheme for equivariant layers.
         """
@@ -95,8 +135,10 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         self.cond_rep = cond_rep
         self.in_horizon = in_horizon
         self.cond_horizon = cond_horizon
+        self.cond_token_horizon = cond_horizon + 1
         self.num_layers = num_layers
         self.embedding_dim = embedding_dim
+        self.pos_encoding = pos_encoding
         self.dropout = torch.nn.Dropout(p_drop_emb)
 
         G = in_rep.group
@@ -111,28 +153,59 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         self.input_emb = symm_learning.nn.eLinear(in_rep, self.embedding_rep, bias=True, init_scheme=None)
         self.cond_emb = symm_learning.nn.eLinear(cond_rep, self.embedding_rep, bias=True, init_scheme=None)
         self.opt_time_emb = SinusoidalPosEmb(embedding_dim)
+        max_pos_len = max(self.in_horizon, self.cond_token_horizon)
+        max_rel_distance = self.in_horizon + self.cond_token_horizon - 2
 
-        self.pos_emb = torch.nn.Parameter(torch.zeros(1, in_horizon, embedding_dim))
-        self.cond_pos_emb = torch.nn.Parameter(torch.zeros(1, cond_horizon + 1, embedding_dim))
+        def _build_attn():
+            if pos_encoding == "additive_absolute":
+                return symm_learning.nn.eAdditivePosMultiheadAttention(
+                    in_rep=self.embedding_rep,
+                    num_heads=num_attention_heads,
+                    max_len=max_pos_len,
+                    dropout=p_drop_attn,
+                    bias=True,
+                    init_scheme=None,
+                )
+            elif pos_encoding == "additive_relative":
+                return symm_learning.nn.eAdditiveRelMultiheadAttention(
+                    in_rep=self.embedding_rep,
+                    num_heads=num_attention_heads,
+                    max_distance=max_rel_distance,
+                    dropout=p_drop_attn,
+                    bias=True,
+                    init_scheme=None,
+                )
+            elif pos_encoding == "none":
+                return symm_learning.nn.eMultiheadAttention(
+                    in_rep=self.embedding_rep,
+                    num_heads=num_attention_heads,
+                    dropout=p_drop_attn,
+                    bias=True,
+                    init_scheme=None,
+                )
+            else:
+                raise ValueError(
+                    f"Unknown pos_encoding={pos_encoding!r}. Expected "
+                    "'additive_absolute', 'additive_relative', or 'none'."
+                )
 
-        # Encoder parameterized as an equivariant MLP or a Transformer
+        # Conditioning encoder
         if num_cond_layers > 0:
             encoder_layer = symm_learning.nn.eTransformerEncoderLayer(
                 in_rep=self.embedding_rep,
-                nhead=num_attention_heads,
+                self_attn=_build_attn(),
                 dim_feedforward=4 * embedding_dim,
                 dropout=p_drop_attn,
-                activation="gelu",
-                batch_first=True,
-                norm_first=True,  # important for stability.
-                norm_module=norm_module,  # important for stability.
+                activation=torch.nn.GELU(),
+                norm_first=norm_first,
+                norm_module=norm_module,
                 init_scheme=None,
             )
             logger.debug(
                 f"Initializing {num_cond_layers} layers of eTransformerEncoderLayer of "
                 f"{sum(p.numel() for p in encoder_layer.parameters()) / 1e6:.2f}M parameters each"
             )
-            self.encoder = torch.nn.TransformerEncoder(
+            self.encoder = symm_learning.nn.TransformerEncoder(
                 encoder_layer=encoder_layer, num_layers=num_cond_layers, enable_nested_tensor=False
             )
         else:
@@ -144,42 +217,35 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
                 symm_learning.nn.eLinear(in_rep=hidden_rep, out_rep=self.embedding_rep, bias=True, init_scheme=None),
             )
 
+        # Decoder
         decoder_layer = symm_learning.nn.eTransformerDecoderLayer(
             in_rep=self.embedding_rep,
-            nhead=num_attention_heads,
+            self_attn=_build_attn(),
+            multihead_attn=_build_attn(),
             dim_feedforward=4 * embedding_dim,
             dropout=p_drop_attn,
-            activation="gelu",
-            batch_first=True,
-            norm_first=True,  # important for stability.
-            norm_module=norm_module,  # important for stability.
+            activation=torch.nn.GELU(),
+            norm_first=norm_first,
+            norm_module=norm_module,
             init_scheme=None,
         )
         logger.debug(f"Initializing {num_layers} layers of eTransformerDecoderLayer")
-        self.decoder = torch.nn.TransformerDecoder(decoder_layer=decoder_layer, num_layers=num_layers)
+        self.decoder = symm_learning.nn.TransformerDecoder(decoder_layer=decoder_layer, num_layers=num_layers)
 
         # Self-Attention and Cross-Attention mask.
         # Cross-attention is used to compute updates to the action vector based on the conditioing tokens
         # composed of a inference-time optimization step token and the observation conditioning tokens.
         if causal_attn:
-            # causal mask to ensure that attention is only applied to the left in the input sequence
-            # torch.nn.Transformer uses additive mask as opposed to multiplicative mask in minGPT
-            # therefore, the upper triangle should be -inf and others (including diag) should be 0.
-            mask = (torch.triu(torch.ones(in_horizon, in_horizon)) == 1).transpose(0, 1)
-            mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("self_att_mask", mask)
-
-            t, s = torch.meshgrid(torch.arange(in_horizon), torch.arange(cond_horizon), indexing="ij")
-            mask = t >= (s - 1)
-            mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-            self.register_buffer("cross_att_mask", mask)
+            self_att_mask, cross_att_mask = build_causal_attention_masks(in_horizon, self.cond_token_horizon)
+            self.register_buffer("self_att_mask", self_att_mask)
+            self.register_buffer("cross_att_mask", cross_att_mask)
         else:
             self.self_att_mask = None
             self.cross_att_mask = None
 
+        # Decoder head
         if norm_module == "layernorm":
             self.layer_norm = symm_learning.nn.eLayerNorm(self.embedding_rep, eps=1e-5, equiv_affine=True, bias=True)
-            raise ValueError("eLayerNorm is numerically unstable. Use eRMSNorm instead for now.")
         else:  # rmsnorm
             self.layer_norm = symm_learning.nn.eRMSNorm(self.embedding_rep, eps=1e-5, equiv_affine=True)
         self.head = symm_learning.nn.eLinear(self.embedding_rep, out_rep, bias=True, init_scheme=None)
@@ -202,7 +268,7 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         # Initialize final layer norm and head.
         self.layer_norm.reset_parameters()
         # Initalize conditional encoder layers.
-        if isinstance(self.encoder, torch.nn.TransformerEncoder):
+        if isinstance(self.encoder, symm_learning.nn.TransformerEncoder):
             for i, layer in enumerate(self.encoder.layers, start=1):
                 assert isinstance(layer, symm_learning.nn.eTransformerEncoderLayer)
                 logger.debug(f"Resetting encoder layer {i}:[{layer.__class__.__name__}] with scheme: {scheme}")
@@ -236,13 +302,14 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
                     no_decay.add(fpn)
                 elif param_name.endswith("weight") and isinstance(m, whitelist_weight_modules):
                     decay.add(fpn)
-                elif param_name.endswith("weight") and isinstance(m, blacklist_weight_modules):
+                elif (
+                    param_name.endswith("weight")
+                    and isinstance(m, blacklist_weight_modules)
+                    or param_name in {"pos_emb", "rel_bias"}
+                ):
                     no_decay.add(fpn)
                 else:
                     raise ValueError(f"Unrecognized parameter {fpn} in module {module_name}")
-
-        no_decay.add("pos_emb")
-        no_decay.add("cond_pos_emb")
 
         param_dict = {pn: p for pn, p in self.named_parameters()}
         inter_params = decay & no_decay
@@ -291,29 +358,40 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
         opt_time_emb = torch.einsum("ij,...j->...i", self.invariant_projector, opt_time_emb)
 
         # 2. Conditioning variable Z embedding/tokenization
-        z_cond_emb = self.cond_emb(Z)  # (B, Tz-1, D)
-        cond_embeddings = torch.cat([opt_time_emb, z_cond_emb], dim=1)  # (B, Tz, D)
-        cond_horizon = z_cond_emb.shape[1]  # (Tz)
-        # Project time embedding onto embedding space's invariant subspace
-        cond_pos_emb = torch.einsum(
-            "ij,...j->...i", self.invariant_projector, self.cond_pos_emb[:, : cond_horizon + 1, :]
+        z_cond_emb = self.cond_emb(Z)
+        cond_embeddings = torch.cat([opt_time_emb, z_cond_emb], dim=1)
+        cond_tokens = self.dropout(cond_embeddings)
+        cond_token_horizon = cond_embeddings.shape[1]
+        cond_positions, cond_position_mask = build_cond_positions(
+            self.pos_encoding, cond_token_horizon, device=X.device
         )
-        # Transformer encoder of conditing tokens
-        cond_tokens = self.dropout(cond_embeddings + cond_pos_emb)  # (B, Tz, D)
-        cond_tokens = self.encoder(cond_tokens)  # (B, Tz, D)
+
+        if isinstance(self.encoder, symm_learning.nn.TransformerEncoder):
+            cond_tokens = self.encoder(
+                cond_tokens,
+                src_positions=cond_positions,
+                src_position_mask=cond_position_mask,
+            )
+        else:
+            cond_tokens = self.encoder(cond_tokens)
 
         # 3. Input embedding/tokenization
-        input_tokens = self.input_emb(X)  # (B, Tx, D)
+        input_tokens = self.dropout(self.input_emb(X))
 
         # 4. Transformer encoder of input tokens with self-attention and cross-attention to cond tokens
-        input_horizon = input_tokens.shape[1]  # (Tx)
-        # Project time embedding onto embedding space's invariant subspace
-        pos_emb = torch.einsum("ij,...j->...i", self.invariant_projector, self.pos_emb[:, :input_horizon, :])
-        input_tokens = self.dropout(input_tokens + pos_emb)  # (B, Tx, D)
-
+        input_horizon = input_tokens.shape[1]
+        input_positions = torch.arange(input_horizon, device=X.device)
+        input_position_mask = torch.ones(input_horizon, device=X.device, dtype=torch.bool)
         out_tokens = self.decoder(
-            tgt=input_tokens, memory=cond_tokens, tgt_mask=self.self_att_mask, memory_mask=self.cross_att_mask
-        )  # (B, Tx, D)
+            tgt=input_tokens,
+            memory=cond_tokens,
+            tgt_mask=self.self_att_mask,
+            memory_mask=self.cross_att_mask,
+            tgt_positions=input_positions,
+            tgt_position_mask=input_position_mask,
+            memory_positions=cond_positions,
+            memory_position_mask=cond_position_mask,
+        )
         # 5. Regression head projecting to output dimension.
         out_tokens = self.layer_norm(out_tokens)
         out = self.head(out_tokens)  # (B, Tx, out_dim)
@@ -340,8 +418,8 @@ class eCondTransformerRegressor(eModule, GenCondRegressor):
             mat = torch.tensor(rep(g), dtype=x.dtype, device=x.device)
             return torch.einsum("ij,...j->...i", mat, x)
 
-        device = self.pos_emb.device
-        dtype = self.pos_emb.dtype
+        device = self.invariant_projector.device
+        dtype = self.invariant_projector.dtype
 
         for _ in range(min(10, G.order())):
             g = random.choice(list(G.elements[1:]))  # skip identity
@@ -416,7 +494,7 @@ if __name__ == "__main__":
     Tx, Tz = 8, 6
 
     start_time = time.time()
-    model = eCondTransformerRegressor(
+    model = eCondTransformer(
         in_rep=in_rep,
         cond_rep=cond_rep,
         out_rep=out_rep,

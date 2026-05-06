@@ -25,8 +25,13 @@ Before implementing:
 
 **Minimum code that solves the problem. Nothing speculative.**
 
+Prefer inline code by default. Only abstract after the same logic is reused in multiple real call sites.
+
 - No features beyond what was asked.
 - No abstractions for single-use code.
+- Do not introduce helper functions, builder functions, wrapper methods, or utility classes that are used only once.
+- Do not extract helpers only to reduce visual duplication or “organize” a constructor.
+- Bad example: a single-use helper such as `build_dense_norm(...)` used in one module once. Inline that logic where it is needed.
 - No "flexibility" or "configurability" that wasn't requested.
 - No error handling for impossible scenarios.
 - No duplicated error handling in class/function hierarchies. If error is checked by a third-party function, don't re-check it.
