@@ -15,17 +15,17 @@ from symm_learning.nn.activation import (
     RotaryEmbedding,
 )
 from symm_learning.nn.transformer.transformer import (
-    PosEmbTransformerDecoder,
-    PosEmbTransformerDecoderLayer,
-    PosEmbTransformerEncoder,
-    PosEmbTransformerEncoderLayer,
+    TransformerDecoder,
+    TransformerDecoderLayer,
+    TransformerEncoder,
+    TransformerEncoderLayer,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class CondTransformer(GenCondRegressor):
-    r"""Transformer-based conditional regressor with configurable positional encoding.
+    r"""Transformer architecture with encoder/decoder layers with positional encoddings.
 
     A variant of :class:`~symm_learning.models.diffusion.cond_transformer_regressor.CondTransformerRegressor`
     that uses the positional-attention transformer layers from :mod:`symm_learning.nn.transformer` and
@@ -151,7 +151,7 @@ class CondTransformer(GenCondRegressor):
         # Conditioning encoder
         self.encoder = None
         if num_cond_layers > 0:
-            enc_layer = PosEmbTransformerEncoderLayer(
+            enc_layer = TransformerEncoderLayer(
                 d_model=embedding_dim,
                 self_attn=_build_attn(),
                 dim_feedforward=4 * embedding_dim,
@@ -159,7 +159,7 @@ class CondTransformer(GenCondRegressor):
                 activation="gelu",
                 norm_first=False,
             )
-            self.encoder = PosEmbTransformerEncoder(encoder_layer=enc_layer, num_layers=num_cond_layers)
+            self.encoder = TransformerEncoder(encoder_layer=enc_layer, num_layers=num_cond_layers)
         else:
             self.encoder = torch.nn.Sequential(
                 torch.nn.Linear(embedding_dim, 4 * embedding_dim),
@@ -168,7 +168,7 @@ class CondTransformer(GenCondRegressor):
             )
 
         # Decoder
-        dec_layer = PosEmbTransformerDecoderLayer(
+        dec_layer = TransformerDecoderLayer(
             d_model=embedding_dim,
             self_attn=_build_attn(),
             multihead_attn=_build_attn(),
@@ -177,7 +177,7 @@ class CondTransformer(GenCondRegressor):
             activation="gelu",
             norm_first=False,
         )
-        self.decoder = PosEmbTransformerDecoder(decoder_layer=dec_layer, num_layers=num_layers)
+        self.decoder = TransformerDecoder(decoder_layer=dec_layer, num_layers=num_layers)
 
         # Self-Attention and Cross-Attention mask.
         if causal_attn:
@@ -207,10 +207,10 @@ class CondTransformer(GenCondRegressor):
         ignore_types = (
             torch.nn.Dropout,
             SinusoidalPosEmb,
-            PosEmbTransformerEncoderLayer,
-            PosEmbTransformerDecoderLayer,
-            PosEmbTransformerEncoder,
-            PosEmbTransformerDecoder,
+            TransformerEncoderLayer,
+            TransformerDecoderLayer,
+            TransformerEncoder,
+            TransformerDecoder,
             AdditivePosMultiheadAttention,
             RoPEMultiheadAttention,
             torch.nn.TransformerEncoderLayer,
@@ -376,7 +376,7 @@ class CondTransformer(GenCondRegressor):
         input_position_mask = torch.ones(input_horizon, device=X.device, dtype=torch.bool)
 
         # Transformer encoder of conditioning tokens
-        if isinstance(self.encoder, PosEmbTransformerEncoder):
+        if isinstance(self.encoder, TransformerEncoder):
             cond_tokens = self.encoder(cond_tokens, src_positions=cond_positions, src_position_mask=cond_position_mask)
         else:
             cond_tokens = self.encoder(cond_tokens)  # MLP fallback

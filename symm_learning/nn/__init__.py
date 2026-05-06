@@ -52,10 +52,10 @@ __all__ = [
     "eRMSNorm",
     "eTransformerDecoderLayer",
     "eTransformerEncoderLayer",
-    "PosEmbTransformerDecoder",
-    "PosEmbTransformerDecoderLayer",
-    "PosEmbTransformerEncoder",
-    "PosEmbTransformerEncoderLayer",
+    "TransformerDecoder",
+    "TransformerDecoderLayer",
+    "TransformerEncoder",
+    "TransformerEncoderLayer",
 ]  # noqa: F822
 
 
@@ -80,10 +80,10 @@ _MODULE_MAP = {
     "eEMAStats": "symm_learning.nn.running_stats",
     "eTransformerDecoderLayer": "symm_learning.nn.transformer.etransformer",
     "eTransformerEncoderLayer": "symm_learning.nn.transformer.etransformer",
-    "PosEmbTransformerDecoder": "symm_learning.nn.transformer.transformer",
-    "PosEmbTransformerDecoderLayer": "symm_learning.nn.transformer.transformer",
-    "PosEmbTransformerEncoder": "symm_learning.nn.transformer.transformer",
-    "PosEmbTransformerEncoderLayer": "symm_learning.nn.transformer.transformer",
+    "TransformerDecoder": "symm_learning.nn.transformer.transformer",
+    "TransformerDecoderLayer": "symm_learning.nn.transformer.transformer",
+    "TransformerEncoder": "symm_learning.nn.transformer.transformer",
+    "TransformerEncoderLayer": "symm_learning.nn.transformer.transformer",
 }
 
 

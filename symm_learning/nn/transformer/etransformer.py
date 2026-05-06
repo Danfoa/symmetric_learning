@@ -38,8 +38,6 @@ def _build_equivariant_attention(
     init_scheme: str | None,
 ) -> eMultiheadAttention | PositionalAttentionBase:
     if pos_encoding == "additive_absolute":
-        if max_len is None:
-            raise ValueError("max_len must be provided when pos_encoding='additive_absolute'")
         return eAdditivePosMultiheadAttention(
             in_rep=in_rep,
             num_heads=num_heads,
@@ -51,8 +49,6 @@ def _build_equivariant_attention(
             init_scheme=init_scheme,
         )
     if pos_encoding == "additive_relative":
-        if max_distance is None:
-            raise ValueError("max_distance must be provided when pos_encoding='additive_relative'")
         return eAdditiveRelMultiheadAttention(
             in_rep=in_rep,
             num_heads=num_heads,
@@ -78,20 +74,14 @@ def _build_equivariant_attention(
     )
 
 
-def _reset_attention_module(
-    attn: eMultiheadAttention | PositionalAttentionBase,
-    *,
-    scheme: str,
-) -> None:
-    attn.reset_parameters(scheme=scheme)
-
-
 class eTransformerEncoderLayer(eModule):
     r"""Equivariant Transformer encoder layer with the same API as ``torch.nn.TransformerEncoderLayer``.
 
-    Applies :class:`~symm_learning.nn.activation.eMultiheadAttention` followed by an equivariant feed-forward block
-    built from :class:`~symm_learning.nn.linear.eLinear` layers and
-    :class:`~symm_learning.nn.normalization.eLayerNorm`, mirroring PyTorch’s ordering
+    Applies equivariant multi-head attention (plain :class:`~symm_learning.nn.activation.eMultiheadAttention`
+    or any :class:`~symm_learning.nn.activation.PositionalAttentionBase` backend selected via ``pos_encoding``)
+    followed by an equivariant feed-forward block built from :class:`~symm_learning.nn.linear.eLinear` layers
+    and equivariant normalization (:class:`~symm_learning.nn.normalization.eRMSNorm` by default, or
+    :class:`~symm_learning.nn.normalization.eLayerNorm`), mirroring PyTorch's ordering
     (pre- or post-norm) while constraining every linear map to commute with the group action.
 
     The layer defines:
@@ -117,7 +107,7 @@ class eTransformerEncoderLayer(eModule):
         nhead: int,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        activation: str | Callable[[torch.Tensor], torch.Tensor] = F.relu,
+        activation: torch.nn.Module = torch.nn.GELU(),
         layer_norm_eps: float = 1e-5,
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
@@ -137,7 +127,7 @@ class eTransformerEncoderLayer(eModule):
             nhead: Number of attention heads.
             dim_feedforward: Hidden dimension of the feedforward network.
             dropout: Dropout probability.
-            activation: Activation function (``'relu'`` or ``'gelu'``).
+            activation: Activation module. Default: ``torch.nn.GELU()``.
             layer_norm_eps: Epsilon for layer normalization.
             norm_first: If ``True``, apply normalization before attention/feedforward.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
@@ -201,8 +191,7 @@ class eTransformerEncoderLayer(eModule):
 
         self.norm_first = norm_first
 
-        if isinstance(activation, str):
-            activation = _get_activation_fn(activation)
+        assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module got {type(activation)}"
         self.activation = activation
 
         if init_scheme is not None:
@@ -311,16 +300,61 @@ class eTransformerEncoderLayer(eModule):
         self.linear2.reset_parameters(scheme)
         self.norm1.reset_parameters()
         self.norm2.reset_parameters()
-        _reset_attention_module(self.self_attn, scheme=scheme)
+        self.self_attn.reset_parameters(scheme=scheme)
+
+    @torch.no_grad()
+    def check_equivariance(
+        self,
+        batch_size: int = 4,
+        seq_len: int = 5,
+        samples: int = 20,
+        atol: float = 1e-4,
+        rtol: float = 1e-4,
+    ) -> None:
+        """Quick sanity check ensuring both attention blocks and the full layer are equivariant."""
+        G = self.in_rep.group
+        device = next(self.parameters()).device
+
+        def act(rep: Representation, g, tensor: torch.Tensor) -> torch.Tensor:
+            mat = torch.tensor(rep(g), dtype=tensor.dtype, device=device)
+            return torch.einsum("ij,...j->...i", mat, tensor)
+
+        for _ in range(samples):
+            g = G.sample()
+            src = torch.randn(batch_size, seq_len, self.in_rep.size, device=device)
+            g_src = act(self.in_rep, g, src)
+
+            sa = self._self_attention_block(src)
+            g_sa = act(self.in_rep, g, sa)
+            g_sa_exp = self._self_attention_block(g_src)
+            assert torch.allclose(g_sa, g_sa_exp, atol=atol, rtol=rtol), (
+                f"Self-attention equivariance failed max error: {torch.max(g_sa - g_sa_exp).item():.3e}"
+            )
+
+            ff = self._feed_forward_block(sa)
+            g_ff = act(self.in_rep, g, ff)
+            g_ff_exp = self._feed_forward_block(g_sa_exp)
+            assert torch.allclose(g_ff, g_ff_exp, atol=atol, rtol=rtol), (
+                f"Feed-forward equivariance failed max error: {torch.max(g_ff - g_ff_exp).item():.3e}"
+            )
+
+            out = self(src)
+            g_out = act(self.in_rep, g, out)
+            g_out_exp = self(g_src)
+            assert torch.allclose(g_out, g_out_exp, atol=atol, rtol=rtol), (
+                f"Layer equivariance failed max error: {torch.max(g_out - g_out_exp).item():.3e}"
+            )
 
 
 class eTransformerDecoderLayer(eModule):
     r"""Equivariant Transformer decoder layer mirroring :class:`torch.nn.TransformerDecoderLayer`.
 
-    Combines an equivariant self-attention block, an equivariant cross-attention block,
-    and the same :class:`~symm_learning.nn.linear.eLinear`/
-    :class:`~symm_learning.nn.normalization.eLayerNorm` feed-forward structure used by the encoder so every
-    submodule commutes with the group action while keeping PyTorch’s runtime logic intact.
+    Combines an equivariant self-attention block (plain :class:`~symm_learning.nn.activation.eMultiheadAttention`
+    or any :class:`~symm_learning.nn.activation.PositionalAttentionBase` backend selected via ``pos_encoding``),
+    an equivariant cross-attention block, and the same :class:`~symm_learning.nn.linear.eLinear`/equivariant
+    normalization (:class:`~symm_learning.nn.normalization.eRMSNorm` or
+    :class:`~symm_learning.nn.normalization.eLayerNorm`) feed-forward structure used by the encoder so every
+    submodule commutes with the group action while keeping PyTorch's runtime logic intact.
 
     The layer defines:
 
@@ -344,7 +378,7 @@ class eTransformerDecoderLayer(eModule):
         nhead: int,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        activation: str | Callable[[torch.Tensor], torch.Tensor] = F.relu,
+        activation: torch.nn.Module = torch.nn.GELU(),
         layer_norm_eps: float = 1e-5,
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
@@ -365,7 +399,7 @@ class eTransformerDecoderLayer(eModule):
             nhead: Number of attention heads.
             dim_feedforward: Hidden dimension of the feedforward network.
             dropout: Dropout probability.
-            activation: Activation function (``'relu'`` or ``'gelu'``).
+            activation: Activation module. Default: ``torch.nn.GELU()``.
             layer_norm_eps: Epsilon for layer normalization.
             norm_first: If ``True``, apply normalization before attention/feedforward.
             norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).
@@ -443,8 +477,7 @@ class eTransformerDecoderLayer(eModule):
         self.dropout2 = torch.nn.Dropout(dropout)
         self.dropout3 = torch.nn.Dropout(dropout)
 
-        if isinstance(activation, str):
-            activation = _get_activation_fn(activation)
+        assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module got {type(activation)}"
         self.activation = activation
 
         if init_scheme is not None:
@@ -643,9 +676,9 @@ class eTransformerDecoderLayer(eModule):
         self.norm1.reset_parameters()
         self.norm2.reset_parameters()
         self.norm3.reset_parameters()
-        _reset_attention_module(self.self_attn, scheme=scheme)
-        if self.multihead_attn is not self.self_attn:
-            _reset_attention_module(self.multihead_attn, scheme=scheme)
+        self.self_attn.reset_parameters(scheme=scheme)
+        if hasattr(self, "multihead_attn") and self.multihead_attn is not self.self_attn:
+            self.multihead_attn.reset_parameters(scheme=scheme)
 
     @torch.no_grad()
     def check_equivariance(
@@ -692,14 +725,6 @@ class eTransformerDecoderLayer(eModule):
             assert torch.allclose(g_out, g_out_exp, atol=atol, rtol=rtol), (
                 f"Transormer decoder equivarinace failed max error: {torch.max(g_ca - g_ca_exp).item():.3e}"
             )
-
-
-def _get_activation_fn(activation: str) -> Callable[[torch.Tensor], torch.Tensor]:
-    if activation == "relu":
-        return F.relu
-    if activation == "gelu":
-        return F.gelu
-    raise RuntimeError(f"activation should be relu/gelu, not {activation}")
 
 
 if __name__ == "__main__":

@@ -144,13 +144,15 @@ def test_time_ecnn(group: Group, mx: int, hidden_channels: list[int], mlp_hidden
 @pytest.mark.parametrize("num_layers", [2])
 @pytest.mark.parametrize("num_cond_layers", [2])
 @pytest.mark.parametrize("num_attention_heads", [0, 4])
-def test_econd_transformer_regressor(
+@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "none"])
+def test_econd_transformer_regressor_equivariance(
     group: Group,
     m: int,
     horizons: tuple[int, int],
     num_layers: int,
     num_cond_layers: int,
     num_attention_heads: int,
+    pos_encoding: str,
 ):
     """Port equivariance checks from eCondTransformerRegressor __main__ into pytest."""
     from symm_learning.models.diffusion.econd_transformer_regressor import eCondTransformerRegressor
@@ -174,6 +176,7 @@ def test_econd_transformer_regressor(
         num_attention_heads=num_attention_heads,
         embedding_dim=embedding_dim,
         num_cond_layers=num_cond_layers,
+        pos_encoding=pos_encoding,
         p_drop_emb=0.1,
         p_drop_attn=0.1,
         causal_attn=False,
@@ -205,7 +208,10 @@ def test_econd_transformer_regressor(
 @pytest.mark.parametrize("m", [2])
 @pytest.mark.parametrize("num_attention_heads", [1, 2])
 @pytest.mark.parametrize("cond_layers", [0, 1])
-def test_econd_transformer_regressor(group: Group, m: int, num_attention_heads: int, cond_layers: int):
+@pytest.mark.parametrize("pos_encoding", ["additive_absolute", "additive_relative", "none"])
+def test_econd_transformer_regressor_train_eval(
+    group: Group, m: int, num_attention_heads: int, cond_layers: int, pos_encoding: str
+):
     """Check fast inference consistency of eCondTransformerRegressor."""
     from symm_learning.models.diffusion.econd_transformer_regressor import eCondTransformerRegressor
 
@@ -232,6 +238,7 @@ def test_econd_transformer_regressor(group: Group, m: int, num_attention_heads: 
         num_attention_heads=num_attention_heads,
         embedding_dim=embedding_dim,
         num_cond_layers=cond_layers,
+        pos_encoding=pos_encoding,
         p_drop_emb=0.0,  # dropout=0 for train/eval consistency
         p_drop_attn=0.0,
         causal_attn=False,

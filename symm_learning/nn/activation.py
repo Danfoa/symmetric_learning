@@ -470,8 +470,8 @@ class eAdditivePosMultiheadAttention(eModule, PositionalAttentionBase):
         init_scheme: str | None = "xavier_normal",
     ) -> None:
         super().__init__()
-        if max_len <= 0:
-            raise ValueError(f"max_len must be positive, got {max_len}")
+        if not isinstance(max_len, int) or max_len <= 0:
+            raise ValueError(f"max_len must be a positive integer, got {max_len}")
 
         self.in_rep, self.out_rep = in_rep, in_rep
         self.embed_dim = in_rep.size
@@ -815,8 +815,8 @@ class eAdditiveRelMultiheadAttention(eModule, PositionalAttentionBase):
         init_scheme: str | None = "xavier_normal",
     ) -> None:
         super().__init__()
-        if max_distance < 0:
-            raise ValueError(f"max_distance must be non-negative, got {max_distance}")
+        if not isinstance(max_distance, int) or max_distance <= 0:
+            raise ValueError(f"max_distance must be a positive integer, got {max_distance}")
 
         self.in_rep, self.out_rep = in_rep, in_rep
         self.embed_dim = in_rep.size

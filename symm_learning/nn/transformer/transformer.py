@@ -10,14 +10,14 @@ import torch.nn.functional as F
 from symm_learning.nn.activation import PositionalAttentionBase
 
 __all__ = [
-    "PosEmbTransformerDecoder",
-    "PosEmbTransformerDecoderLayer",
-    "PosEmbTransformerEncoder",
-    "PosEmbTransformerEncoderLayer",
+    "TransformerDecoder",
+    "TransformerDecoderLayer",
+    "TransformerEncoder",
+    "TransformerEncoderLayer",
 ]
 
 
-class PosEmbTransformerEncoderLayer(torch.nn.Module):
+class TransformerEncoderLayer(torch.nn.Module):
     r"""Transformer encoder layer with optional positional attention.
 
     Given an input sequence :math:`\mathbf{X} \in \mathbb{R}^{B \times T \times D}`, the layer computes:
@@ -40,7 +40,7 @@ class PosEmbTransformerEncoderLayer(torch.nn.Module):
     feed_forward_block:
         Sequential feed-forward network applied after self-attention.
     norm1, norm2:
-        Layer-normalization layers applied around the residual branches.
+        Normalization layers (``RMSNorm`` or ``LayerNorm``) applied around the residual branches.
     norm_first:
         Whether normalization is applied before each residual branch.
     """
@@ -53,7 +53,7 @@ class PosEmbTransformerEncoderLayer(torch.nn.Module):
         self_attn: torch.nn.MultiheadAttention | PositionalAttentionBase,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        activation: str | Callable[[torch.Tensor], torch.Tensor] = F.gelu,
+        activation: torch.nn.Module = torch.nn.GELU(),
         layer_norm_eps: float = 1e-5,
         norm_first: bool = False,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
@@ -79,9 +79,10 @@ class PosEmbTransformerEncoderLayer(torch.nn.Module):
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
         self.self_attn = self_attn
+        assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module got {type(activation)}"
         self.feed_forward_block = torch.nn.Sequential(
             torch.nn.Linear(d_model, dim_feedforward, bias=bias, **factory_kwargs),
-            _get_activation_module(activation),
+            activation,
             torch.nn.Dropout(dropout),
             torch.nn.Linear(dim_feedforward, d_model, bias=bias, **factory_kwargs),
             torch.nn.Dropout(dropout),
@@ -191,7 +192,7 @@ class PosEmbTransformerEncoderLayer(torch.nn.Module):
         return self.attn_dropout(x)
 
 
-class PosEmbTransformerDecoderLayer(torch.nn.Module):
+class TransformerDecoderLayer(torch.nn.Module):
     r"""Transformer decoder layer with optional positional self- and cross-attention.
 
     Given a target sequence :math:`\mathbf{X} \in \mathbb{R}^{B \times T_t \times D}` and a memory sequence
@@ -218,7 +219,7 @@ class PosEmbTransformerDecoderLayer(torch.nn.Module):
     feed_forward_block:
         Sequential feed-forward network applied after cross-attention.
     norm1, norm2, norm3:
-        Layer-normalization layers applied around the residual branches.
+        Normalization layers (``RMSNorm`` or ``LayerNorm``) applied around the residual branches.
     norm_first:
         Whether normalization is applied before each residual branch.
     """
@@ -232,7 +233,7 @@ class PosEmbTransformerDecoderLayer(torch.nn.Module):
         multihead_attn: torch.nn.MultiheadAttention | PositionalAttentionBase,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        activation: str | Callable[[torch.Tensor], torch.Tensor] = F.gelu,
+        activation: torch.nn.Module = torch.nn.GELU(),
         layer_norm_eps: float = 1e-5,
         norm_first: bool = False,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
@@ -262,9 +263,11 @@ class PosEmbTransformerDecoderLayer(torch.nn.Module):
         super().__init__()
         self.self_attn = self_attn
         self.multihead_attn = multihead_attn
+
+        assert isinstance(activation, torch.nn.Module), f"activation must be a torch.nn.Module got {type(activation)}"
         self.feed_forward_block = torch.nn.Sequential(
             torch.nn.Linear(d_model, dim_feedforward, bias=bias, **factory_kwargs),
-            _get_activation_module(activation),
+            activation,
             torch.nn.Dropout(dropout),
             torch.nn.Linear(dim_feedforward, d_model, bias=bias, **factory_kwargs),
             torch.nn.Dropout(dropout),
@@ -429,7 +432,7 @@ class PosEmbTransformerDecoderLayer(torch.nn.Module):
         return self.attn_dropout(x)
 
 
-class PosEmbTransformerEncoder(torch.nn.Module):
+class TransformerEncoder(torch.nn.Module):
     r"""Stack encoder layers and apply an optional final normalization.
 
     Attributes:
@@ -501,7 +504,7 @@ class PosEmbTransformerEncoder(torch.nn.Module):
         )
 
         output = src
-        seq_len = _get_seq_len(src)
+        seq_len = src.shape[-2]
         # A square subsequent mask means the source is being decoded autoregressively.
         is_causal = _detect_is_causal_mask(mask, is_causal, seq_len)
         for mod in self.layers:
@@ -518,7 +521,7 @@ class PosEmbTransformerEncoder(torch.nn.Module):
         return output
 
 
-class PosEmbTransformerDecoder(torch.nn.Module):
+class TransformerDecoder(torch.nn.Module):
     r"""Stack decoder layers and apply an optional final normalization.
 
     Attributes:
@@ -572,7 +575,7 @@ class PosEmbTransformerDecoder(torch.nn.Module):
         - Returns: decoded target with shape ``(B, T_t, D)``.
         """
         output = tgt
-        seq_len = _get_seq_len(tgt)
+        seq_len = tgt.shape[-2]
         # Only the target mask can imply autoregressive decoding.
         tgt_is_causal = _detect_is_causal_mask(tgt_mask, tgt_is_causal, seq_len)
 
@@ -592,37 +595,6 @@ class PosEmbTransformerDecoder(torch.nn.Module):
         if self.norm is not None:
             output = self.norm(output)
         return output
-
-
-def _get_activation_module(activation: str | Callable) -> torch.nn.Module:
-    """Resolve a feed-forward activation to an :class:`torch.nn.Module`."""
-    if isinstance(activation, torch.nn.Module):
-        return activation
-    if callable(activation):
-        return _FunctionalActivation(activation)
-    if activation == "relu":
-        return torch.nn.ReLU()
-    if activation == "gelu":
-        return torch.nn.GELU()
-    raise RuntimeError(f"activation should be relu/gelu, not {activation}")
-
-
-class _FunctionalActivation(torch.nn.Module):
-    """Wrap a tensor activation callable as a module for sequential feed-forward blocks."""
-
-    def __init__(self, activation: Callable[[torch.Tensor], torch.Tensor]) -> None:
-        super().__init__()
-        self.activation = activation
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.activation(x)
-
-
-def _get_seq_len(src: torch.Tensor) -> int | None:
-    """Return the sequence length for dense batch-first tensors."""
-    if src.is_nested or src.ndim != 3:
-        return None
-    return src.shape[1]
 
 
 def _detect_is_causal_mask(
