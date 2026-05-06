@@ -1,0 +1,8 @@
+﻿eModule
+=======
+
+.. currentmodule:: symm_learning.nn
+
+.. autoclass:: eModule
+   :members:
+   :show-inheritance:

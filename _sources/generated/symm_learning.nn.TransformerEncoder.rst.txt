@@ -1,0 +1,8 @@
+﻿TransformerEncoder
+==================
+
+.. currentmodule:: symm_learning.nn
+
+.. autoclass:: TransformerEncoder
+   :members:
+   :show-inheritance:

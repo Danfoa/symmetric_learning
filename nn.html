@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>nn &#8212; Symmetric Learning v0.7.2 Docs [main]</title>
+    <title>nn &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="_static/documentation_options.js?v=6dfdf7c3"></script>
+    <script src="_static/documentation_options.js?v=a674670e"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'nn';</script>
@@ -47,11 +47,11 @@
     <link rel="icon" href="_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="activation" href="nn/activation.html" />
+    <link rel="next" title="module" href="nn/module.html" />
     <link rel="prev" title="isotypic_signal2irreducible_subspaces" href="generated/symm_learning.linalg.isotypic_signal2irreducible_subspaces.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.2" />
+  <meta name="docsearch:version" content="0.7.5" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -125,7 +125,7 @@
     <img src="_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.2 - main</p>
+    <p class="title logo__title">v0.7.5 - main</p>
   
 </a></div>
     
@@ -311,6 +311,7 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="linalg.html">linalg</a></li>
 <li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">nn</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="nn/module.html">module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nn/activation.html">activation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nn/conv.html">conv</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nn/disentangled.html">disentangled</a></li>
@@ -320,6 +321,7 @@
 <li class="toctree-l2"><a class="reference internal" href="nn/normalization.html">normalization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nn/parametrizations.html">parametrizations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nn/running_stats.html">running_stats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nn/transformer.html">transformer</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">models</a></li>
@@ -390,8 +392,19 @@
 <p>A collection of neural network modules that are equivariant to group actions, specifically targeted at processing vector-valued data and time series data.</p>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="nn/module.html">module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.eModule.html">eModule</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="nn/activation.html">activation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.eMultiheadAttention.html">eMultiheadAttention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.AdditivePosMultiheadAttention.html">AdditivePosMultiheadAttention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.AdditiveRelMultiheadAttention.html">AdditiveRelMultiheadAttention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.eAdditivePosMultiheadAttention.html">eAdditivePosMultiheadAttention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.eAdditiveRelMultiheadAttention.html">eAdditiveRelMultiheadAttention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.PositionalAttentionBase.html">PositionalAttentionBase</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.RoPEMultiheadAttention.html">RoPEMultiheadAttention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.activation.RotaryEmbedding.html">RotaryEmbedding</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="nn/conv.html">conv</a><ul>
@@ -434,6 +447,15 @@
 <li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.running_stats.eEMAStats.html">eEMAStats</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="nn/transformer.html">transformer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.eTransformerEncoderLayer.html">eTransformerEncoderLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.eTransformerDecoderLayer.html">eTransformerDecoderLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.TransformerEncoderLayer.html">TransformerEncoderLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.TransformerDecoderLayer.html">TransformerDecoderLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.TransformerEncoder.html">TransformerEncoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/symm_learning.nn.TransformerDecoder.html">TransformerDecoder</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </section>
@@ -458,11 +480,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="nn/activation.html"
+       href="nn/module.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">activation</p>
+        <p class="prev-next-title">module</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

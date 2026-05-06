@@ -1,0 +1,8 @@
+﻿RoPEMultiheadAttention
+======================
+
+.. currentmodule:: symm_learning.nn.activation
+
+.. autoclass:: RoPEMultiheadAttention
+   :members:
+   :show-inheritance:

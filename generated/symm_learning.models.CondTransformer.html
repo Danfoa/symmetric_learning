@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>CondTransformerRegressor &#8212; Symmetric Learning v0.7.2 Docs [main]</title>
+    <title>CondTransformer &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
   
   
   
@@ -39,20 +39,20 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=6dfdf7c3"></script>
+    <script src="../_static/documentation_options.js?v=a674670e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/symm_learning.models.CondTransformerRegressor';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/symm_learning.models.CondTransformer';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="icon" href="../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="stats" href="../stats.html" />
-    <link rel="prev" title="eCondTransformerRegressor" href="symm_learning.models.eCondTransformerRegressor.html" />
+    <link rel="next" title="GenCondRegressor" href="symm_learning.models.GenCondRegressor.html" />
+    <link rel="prev" title="eCondTransformer" href="symm_learning.models.eCondTransformer.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.2" />
+  <meta name="docsearch:version" content="0.7.5" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.2 - main</p>
+    <p class="title logo__title">v0.7.5 - main</p>
   
 </a></div>
     
@@ -322,9 +322,11 @@
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.MLP.html">MLP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eTimeCNNEncoder.html">eTimeCNNEncoder</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.TimeCNNEncoder.html">TimeCNNEncoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eCondTransformer.html">eCondTransformer</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">CondTransformer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.GenCondRegressor.html">GenCondRegressor</a></li>
-<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eCondTransformerRegressor.html">eCondTransformerRegressor</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">CondTransformerRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eConditionalUnet1D.html">eConditionalUnet1D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.ConditionalUnet1D.html">ConditionalUnet1D</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../stats.html">stats</a></li>
@@ -375,7 +377,7 @@
     
     <li class="breadcrumb-item"><a href="../models.html" class="nav-link">models</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">CondTransformerRegressor</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">CondTransformer</span></li>
   </ul>
 </nav>
 </div>
@@ -392,33 +394,68 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="condtransformerregressor">
-<h1>CondTransformerRegressor<a class="headerlink" href="#condtransformerregressor" title="Link to this heading">#</a></h1>
+  <section id="condtransformer">
+<h1>CondTransformer<a class="headerlink" href="#condtransformer" title="Link to this heading">#</a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="symm_learning.models.CondTransformerRegressor">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">CondTransformerRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_attention_heads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">768</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_drop_emb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_drop_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">causal_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cond_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#CondTransformerRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformerRegressor" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="symm_learning.models.GenCondRegressor.html#symm_learning.models.GenCondRegressor" title="symm_learning.models.diffusion.cond_transformer_regressor.GenCondRegressor"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenCondRegressor</span></code></a></p>
-<p>Transformer-based generative conditional regressor.</p>
-<p>The module parameterizes <span class="math notranslate nohighlight">\(\mathbf{f}_{\mathbf{\theta}}(X_k, Z, k)\)</span> with a stack of Transformer blocks.
-The input trajectory
-<span class="math notranslate nohighlight">\(X_k\)</span> is first projected into an embedding space and interpreted as the target (<cite>tgt</cite>) sequence of a standard
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.TransformerDecoder.html#torch.nn.TransformerDecoder" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.TransformerDecoder</span></code></a>. Conditioning information is packed into the decoder <cite>memory</cite> stream:</p>
-<ul class="simple">
-<li><p>The inference-time step <cite>k</cite> is mapped with a sinusoidal embedding and inserted as the first conditioning token.</p></li>
-<li><p>The observed sequence <span class="math notranslate nohighlight">\(Z\)</span> is linearly embedded, receives learned positional encodings, and is appended after
-the step token.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">n_cond_layers</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> the conditioning tokens are processed by a Transformer encoder so that the decoder
-attends to context-aware features; otherwise a lightweight MLP refines the embeddings.</p></li>
-</ul>
-<p>During decoding, self-attention layers refine <span class="math notranslate nohighlight">\(X_k\)</span> internally while cross-attention layers pull information
-from the conditioning memory, enabling the model to fuse optimisation step, observations, and trajectory features at
-every layer.</p>
-<p>The model map is:</p>
+<dt class="sig sig-object py" id="symm_learning.models.CondTransformer">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">CondTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'additive_absolute'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_attention_heads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">768</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_drop_emb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_drop_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">causal_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cond_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_first</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rmsnorm'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pos_encoding_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/control/cond_transformer.html#CondTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="symm_learning.models.GenCondRegressor.html#symm_learning.models.GenCondRegressor" title="symm_learning.models.control.cond_transformer.GenCondRegressor"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenCondRegressor</span></code></a></p>
+<p>Encoder/decoder Transformer with configurable positional attention.</p>
+<p>This module is an encoder/decoder Transformer with <cite>num_cond_layers</cite> conditioning encoder layers and
+<cite>num_layers</cite> decoder layers, following the architecture introduced in <em>Attention Is All You Need</em> by
+Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin (NeurIPS 2017),
+with two task-specific changes:</p>
+<ol class="arabic simple">
+<li><p>the conditioning memory is built from an optimisation/transport-step token together with the conditioning
+sequence, and</p></li>
+<li><p>the attention blocks support several positional encoding schemes.</p></li>
+</ol>
+<p>The conditioning stream is assembled as</p>
 <div class="math notranslate nohighlight">
-\[\mathbf{f}_{\mathbf{\theta}}:
-\mathbb{R}^{d_x \times T_x} \times \mathbb{R}^{d_z \times T_z} \times \mathbb{R}
-\to \mathbb{R}^{d_v \times T_x}.\]</div>
-<p>This is an unconstrained baseline model (no explicit group-equivariance constraint).</p>
+\[[k, \mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}],\]</div>
+<p>where <span class="math notranslate nohighlight">\(k\)</span> is the inference-time optimisation/transport step token and
+<span class="math notranslate nohighlight">\(\mathbf{z}_{-(T_z - 1)}, \ldots, \mathbf{z}_{0}\)</span> are the conditioning tokens ordered from oldest
+to most recent observation. The decoder predicts the target sequence</p>
+<div class="math notranslate nohighlight">
+\[[\mathbf{x}_{0}, \ldots, \mathbf{x}_{T_x - 1}],\]</div>
+<p>ordered from the first action to the last action in the predicted horizon.</p>
+<p>Supported positional encodings are:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">&quot;additive_absolute&quot;</span></code></dt><dd><p>Uses <a class="reference internal" href="symm_learning.nn.activation.AdditivePosMultiheadAttention.html#symm_learning.nn.activation.AdditivePosMultiheadAttention" title="symm_learning.nn.activation.AdditivePosMultiheadAttention"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdditivePosMultiheadAttention</span></code></a>. A learned
+table maps integer positions to additive updates that are added to the
+query and key streams before standard multi-head attention.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">&quot;additive_relative&quot;</span></code></dt><dd><p>Uses <a class="reference internal" href="symm_learning.nn.activation.AdditiveRelMultiheadAttention.html#symm_learning.nn.activation.AdditiveRelMultiheadAttention" title="symm_learning.nn.activation.AdditiveRelMultiheadAttention"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdditiveRelMultiheadAttention</span></code></a>. A learned
+table maps relative token distances to additive score biases, yielding a
+time-translation-equivariant attention rule.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">&quot;rope&quot;</span></code></dt><dd><p>Uses <a class="reference internal" href="symm_learning.nn.activation.RoPEMultiheadAttention.html#symm_learning.nn.activation.RoPEMultiheadAttention" title="symm_learning.nn.activation.RoPEMultiheadAttention"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoPEMultiheadAttention</span></code></a>. Rotary position
+embeddings are applied per-head to the query and key projections, leaving values
+untouched.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code></dt><dd><p>Uses <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html#torch.nn.MultiheadAttention" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiheadAttention</span></code></a> with no explicit positional encoding.</p>
+</dd>
+</dl>
+<p>Temporal assumptions:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(Z\)</span> must already be ordered in time from past to present.</p></li>
+<li><p><span class="math notranslate nohighlight">\(X\)</span> must already be ordered from the first predicted action to the last predicted action.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">&quot;additive_relative&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;rope&quot;</span></code>, the last conditioning token
+<span class="math notranslate nohighlight">\(\mathbf{z}_{0}\)</span> and the first action token <span class="math notranslate nohighlight">\(\mathbf{x}_{0}\)</span> are both placed at time
+index <span class="math notranslate nohighlight">\(0\)</span>, so cross-attention is anchored at the present time.</p></li>
+<li><p>The optimisation-step token <span class="math notranslate nohighlight">\(k\)</span> is prepended to the conditioning memory, but it is not treated as
+part of the observation timeline.</p></li>
+</ul>
+<p>The architecture is implemented as follows:</p>
+<ul class="simple">
+<li><p>The inference-time optimisation step <code class="docutils literal notranslate"><span class="pre">k</span></code> is sinusoidally embedded and prepended as the
+first conditioning token.</p></li>
+<li><p>The observed sequence <span class="math notranslate nohighlight">\(Z\)</span> is linearly embedded and concatenated after the step token.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">num_cond_layers</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> the conditioning tokens pass through a positional-attention
+encoder; otherwise a lightweight MLP refines them.</p></li>
+<li><p>A positional-attention decoder attends from the input trajectory <span class="math notranslate nohighlight">\(X_k\)</span> to the
+conditioning memory.</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -426,7 +463,9 @@ every layer.</p>
 <li><p><strong>out_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Dimensionality of the regressed vector field.</p></li>
 <li><p><strong>cond_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Dimensionality of each conditioning element in <span class="math notranslate nohighlight">\(Z\)</span>.</p></li>
 <li><p><strong>in_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum length of <span class="math notranslate nohighlight">\(X\)</span>.</p></li>
-<li><p><strong>cond_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum length of <span class="math notranslate nohighlight">\(Z\)</span> (excluding the optimization-step token).</p></li>
+<li><p><strong>cond_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Maximum length of <span class="math notranslate nohighlight">\(Z\)</span> (excluding the optimisation-step token).</p></li>
+<li><p><strong>pos_encoding</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Positional encoding strategy: <code class="docutils literal notranslate"><span class="pre">&quot;additive_absolute&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;additive_relative&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;rope&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>.</p></li>
 <li><p><strong>num_layers</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Number of Transformer decoder layers.</p></li>
 <li><p><strong>num_attention_heads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Number of attention heads in Multi-Head Attention blocks.</p></li>
 <li><p><strong>embedding_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Dimensionality of token embeddings.</p></li>
@@ -434,13 +473,15 @@ every layer.</p>
 <li><p><strong>p_drop_attn</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Dropout applied inside attention blocks.</p></li>
 <li><p><strong>causal_attn</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Whether to use causal attention in self-attention and cross-attention layers.</p></li>
 <li><p><strong>num_cond_layers</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Number of encoder layers dedicated to conditioning tokens.</p></li>
+<li><p><strong>norm_first</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Whether to apply normalization before each residual branch.</p></li>
+<li><p><strong>norm_module</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Final and per-layer normalization type: <code class="docutils literal notranslate"><span class="pre">&quot;layernorm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;rmsnorm&quot;</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="symm_learning.models.CondTransformerRegressor.configure_optimizers">
-<span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">betas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0.9,</span> <span class="pre">0.95)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#CondTransformerRegressor.configure_optimizers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformerRegressor.configure_optimizers" title="Link to this definition">#</a></dt>
-<dd><p>Creates optimizer groups separating out parameters to apply weight decay to and those that don’t.</p>
+<dt class="sig sig-object py" id="symm_learning.models.CondTransformer.configure_optimizers">
+<span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">betas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0.9,</span> <span class="pre">0.95)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/control/cond_transformer.html#CondTransformer.configure_optimizers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformer.configure_optimizers" title="Link to this definition">#</a></dt>
+<dd><p>Create optimizer groups separating parameters that receive weight decay from those that don’t.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -453,15 +494,15 @@ every layer.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="symm_learning.models.CondTransformerRegressor.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#CondTransformerRegressor.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformerRegressor.forward" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="symm_learning.models.CondTransformer.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/control/cond_transformer.html#CondTransformer.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformer.forward" title="Link to this definition">#</a></dt>
 <dd><p>Forward pass of the conditional transformer regressor, approximating V_k = f(X_k, Z, k).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>X</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – The input/data sample composed of a trajectory of <cite>T_x</cite> points in a
 <cite>d_x</cite>-dimensional space. Shape: <cite>(B, T_x, d_x)</cite>, where <cite>B</cite> is the batch size.</p></li>
-<li><p><strong>opt_step</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – The optimization timestep(s) <cite>k</cite> at which
+<li><p><strong>opt_step</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – The optimisation timestep(s) <cite>k</cite> at which
 to evaluate the regressor. Can be a single scalar or a tensor of shape <cite>(B,)</cite>.</p></li>
 <li><p><strong>Z</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – The conditioning/observation variable composed of <cite>T_z</cite> points in a
 <cite>d_z</cite>-dimensional space. Shape: <cite>(B, T_z, d_z)</cite>, where <cite>B</cite> is the batch size.</p></li>
@@ -477,13 +518,9 @@ to evaluate the regressor. Can be a single scalar or a tensor of shape <cite>(B,
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="symm_learning.models.CondTransformerRegressor.get_optim_groups">
-<span class="sig-name descname"><span class="pre">get_optim_groups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#CondTransformerRegressor.get_optim_groups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformerRegressor.get_optim_groups" title="Link to this definition">#</a></dt>
-<dd><p>Creates optimizer groups separating out parameters to apply weight decay to and those that don’t.</p>
-<p>This long function is unfortunately doing something very simple and is being very defensive:
-We are separating out all parameters of the model into two buckets: those that will experience
-weight decay for regularization and those that won’t (biases, and layernorm/embedding weights).
-We are then returning the PyTorch optimizer object.</p>
+<dt class="sig sig-object py" id="symm_learning.models.CondTransformer.get_optim_groups">
+<span class="sig-name descname"><span class="pre">get_optim_groups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/control/cond_transformer.html#CondTransformer.get_optim_groups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.CondTransformer.get_optim_groups" title="Link to this definition">#</a></dt>
+<dd><p>Create optimizer groups separating parameters that receive weight decay from those that don’t.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>weight_decay</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p>
@@ -506,20 +543,20 @@ We are then returning the PyTorch optimizer object.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="symm_learning.models.eCondTransformerRegressor.html"
+       href="symm_learning.models.eCondTransformer.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">eCondTransformerRegressor</p>
+        <p class="prev-next-title">eCondTransformer</p>
       </div>
     </a>
     <a class="right-next"
-       href="../stats.html"
+       href="symm_learning.models.GenCondRegressor.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">stats</p>
+        <p class="prev-next-title">GenCondRegressor</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -542,10 +579,10 @@ We are then returning the PyTorch optimizer object.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformerRegressor"><code class="docutils literal notranslate"><span class="pre">CondTransformerRegressor</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformerRegressor.configure_optimizers"><code class="docutils literal notranslate"><span class="pre">configure_optimizers()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformerRegressor.forward"><code class="docutils literal notranslate"><span class="pre">forward()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformerRegressor.get_optim_groups"><code class="docutils literal notranslate"><span class="pre">get_optim_groups()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformer"><code class="docutils literal notranslate"><span class="pre">CondTransformer</span></code></a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformer.configure_optimizers"><code class="docutils literal notranslate"><span class="pre">configure_optimizers()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformer.forward"><code class="docutils literal notranslate"><span class="pre">forward()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#symm_learning.models.CondTransformer.get_optim_groups"><code class="docutils literal notranslate"><span class="pre">get_optim_groups()</span></code></a></li>
 </ul>
 </li>
 </ul>

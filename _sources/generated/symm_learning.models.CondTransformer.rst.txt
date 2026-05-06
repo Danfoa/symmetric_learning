@@ -1,0 +1,8 @@
+﻿CondTransformer
+===============
+
+.. currentmodule:: symm_learning.models
+
+.. autoclass:: CondTransformer
+   :members:
+   :show-inheritance:

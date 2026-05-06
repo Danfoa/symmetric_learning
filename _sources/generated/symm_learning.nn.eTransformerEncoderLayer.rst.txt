@@ -1,0 +1,8 @@
+﻿eTransformerEncoderLayer
+========================
+
+.. currentmodule:: symm_learning.nn
+
+.. autoclass:: eTransformerEncoderLayer
+   :members:
+   :show-inheritance:

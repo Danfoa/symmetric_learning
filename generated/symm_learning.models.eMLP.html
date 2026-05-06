@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>eMLP &#8212; Symmetric Learning v0.7.2 Docs [main]</title>
+    <title>eMLP &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=6dfdf7c3"></script>
+    <script src="../_static/documentation_options.js?v=a674670e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -52,7 +52,7 @@
     <link rel="prev" title="models" href="../models.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.2" />
+  <meta name="docsearch:version" content="0.7.5" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.2 - main</p>
+    <p class="title logo__title">v0.7.5 - main</p>
   
 </a></div>
     
@@ -322,9 +322,11 @@
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.MLP.html">MLP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eTimeCNNEncoder.html">eTimeCNNEncoder</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.TimeCNNEncoder.html">TimeCNNEncoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eCondTransformer.html">eCondTransformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.CondTransformer.html">CondTransformer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.GenCondRegressor.html">GenCondRegressor</a></li>
-<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eCondTransformerRegressor.html">eCondTransformerRegressor</a></li>
-<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.CondTransformerRegressor.html">CondTransformerRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eConditionalUnet1D.html">eConditionalUnet1D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.ConditionalUnet1D.html">ConditionalUnet1D</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../stats.html">stats</a></li>
@@ -397,7 +399,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.models.eMLP">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">eMLP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_rep</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_rep</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_units</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ReLU()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_rep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_scheme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xavier_normal'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/emlp.html#eMLP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.eMLP" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="symm_learning.nn.eModule.html#symm_learning.nn.eModule" title="symm_learning.nn.module.eModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></a></p>
 <p>Equivariant MLP composed of <a class="reference internal" href="symm_learning.nn.linear.eLinear.html#symm_learning.nn.linear.eLinear" title="symm_learning.nn.linear.eLinear"><code class="xref py py-class docutils literal notranslate"><span class="pre">eLinear</span></code></a> layers.</p>
 <p>The network preserves the action of the underlying group on every layer by
 constructing hidden representations from the group regular representation

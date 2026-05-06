@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>EMAStats &#8212; Symmetric Learning v0.7.2 Docs [main]</title>
+    <title>EMAStats &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=6dfdf7c3"></script>
+    <script src="../_static/documentation_options.js?v=a674670e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -52,7 +52,7 @@
     <link rel="prev" title="running_stats" href="../nn/running_stats.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.2" />
+  <meta name="docsearch:version" content="0.7.5" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.2 - main</p>
+    <p class="title logo__title">v0.7.5 - main</p>
   
 </a></div>
     
@@ -316,6 +316,7 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../linalg.html">linalg</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../nn.html">nn</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../nn/module.html">module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../nn/activation.html">activation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../nn/conv.html">conv</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../nn/disentangled.html">disentangled</a></li>
@@ -329,6 +330,7 @@
 <li class="toctree-l3"><a class="reference internal" href="symm_learning.nn.running_stats.eEMAStats.html">eEMAStats</a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/transformer.html">transformer</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../models.html">models</a></li>
@@ -405,7 +407,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.nn.running_stats.EMAStats">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EMAStats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">momentum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center_with_running_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/running_stats.html#EMAStats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.running_stats.EMAStats" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="symm_learning.nn.eModule.html#symm_learning.nn.eModule" title="symm_learning.nn.module.eModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">eModule</span></code></a></p>
 <p>Exponential moving averages of first and second moments.</p>
 <p>Let <span class="math notranslate nohighlight">\(\mathbf{X}:\Omega\to\mathcal{X}\)</span> and <span class="math notranslate nohighlight">\(\mathbf{Y}:\Omega\to\mathcal{Y}\)</span> be two random variables.
 This module tracks exponential moving averages of their batch means

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>GenCondRegressor &#8212; Symmetric Learning v0.7.2 Docs [main]</title>
+    <title>GenCondRegressor &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=6dfdf7c3"></script>
+    <script src="../_static/documentation_options.js?v=a674670e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -48,11 +48,11 @@
     <link rel="icon" href="../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="eCondTransformerRegressor" href="symm_learning.models.eCondTransformerRegressor.html" />
-    <link rel="prev" title="TimeCNNEncoder" href="symm_learning.models.TimeCNNEncoder.html" />
+    <link rel="next" title="eConditionalUnet1D" href="symm_learning.models.eConditionalUnet1D.html" />
+    <link rel="prev" title="CondTransformer" href="symm_learning.models.CondTransformer.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.2" />
+  <meta name="docsearch:version" content="0.7.5" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.2 - main</p>
+    <p class="title logo__title">v0.7.5 - main</p>
   
 </a></div>
     
@@ -322,9 +322,11 @@
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.MLP.html">MLP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eTimeCNNEncoder.html">eTimeCNNEncoder</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.models.TimeCNNEncoder.html">TimeCNNEncoder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eCondTransformer.html">eCondTransformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.CondTransformer.html">CondTransformer</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">GenCondRegressor</a></li>
-<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eCondTransformerRegressor.html">eCondTransformerRegressor</a></li>
-<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.CondTransformerRegressor.html">CondTransformerRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.eConditionalUnet1D.html">eConditionalUnet1D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.models.ConditionalUnet1D.html">ConditionalUnet1D</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../stats.html">stats</a></li>
@@ -396,7 +398,7 @@
 <h1>GenCondRegressor<a class="headerlink" href="#gencondregressor" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.models.GenCondRegressor">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">GenCondRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#GenCondRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.GenCondRegressor" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">GenCondRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/control/cond_transformer.html#GenCondRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.GenCondRegressor" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
 <p>Generative Conditional Regressor module.</p>
 <p>This is an abstract module inteded to be used as the backbone of a conditional flow-matching/diffusion process which
@@ -433,7 +435,7 @@ to the flow-matching velocity vector field.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="symm_learning.models.GenCondRegressor.forward">
-<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/diffusion/cond_transformer_regressor.html#GenCondRegressor.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.GenCondRegressor.forward" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/models/control/cond_transformer.html#GenCondRegressor.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.models.GenCondRegressor.forward" title="Link to this definition">#</a></dt>
 <dd><p>Forward pass of the generative conditional regressor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -470,20 +472,20 @@ evaluate the regressor. Can be a single scalar or a tensor of shape <cite>(B,)</
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="symm_learning.models.TimeCNNEncoder.html"
+       href="symm_learning.models.CondTransformer.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">TimeCNNEncoder</p>
+        <p class="prev-next-title">CondTransformer</p>
       </div>
     </a>
     <a class="right-next"
-       href="symm_learning.models.eCondTransformerRegressor.html"
+       href="symm_learning.models.eConditionalUnet1D.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">eCondTransformerRegressor</p>
+        <p class="prev-next-title">eConditionalUnet1D</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
