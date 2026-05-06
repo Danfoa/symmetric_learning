@@ -1,0 +1,6 @@
+﻿project\_in\_isobasis
+=====================
+
+.. currentmodule:: symm_learning.linalg
+
+.. autofunction:: project_in_isobasis

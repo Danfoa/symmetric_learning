@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.stats &#8212; Symmetric Learning v0.4.7 Docs [devel]</title>
+    <title>symm_learning.stats &#8212; Symmetric Learning v0.7.2 Docs [devel]</title>
   
   
   
@@ -26,42 +26,49 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
-  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=a78bb796"></script>
+    <script src="../../_static/documentation_options.js?v=6dfdf7c3"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/stats';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="icon" href="../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.7" />
+  <meta name="docsearch:version" content="0.7.2" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
   </head>
-  
-  
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
-
+  <body data-default-mode="light">
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -87,7 +94,7 @@
 </div>
 
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
   <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
@@ -115,7 +122,7 @@
     <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.7 - devel</p>
+    <p class="title logo__title">v0.7.2 - devel</p>
   
 </a></div>
     
@@ -367,6 +374,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">equiv_orthogonal_projection</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_cached_rep_matrix</span>
 
 
 <div class="viewcode-block" id="mean">
@@ -428,17 +436,19 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expected x to be a 2D or 3D tensor, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D tensor&quot;</span>
 
-    <span class="k">if</span> <span class="s2">&quot;invariant_orthogonal_projector&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
-        <span class="n">P_inv</span> <span class="o">=</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep_x</span><span class="p">)</span>
-        <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;invariant_orthogonal_projector&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">P_inv</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">P_inv</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;invariant_orthogonal_projector&quot;</span><span class="p">]</span>
-
     <span class="n">x_flat</span> <span class="o">=</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s2">&quot;invariant_orthogonal_projector&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+        <span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;invariant_orthogonal_projector&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep_x</span><span class="p">)</span>
+    <span class="n">P_inv</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span>
+        <span class="n">rep</span><span class="o">=</span><span class="n">rep_x</span><span class="p">,</span>
+        <span class="n">key</span><span class="o">=</span><span class="s2">&quot;invariant_orthogonal_projector&quot;</span><span class="p">,</span>
+        <span class="n">matrix</span><span class="o">=</span><span class="n">rep_x</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;invariant_orthogonal_projector&quot;</span><span class="p">],</span>
+        <span class="n">like</span><span class="o">=</span><span class="n">x_flat</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">mean_empirical</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x_flat</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Mean over batch as sequence length.</span>
     <span class="c1"># Project to the inv-subspace and map back to the original basis</span>
-    <span class="n">mean_result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,j-&gt;i...&quot;</span><span class="p">,</span> <span class="n">P_inv</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">x_flat</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">mean_empirical</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">mean_empirical</span><span class="p">)</span>
+    <span class="n">mean_result</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,j-&gt;i...&quot;</span><span class="p">,</span> <span class="n">P_inv</span><span class="p">,</span> <span class="n">mean_empirical</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">mean_result</span></div>
 
 
@@ -648,8 +658,15 @@
 <span class="sd">        = \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{C}^{\text{raw}}_{yx}).</span>
 
 <span class="sd">    This orthogonal projector is equivalent to the Reynolds/group-average operator:</span>
+<span class="sd">        \mathbf{C}_{yx}</span>
+<span class="sd">        = \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{C}^{\text{raw}}_{yx}).</span>
+
+<span class="sd">    This orthogonal projector is equivalent to the Reynolds/group-average operator:</span>
 
 <span class="sd">    .. math::</span>
+<span class="sd">        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})</span>
+<span class="sd">        = \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}</span>
+<span class="sd">        \rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).</span>
 <span class="sd">        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{A})</span>
 <span class="sd">        = \frac{1}{|\mathbb{G}|}\sum_{g\in\mathbb{G}}</span>
 <span class="sd">        \rho_{\mathcal{Y}}(g)\,\mathbf{A}\,\rho_{\mathcal{X}}(g^{-1}).</span>
@@ -657,16 +674,26 @@
 <span class="sd">    Args:</span>
 <span class="sd">        x (:class:`~torch.Tensor`): Samples of :math:`\mathbf{X}`.</span>
 <span class="sd">        y (:class:`~torch.Tensor`): Samples of :math:`\mathbf{Y}`.</span>
+<span class="sd">        x (:class:`~torch.Tensor`): Samples of :math:`\mathbf{X}`.</span>
+<span class="sd">        y (:class:`~torch.Tensor`): Samples of :math:`\mathbf{Y}`.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}`.</span>
 <span class="sd">        rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}`.</span>
+<span class="sd">        uncentered (:class:`bool`): If ``False`` (default), subtract invariant means before covariance</span>
+<span class="sd">            computation. If ``True``, compute the uncentered second moment and project it.</span>
 <span class="sd">        uncentered (:class:`bool`): If ``False`` (default), subtract invariant means before covariance</span>
 <span class="sd">            computation. If ``True``, compute the uncentered second moment and project it.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        :class:`~torch.Tensor`: Projected cross-covariance :math:`\mathbf{C}_{yx}` with shape</span>
 <span class="sd">        :math:`(D_y, D_x)`.</span>
+<span class="sd">        :class:`~torch.Tensor`: Projected cross-covariance :math:`\mathbf{C}_{yx}` with shape</span>
+<span class="sd">        :math:`(D_y, D_x)`.</span>
 
 <span class="sd">    Shape:</span>
+<span class="sd">        - **x**: :math:`(N, D_x)`. With `N` denoting the number of samples and `D_x` the dimension of the</span>
+<span class="sd">            representation space of `x`.</span>
+<span class="sd">        - **y**: :math:`(N, D_y)`. With `D_y` the dimension of the representation space of `y`.</span>
+<span class="sd">        - **Output**: :math:`(D_y, D_x)`.</span>
 <span class="sd">        - **x**: :math:`(N, D_x)`. With `N` denoting the number of samples and `D_x` the dimension of the</span>
 <span class="sd">            representation space of `x`.</span>
 <span class="sd">        - **y**: :math:`(N, D_y)`. With `D_y` the dimension of the representation space of `y`.</span>
@@ -679,14 +706,16 @@
 
     <span class="k">if</span> <span class="n">uncentered</span><span class="p">:</span>
         <span class="n">x_eff</span><span class="p">,</span> <span class="n">y_eff</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+        <span class="n">num_samples</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">mu_x</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">)</span>
         <span class="n">mu_y</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">)</span>
         <span class="n">x_eff</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">mu_x</span>
         <span class="n">y_eff</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">mu_y</span>
+        <span class="n">num_samples</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
 
     <span class="c1"># Empirical cross-covariance (centered or uncentered) in original coordinates: [D_y, D_x]</span>
-    <span class="n">Cxy_raw</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...y,...x-&gt;yx&quot;</span><span class="p">,</span> <span class="n">y_eff</span><span class="p">,</span> <span class="n">x_eff</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_eff</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">Cxy_raw</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...y,...x-&gt;yx&quot;</span><span class="p">,</span> <span class="n">y_eff</span><span class="p">,</span> <span class="n">x_eff</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_samples</span>
     <span class="c1"># Orthogonal projection to Hom_G(rep_x, rep_y), preserving shape [D_y, D_x].</span>
     <span class="n">Cxy_proj</span> <span class="o">=</span> <span class="n">equiv_orthogonal_projection</span><span class="p">(</span><span class="n">W</span><span class="o">=</span><span class="n">Cxy_raw</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="n">rep_x</span><span class="p">,</span> <span class="n">rep_y</span><span class="o">=</span><span class="n">rep_y</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Cxy_proj</span></div>
@@ -720,8 +749,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -755,7 +784,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.linalg &#8212; Symmetric Learning v0.4.7 Docs [devel]</title>
+    <title>symm_learning.linalg &#8212; Symmetric Learning v0.7.2 Docs [devel]</title>
   
   
   
@@ -26,42 +26,49 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
-  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=a78bb796"></script>
+    <script src="../../_static/documentation_options.js?v=6dfdf7c3"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/linalg';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="icon" href="../../_static/logo_v1_without_text.svg"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.4.7" />
+  <meta name="docsearch:version" content="0.7.2" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
   </head>
-  
-  
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
-
+  <body data-default-mode="light">
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -87,7 +94,7 @@
 </div>
 
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
   <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
@@ -115,7 +122,7 @@
     <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.4.7 - devel</p>
+    <p class="title logo__title">v0.7.2 - devel</p>
   
 </a></div>
     
@@ -354,6 +361,10 @@
 <span class="sd">    Least squares solution constrained to equivariant linear maps.</span>
 <span class="sd">invariant_orthogonal_projector</span>
 <span class="sd">    Orthogonal projection onto the G-invariant subspace.</span>
+<span class="sd">equiv_orthogonal_projection_coefficients</span>
+<span class="sd">    Orthogonal projection onto Hom_G returned in the flattened homomorphism basis.</span>
+<span class="sd">equiv_linear_map</span>
+<span class="sd">    Construct a dense equivariant linear map from flattened homomorphism-basis coefficients.</span>
 <span class="sd">equiv_orthogonal_projection</span>
 <span class="sd">    Orthogonal projection onto Hom_G using precomputed isotypic-basis tensors.</span>
 <span class="sd">irrep_radii</span>
@@ -364,25 +375,65 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">TypedDict</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">Representation</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_cached_rep_matrix</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_cached_rep_matrix</span><span class="p">(</span>
-    <span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
-    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-    <span class="n">like</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a representation matrix cache updated to the latest ``like`` dtype/device.&quot;&quot;&quot;</span>
-    <span class="n">cached</span> <span class="o">=</span> <span class="n">rep</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">cached</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">cached</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">like</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">like</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">cached</span><span class="o">.</span><span class="n">device</span> <span class="o">!=</span> <span class="n">like</span><span class="o">.</span><span class="n">device</span> <span class="ow">or</span> <span class="n">cached</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">like</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
-        <span class="n">cached</span> <span class="o">=</span> <span class="n">cached</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">like</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">like</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="n">rep</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">cached</span>
-    <span class="k">return</span> <span class="n">cached</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">IsoSpaceProjection</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-irrep projection metadata returned by :func:`project_in_isobasis`.&quot;&quot;&quot;</span>
+
+    <span class="n">coeff</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">endo_basis_flat</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">m_out</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">m_in</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">d_k</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">out_slice</span><span class="p">:</span> <span class="nb">slice</span>
+    <span class="n">in_slice</span><span class="p">:</span> <span class="nb">slice</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">IsotypicTensorCache</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reusable tensors for repeated isotypic-basis projection and synthesis calls.&quot;&quot;&quot;</span>
+
+    <span class="n">Q_out</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">Q_in_inv</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">endo_basis_flat</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+    <span class="n">endo_norm_sq</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_tensor_cache</span><span class="p">(</span>
+    <span class="n">tensor_cache</span><span class="p">:</span> <span class="n">IsotypicTensorCache</span><span class="p">,</span>
+    <span class="n">rep_X_iso</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">rep_Y_iso</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">require_endo_norm_sq</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">Q_out</span> <span class="o">=</span> <span class="n">tensor_cache</span><span class="o">.</span><span class="n">Q_out</span>
+    <span class="n">Q_in_inv</span> <span class="o">=</span> <span class="n">tensor_cache</span><span class="o">.</span><span class="n">Q_in_inv</span>
+    <span class="n">endo_basis_flat_cache</span> <span class="o">=</span> <span class="n">tensor_cache</span><span class="o">.</span><span class="n">endo_basis_flat</span>
+    <span class="n">endo_norm_sq_cache</span> <span class="o">=</span> <span class="n">tensor_cache</span><span class="o">.</span><span class="n">endo_norm_sq</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Q_out</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Q_in_inv</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;tensor_cache.Q_out and tensor_cache.Q_in_inv must be torch.Tensor instances&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">Q_out</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected tensor_cache.Q_out shape </span><span class="si">{</span><span class="p">(</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">Q_out</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">Q_in_inv</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Expected tensor_cache.Q_in_inv shape </span><span class="si">{</span><span class="p">(</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">Q_in_inv</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">endo_basis_flat_cache</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;tensor_cache.endo_basis_flat must be a mapping keyed by irrep id&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">require_endo_norm_sq</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">endo_norm_sq_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tensor_cache.endo_norm_sq is required for this operation&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">endo_norm_sq_cache</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;tensor_cache.endo_norm_sq must be a mapping keyed by irrep id&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Q_out</span><span class="p">,</span> <span class="n">Q_in_inv</span><span class="p">,</span> <span class="n">endo_basis_flat_cache</span><span class="p">,</span> <span class="n">endo_norm_sq_cache</span>
 
 
 <div class="viewcode-block" id="isotypic_signal2irreducible_subspaces">
@@ -393,24 +444,24 @@
 <span class="sd">    This function assumes :math:`\mathcal{X}` is a single isotypic subspace of type :math:`k`, i.e.</span>
 
 <span class="sd">    .. math::</span>
-<span class="sd">        \rho_{\mathcal{X}} = \bigoplus_{i\in[1,n_k]} \hat{\rho}_k.</span>
+<span class="sd">        \rho_{\mathcal{X}} = \bigoplus_{i\in[1,m_k]} \hat{\rho}_k.</span>
 
-<span class="sd">    For an input :math:`\mathbf{x}` of shape :math:`(n, n_k \cdot d_k)`, where :math:`d_k=\dim(\hat{\rho}_k)`, the</span>
-<span class="sd">    output rearranges coordinates to shape :math:`(n \cdot d_k, n_k)` so each column stores one irrep copy across the</span>
+<span class="sd">    For an input :math:`\mathbf{x}` of shape :math:`(n, m_k \cdot d_k)`, where :math:`d_k=\dim(\hat{\rho}_k)`, the</span>
+<span class="sd">    output rearranges coordinates to shape :math:`(n \cdot d_k, m_k)` so each column stores one irrep copy across the</span>
 <span class="sd">    sample axis.</span>
 
 <span class="sd">    .. math::</span>
 <span class="sd">        \mathbf{z}[:, i] = [x_{1,i,1}, \ldots, x_{1,i,d_k}, x_{2,i,1}, \ldots, x_{n,i,d_k}]^\top.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x (:class:`~torch.Tensor`): Shape :math:`(n, n_k \cdot d_k)`.</span>
+<span class="sd">        x (:class:`~torch.Tensor`): Shape :math:`(n, m_k \cdot d_k)`.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`): Representation in isotypic basis with a single active irrep type.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        :class:`~torch.Tensor`: Flattened irreducible-subspace signal of shape :math:`(n \cdot d_k, n_k)`.</span>
+<span class="sd">        :class:`~torch.Tensor`: Flattened irreducible-subspace signal of shape :math:`(n \cdot d_k, m_k)`.</span>
 
 <span class="sd">    Shape:</span>
-<span class="sd">        :math:`(n \cdot d_k, n_k)`.</span>
+<span class="sd">        :math:`(n \cdot d_k, m_k)`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">rep_x</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Random variable is assumed to be in a single isotypic subspace.&quot;</span>
     <span class="n">irrep_id</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">irreps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -435,7 +486,7 @@
 <span class="sd">    .. math::</span>
 <span class="sd">        \rho_{\mathcal{X}} = \mathbf{Q}\left(</span>
 <span class="sd">        \bigoplus_{k\in[1,n_{\text{iso}}]}</span>
-<span class="sd">        \bigoplus_{i\in[1,n_k]}</span>
+<span class="sd">        \bigoplus_{i\in[1,m_k]}</span>
 <span class="sd">        \hat{\rho}_k</span>
 <span class="sd">        \right)\mathbf{Q}^T.</span>
 
@@ -595,11 +646,11 @@
 <span class="sd">    .. math::</span>
 <span class="sd">        \rho_{\mathcal{X}} = \mathbf{Q}\left(</span>
 <span class="sd">        \bigoplus_{k\in[1,n_{\text{iso}}]}</span>
-<span class="sd">        \bigoplus_{i\in[1,n_k]}</span>
+<span class="sd">        \bigoplus_{i\in[1,m_k]}</span>
 <span class="sd">        \hat{\rho}_k</span>
 <span class="sd">        \right)\mathbf{Q}^T</span>
 
-<span class="sd">    where :math:`\hat{\rho}_k` are irreducible representations of :math:`\mathbb{G}`, :math:`n_k` is the multiplicity</span>
+<span class="sd">    where :math:`\hat{\rho}_k` are irreducible representations of :math:`\mathbb{G}`, :math:`m_k` is the multiplicity</span>
 <span class="sd">    of type :math:`k`, and :math:`\mathbf{Q}: \mathcal{X}\to\mathcal{X}` is the orthogonal change of basis from the</span>
 <span class="sd">    irrep-spectral basis to the original basis.</span>
 
@@ -662,22 +713,27 @@
 
 <div class="viewcode-block" id="equiv_orthogonal_projection">
 <a class="viewcode-back" href="../../generated/symm_learning.linalg.equiv_orthogonal_projection.html#symm_learning.linalg.equiv_orthogonal_projection">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">equiv_orthogonal_projection</span><span class="p">(</span><span class="n">W</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">equiv_orthogonal_projection</span><span class="p">(</span>
+    <span class="n">W</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">tensor_cache</span><span class="p">:</span> <span class="n">IsotypicTensorCache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Orthogonally project a linear map onto :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`.</span>
 
-<span class="sd">    Let :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}` be two group representations of the</span>
-<span class="sd">    group :math:`\mathbb{G}`, acting on vector spaces :math:`\mathcal{X}` and :math:`\mathcal{Y}` respectively.</span>
-<span class="sd">    Given any linear map between the spaces :math:`\mathbf{W}: \mathbb{R}^{|\mathcal{X}|\times|\mathcal{Y}|}`,</span>
-<span class="sd">    this function returns the orthogonal projection of :math:`\mathbf{W}` onto the space of</span>
-<span class="sd">    :math:`\mathbb{G}`-equivariant linear maps between :math:`\mathcal{X}` and :math:`\mathcal{Y}`, that is onto</span>
-<span class="sd">    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`:</span>
+<span class="sd">    Let :math:`(\mathcal{X}, \rho_{\mathcal{X}})` and :math:`(\mathcal{Y}, \rho_{\mathcal{Y}})` be two</span>
+<span class="sd">    :math:`\mathbb{G}`-symmetric vector spaces. Given any dense linear map</span>
+<span class="sd">    :math:`\mathbf{W}\in\mathbb{R}^{\dim(\mathcal{Y})\times\dim(\mathcal{X})}`, this function returns its</span>
+<span class="sd">    Frobenius-orthogonal projection onto</span>
+<span class="sd">    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`:</span>
 
 <span class="sd">    .. math::</span>
 <span class="sd">        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})</span>
 <span class="sd">        = \operatorname*{argmin}_{\mathbf{A}\in\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})}</span>
 <span class="sd">        \|\mathbf{W}-\mathbf{A}\|_F.</span>
 
-<span class="sd">    Implementation uses the isotypic decomposition and projects each common-irrep block independently:</span>
+<span class="sd">    The computation uses the isotypic decomposition of both representations and projects each shared-irrep block</span>
+<span class="sd">    independently.</span>
 
 <span class="sd">    This projection is equivalent to the Reynolds/group-average operator, but more computational and memory</span>
 <span class="sd">    efficient when the order of the group is large.</span>
@@ -692,6 +748,8 @@
 <span class="sd">            :math:`(..., D_y, D_x)`.</span>
 <span class="sd">        rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.</span>
 <span class="sd">        rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.</span>
+<span class="sd">        tensor_cache (:class:`IsotypicTensorCache`, optional): Optional override containing the tensor cache</span>
+<span class="sd">            required by :func:`project_in_isobasis`. When provided, all required tensors must be present.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        :class:`~torch.Tensor`: Projected map(s) with same shape, dtype, and device as ``W``.</span>
@@ -700,74 +758,21 @@
 <span class="sd">        - **W**: :math:`(..., D_y, D_x)`.</span>
 <span class="sd">        - **Output**: :math:`(..., D_y, D_x)`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">isotypic_decomp_rep</span>
-
-    <span class="k">if</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">group</span> <span class="o">!=</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">group</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected same group, got </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">!=</span> <span class="p">(</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected W shape (..., </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="n">rep_X_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_x</span><span class="p">)</span>
-    <span class="n">rep_Y_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_y</span><span class="p">)</span>
-    <span class="n">iso_idx_X</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
-    <span class="n">iso_idx_Y</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
-    <span class="n">common_irreps</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">irreps</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">irreps</span><span class="p">)))</span>
-
-    <span class="c1"># Reuse representation-level cached change-of-basis matrices while matching W dtype/device.</span>
-    <span class="c1"># Shapes:</span>
-    <span class="c1">#   Q_out:    [d_out, d_out]  (isotypic -&gt; original basis for output)</span>
-    <span class="c1">#   Q_in_inv: [d_in,  d_in ]  (original -&gt; isotypic basis for input)</span>
-    <span class="n">Q_out</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">W</span><span class="p">)</span>
-    <span class="n">Q_in_inv</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q_inv&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">W</span><span class="p">)</span>
-    <span class="n">Q_out_inv</span> <span class="o">=</span> <span class="n">Q_out</span><span class="o">.</span><span class="n">mT</span>
-    <span class="n">Q_in</span> <span class="o">=</span> <span class="n">Q_in_inv</span><span class="o">.</span><span class="n">mT</span>
-
-    <span class="c1"># Move dense map to isotypic coordinates:</span>
-    <span class="c1">#   W_iso_in = Q_out^{-1} W Q_in</span>
-    <span class="c1"># Shape stays [..., d_out, d_in].</span>
-    <span class="n">W_iso_in</span> <span class="o">=</span> <span class="p">(</span><span class="n">Q_out_inv</span> <span class="o">@</span> <span class="n">W</span><span class="p">)</span> <span class="o">@</span> <span class="n">Q_in</span>
-    <span class="n">W_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">W_iso_in</span><span class="p">)</span>
-    <span class="n">leading_shape</span> <span class="o">=</span> <span class="n">W_iso_in</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">Q_out</span><span class="p">,</span> <span class="n">Q_in_inv</span><span class="p">,</span> <span class="n">projection_iso_spaces</span> <span class="o">=</span> <span class="n">project_in_isobasis</span><span class="p">(</span>
+        <span class="n">W</span><span class="o">=</span><span class="n">W</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="n">rep_x</span><span class="p">,</span> <span class="n">rep_y</span><span class="o">=</span><span class="n">rep_y</span><span class="p">,</span> <span class="n">tensor_cache</span><span class="o">=</span><span class="n">tensor_cache</span>
+    <span class="p">)</span>
+    <span class="n">leading_shape</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
     <span class="n">batch_axes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leading_shape</span><span class="p">)))</span>
+    <span class="n">W_iso</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">new_zeros</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
 
-    <span class="k">for</span> <span class="n">irrep_id</span> <span class="ow">in</span> <span class="n">common_irreps</span><span class="p">:</span>
-        <span class="n">out_slice</span> <span class="o">=</span> <span class="n">iso_idx_Y</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
-        <span class="n">in_slice</span> <span class="o">=</span> <span class="n">iso_idx_X</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
-        <span class="n">m_out</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
-        <span class="n">m_in</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
-        <span class="n">irrep</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span>
-        <span class="n">d_k</span> <span class="o">=</span> <span class="n">irrep</span><span class="o">.</span><span class="n">size</span>
-        <span class="n">cache</span> <span class="o">=</span> <span class="n">irrep</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;_endo_basis_flat_cache&quot;</span><span class="p">,</span> <span class="p">{})</span>
-        <span class="c1"># Cache key by device+dtype because endomorphism basis tensors are reused across calls.</span>
-        <span class="n">cache_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">W</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">W</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">endo_basis</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">irrep</span><span class="o">.</span><span class="n">endomorphism_basis</span><span class="p">(),</span> <span class="n">device</span><span class="o">=</span><span class="n">W</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">W</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
-            <span class="n">endo_basis_flat</span> <span class="o">=</span> <span class="n">endo_basis</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">endo_basis</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [S_k, d_k*d_k]</span>
-            <span class="n">endo_norm_sq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;sd,sd-&gt;s&quot;</span><span class="p">,</span> <span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_basis_flat</span><span class="p">)</span>  <span class="c1"># [S_k]</span>
-            <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_norm_sq</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_norm_sq</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
-
-        <span class="n">block</span> <span class="o">=</span> <span class="n">W_iso_in</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">out_slice</span><span class="p">,</span> <span class="n">in_slice</span><span class="p">]</span>
-        <span class="c1"># Track block structure inside one common irrep type k:</span>
-        <span class="c1">#   [..., m_out*d_k, m_in*d_k]</span>
-        <span class="c1"># -&gt; [..., m_out, d_k, m_in, d_k]</span>
-        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span><span class="p">,</span> <span class="n">d_k</span><span class="p">,</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span><span class="p">)</span>
-        <span class="c1"># Reorder to explicit pair-of-copies layout:</span>
-        <span class="c1">#   [..., m_out, m_in, d_k, d_k]</span>
-        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="o">*</span><span class="n">batch_axes</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="c1"># Flatten each d_k x d_k sub-block so we can project with matrix products:</span>
-        <span class="c1">#   [..., m_out*m_in, d_k*d_k]</span>
-        <span class="n">block_flat</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span> <span class="o">*</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">)</span>
-
-        <span class="c1"># Frobenius projection coefficients on End_G(irrep_k) basis:</span>
-        <span class="c1">#   coeff[..., p, s] = &lt;block_flat[..., p, :], basis[s, :]&gt; / ||basis[s, :]||^2</span>
-        <span class="c1"># Shapes:</span>
-        <span class="c1">#   coeff: [..., m_out*m_in, S_k]</span>
-        <span class="n">coeff</span> <span class="o">=</span> <span class="n">block_flat</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">mT</span><span class="p">)</span>
-        <span class="n">coeff</span> <span class="o">=</span> <span class="n">coeff</span> <span class="o">/</span> <span class="n">endo_norm_sq</span>
-        <span class="c1"># Reconstruct projected flattened blocks:</span>
-        <span class="c1">#   [..., m_out*m_in, d_k*d_k]</span>
+    <span class="k">for</span> <span class="n">iso_space</span> <span class="ow">in</span> <span class="n">projection_iso_spaces</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;coeff&quot;</span><span class="p">]</span>
+        <span class="n">endo_basis_flat</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;endo_basis_flat&quot;</span><span class="p">]</span>
+        <span class="n">m_out</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;m_out&quot;</span><span class="p">]</span>
+        <span class="n">m_in</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;m_in&quot;</span><span class="p">]</span>
+        <span class="n">d_k</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;d_k&quot;</span><span class="p">]</span>
+        <span class="n">out_slice</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;out_slice&quot;</span><span class="p">]</span>
+        <span class="n">in_slice</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;in_slice&quot;</span><span class="p">]</span>
         <span class="n">block_proj_flat</span> <span class="o">=</span> <span class="n">coeff</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">)</span>
 
         <span class="c1"># Undo flattening and permutation to recover block matrix in isotypic coordinates:</span>
@@ -783,28 +788,384 @@
 
 
 
+<div class="viewcode-block" id="equiv_orthogonal_projection_coefficients">
+<a class="viewcode-back" href="../../generated/symm_learning.linalg.equiv_orthogonal_projection_coefficients.html#symm_learning.linalg.equiv_orthogonal_projection_coefficients">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">equiv_orthogonal_projection_coefficients</span><span class="p">(</span>
+    <span class="n">W</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">tensor_cache</span><span class="p">:</span> <span class="n">IsotypicTensorCache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return the flattened homomorphism-basis coefficients of :math:`\Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})`.</span>
+
+<span class="sd">    Let :math:`\mathbf{W}\in\mathbb{R}^{D_y\times D_x}` be any dense linear map between</span>
+<span class="sd">    :math:`(\mathcal{X}, \rho_{\mathcal{X}})` and :math:`(\mathcal{Y}, \rho_{\mathcal{Y}})`. This function computes</span>
+<span class="sd">    the orthogonal projection</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})</span>
+<span class="sd">        \in \mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})</span>
+
+<span class="sd">    and returns its coefficients in the blockwise isotypic basis described in</span>
+<span class="sd">    :ref:`Leveraging the structure of Equivariant Linear maps &lt;equivariant-linear-maps-example&gt;`.</span>
+
+<span class="sd">    In isotypic coordinates, the projected operator decomposes as</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \Pi_{\mathrm{Hom}_{\mathbb{G}}}(\mathbf{W})</span>
+<span class="sd">        = \mathbf{Q}_{\mathcal{Y}}</span>
+<span class="sd">        \left(</span>
+<span class="sd">        \bigoplus_{k\in[1,n_{\text{iso}}]} \mathbf{W}^{(k)}</span>
+<span class="sd">        \right)</span>
+<span class="sd">        \mathbf{Q}_{\mathcal{X}}^T.</span>
+
+<span class="sd">    For each common irrep type :math:`k`, the corresponding block is written as</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbf{W}^{(k)}</span>
+<span class="sd">        = \sum_{s=1}^{S_k}\mathbf{\Theta}^{(k)}_s \otimes \mathbf{\Psi}^{(k)}_s,</span>
+
+<span class="sd">    where :math:`\mathbf{\Theta}^{(k)}_s \in \mathbb{R}^{m_k^{\mathcal{Y}} \times m_k^{\mathcal{X}}}`, and</span>
+<span class="sd">    :math:`\{\mathbf{\Psi}^{(k)}_s\}_{s=1}^{S_k}` is a basis of</span>
+<span class="sd">    :math:`\mathrm{End}_{\mathbb{G}}(\hat{\rho}_k)`. The output concatenates all coefficient blocks after flattening</span>
+<span class="sd">    each tensor of shape :math:`(m_k^{\mathcal{Y}} m_k^{\mathcal{X}}, S_k)`, with the endomorphism-basis index</span>
+<span class="sd">    varying fastest.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        W (:class:`~torch.Tensor`): Dense map (or batch of maps) of shape</span>
+<span class="sd">            :math:`(..., D_y, D_x)`.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.</span>
+<span class="sd">        rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.</span>
+<span class="sd">        tensor_cache (:class:`IsotypicTensorCache`, optional): Optional override containing the tensor cache</span>
+<span class="sd">            required by :func:`project_in_isobasis`. When provided, all required tensors must be present.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`~torch.Tensor`: Flattened coefficient vector(s) of shape</span>
+<span class="sd">        :math:`(..., \dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})))`.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **W**: :math:`(..., D_y, D_x)`.</span>
+<span class="sd">        - **Output**: :math:`(..., |\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})|)`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">projection_iso_spaces</span> <span class="o">=</span> <span class="n">project_in_isobasis</span><span class="p">(</span><span class="n">W</span><span class="o">=</span><span class="n">W</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="n">rep_x</span><span class="p">,</span> <span class="n">rep_y</span><span class="o">=</span><span class="n">rep_y</span><span class="p">,</span> <span class="n">tensor_cache</span><span class="o">=</span><span class="n">tensor_cache</span><span class="p">)</span>
+    <span class="n">leading_shape</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">projection_iso_spaces</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">W</span><span class="o">.</span><span class="n">new_zeros</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">coeff</span> <span class="o">=</span> <span class="p">[</span><span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;coeff&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">iso_space</span> <span class="ow">in</span> <span class="n">projection_iso_spaces</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">equiv_linear_map</span><span class="p">(</span>
+    <span class="n">w_dof</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">tensor_cache</span><span class="p">:</span> <span class="n">IsotypicTensorCache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Expand flattened homomorphism-basis coefficients into a dense equivariant linear map.</span>
+
+<span class="sd">    Let :math:`\boldsymbol{\theta}` denote flattened coefficients in the blockwise basis of</span>
+<span class="sd">    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})` used by</span>
+<span class="sd">    :func:`equiv_orthogonal_projection_coefficients`. In isotypic coordinates, the resulting equivariant map has the</span>
+<span class="sd">    form</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbf{W}</span>
+<span class="sd">        = \mathbf{Q}_{\mathcal{Y}}</span>
+<span class="sd">        \left(</span>
+<span class="sd">        \bigoplus_{k\in[1,n_{\text{iso}}]} \mathbf{W}^{(k)}</span>
+<span class="sd">        \right)</span>
+<span class="sd">        \mathbf{Q}_{\mathcal{X}}^T.</span>
+
+<span class="sd">    For each common irrep type :math:`k`, the corresponding block is synthesized as</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbf{W}^{(k)}</span>
+<span class="sd">        = \sum_{s=1}^{S_k}\mathbf{\Theta}^{(k)}_s \otimes \mathbf{\Psi}^{(k)}_s,</span>
+
+<span class="sd">    where :math:`\mathbf{\Theta}^{(k)}_s \in \mathbb{R}^{m_k^{\mathcal{Y}} \times m_k^{\mathcal{X}}}` and</span>
+<span class="sd">    :math:`\{\mathbf{\Psi}^{(k)}_s\}_{s=1}^{S_k}` is a basis of</span>
+<span class="sd">    :math:`\mathrm{End}_{\mathbb{G}}(\hat{\rho}_k)`.</span>
+
+<span class="sd">    The flattened input ordering matches :func:`equiv_orthogonal_projection_coefficients`: within each common irrep</span>
+<span class="sd">    type :math:`k`, the endomorphism-basis index :math:`s` varies fastest, then the input multiplicity index, and</span>
+<span class="sd">    finally the output multiplicity index.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        w_dof (:class:`~torch.Tensor`): Flattened homomorphism-basis coefficients of shape</span>
+<span class="sd">            :math:`(..., \dim(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})))`.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): Input representation :math:`\rho_{\mathcal{X}}`.</span>
+<span class="sd">        rep_y (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\mathcal{Y}}`.</span>
+<span class="sd">        tensor_cache (:class:`IsotypicTensorCache`, optional): Optional tensor cache override containing</span>
+<span class="sd">            ``Q_out``, ``Q_in_inv``, and ``endo_basis_flat`` keyed by irrep id. When provided, all required tensors</span>
+<span class="sd">            must be present.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`~torch.Tensor`: Dense equivariant linear map(s) of shape :math:`(..., D_y, D_x)`.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **w_dof**: :math:`(..., |\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})|)`.</span>
+<span class="sd">        - **Output**: :math:`(..., D_y, D_x)`.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        Repeated calls with the same representations reuse cached isotypic decompositions,</span>
+<span class="sd">        change-of-basis matrices, and flattened irrep endomorphism bases.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">w_dof</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected w_dof to have at least one dimension&quot;</span><span class="p">)</span>
+
+    <span class="n">rep_X_iso</span><span class="p">,</span> <span class="n">rep_Y_iso</span><span class="p">,</span> <span class="n">hom_iso_spaces</span><span class="p">,</span> <span class="n">hom_dim</span> <span class="o">=</span> <span class="n">_hom_irrep_iso_spaces</span><span class="p">(</span><span class="n">rep_x</span><span class="o">=</span><span class="n">rep_x</span><span class="p">,</span> <span class="n">rep_y</span><span class="o">=</span><span class="n">rep_y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">w_dof</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">hom_dim</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected w_dof shape (..., </span><span class="si">{</span><span class="n">hom_dim</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">w_dof</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tensor_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Q_out</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">w_dof</span><span class="p">)</span>
+        <span class="n">Q_in_inv</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q_inv&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">w_dof</span><span class="p">)</span>
+        <span class="n">endo_basis_flat_cache</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Q_out</span><span class="p">,</span> <span class="n">Q_in_inv</span><span class="p">,</span> <span class="n">endo_basis_flat_cache</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_validate_tensor_cache</span><span class="p">(</span>
+            <span class="n">tensor_cache</span><span class="o">=</span><span class="n">tensor_cache</span><span class="p">,</span>
+            <span class="n">rep_X_iso</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="p">,</span>
+            <span class="n">rep_Y_iso</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="p">,</span>
+            <span class="n">require_endo_norm_sq</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">leading_shape</span> <span class="o">=</span> <span class="n">w_dof</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">batch_axes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leading_shape</span><span class="p">)))</span>
+    <span class="n">W_iso</span> <span class="o">=</span> <span class="n">w_dof</span><span class="o">.</span><span class="n">new_zeros</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">iso_space</span> <span class="ow">in</span> <span class="n">hom_iso_spaces</span><span class="p">:</span>
+        <span class="n">irrep_id</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;irrep_id&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">tensor_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">irrep</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span>
+            <span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_cached_irrep_endomorphism_basis</span><span class="p">(</span><span class="n">irrep</span><span class="o">=</span><span class="n">irrep</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">w_dof</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">irrep_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">endo_basis_flat_cache</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tensor_cache[&#39;endo_basis_flat&#39;] missing tensor for irrep </span><span class="si">{</span><span class="n">irrep_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">endo_basis_flat</span> <span class="o">=</span> <span class="n">endo_basis_flat_cache</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tensor_cache[&#39;endo_basis_flat&#39;][</span><span class="si">{</span><span class="n">irrep_id</span><span class="si">}</span><span class="s2">] must be a torch.Tensor&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;d_k&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;d_k&quot;</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Expected tensor_cache[&#39;endo_basis_flat&#39;][&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">irrep_id</span><span class="si">}</span><span class="s2">] shape (S_k, </span><span class="si">{</span><span class="n">iso_space</span><span class="p">[</span><span class="s1">&#39;d_k&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">iso_space</span><span class="p">[</span><span class="s1">&#39;d_k&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">), &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="n">m_out</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;m_out&quot;</span><span class="p">]</span>
+        <span class="n">m_in</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;m_in&quot;</span><span class="p">]</span>
+        <span class="n">d_k</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;d_k&quot;</span><span class="p">]</span>
+        <span class="n">out_slice</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;out_slice&quot;</span><span class="p">]</span>
+        <span class="n">in_slice</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;in_slice&quot;</span><span class="p">]</span>
+        <span class="n">hom_basis_slice</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;hom_basis_slice&quot;</span><span class="p">]</span>
+
+        <span class="n">theta_k</span> <span class="o">=</span> <span class="n">w_dof</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">hom_basis_slice</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span> <span class="o">*</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">block_flat</span> <span class="o">=</span> <span class="n">theta_k</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">)</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">block_flat</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span><span class="p">,</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span><span class="p">,</span> <span class="n">d_k</span><span class="p">)</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="o">*</span><span class="n">batch_axes</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">,</span> <span class="n">m_in</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">)</span>
+        <span class="n">W_iso</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">out_slice</span><span class="p">,</span> <span class="n">in_slice</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">Q_out</span> <span class="o">@</span> <span class="n">W_iso</span><span class="p">)</span> <span class="o">@</span> <span class="n">Q_in_inv</span>
+
+
+<div class="viewcode-block" id="project_in_isobasis">
+<a class="viewcode-back" href="../../generated/symm_learning.linalg.project_in_isobasis.html#symm_learning.linalg.project_in_isobasis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">project_in_isobasis</span><span class="p">(</span>
+    <span class="n">W</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">tensor_cache</span><span class="p">:</span> <span class="n">IsotypicTensorCache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">IsoSpaceProjection</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Project W onto :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})` in isotypic coordinates</span>
+
+<span class="sd">    This is an utility function handling the projection of a dense linear map</span>
+<span class="sd">    :math:`\mathbf{W}:\mathcal{X}\to\mathcal{Y}` onto the space of :math:`\mathbb{G}`-equivariant linear maps,</span>
+<span class="sd">    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`. Returning useful intermediate tensors,</span>
+<span class="sd">    for algebraic and statistical computations.</span>
+
+<span class="sd">    Let :math:`\mathbf{Q}_{\mathcal{X}}` and :math:`\mathbf{Q}_{\mathcal{Y}}` be the orthogonal change-of-basis exposing</span>
+<span class="sd">    the isotypic decomposition of the symmetric vector spaces :math:`(\mathcal{X}, \rho_{\mathcal{X}})` and</span>
+<span class="sd">    :math:`(\mathcal{Y}, \rho_{\mathcal{Y}})` (see :ref:`Isotypic Decomposition &lt;isotypic-decomposition-example&gt;`).</span>
+<span class="sd">    In this basis, any</span>
+<span class="sd">    :math:`\mathbb{G}`-equivariant linear map</span>
+<span class="sd">    :math:`\mathbf{A} \in \mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})` decomposes in block</span>
+<span class="sd">    diagonal form as described in</span>
+<span class="sd">    :ref:`Leveraging the structure of Equivariant Linear maps &lt;equivariant-linear-maps-example&gt;`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbf{A}_{\mathrm{iso}}</span>
+<span class="sd">        =</span>
+<span class="sd">        \mathbf{Q}_{\mathcal{Y}}^\top \mathbf{A} \mathbf{Q}_{\mathcal{X}}</span>
+<span class="sd">        =</span>
+<span class="sd">        \bigoplus_{k\in[1,n_{\text{iso}}]} \mathbf{A}^{(k)},</span>
+<span class="sd">        \qquad</span>
+<span class="sd">        \mathbf{A}^{(k)}</span>
+<span class="sd">        = \sum_{s=1}^{S_k}\mathbf{\Theta}^{(k)}_s \otimes \mathbf{\Psi}^{(k)}_s.</span>
+
+<span class="sd">    Where :math:`\{\mathbf{\Psi}^{(k)}_s \in \mathbb{R}^{d_k \times d_k}\}_{s=1}^{S_k}` is a fixed basis of the</span>
+<span class="sd">    endomorphism :math:`\mathrm{End}_{\mathbb{G}}(\hat{\rho}_k)`, and</span>
+<span class="sd">    :math:`\mathbf{\Theta}^{(k)}_s \in \mathbb{R}^{m_k^{\mathcal{Y}} \times m_k^{\mathcal{X}}}` are the free parameters</span>
+<span class="sd">    (or degrees of freedom) of the equivariant map, serving as basis expandion coefficients.</span>
+
+<span class="sd">    Consequently, this function projects the input map :math:`\mathbf{W}` to isotypic coordinates:</span>
+<span class="sd">    :math:`\mathbf{W}_{\mathrm{iso}} = \mathbf{Q}_{\mathcal{Y}}^T \mathbf{W} \mathbf{Q}_{\mathcal{X}}`, and</span>
+<span class="sd">    computes the coefficients :math:`\mathbf{\Theta}^{(k)}` of the projected map in each isotypic block:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \mathbf{\Theta}^{(k)}_{o,i,s}</span>
+<span class="sd">        = \frac{\langle \mathbf{W}^{(k)}_{o,i}, \mathbf{\Psi}^{(k)}_s\rangle_F}</span>
+<span class="sd">        {\lVert \mathbf{\Psi}^{(k)}_s \rVert_F^2},</span>
+<span class="sd">        \qquad \forall \;</span>
+<span class="sd">        k \in [1, n_{\text{iso}}], o \in [1, m_k^{\mathcal{Y}}], i \in [1, m_k^{\mathcal{X}}], s \in [1, S_k].</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        W (:class:`~torch.Tensor`): Dense linear map (or batch of maps) from</span>
+<span class="sd">            :math:`\mathcal{X}` to :math:`\mathcal{Y}` with shape :math:`(..., D_y, D_x)`.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): Input representation</span>
+<span class="sd">            :math:`\rho_{\mathcal{X}}`.</span>
+<span class="sd">        rep_y (:class:`~escnn.group.Representation`): Output representation</span>
+<span class="sd">            :math:`\rho_{\mathcal{Y}}`.</span>
+<span class="sd">        tensor_cache (:class:`IsotypicTensorCache`, optional): Optional tensor cache override containing</span>
+<span class="sd">            ``Q_out``, ``Q_in_inv``, ``endo_basis_flat``, and ``endo_norm_sq`` keyed by irrep id. When provided,</span>
+<span class="sd">            these tensors are reused directly, without copying, and therefore must already have dtype and device</span>
+<span class="sd">            compatible with ``W``. In particular, the function reads ``tensor_cache.Q_out``,</span>
+<span class="sd">            ``tensor_cache.Q_in_inv``, ``tensor_cache.endo_basis_flat[irrep_id]``, and</span>
+<span class="sd">            ``tensor_cache.endo_norm_sq[irrep_id]`` for each shared irrep.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple[torch.Tensor, torch.Tensor, dict[tuple[int, ...], IsoSpaceProjection]]:</span>
+<span class="sd">            Tuple with entries:</span>
+
+<span class="sd">            - ``Q_out``: matrix :math:`\mathbf{Q}_{\mathcal{Y}}`. If ``tensor_cache`` is ``None``, this is a tensor</span>
+<span class="sd">              copy with dtype and device matching ``W``. Otherwise, ``tensor_cache.Q_out`` is returned directly.</span>
+<span class="sd">            - ``Q_in_inv``: matrix :math:`\mathbf{Q}_{\mathcal{X}}^{\top}`. If ``tensor_cache`` is ``None``, this is</span>
+<span class="sd">              a tensor copy with dtype and device matching ``W``. Otherwise, ``tensor_cache.Q_in_inv`` is returned</span>
+<span class="sd">              directly.</span>
+<span class="sd">            - ``projection_iso_spaces``: dictionary keyed by irrep identifier ``irrep_id``. Each</span>
+<span class="sd">              ``projection_iso_spaces[irrep_id]`` is an :class:`IsoSpaceProjection` containing:</span>
+
+<span class="sd">              - ``coeff`` (:class:`~torch.Tensor`): projection coefficients :math:`\mathbf{\Theta}^{(k)}` of shape</span>
+<span class="sd">                :math:`(..., m_k^{\mathcal{Y}} m_k^{\mathcal{X}}, S_k)`.</span>
+<span class="sd">              - ``endo_basis_flat`` (:class:`~torch.Tensor`): stacked flattened endomorphism basis</span>
+<span class="sd">                :math:`\operatorname{flat}(\mathbf{\Psi}^{(k)}) := [\operatorname{flat}(\mathbf{\Psi}^{(k)}_1), \ldots,</span>
+<span class="sd">                \operatorname{flat}(\mathbf{\Psi}^{(k)}_{S_k})]^\top \in \mathbb{R}^{S_k \times d_k^2}`. If</span>
+<span class="sd">                ``tensor_cache`` is provided, this entry is ``tensor_cache.endo_basis_flat[irrep_id]`` returned</span>
+<span class="sd">                directly.</span>
+<span class="sd">              - ``m_out`` (``int``): output multiplicity :math:`m_k^{\mathcal{Y}}`.</span>
+<span class="sd">              - ``m_in`` (``int``): input multiplicity :math:`m_k^{\mathcal{X}}`.</span>
+<span class="sd">              - ``d_k`` (``int``): irrep dimension :math:`d_k = \dim(\hat{\rho}_k)`.</span>
+<span class="sd">              - ``out_slice`` (``slice``): slice locating :math:`\mathbf{W}^{(k)}` inside</span>
+<span class="sd">                :math:`\mathbf{W}_{\mathrm{iso}}`.</span>
+<span class="sd">              - ``in_slice`` (``slice``): slice locating :math:`\mathbf{W}^{(k)}` inside</span>
+<span class="sd">                :math:`\mathbf{W}_{\mathrm{iso}}`.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - **W**: :math:`(..., D_y, D_x)`.</span>
+<span class="sd">        - **Q_out**: :math:`(D_y, D_y)`.</span>
+<span class="sd">        - **Q_in_inv**: :math:`(D_x, D_x)`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">!=</span> <span class="p">(</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected W shape (..., </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">rep_X_iso</span><span class="p">,</span> <span class="n">rep_Y_iso</span><span class="p">,</span> <span class="n">hom_iso_spaces</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_hom_irrep_iso_spaces</span><span class="p">(</span><span class="n">rep_x</span><span class="o">=</span><span class="n">rep_x</span><span class="p">,</span> <span class="n">rep_y</span><span class="o">=</span><span class="n">rep_y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tensor_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Q_out</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">change_of_basis</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">W</span><span class="p">)</span>
+        <span class="n">Q_in_inv</span> <span class="o">=</span> <span class="n">_cached_rep_matrix</span><span class="p">(</span><span class="n">rep</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;Q_inv&quot;</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">change_of_basis_inv</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">W</span><span class="p">)</span>
+        <span class="n">endo_basis_flat_cache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">endo_norm_sq_cache</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Q_out</span><span class="p">,</span> <span class="n">Q_in_inv</span><span class="p">,</span> <span class="n">endo_basis_flat_cache</span><span class="p">,</span> <span class="n">endo_norm_sq_cache</span> <span class="o">=</span> <span class="n">_validate_tensor_cache</span><span class="p">(</span>
+            <span class="n">tensor_cache</span><span class="o">=</span><span class="n">tensor_cache</span><span class="p">,</span>
+            <span class="n">rep_X_iso</span><span class="o">=</span><span class="n">rep_X_iso</span><span class="p">,</span>
+            <span class="n">rep_Y_iso</span><span class="o">=</span><span class="n">rep_Y_iso</span><span class="p">,</span>
+            <span class="n">require_endo_norm_sq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">Q_out_inv</span> <span class="o">=</span> <span class="n">Q_out</span><span class="o">.</span><span class="n">mT</span>
+    <span class="n">Q_in</span> <span class="o">=</span> <span class="n">Q_in_inv</span><span class="o">.</span><span class="n">mT</span>
+
+    <span class="c1"># Move dense map to isotypic coordinates:</span>
+    <span class="c1">#   W_iso = Q_out^{-1} W Q_in</span>
+    <span class="c1"># Shape stays [..., d_out, d_in].</span>
+    <span class="n">W_iso</span> <span class="o">=</span> <span class="p">(</span><span class="n">Q_out_inv</span> <span class="o">@</span> <span class="n">W</span><span class="p">)</span> <span class="o">@</span> <span class="n">Q_in</span>
+    <span class="n">leading_shape</span> <span class="o">=</span> <span class="n">W_iso</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">batch_axes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leading_shape</span><span class="p">)))</span>
+    <span class="n">iso_space_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">iso_space</span> <span class="ow">in</span> <span class="n">hom_iso_spaces</span><span class="p">:</span>
+        <span class="n">irrep_id</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;irrep_id&quot;</span><span class="p">]</span>
+        <span class="n">out_slice</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;out_slice&quot;</span><span class="p">]</span>
+        <span class="n">in_slice</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;in_slice&quot;</span><span class="p">]</span>
+        <span class="n">m_out</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;m_out&quot;</span><span class="p">]</span>
+        <span class="n">m_in</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;m_in&quot;</span><span class="p">]</span>
+        <span class="n">d_k</span> <span class="o">=</span> <span class="n">iso_space</span><span class="p">[</span><span class="s2">&quot;d_k&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">tensor_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">irrep</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span>
+            <span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_norm_sq</span> <span class="o">=</span> <span class="n">_cached_irrep_endomorphism_basis</span><span class="p">(</span><span class="n">irrep</span><span class="o">=</span><span class="n">irrep</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="n">W</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">irrep_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">endo_basis_flat_cache</span> <span class="ow">or</span> <span class="n">irrep_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">endo_norm_sq_cache</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tensor_cache missing endomorphism tensors for irrep </span><span class="si">{</span><span class="n">irrep_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">endo_basis_flat</span> <span class="o">=</span> <span class="n">endo_basis_flat_cache</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+            <span class="n">endo_norm_sq</span> <span class="o">=</span> <span class="n">endo_norm_sq_cache</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">endo_norm_sq</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tensor_cache entries for irrep </span><span class="si">{</span><span class="n">irrep_id</span><span class="si">}</span><span class="s2"> must be torch.Tensor instances&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">d_k</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected tensor_cache[&#39;endo_basis_flat&#39;][</span><span class="si">{</span><span class="n">irrep_id</span><span class="si">}</span><span class="s2">] shape (S_k, </span><span class="si">{</span><span class="n">d_k</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">d_k</span><span class="si">}</span><span class="s2">), &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">endo_norm_sq</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected tensor_cache[&#39;endo_norm_sq&#39;][</span><span class="si">{</span><span class="n">irrep_id</span><span class="si">}</span><span class="s2">] shape </span><span class="si">{</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">endo_norm_sq</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">W_iso</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">out_slice</span><span class="p">,</span> <span class="n">in_slice</span><span class="p">]</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span><span class="p">,</span> <span class="n">d_k</span><span class="p">,</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span><span class="p">)</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="o">*</span><span class="n">batch_axes</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># [..., m_out, m_in, d_k, d_k]</span>
+        <span class="n">block_flat</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">leading_shape</span><span class="p">,</span> <span class="n">m_out</span> <span class="o">*</span> <span class="n">m_in</span><span class="p">,</span> <span class="n">d_k</span> <span class="o">*</span> <span class="n">d_k</span><span class="p">)</span>  <span class="c1"># [..., m_out*m_in, d_k^2]</span>
+
+        <span class="c1"># coeff[..., p, s] = &lt;block_{p}, E_s&gt; / ||E_s||^2</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">block_flat</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">endo_basis_flat</span><span class="o">.</span><span class="n">mT</span><span class="p">)</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">coeff</span> <span class="o">/</span> <span class="n">endo_norm_sq</span>
+        <span class="n">iso_space_metadata</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">coeff</span><span class="o">=</span><span class="n">coeff</span><span class="p">,</span>
+            <span class="n">endo_basis_flat</span><span class="o">=</span><span class="n">endo_basis_flat</span><span class="p">,</span>
+            <span class="n">m_out</span><span class="o">=</span><span class="n">m_out</span><span class="p">,</span>
+            <span class="n">m_in</span><span class="o">=</span><span class="n">m_in</span><span class="p">,</span>
+            <span class="n">d_k</span><span class="o">=</span><span class="n">d_k</span><span class="p">,</span>
+            <span class="n">out_slice</span><span class="o">=</span><span class="n">out_slice</span><span class="p">,</span>
+            <span class="n">in_slice</span><span class="o">=</span><span class="n">in_slice</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Q_out</span><span class="p">,</span> <span class="n">Q_in_inv</span><span class="p">,</span> <span class="n">iso_space_metadata</span></div>
+
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_project_to_irrep_endomorphism_basis</span><span class="p">(</span>
     <span class="n">A</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
     <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
     <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Projects a linear map A: X -&gt; Y between two isotypic spaces to the space of equivariant linear maps.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Project a dense linear map between two isotypic spaces onto the equivariant subspace.</span>
 
-<span class="sd">    Given a linear map :math:`A: X \to Y`, where :math:`X` and :math:`Y` are isotypic vector spaces of the same type,</span>
-<span class="sd">    that is, their representations are built from :math:`m_x` and :math:`m_y` copies of the same irrep, this</span>
-<span class="sd">    function projects the linear map to the space of equivariant linear maps between the two isotypic spaces.</span>
+<span class="sd">    Let :math:`(\mathcal{X}, \rho_{\mathcal{X}})` and :math:`(\mathcal{Y}, \rho_{\mathcal{Y}})` be two isotypic</span>
+<span class="sd">    vector spaces of the same irrep type :math:`k`, with multiplicities :math:`m_k^{\mathcal{X}}` and</span>
+<span class="sd">    :math:`m_k^{\mathcal{Y}}`. This function projects a dense linear map</span>
+<span class="sd">    :math:`\mathbf{A}:\mathcal{X}\to\mathcal{Y}` onto</span>
+<span class="sd">    :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        A (:class:`~torch.Tensor`): The linear map to be projected, of shape :math:`(m_y \cdot d, m_x \cdot d)`,</span>
-<span class="sd">            where :math:`d` is the dimension of the irreducible representation, and :math:`m_x` and :math:`m_y`</span>
-<span class="sd">            are the multiplicities of the irreducible representation in :math:`X` and :math:`Y`, respectively.</span>
-<span class="sd">        rep_x (:class:`~escnn.group.Representation`): The representation of the isotypic space :math:`X`.</span>
-<span class="sd">        rep_y (:class:`~escnn.group.Representation`): The representation of the isotypic space :math:`Y`.</span>
+<span class="sd">        A (:class:`~torch.Tensor`): Dense linear map of shape</span>
+<span class="sd">            :math:`(m_k^{\mathcal{Y}} d_k,\; m_k^{\mathcal{X}} d_k)`.</span>
+<span class="sd">        rep_x (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{X}}` of the isotypic</span>
+<span class="sd">            space :math:`\mathcal{X}`.</span>
+<span class="sd">        rep_y (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\mathcal{Y}}` of the isotypic</span>
+<span class="sd">            space :math:`\mathcal{Y}`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        A_equiv (:class:`~torch.Tensor`): A projected linear map of shape :math:`(m_y \cdot d, m_x \cdot d)` which</span>
-<span class="sd">            commutes with the action of the group on the isotypic spaces :math:`X` and :math:`Y`. That is:</span>
-<span class="sd">            :math:`A_{equiv} \circ \rho_X(g) = \rho_Y(g) \circ A_{equiv}` for all :math:`g \in \mathbb{G}`.</span>
+<span class="sd">        A_equiv (:class:`~torch.Tensor`): Projected map of shape</span>
+<span class="sd">            :math:`(m_k^{\mathcal{Y}} d_k,\; m_k^{\mathcal{X}} d_k)` satisfying</span>
+<span class="sd">            :math:`\rho_{\mathcal{Y}}(g)\mathbf{A}_{\mathrm{equiv}}</span>
+<span class="sd">            = \mathbf{A}_{\mathrm{equiv}}\rho_{\mathcal{X}}(g)` for all :math:`g \in \mathbb{G}`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">irrep_id</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">irreps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">irrep</span> <span class="o">=</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span>
@@ -836,15 +1197,61 @@
     <span class="k">return</span> <span class="n">A_equiv</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_irrep_subspace_index</span><span class="p">(</span><span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
-    <span class="n">labels</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
-    <span class="n">irreps_dims</span> <span class="o">=</span> <span class="p">{</span><span class="nb">id</span><span class="p">:</span> <span class="n">rep</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="nb">id</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">rep</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">}</span>
-    <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">count</span><span class="p">,</span> <span class="n">irrep_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rep</span><span class="o">.</span><span class="n">irreps</span><span class="p">):</span>
-        <span class="n">labels</span><span class="p">[</span><span class="n">pos</span> <span class="p">:</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">irreps_dims</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]]</span> <span class="o">=</span> <span class="n">count</span>  <span class="c1"># fill contiguous block for this copy</span>
-        <span class="n">pos</span> <span class="o">+=</span> <span class="n">irreps_dims</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_cached_irrep_endomorphism_basis</span><span class="p">(</span>
+    <span class="n">irrep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">like</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">irrep</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;_endo_basis_flat_cache&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">cache_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">like</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">like</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">like</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="n">endo_basis</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">irrep</span><span class="o">.</span><span class="n">endomorphism_basis</span><span class="p">(),</span> <span class="n">device</span><span class="o">=</span><span class="n">like</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">like</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+        <span class="n">endo_basis_flat</span> <span class="o">=</span> <span class="n">endo_basis</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">endo_basis</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">endo_norm_sq</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;sd,sd-&gt;s&quot;</span><span class="p">,</span> <span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_basis_flat</span><span class="p">)</span>
+        <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">endo_basis_flat</span><span class="p">,</span> <span class="n">endo_norm_sq</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
 
-    <span class="k">return</span> <span class="n">labels</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_hom_irrep_iso_spaces</span><span class="p">(</span>
+    <span class="n">rep_x</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+    <span class="n">rep_y</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Representation</span><span class="p">,</span> <span class="n">Representation</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">isotypic_decomp_rep</span>
+
+    <span class="k">if</span> <span class="n">rep_x</span><span class="o">.</span><span class="n">group</span> <span class="o">!=</span> <span class="n">rep_y</span><span class="o">.</span><span class="n">group</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected same group, got </span><span class="si">{</span><span class="n">rep_x</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">rep_y</span><span class="o">.</span><span class="n">group</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">rep_X_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_x</span><span class="p">)</span>
+    <span class="n">rep_Y_iso</span> <span class="o">=</span> <span class="n">isotypic_decomp_rep</span><span class="p">(</span><span class="n">rep_y</span><span class="p">)</span>
+    <span class="n">iso_idx_X</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
+    <span class="n">iso_idx_Y</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">&quot;isotypic_subspace_dims&quot;</span><span class="p">]</span>
+    <span class="n">common_irreps</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">rep_X_iso</span><span class="o">.</span><span class="n">irreps</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">irreps</span><span class="p">)))</span>
+
+    <span class="n">hom_iso_spaces</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dof_offset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">irrep_id</span> <span class="ow">in</span> <span class="n">common_irreps</span><span class="p">:</span>
+        <span class="n">out_slice</span> <span class="o">=</span> <span class="n">iso_idx_Y</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">in_slice</span> <span class="o">=</span> <span class="n">iso_idx_X</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">m_out</span> <span class="o">=</span> <span class="n">rep_Y_iso</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">m_in</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">_irreps_multiplicities</span><span class="p">[</span><span class="n">irrep_id</span><span class="p">]</span>
+        <span class="n">irrep</span> <span class="o">=</span> <span class="n">rep_X_iso</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">irrep</span><span class="p">(</span><span class="o">*</span><span class="n">irrep_id</span><span class="p">)</span>
+        <span class="n">d_k</span> <span class="o">=</span> <span class="n">irrep</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">dim_endo_basis</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">irrep</span><span class="o">.</span><span class="n">endomorphism_basis</span><span class="p">())</span>
+        <span class="n">irrep_dim</span> <span class="o">=</span> <span class="n">m_out</span> <span class="o">*</span> <span class="n">m_in</span> <span class="o">*</span> <span class="n">dim_endo_basis</span>
+        <span class="n">hom_iso_spaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">irrep_id</span><span class="o">=</span><span class="n">irrep_id</span><span class="p">,</span>
+                <span class="n">dim_endo_basis</span><span class="o">=</span><span class="n">dim_endo_basis</span><span class="p">,</span>
+                <span class="n">m_out</span><span class="o">=</span><span class="n">m_out</span><span class="p">,</span>
+                <span class="n">m_in</span><span class="o">=</span><span class="n">m_in</span><span class="p">,</span>
+                <span class="n">d_k</span><span class="o">=</span><span class="n">d_k</span><span class="p">,</span>
+                <span class="n">out_slice</span><span class="o">=</span><span class="n">out_slice</span><span class="p">,</span>
+                <span class="n">in_slice</span><span class="o">=</span><span class="n">in_slice</span><span class="p">,</span>
+                <span class="n">hom_basis_slice</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="n">dof_offset</span><span class="p">,</span> <span class="n">dof_offset</span> <span class="o">+</span> <span class="n">irrep_dim</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">dof_offset</span> <span class="o">+=</span> <span class="n">irrep_dim</span>
+
+    <span class="k">return</span> <span class="n">rep_X_iso</span><span class="p">,</span> <span class="n">rep_Y_iso</span><span class="p">,</span> <span class="n">hom_iso_spaces</span><span class="p">,</span> <span class="n">dof_offset</span>
 </pre></div>
 
                 </article>
@@ -874,8 +1281,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -909,7 +1316,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

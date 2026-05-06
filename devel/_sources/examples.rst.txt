@@ -8,3 +8,4 @@ Practical guides and worked examples for common workflows.
    :caption: Examples:
 
    examples/isotypic_decomposition
+   examples/equivariant_linear_maps
