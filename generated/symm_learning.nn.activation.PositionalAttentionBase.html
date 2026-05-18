@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>PositionalAttentionBase &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
+    <title>PositionalAttentionBase &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=a674670e"></script>
+    <script src="../_static/documentation_options.js?v=918ced64"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -52,7 +52,7 @@
     <link rel="prev" title="eAdditiveRelMultiheadAttention" href="symm_learning.nn.activation.eAdditiveRelMultiheadAttention.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.5" />
+  <meta name="docsearch:version" content="0.7.6" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.5 - main</p>
+    <p class="title logo__title">v0.7.6 - main</p>
   
 </a></div>
     
@@ -413,7 +413,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.nn.activation.PositionalAttentionBase">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">PositionalAttentionBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/nn/activation.html#PositionalAttentionBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.nn.activation.PositionalAttentionBase" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
 <p>Abstract interface for attention blocks with explicit positional branches.</p>
 <p>The convention in this module is that positional information is provided as a
 function, defined by a submodule, acting on the query and key streams only.
@@ -427,7 +427,7 @@ Values are left unchanged:</p>
 <p>A standard multi-head attention operator is then applied to
 <span class="math notranslate nohighlight">\((\tilde{\mathbf{q}}, \tilde{\mathbf{k}}, \tilde{\mathbf{v}})\)</span>.
 If the positional branch is the identity/no-op map, the module reduces to
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html#torch.nn.MultiheadAttention" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.MultiheadAttention</span></code></a>.</p>
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html#torch.nn.MultiheadAttention" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.MultiheadAttention</span></code></a>.</p>
 <p>Concrete implementations may ignore any positional arguments they do not use,
 but the forward signature stays stable so encoder and decoder layers can call
 all attention backends uniformly.</p>
@@ -439,7 +439,7 @@ all attention backends uniformly.</p>
 When omitted, they default to <code class="docutils literal notranslate"><span class="pre">torch.arange(P)</span></code> for the corresponding sequence.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">q_position_mask</span></code>, <code class="docutils literal notranslate"><span class="pre">k_position_mask</span></code>: <code class="docutils literal notranslate"><span class="pre">(P,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">P)</span></code> boolean masks.</p></li>
 <li><dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">attn_mask</span></code>: any attention mask layout accepted by</dt><dd><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html#torch.nn.MultiheadAttention" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.MultiheadAttention</span></code></a>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">attn_mask</span></code>: any attention mask layout accepted by</dt><dd><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html#torch.nn.MultiheadAttention" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.MultiheadAttention</span></code></a>.</p>
 </dd>
 </dl>
 </li>
@@ -454,7 +454,7 @@ When omitted, they default to <code class="docutils literal notranslate"><span c
 <section id="attributes">
 <h2>Attributes:<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
 <p>This base class does not define any storage beyond the standard
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a> state. Concrete subclasses define their own
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></a> state. Concrete subclasses define their own
 positional encoder and attention parameters.</p>
 <p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
 <dl class="py method">
@@ -463,19 +463,19 @@ positional encoder and attention parameters.</p>
 <dd><p>Apply attention with optional explicit position metadata.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]</span></p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>query</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>)</p></li>
-<li><p><strong>key</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>)</p></li>
-<li><p><strong>value</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a>)</p></li>
-<li><p><strong>q_positions</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>k_positions</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>q_position_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>k_position_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>attn_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>key_padding_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>query</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a>)</p></li>
+<li><p><strong>key</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a>)</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a>)</p></li>
+<li><p><strong>q_positions</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>k_positions</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>q_position_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>k_position_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>attn_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>key_padding_mask</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>need_weights</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
 <li><p><strong>is_causal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
 </ul>

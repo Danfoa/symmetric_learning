@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.representation_theory &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
+    <title>symm_learning.representation_theory &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
   
   
   
@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=a674670e"></script>
+    <script src="../../_static/documentation_options.js?v=918ced64"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/representation_theory';</script>
@@ -48,7 +48,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.5" />
+  <meta name="docsearch:version" content="0.7.6" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -122,7 +122,7 @@
     <img src="../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.5 - main</p>
+    <p class="title logo__title">v0.7.6 - main</p>
   
 </a></div>
     
@@ -1463,6 +1463,8 @@
 
 
 
+<div class="viewcode-block" id="compute_character_table">
+<a class="viewcode-back" href="../../generated/symm_learning.representation_theory.compute_character_table.html#symm_learning.representation_theory.compute_character_table">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">compute_character_table</span><span class="p">(</span><span class="n">G</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">reps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="n">Representation</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the character table of a group for a given set of representations.</span>
 
@@ -1481,9 +1483,12 @@
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">rep</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reps</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">elements</span><span class="p">):</span>
             <span class="n">table</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">rep</span><span class="o">.</span><span class="n">character</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">Representation</span><span class="p">)</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">rep</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">table</span>
+    <span class="k">return</span> <span class="n">table</span></div>
 
 
+
+<div class="viewcode-block" id="map_character_tables">
+<a class="viewcode-back" href="../../generated/symm_learning.representation_theory.map_character_tables.html#symm_learning.representation_theory.map_character_tables">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">map_character_tables</span><span class="p">(</span><span class="n">in_table</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">reference_table</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Find a representation of a group in the set of irreducible representations.&quot;&quot;&quot;</span>
     <span class="n">n_in_reps</span> <span class="o">=</span> <span class="n">in_table</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1494,9 +1499,12 @@
         <span class="n">match_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">orbit_error</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
         <span class="n">multiplicity</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">match_idx</span><span class="p">)</span>
         <span class="n">out_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match_idx</span><span class="p">),</span> <span class="n">multiplicities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">multiplicity</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">multiplicities</span><span class="p">,</span> <span class="n">out_ids</span>
+    <span class="k">return</span> <span class="n">multiplicities</span><span class="p">,</span> <span class="n">out_ids</span></div>
 
 
+
+<div class="viewcode-block" id="cplx_isotypic_decomposition">
+<a class="viewcode-back" href="../../generated/symm_learning.representation_theory.cplx_isotypic_decomposition.html#symm_learning.representation_theory.cplx_isotypic_decomposition">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">cplx_isotypic_decomposition</span><span class="p">(</span><span class="n">G</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform the :ref:`isotypic decomposition &lt;isotypic-decomposition-example&gt;` of a unitary representation.</span>
 
@@ -1558,7 +1566,8 @@
         <span class="n">error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">g_iso</span> <span class="o">-</span> <span class="p">(</span><span class="n">Q</span> <span class="o">@</span> <span class="n">rep</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="o">@</span> <span class="n">Q</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
         <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Q @ rep[g] @ Q^-1 != block_diag[irreps[g]], for g=</span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2">. Error </span><span class="se">\n</span><span class="s2">:</span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="k">return</span> <span class="n">sorted_irreps</span><span class="p">,</span> <span class="n">Q</span>
+    <span class="k">return</span> <span class="n">sorted_irreps</span><span class="p">,</span> <span class="n">Q</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">sorted_jordan_canonical_form</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span> <span class="n">reps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">GroupElement</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]):</span>

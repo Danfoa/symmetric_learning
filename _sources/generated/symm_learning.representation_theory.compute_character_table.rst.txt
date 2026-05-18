@@ -1,0 +1,6 @@
+﻿compute\_character\_table
+=========================
+
+.. currentmodule:: symm_learning.representation_theory
+
+.. autofunction:: compute_character_table

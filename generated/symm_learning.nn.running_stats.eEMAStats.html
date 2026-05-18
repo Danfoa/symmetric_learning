@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>eEMAStats &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
+    <title>eEMAStats &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=a674670e"></script>
+    <script src="../_static/documentation_options.js?v=918ced64"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -52,7 +52,7 @@
     <link rel="prev" title="EMAStats" href="symm_learning.nn.running_stats.EMAStats.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.5" />
+  <meta name="docsearch:version" content="0.7.6" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.5 - main</p>
+    <p class="title logo__title">v0.7.6 - main</p>
   
 </a></div>
     
@@ -489,7 +489,7 @@ checkpoint.</p>
 </div>
 <dl class="py property">
 <dt class="sig sig-object py" id="symm_learning.nn.running_stats.eEMAStats.cov_xx">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cov_xx</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.cov_xx" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cov_xx</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.cov_xx" title="Link to this definition">#</a></dt>
 <dd><p>Running covariance operator in <span class="math notranslate nohighlight">\(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{X}})\)</span>.</p>
 <p>Equivalently, the returned matrix <span class="math notranslate nohighlight">\(\mathbf{C}_{xx}\)</span> satisfies</p>
 <div class="math notranslate nohighlight">
@@ -503,7 +503,7 @@ checkpoint.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="symm_learning.nn.running_stats.eEMAStats.cov_xy">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cov_xy</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.cov_xy" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cov_xy</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.cov_xy" title="Link to this definition">#</a></dt>
 <dd><p>Running cross-covariance operator.</p>
 <p>The returned matrix <span class="math notranslate nohighlight">\(\mathbf{C}_{xy}\)</span> maps coordinates in <span class="math notranslate nohighlight">\(\mathcal{Y}\)</span> to coordinates in
 <span class="math notranslate nohighlight">\(\mathcal{X}\)</span>. It belongs to
@@ -520,7 +520,7 @@ constraint</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="symm_learning.nn.running_stats.eEMAStats.cov_yy">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cov_yy</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.cov_yy" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cov_yy</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.cov_yy" title="Link to this definition">#</a></dt>
 <dd><p>Running covariance operator in <span class="math notranslate nohighlight">\(\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{Y}})\)</span>.</p>
 <p>Equivalently, the returned matrix <span class="math notranslate nohighlight">\(\mathbf{C}_{yy}\)</span> satisfies</p>
 <div class="math notranslate nohighlight">
@@ -539,12 +539,12 @@ constraint</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>) – Samples in <span class="math notranslate nohighlight">\(\mathcal{X}\)</span> transforming according to <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>.</p></li>
-<li><p><strong>y</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>) – Samples in <span class="math notranslate nohighlight">\(\mathcal{Y}\)</span> transforming according to <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span>.</p></li>
+<li><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>) – Samples in <span class="math notranslate nohighlight">\(\mathcal{X}\)</span> transforming according to <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>.</p></li>
+<li><p><strong>y</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>) – Samples in <span class="math notranslate nohighlight">\(\mathcal{Y}\)</span> transforming according to <span class="math notranslate nohighlight">\(\rho_{\mathcal{Y}}\)</span>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code>. The activations are not transformed; only the running invariant means
@@ -574,7 +574,7 @@ and equivariant covariance operators are updated.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="symm_learning.nn.running_stats.eEMAStats.mean_x">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_x</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.mean_x" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_x</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.mean_x" title="Link to this definition">#</a></dt>
 <dd><p>Running invariant mean in <span class="math notranslate nohighlight">\(\mathcal{X}^{\text{inv}}\)</span>.</p>
 <p>This vector satisfies</p>
 <div class="math notranslate nohighlight">
@@ -584,7 +584,7 @@ and equivariant covariance operators are updated.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="symm_learning.nn.running_stats.eEMAStats.mean_y">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_y</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.mean_y" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_y</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#symm_learning.nn.running_stats.eEMAStats.mean_y" title="Link to this definition">#</a></dt>
 <dd><p>Running invariant mean in <span class="math notranslate nohighlight">\(\mathcal{Y}^{\text{inv}}\)</span>.</p>
 <p>This vector satisfies</p>
 <div class="math notranslate nohighlight">

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>project_in_isobasis &#8212; Symmetric Learning v0.7.5 Docs [main]</title>
+    <title>project_in_isobasis &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=a674670e"></script>
+    <script src="../_static/documentation_options.js?v=918ced64"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -52,7 +52,7 @@
     <link rel="prev" title="equiv_orthogonal_projection_coefficients" href="symm_learning.linalg.equiv_orthogonal_projection_coefficients.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.5" />
+  <meta name="docsearch:version" content="0.7.6" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.5 - main</p>
+    <p class="title logo__title">v0.7.6 - main</p>
   
 </a></div>
     
@@ -434,7 +434,7 @@ k \in [1, n_{\text{iso}}], o \in [1, m_k^{\mathcal{Y}}], i \in [1, m_k^{\mathcal
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Dense linear map (or batch of maps) from
+<li><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Dense linear map (or batch of maps) from
 <span class="math notranslate nohighlight">\(\mathcal{X}\)</span> to <span class="math notranslate nohighlight">\(\mathcal{Y}\)</span> with shape <span class="math notranslate nohighlight">\((..., D_y, D_x)\)</span>.</p></li>
 <li><p><strong>rep_x</strong> (<a class="reference external" href="https://quva-lab.github.io/escnn/api/escnn.group.html#escnn.group.Representation" title="(in escnn v1.0.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Representation</span></code></a>) – Input representation
 <span class="math notranslate nohighlight">\(\rho_{\mathcal{X}}\)</span>.</p></li>
@@ -459,9 +459,9 @@ directly.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">projection_iso_spaces</span></code>: dictionary keyed by irrep identifier <code class="docutils literal notranslate"><span class="pre">irrep_id</span></code>. Each
 <code class="docutils literal notranslate"><span class="pre">projection_iso_spaces[irrep_id]</span></code> is an <code class="xref py py-class docutils literal notranslate"><span class="pre">IsoSpaceProjection</span></code> containing:</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">coeff</span></code> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>): projection coefficients <span class="math notranslate nohighlight">\(\mathbf{\Theta}^{(k)}\)</span> of shape
+<li><p><code class="docutils literal notranslate"><span class="pre">coeff</span></code> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>): projection coefficients <span class="math notranslate nohighlight">\(\mathbf{\Theta}^{(k)}\)</span> of shape
 <span class="math notranslate nohighlight">\((..., m_k^{\mathcal{Y}} m_k^{\mathcal{X}}, S_k)\)</span>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">endo_basis_flat</span></code> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>): stacked flattened endomorphism basis
+<li><p><code class="docutils literal notranslate"><span class="pre">endo_basis_flat</span></code> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>): stacked flattened endomorphism basis
 <span class="math notranslate nohighlight">\(\operatorname{flat}(\mathbf{\Psi}^{(k)}) := [\operatorname{flat}(\mathbf{\Psi}^{(k)}_1), \ldots,
 \operatorname{flat}(\mathbf{\Psi}^{(k)}_{S_k})]^\top \in \mathbb{R}^{S_k \times d_k^2}\)</span>. If
 <code class="docutils literal notranslate"><span class="pre">tensor_cache</span></code> is provided, this entry is <code class="docutils literal notranslate"><span class="pre">tensor_cache.endo_basis_flat[irrep_id]</span></code> returned
@@ -479,7 +479,7 @@ directly.</p></li>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)">torch.Tensor</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)">torch.Tensor</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, …], IsoSpaceProjection]]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)">torch.Tensor</a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)">torch.Tensor</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, …], IsoSpaceProjection]]</p>
 </dd>
 </dl>
 <dl class="simple">
