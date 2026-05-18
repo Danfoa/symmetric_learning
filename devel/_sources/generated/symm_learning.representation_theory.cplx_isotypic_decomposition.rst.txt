@@ -1,0 +1,6 @@
+﻿cplx\_isotypic\_decomposition
+=============================
+
+.. currentmodule:: symm_learning.representation_theory
+
+.. autofunction:: cplx_isotypic_decomposition

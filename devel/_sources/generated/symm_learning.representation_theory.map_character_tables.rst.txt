@@ -1,0 +1,6 @@
+﻿map\_character\_tables
+======================
+
+.. currentmodule:: symm_learning.representation_theory
+
+.. autofunction:: map_character_tables

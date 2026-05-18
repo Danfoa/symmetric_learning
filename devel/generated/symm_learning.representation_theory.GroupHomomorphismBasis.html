@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>GroupHomomorphismBasis &#8212; Symmetric Learning v0.7.5 Docs [devel]</title>
+    <title>GroupHomomorphismBasis &#8212; Symmetric Learning v0.7.6 Docs [devel]</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../_static/documentation_options.js?v=a674670e"></script>
+    <script src="../_static/documentation_options.js?v=918ced64"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -52,7 +52,7 @@
     <link rel="prev" title="representation_theory" href="../representation_theory.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.5" />
+  <meta name="docsearch:version" content="0.7.6" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,7 +126,7 @@
     <img src="../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.5 - devel</p>
+    <p class="title logo__title">v0.7.6 - devel</p>
   
 </a></div>
     
@@ -327,6 +327,9 @@
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.escnn_representation_form_mapping.html">escnn_representation_form_mapping</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.is_complex_irreducible.html">is_complex_irreducible</a></li>
 <li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.decompose_representation.html">decompose_representation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.compute_character_table.html">compute_character_table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.map_character_tables.html">map_character_tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="symm_learning.representation_theory.cplx_isotypic_decomposition.html">cplx_isotypic_decomposition</a></li>
 </ul>
 </details></li>
 </ul>
@@ -397,7 +400,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="symm_learning.representation_theory.GroupHomomorphismBasis">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">GroupHomomorphismBasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_rep</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_rep</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis_expansion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'isotypic_expansion'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/symm_learning/representation_theory.html#GroupHomomorphismBasis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#symm_learning.representation_theory.GroupHomomorphismBasis" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Basis handler for <span class="math notranslate nohighlight">\(\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})\)</span>.</p>
 <p>Let <span class="math notranslate nohighlight">\((\mathcal{X}, \rho_{\mathcal{X}})\)</span> and <span class="math notranslate nohighlight">\((\mathcal{Y}, \rho_{\mathcal{Y}})\)</span> be two
 <span class="math notranslate nohighlight">\(\mathbb{G}\)</span>-symmetric vector spaces. After rewriting both representations in their canonical
@@ -565,7 +568,7 @@ compatible with <a class="reference internal" href="#symm_learning.representatio
 <code class="docutils literal notranslate"><span class="pre">(dim,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code> when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;memory_heavy&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -577,7 +580,7 @@ compatible with <a class="reference internal" href="#symm_learning.representatio
 <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;memory_heavy&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -589,7 +592,7 @@ compatible with <a class="reference internal" href="#symm_learning.representatio
 <code class="docutils literal notranslate"><span class="pre">(S_k,</span> <span class="pre">d_k*d_k)</span></code> when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;isotypic_expansion&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -601,7 +604,7 @@ compatible with <a class="reference internal" href="#symm_learning.representatio
 endomorphism bases with isotypic expansion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -613,7 +616,7 @@ endomorphism bases with isotypic expansion.</p>
 input coordinates to isotypic coordinates when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;isotypic_expansion&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -625,7 +628,7 @@ input coordinates to isotypic coordinates when <code class="docutils literal not
 coordinates back to the original output basis when <code class="docutils literal notranslate"><span class="pre">basis_expansion=&quot;isotypic_expansion&quot;</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -674,7 +677,7 @@ exposes the isotypic block structure more directly.</p></li>
 \[\mathbf{W} = \mathbf{Q}_{\mathcal{Y}} \tilde{\mathbf{W}} \mathbf{Q}_{\mathcal{X}}^T.\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>w_dof</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Basis expansion coefficients of shape <code class="docutils literal notranslate"><span class="pre">(D,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">D)</span></code>, where
+<dd class="field-odd"><p><strong>w_dof</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Basis expansion coefficients of shape <code class="docutils literal notranslate"><span class="pre">(D,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">D)</span></code>, where
 <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">dim(Hom_G(in_rep,</span> <span class="pre">out_rep))</span></code>. The flat layout is the one expected by the selected
 <code class="docutils literal notranslate"><span class="pre">basis_expansion</span></code> backend, and is always compatible with <a class="reference internal" href="#symm_learning.representation_theory.GroupHomomorphismBasis.projection_coefficients" title="symm_learning.representation_theory.GroupHomomorphismBasis.projection_coefficients"><code class="xref py py-meth docutils literal notranslate"><span class="pre">projection_coefficients()</span></code></a> from the
 same instance.</p>
@@ -684,7 +687,7 @@ same instance.</p>
 <code class="docutils literal notranslate"><span class="pre">(out_rep.size,</span> <span class="pre">in_rep.size)</span></code> or <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 <p class="rubric">Example</p>
@@ -711,7 +714,7 @@ dims. Examples: <code class="docutils literal notranslate"><span class="pre">Non
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><em>Tensor</em></a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><em>Tensor</em></a></p>
 </dd>
 </dl>
 <dl class="simple">
@@ -726,7 +729,7 @@ dims. Examples: <code class="docutils literal notranslate"><span class="pre">Non
 <dd class="field-odd"><p>Initialized parameters with the shapes above.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -762,14 +765,14 @@ enforces</p>
 \quad \forall g\in\mathbb{G}.\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Weight matrix of shape <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code> in the
+<dd class="field-odd"><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Weight matrix of shape <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code> in the
 original basis.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Projection of <code class="docutils literal notranslate"><span class="pre">W</span></code> onto the equivariant subspace, matching the input shape.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -800,14 +803,14 @@ original basis.</p>
 reconstruct the dense projected matrix exactly up to numerical precision.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Dense matrix or batch of matrices of shape
+<dd class="field-odd"><p><strong>W</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>) – Dense matrix or batch of matrices of shape
 <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">out_rep.size,</span> <span class="pre">in_rep.size)</span></code>.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Flattened coefficient vector(s) of shape <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">dim)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>

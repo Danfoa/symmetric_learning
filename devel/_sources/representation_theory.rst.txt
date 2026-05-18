@@ -32,3 +32,6 @@ For the structure of equivariant linear maps and how
    escnn_representation_form_mapping
    is_complex_irreducible
    decompose_representation
+   compute_character_table
+   map_character_tables
+   cplx_isotypic_decomposition
