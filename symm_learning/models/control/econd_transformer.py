@@ -261,26 +261,31 @@ class eCondTransformer(eModule, GenCondRegressor):
     def reset_parameters(self, scheme="xavier_uniform") -> None:
         """Re-initialize all parameters."""
         logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
-        # Initialize eLinear layers.
         self.input_emb.reset_parameters(scheme=scheme)
         self.cond_emb.reset_parameters(scheme=scheme)
-        self.head.reset_parameters(scheme=scheme)
-        # Initialize final layer norm and head.
         self.layer_norm.reset_parameters()
+        self.head.reset_parameters(scheme=scheme)
+
         # Initalize conditional encoder layers.
         if isinstance(self.encoder, symm_learning.nn.TransformerEncoder):
             for i, layer in enumerate(self.encoder.layers, start=1):
-                assert isinstance(layer, symm_learning.nn.eTransformerEncoderLayer)
+                if not isinstance(layer, symm_learning.nn.eTransformerEncoderLayer):
+                    raise RuntimeError(f"Unaccounted encoder layer {i}: {layer}")
                 logger.debug(f"Resetting encoder layer {i}:[{layer.__class__.__name__}] with scheme: {scheme}")
                 layer.reset_parameters(scheme=scheme)
-        else:  # eMLP.
+        elif isinstance(self.encoder, torch.nn.Sequential):  # eMLP.
             for i, module in enumerate(self.encoder, start=1):
                 if isinstance(module, symm_learning.nn.eLinear):
                     logger.debug(f"Resetting encoder module {i}:[{module.__class__.__name__}] with scheme: {scheme}")
                     module.reset_parameters(scheme=scheme)
+                elif any(param.requires_grad for param in module.parameters(recurse=False)):
+                    raise RuntimeError(f"Unaccounted encoder module {i}: {module}")
+        else:
+            raise RuntimeError(f"Unaccounted encoder module {self.encoder}")
         # Initialize decoder layers.
         for i, layer in enumerate(self.decoder.layers, start=1):
-            assert isinstance(layer, symm_learning.nn.eTransformerDecoderLayer)
+            if not isinstance(layer, symm_learning.nn.eTransformerDecoderLayer):
+                raise RuntimeError(f"Unaccounted decoder layer {i}: {layer}")
             logger.debug(f"Resetting decoder layer {i}:[{layer.__class__.__name__}] with scheme: {scheme}")
             layer.reset_parameters(scheme=scheme)
 

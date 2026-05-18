@@ -337,3 +337,38 @@ def test_econd_transformer(pos_encoding: str, num_cond_layers: int, norm_first: 
     assert has_grad, "No gradients were computed"
 
     optimizer.step()
+
+
+def test_econd_transformer_reset_parameters_raises_on_unaccounted_module():
+    """Check that eCondTransformer reset fails loudly on unexpected trainable submodules."""
+    import symm_learning
+
+    from symm_learning.models.control.econd_transformer import eCondTransformer
+
+    G = CyclicGroup(2)
+    in_rep = direct_sum([G.regular_representation] * 2)
+    model = eCondTransformer(
+        in_rep=in_rep,
+        cond_rep=in_rep,
+        out_rep=in_rep,
+        in_horizon=5,
+        cond_horizon=4,
+        num_layers=2,
+        num_attention_heads=2,
+        embedding_dim=G.order() * 2 * 4,
+        num_cond_layers=0,
+        pos_encoding="additive_absolute",
+        p_drop_emb=0.0,
+        p_drop_attn=0.0,
+        norm_first=True,
+        norm_module="rmsnorm",
+    )
+
+    model.encoder = torch.nn.Sequential(
+        symm_learning.nn.eLinear(in_rep=model.embedding_rep, out_rep=direct_sum([model.embedding_rep] * 4), bias=True),
+        torch.nn.Mish(),
+        torch.nn.Linear(4 * model.embedding_dim, model.embedding_dim),
+    )
+
+    with pytest.raises(RuntimeError, match="Unaccounted encoder module"):
+        model.reset_parameters()

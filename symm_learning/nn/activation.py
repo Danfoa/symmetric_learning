@@ -119,22 +119,16 @@ class eMultiheadAttention(eModule, torch.nn.MultiheadAttention):
         self.out_proj.reset_parameters(scheme=scheme)
 
         for param_name, constaint_list in self.parametrizations.items():
-            param = getattr(self, param_name)
+            param = constaint_list.original
             if param.dim() == 2:
                 commuting_constraint: CommutingConstraint = constaint_list[0]
                 W = commuting_constraint.homo_basis.initialize_params(scheme=scheme, return_dense=True)
-                param = W
+                param.copy_(W)
                 logger.debug(f"Initialized {param_name} with scheme {scheme}")
             elif param.dim() == 1:
                 # invariant_constraint: InvariantConstraint = constaint_list[0]
-                param = torch.zeros_like(param)
+                param.zero_()
                 logger.debug(f"Initialized {param_name} with zeros")
-
-        # if self._qkv_same_embed_dim:
-        #     xavier_uniform_(self.in_proj_weight)
-        # if self.in_proj_bias is not None:
-        #     constant_(self.in_proj_bias, 0.0)
-        #     constant_(self.out_proj.bias, 0.0)
 
 
 class PositionalAttentionBase(torch.nn.Module, ABC):
@@ -559,7 +553,14 @@ class eAdditivePosMultiheadAttention(eModule, PositionalAttentionBase):
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
         self.attn.reset_parameters(scheme=scheme)
-        self.pos_emb.zero_()
+        self.pos_emb.normal_(mean=0.0, std=0.02)
+        self.pos_emb.copy_(
+            torch.einsum(
+                "ij,pj->pi",
+                self.invariant_projector.to(device=self.pos_emb.device, dtype=self.pos_emb.dtype),
+                self.pos_emb,
+            )
+        )
 
     def invalidate_cache(self) -> None:  # noqa: D102
         self.attn.invalidate_cache()
@@ -983,7 +984,7 @@ class eAdditiveRelMultiheadAttention(eModule, PositionalAttentionBase):
     @torch.no_grad()
     def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
         self.attn.reset_parameters(scheme=scheme)
-        self.rel_bias.zero_()
+        self.rel_bias.normal_(mean=0.0, std=0.02)
 
     def invalidate_cache(self) -> None:  # noqa: D102
         self.attn.invalidate_cache()

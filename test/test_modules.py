@@ -679,7 +679,25 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
     if mx % num_heads != 0:
         pytest.skip(f"mx={mx} not divisible by num_heads={num_heads}")
 
-    attn = eMultiheadAttention(in_rep=rep, num_heads=num_heads, bias=bias, dropout=0.0)
+    attn = eMultiheadAttention(in_rep=rep, num_heads=num_heads, bias=bias, dropout=0.0, init_scheme=None)
+    qkv_constraint = attn.parametrizations["in_proj_weight"][0]
+    qkv_before = attn.in_proj_weight.detach().clone()
+
+    torch.manual_seed(0)
+    attn.reset_parameters(scheme="xavier_uniform")
+    qkv_after_first_reset = attn.in_proj_weight.detach().clone()
+    assert not torch.allclose(qkv_after_first_reset, qkv_before), "reset_parameters must reinitialize the QKV map"
+    assert torch.allclose(
+        qkv_after_first_reset,
+        qkv_constraint(attn.parametrizations["in_proj_weight"].original).detach(),
+    ), "The effective QKV map must match the commuting constraint applied to the stored original parameter"
+
+    torch.manual_seed(1)
+    attn.reset_parameters(scheme="xavier_uniform")
+    qkv_after_second_reset = attn.in_proj_weight.detach().clone()
+    assert not torch.allclose(qkv_after_second_reset, qkv_after_first_reset), (
+        "reset_parameters must update the QKV map on subsequent resets"
+    )
 
     # Wrapper for check_equivariance: self-attention expects (query, key, value) but we test with q=k=v=x
     class SelfAttentionWrapper(torch.nn.Module):
@@ -734,6 +752,41 @@ def test_multihead_attention(group: Group, mx: int, num_heads: int, bias: bool):
         forward_kwargs={"need_weights": False},
         output_transform=lambda out: out[0],
     )
+
+
+def test_equivariant_positional_attention_reset_parameters():
+    """Check that equivariant positional attention resets initialize nonzero positional parameters."""
+    import torch
+    from escnn.group import CyclicGroup
+
+    from symm_learning.nn.activation import eAdditivePosMultiheadAttention, eAdditiveRelMultiheadAttention
+
+    G = CyclicGroup(2)
+    rep = direct_sum([G.regular_representation] * 2)
+
+    abs_attn = eAdditivePosMultiheadAttention(
+        in_rep=rep,
+        num_heads=2,
+        max_len=8,
+        dropout=0.0,
+        bias=True,
+        init_scheme=None,
+    )
+    rel_attn = eAdditiveRelMultiheadAttention(
+        in_rep=rep,
+        num_heads=2,
+        max_distance=8,
+        dropout=0.0,
+        bias=True,
+        init_scheme=None,
+    )
+
+    torch.manual_seed(0)
+    abs_attn.reset_parameters(scheme="xavier_uniform")
+    rel_attn.reset_parameters(scheme="xavier_uniform")
+
+    assert not torch.allclose(abs_attn.pos_emb, torch.zeros_like(abs_attn.pos_emb))
+    assert not torch.allclose(rel_attn.rel_bias, torch.zeros_like(rel_attn.rel_bias))
 
 
 @pytest.mark.parametrize("bias", [True, False])
