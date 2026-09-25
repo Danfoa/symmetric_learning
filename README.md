@@ -48,6 +48,17 @@ Documentation is published per branch:
 - `main` (stable): [https://danfoa.github.io/symmetric_learning/](https://danfoa.github.io/symmetric_learning/)
 - `devel`: [https://danfoa.github.io/symmetric_learning/devel/](https://danfoa.github.io/symmetric_learning/devel/)
 
+## Local Development
+
+Install the `dev` extras and serve the docs with live-reload:
+
+```bash
+pip install -e ".[dev]"
+sphinx-autobuild docs docs/_build/html
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000) — the page rebuilds and refreshes automatically as you edit files under `docs/`.
+
 ## Citation
 
 If you use `symm-learning` in research, please cite:

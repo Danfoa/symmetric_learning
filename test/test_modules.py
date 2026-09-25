@@ -468,9 +468,11 @@ def test_elinear_identity_init(group: Group):
         "identity init must already lie in Hom_G(in_rep, out_rep)"
     )
 
-    # Mismatched sizes are not a valid identity map.
-    with pytest.raises(ValueError):
-        eLinear(rep, direct_sum([G.regular_representation]), bias=False, init_scheme="identity")
+    # Mismatched sizes get the projected rectangular identity.
+    rectangular_rep = direct_sum([G.regular_representation])
+    layer_rect = eLinear(rep, rectangular_rep, bias=False, init_scheme="identity")
+    expected_rect = layer_rect.homo_basis.orthogonal_projection(torch.eye(rectangular_rep.size, rep.size))
+    assert torch.allclose(layer_rect.weight, expected_rect, atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize(

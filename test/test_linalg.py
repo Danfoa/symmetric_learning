@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 import torch
 from escnn.group import CyclicGroup, DihedralGroup, Group, Icosahedral, IrreducibleRepresentation
-from escnn.nn import FieldType
 
 from symm_learning.linalg import (
     IsotypicTensorCache,
@@ -127,19 +126,12 @@ def test_invariant_orthogonal_projector(group: Group, dtype: torch.dtype, device
 @pytest.mark.parametrize("mx", [1, 5])
 @pytest.mark.parametrize("my", [3, 5])
 def test_lstsq(group: Group, mx: int, my: int):  # noqa: D103
-    import escnn
-    from escnn.group import directsum
-
     # Icosahedral group has irreps of dimensions [1, ... 5]. Good test case.
     G = group
     rep_x = direct_sum([G.regular_representation] * mx)
     rep_y = direct_sum([G.regular_representation] * my)
 
-    x_field = FieldType(escnn.gspaces.no_base_space(G), representations=[rep_x])
-    y_field = FieldType(escnn.gspaces.no_base_space(G), representations=[rep_y])
-    lin_map = escnn.nn.Linear(x_field, y_field, bias=False)
-    A_gt, _ = lin_map.expand_parameters()
-    A_gt = A_gt
+    A_gt = GroupHomomorphismBasis(rep_x, rep_y).initialize_params(return_dense=True)
 
     batch_size = 1000
 

@@ -34,7 +34,7 @@ class TransformerEncoderLayer(torch.nn.Module):
     subclass, the latter injecting positional information into query and key streams.
 
     Attributes:
-    ----------
+    -----------
     self_attn:
         Attention module used for the source self-attention block.
     feed_forward_block:
@@ -208,7 +208,7 @@ class TransformerDecoderLayer(torch.nn.Module):
     subclass.
 
     Attributes:
-    ----------
+    -----------
     self_attn:
         Attention module used for masked target self-attention.
     multihead_attn:
@@ -430,7 +430,7 @@ class TransformerEncoder(torch.nn.Module):
     r"""Stack encoder layers and apply an optional final normalization.
 
     Attributes:
-    ----------
+    -----------
     layers:
         Sequential copies of the encoder layer.
     norm:
@@ -519,7 +519,7 @@ class TransformerDecoder(torch.nn.Module):
     r"""Stack decoder layers and apply an optional final normalization.
 
     Attributes:
-    ----------
+    -----------
     layers:
         Sequential copies of the decoder layer.
     norm:

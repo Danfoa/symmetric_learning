@@ -535,15 +535,10 @@ class GroupHomomorphismBasis(torch.nn.Module):
         dtype = buffer.dtype if buffer is not None else torch.get_default_dtype()
 
         if scheme == "identity":
-            if self.in_rep.size != self.out_rep.size:
-                raise ValueError(
-                    f"'identity' init requires in_rep.size == out_rep.size, got {self.in_rep.size} != "
-                    f"{self.out_rep.size}"
-                )
-            # The identity matrix is the same in every basis, so this is the identity in the *original* basis.
+            # In the original basis, the rectangular identity is projected onto the homomorphism space.
             # projection_coefficients() converts it to the isotypic basis internally to compute the orthogonal
             # projection onto Hom_G(in_rep, out_rep), then returns coefficients back in the original basis.
-            eye = torch.eye(self.out_rep.size, dtype=dtype, device=device)
+            eye = torch.eye(self.out_rep.size, self.in_rep.size, dtype=dtype, device=device)
             if leading_shape:
                 eye = eye.expand(*leading_shape, -1, -1)
             w_dof = self.projection_coefficients(eye)
