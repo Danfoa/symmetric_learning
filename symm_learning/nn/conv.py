@@ -6,9 +6,8 @@ from typing import Literal
 import torch
 from escnn.group import Representation
 
-from symm_learning.nn.linear import eINIT_SCHEMES
 from symm_learning.nn.module import eModule
-from symm_learning.representation_theory import GroupHomomorphismBasis
+from symm_learning.representation_theory import GroupHomomorphismBasis, InitScheme
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ class eConv1d(eModule, torch.nn.Conv1d):
         out_rep: Representation,
         kernel_size: int = 3,
         basis_expansion: Literal["isotypic_expansion", "memory_heavy"] = "isotypic_expansion",
-        init_scheme: eINIT_SCHEMES = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
         **conv1d_kwargs,
     ):
         r"""Initialize the constrained convolution.
@@ -50,7 +49,7 @@ class eConv1d(eModule, torch.nn.Conv1d):
             kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.
             basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for
                 :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.
-            init_scheme (``eINIT_SCHEMES``, optional): Initialization passed to
+            init_scheme (``InitScheme``, optional): Initialization passed to
                 :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to
                 ``"xavier_uniform"``.
             **conv1d_kwargs: Standard :class:`torch.nn.Conv1d` arguments (stride, padding, bias, etc.).
@@ -113,7 +112,7 @@ class eConv1d(eModule, torch.nn.Conv1d):
         return self._expand_bias() if self.has_bias else None
 
     @torch.no_grad()
-    def reset_parameters(self, scheme: eINIT_SCHEMES = "xavier_normal"):
+    def reset_parameters(self, scheme: InitScheme = "xavier_normal"):
         """Reset trainable parameters using the chosen initialization scheme."""
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.Conv1d init
             return super().reset_parameters()
@@ -180,7 +179,7 @@ class eConvTranspose1d(eModule, torch.nn.ConvTranspose1d):
         out_rep: Representation,
         kernel_size: int = 3,
         basis_expansion: Literal["isotypic_expansion", "memory_heavy"] = "isotypic_expansion",
-        init_scheme: eINIT_SCHEMES = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
         **conv1d_kwargs,
     ):
         r"""Initialize the constrained transposed convolution.
@@ -193,7 +192,7 @@ class eConvTranspose1d(eModule, torch.nn.ConvTranspose1d):
             kernel_size (:class:`int`, optional): Spatial kernel size. Defaults to 3.
             basis_expansion (:class:`typing.Literal`, optional): Basis realization strategy for
                 :class:`~symm_learning.representation_theory.GroupHomomorphismBasis`.
-            init_scheme (``eINIT_SCHEMES``, optional): Initialization passed to
+            init_scheme (``InitScheme``, optional): Initialization passed to
                 :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Defaults to
                 ``"xavier_uniform"``.
             **conv1d_kwargs: Standard :class:`torch.nn.ConvTranspose1d` arguments (stride, padding, bias, etc.).
@@ -258,7 +257,7 @@ class eConvTranspose1d(eModule, torch.nn.ConvTranspose1d):
         return bias
 
     @torch.no_grad()
-    def reset_parameters(self, scheme: eINIT_SCHEMES = "xavier_normal"):
+    def reset_parameters(self, scheme: InitScheme = "xavier_normal"):
         """Reset trainable parameters using the chosen initialization scheme."""
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.ConvTranspose1d init
             return super().reset_parameters()

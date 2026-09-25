@@ -10,12 +10,13 @@ from torch.nn.utils import parametrize
 
 from symm_learning.nn.module import eModule
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
-from symm_learning.representation_theory import GroupHomomorphismBasis
+from symm_learning.representation_theory import GroupHomomorphismBasis, InitScheme
 from symm_learning.utils import get_spectral_trivial_mask
 
 logger = logging.getLogger(__name__)
 
-eINIT_SCHEMES = Literal["xavier_normal", "xavier_uniform", "kaiming_normal", "kaiming_uniform"]
+AffineInitScheme = Literal["identity", "random"]
+BiasInitScheme = Literal["zeros"]
 
 
 def impose_linear_equivariance(
@@ -95,7 +96,7 @@ class eLinear(eModule, torch.nn.Linear):
         in_rep: Representation,
         out_rep: Representation,
         bias: bool = True,
-        init_scheme: str | None = "xavier_normal",
+        init_scheme: InitScheme | None = "xavier_normal",
         basis_expansion_scheme: str = "isotypic_expansion",
     ):
         r"""Initialize the equivariant layer.
@@ -107,7 +108,7 @@ class eLinear(eModule, torch.nn.Linear):
                 outputs transform.
             bias (:class:`bool`, optional): Enables the invariant bias if the trivial irrep is present in ``out_rep``.
                 Default: ``True``.
-            init_scheme (:class:`str` | :class:`None`, optional): Initialization method passed to
+            init_scheme (:class:`typing.Literal` | :class:`None`, optional): Initialization method passed to
                 :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Use ``None``
                 to skip initialization. Default: ``"xavier_normal"``.
             basis_expansion_scheme (:class:`str`, optional): Strategy for materializing the basis
@@ -167,13 +168,8 @@ class eLinear(eModule, torch.nn.Linear):
         return self.bias_module.bias if self.bias_module is not None else None
 
     @torch.no_grad()
-    def reset_parameters(self, scheme="xavier_normal"):
-        """Reset all trainable parameters.
-
-        Args:
-            scheme (:class:`str`): Initialization scheme (``"xavier_normal"``, ``"xavier_uniform"``,
-                ``"kaiming_normal"``, or ``"kaiming_uniform"``).
-        """
+    def reset_parameters(self, scheme: InitScheme = "xavier_normal"):
+        """Reset all trainable parameters using the constructor's ``init_scheme`` options."""
         if not hasattr(self, "homo_basis"):  # First call on torch.nn.Linear init
             return super().reset_parameters()
         new_params = self.homo_basis.initialize_params(scheme)
@@ -294,9 +290,14 @@ class InvariantBias(eModule):
         spectral_bias[self.spectral_trivial_mask] = self.bias_dof
         return spectral_bias
 
-    def reset_parameters(self, scheme="zeros"):
+    def reset_parameters(self, scheme: BiasInitScheme = "zeros"):
         """Initialize the invariant bias degrees of freedom."""
         if not self.has_bias:
+            return
+        if scheme == "identity":
+            # An identity map has no additive offset.
+            torch.nn.init.zeros_(self.bias_dof)
+            self.invalidate_cache()
             return
         if scheme == "zeros":
             torch.nn.init.zeros_(self.bias_dof)
@@ -387,7 +388,7 @@ class eAffine(eModule):
         in_rep: Representation,
         bias: bool = True,
         learnable: bool = True,
-        init_scheme: Literal["identity", "random"] | None = "identity",
+        init_scheme: AffineInitScheme | None = "identity",
     ):
         super().__init__()
         self.in_rep, self.out_rep = in_rep, in_rep
@@ -551,7 +552,7 @@ class eAffine(eModule):
 
         return spectral_scale, spectral_bias
 
-    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:
+    def reset_parameters(self, scheme: AffineInitScheme = "identity") -> None:
         """Initialize spectral scale/bias DoFs.
 
         Args:

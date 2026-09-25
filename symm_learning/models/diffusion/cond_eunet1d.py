@@ -9,7 +9,7 @@ from escnn.group import Representation
 from symm_learning.models.diffusion.cond_unet1d import SinusoidalPosEmb
 from symm_learning.nn import IrrepSubspaceNormPooling, eAffine, eConv1d, eConvTranspose1d, eRMSNorm
 from symm_learning.nn.module import eModule
-from symm_learning.representation_theory import direct_sum
+from symm_learning.representation_theory import InitScheme, direct_sum
 
 
 class _eChannelRMSNorm(eModule):
@@ -59,7 +59,7 @@ class eConditionalResidualBlock1D(eModule):
         cond_predict_scale: bool = True,
         activation: torch.nn.Module = torch.nn.ReLU(),
         normalize: bool = True,
-        init_scheme: str | None = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
     ):
         r"""Initialize the conditional residual block.
 
@@ -198,7 +198,7 @@ class eConditionalUnet1D(eModule):
         activation: torch.nn.Module = torch.nn.ReLU(),
         normalize: bool = True,
         downsample: str = "stride",
-        init_scheme: str | None = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
     ):
         super().__init__()
         assert downsample in {"stride", "pooling"}, "downsample must be 'stride' or 'pooling'"

@@ -17,7 +17,7 @@ from symm_learning.nn.activation import (
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.module import eModule
 from symm_learning.nn.normalization import eLayerNorm, eRMSNorm
-from symm_learning.representation_theory import direct_sum
+from symm_learning.representation_theory import InitScheme, direct_sum
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class eTransformerEncoderLayer(eModule):
         bias: bool = True,
         device=None,
         dtype=None,
-        init_scheme: str | None = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
     ) -> None:
         r"""Create an equivariant Transformer encoder layer.
 
@@ -218,7 +218,7 @@ class eTransformerEncoderLayer(eModule):
         return self.dropout2(x)
 
     @torch.no_grad()
-    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+    def reset_parameters(self, scheme: InitScheme = "xavier_uniform") -> None:  # noqa: D102
         logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
         self.linear1.reset_parameters(scheme)
         self.linear2.reset_parameters(scheme)
@@ -308,7 +308,7 @@ class eTransformerDecoderLayer(eModule):
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
         bias: bool = True,
-        init_scheme: str | None = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
     ) -> None:
         r"""Create an equivariant Transformer decoder layer.
 
@@ -553,7 +553,7 @@ class eTransformerDecoderLayer(eModule):
         return self.dropout3(x)
 
     @torch.no_grad()
-    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+    def reset_parameters(self, scheme: InitScheme = "xavier_uniform") -> None:  # noqa: D102
         logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
         # Reset equivariant linear layers (symm_learning.nn.eLinear)
         self.linear1.reset_parameters(scheme)

@@ -9,7 +9,7 @@ from escnn.group import Representation
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.module import eModule
 from symm_learning.nn.pooling import IrrepSubspaceNormPooling
-from symm_learning.representation_theory import direct_sum
+from symm_learning.representation_theory import InitScheme, direct_sum
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class eMLP(eModule):
         dropout: float = 0.0,
         bias: bool = True,
         hidden_rep: Representation | None = None,
-        init_scheme: str | None = "xavier_normal",
+        init_scheme: InitScheme | None = "xavier_normal",
     ) -> None:
         r"""Create an equivariant MLP.
 
@@ -113,7 +113,7 @@ class eMLP(eModule):
         return self.net(x)
 
     @torch.no_grad()
-    def reset_parameters(self, scheme: str = "xavier_normal") -> None:
+    def reset_parameters(self, scheme: InitScheme = "xavier_normal") -> None:
         """Reinitialize all :class:`~symm_learning.nn.linear.eLinear` layers with the provided scheme."""
         for module in self.net:
             if isinstance(module, eLinear):
@@ -146,7 +146,7 @@ class iMLP(eModule):
         dropout: float = 0.0,
         bias: bool = True,
         hidden_rep: Representation | None = None,
-        init_scheme: str | None = "xavier_normal",
+        init_scheme: InitScheme | None = "xavier_normal",
     ):
         r"""Create a group-invariant MLP.
 
@@ -209,7 +209,7 @@ class iMLP(eModule):
         return self.net(x)
 
     @torch.no_grad()
-    def reset_parameters(self, scheme: str = "xavier_normal") -> None:
+    def reset_parameters(self, scheme: InitScheme = "xavier_normal") -> None:
         """Reinitialize all :class:`~symm_learning.nn.linear.eLinear` layers with the provided scheme."""
         self.emlp_backbone.reset_parameters(scheme)
         # Initialize the unconstraine head
@@ -217,10 +217,12 @@ class iMLP(eModule):
             torch.nn.init.xavier_normal_(self.head.weight)
         elif scheme == "xavier_uniform":
             torch.nn.init.xavier_uniform_(self.head.weight)
-        elif scheme == "kaiming_normal":
+        elif scheme in {"kaiming_normal", "he_normal"}:
             torch.nn.init.kaiming_normal_(self.head.weight, nonlinearity="linear")
-        elif scheme == "kaiming_uniform":
+        elif scheme in {"kaiming_uniform", "he_uniform"}:
             torch.nn.init.kaiming_uniform_(self.head.weight, nonlinearity="linear")
+        elif scheme == "identity":
+            torch.nn.init.eye_(self.head.weight)
         logger.debug(f"Initialized iMLP head with scheme '{scheme}'")
 
 

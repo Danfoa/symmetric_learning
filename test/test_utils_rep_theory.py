@@ -133,3 +133,8 @@ def test_hom_basis(group: Group, basis_expansion: str, atol: float = 1e-4, rtol:
     assert torch.allclose(err, torch.zeros_like(err), atol=atol, rtol=rtol), (
         f"Dense initialize_params output not invariant to projection; max error {err.abs().max()}"
     )
+
+    # Identity initialization is the projected identity matrix.
+    W_identity = basis.initialize_params(scheme="identity", return_dense=True)
+    expected_identity = basis.orthogonal_projection(torch.eye(out_rep.size, in_rep.size))
+    assert torch.allclose(W_identity, expected_identity, atol=atol, rtol=rtol)

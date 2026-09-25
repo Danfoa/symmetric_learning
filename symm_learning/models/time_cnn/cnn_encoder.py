@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import torch
 
+from symm_learning.representation_theory import InitScheme
+
 
 class _ChannelRMSNorm(torch.nn.Module):
     """Apply RMSNorm over channel dimension for inputs shaped (B, C, L)."""
@@ -60,7 +62,7 @@ class TimeCNNEncoder(torch.nn.Module):
         mlp_hidden: list[int] = [128],
         downsample: str = "stride",
         append_last_frame: bool = False,
-        init_scheme: str | None = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
     ) -> None:
         super().__init__()
         assert hasattr(hidden_channels, "__iter__") and hasattr(hidden_channels, "__len__"), (

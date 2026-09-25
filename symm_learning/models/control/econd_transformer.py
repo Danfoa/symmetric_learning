@@ -18,7 +18,7 @@ from symm_learning.models.control.cond_transformer import (
     build_input_positions,
 )
 from symm_learning.nn.module import eModule
-from symm_learning.representation_theory import direct_sum
+from symm_learning.representation_theory import InitScheme, direct_sum
 from symm_learning.utils import module_memory
 
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ class eCondTransformer(eModule, GenCondRegressor):
         pos_encoding: Literal["additive_absolute", "additive_relative", "none"] = "additive_absolute",
         norm_first: bool = True,
         norm_module: Literal["layernorm", "rmsnorm"] = "rmsnorm",
-        init_scheme: str = "xavier_uniform",
+        init_scheme: InitScheme = "xavier_uniform",
     ) -> None:
         r"""Create an equivariant conditional transformer regressor.
 
@@ -258,7 +258,7 @@ class eCondTransformer(eModule, GenCondRegressor):
         )
 
     @torch.no_grad()
-    def reset_parameters(self, scheme="xavier_uniform") -> None:
+    def reset_parameters(self, scheme: InitScheme = "xavier_uniform") -> None:
         """Re-initialize all parameters."""
         logger.debug(f"Resetting parameters of {self.__class__.__name__} with scheme: {scheme}")
         self.input_emb.reset_parameters(scheme=scheme)

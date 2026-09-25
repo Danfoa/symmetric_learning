@@ -12,7 +12,7 @@ from symm_learning.linalg import invariant_orthogonal_projector
 from symm_learning.nn.linear import eLinear
 from symm_learning.nn.module import eModule
 from symm_learning.nn.parametrizations import CommutingConstraint, InvariantConstraint
-from symm_learning.representation_theory import direct_sum
+from symm_learning.representation_theory import InitScheme, direct_sum
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class eMultiheadAttention(eModule, torch.nn.MultiheadAttention):
         add_zero_attn: bool = False,
         device=None,
         dtype=None,
-        init_scheme: str | None = "xavier_normal",
+        init_scheme: InitScheme | None = "xavier_normal",
     ) -> None:
         r"""Initialize the equivariant multihead attention.
 
@@ -110,7 +110,7 @@ class eMultiheadAttention(eModule, torch.nn.MultiheadAttention):
             self.reset_parameters(scheme=init_scheme)
 
     @torch.no_grad()
-    def reset_parameters(self, scheme="xavier_uniform") -> None:
+    def reset_parameters(self, scheme: InitScheme = "xavier_uniform") -> None:
         """Overload parent method to take into account equivariance constraints."""
         if not hasattr(self, "parametrizations"):
             return super()._reset_parameters()
@@ -168,7 +168,7 @@ class PositionalAttentionBase(torch.nn.Module, ABC):
         optional attention weights.
 
     Attributes:
-    ----------
+    -----------
     This base class does not define any storage beyond the standard
     :class:`torch.nn.Module` state. Concrete subclasses define their own
     positional encoder and attention parameters.
@@ -324,7 +324,7 @@ class AdditivePosMultiheadAttention(PositionalAttentionBase):
     - Returns: the attention output and, optionally, attention weights.
 
     Attributes:
-    ----------
+    -----------
     pos_emb:
         Learnable table with shape ``(max_len, D)`` storing the absolute
         positional embeddings.
@@ -461,7 +461,7 @@ class eAdditivePosMultiheadAttention(eModule, PositionalAttentionBase):
         bias: bool = True,
         device=None,
         dtype=None,
-        init_scheme: str | None = "xavier_normal",
+        init_scheme: InitScheme | None = "xavier_normal",
     ) -> None:
         super().__init__()
         if not isinstance(max_len, int) or max_len <= 0:
@@ -551,7 +551,7 @@ class eAdditivePosMultiheadAttention(eModule, PositionalAttentionBase):
         return pos_emb
 
     @torch.no_grad()
-    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+    def reset_parameters(self, scheme: InitScheme = "xavier_uniform") -> None:  # noqa: D102
         self.attn.reset_parameters(scheme=scheme)
         self.pos_emb.normal_(mean=0.0, std=0.02)
         self.pos_emb.copy_(
@@ -590,7 +590,7 @@ class AdditiveRelMultiheadAttention(PositionalAttentionBase):
     - Returns: the attention output and, optionally, attention weights.
 
     Attributes:
-    ----------
+    -----------
     rel_bias:
         Learnable table with shape ``(2 * max_distance + 1,)`` storing the
         scalar bias for each clipped relative offset.
@@ -813,7 +813,7 @@ class eAdditiveRelMultiheadAttention(eModule, PositionalAttentionBase):
         bias: bool = True,
         device=None,
         dtype=None,
-        init_scheme: str | None = "xavier_normal",
+        init_scheme: InitScheme | None = "xavier_normal",
     ) -> None:
         super().__init__()
         if not isinstance(max_distance, int) or max_distance <= 0:
@@ -982,7 +982,7 @@ class eAdditiveRelMultiheadAttention(eModule, PositionalAttentionBase):
         return self.rel_bias[clipped_positions]
 
     @torch.no_grad()
-    def reset_parameters(self, scheme="xavier_uniform") -> None:  # noqa: D102
+    def reset_parameters(self, scheme: InitScheme = "xavier_uniform") -> None:  # noqa: D102
         self.attn.reset_parameters(scheme=scheme)
         self.rel_bias.normal_(mean=0.0, std=0.02)
 
@@ -1025,7 +1025,7 @@ class RoPEMultiheadAttention(PositionalAttentionBase):
         layout as the input and ``attn_weights`` is ``(B, T_q, T_k)`` when requested.
 
     Attributes:
-    ----------
+    -----------
     embed_dim:
         Total feature width ``D``.
     num_heads:
@@ -1223,7 +1223,7 @@ class RotaryEmbedding(torch.nn.Module):
     - Returns: ``(cos, sin)`` with shape ``(P, dim / 2)`` or ``(B, P, dim / 2)``.
 
     Attributes:
-    ----------
+    -----------
     dim:
         Number of channels rotated by RoPE.
     base:

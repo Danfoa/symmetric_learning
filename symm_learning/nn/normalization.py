@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal
 
 import torch
 from escnn.group import Representation
 
 import symm_learning.stats
 from symm_learning.linalg import irrep_radii
-from symm_learning.nn.linear import eAffine
+from symm_learning.nn.linear import AffineInitScheme, eAffine
 from symm_learning.nn.module import eModule
 from symm_learning.representation_theory import direct_sum
 
@@ -41,7 +40,7 @@ class eRMSNorm(eModule):
         equiv_affine (:class:`bool`): If ``True``, apply a symmetry-preserving
             :class:`~symm_learning.nn.linear.eAffine` after normalization.
         device, dtype: Optional tensor factory kwargs passed to the affine parameters.
-        init_scheme (Literal["identity", "random"] | None): Initialization scheme forwarded to
+        init_scheme (AffineInitScheme | None): Initialization scheme forwarded to
             :meth:`~symm_learning.nn.linear.eAffine.reset_parameters`. Set to ``None`` to skip initialization (useful
             when loading checkpoints).
 
@@ -61,7 +60,7 @@ class eRMSNorm(eModule):
         equiv_affine: bool = True,
         device=None,
         dtype=None,
-        init_scheme: Literal["identity", "random"] | None = "identity",
+        init_scheme: AffineInitScheme | None = "identity",
     ):
         super().__init__()
         factory_kwargs = {"device": device, "dtype": dtype}
@@ -93,7 +92,7 @@ class eRMSNorm(eModule):
             normalized = self.affine(normalized)
         return normalized
 
-    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:
+    def reset_parameters(self, scheme: AffineInitScheme = "identity") -> None:
         """(Re)initialize the optional affine transform using the provided scheme."""
         if hasattr(self, "affine"):
             self.affine.reset_parameters(scheme)
@@ -147,7 +146,7 @@ class eLayerNorm(eModule):
         bias: bool = True,
         device=None,
         dtype=None,
-        init_scheme: Literal["identity", "random"] | None = "identity",
+        init_scheme: AffineInitScheme | None = "identity",
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
@@ -172,7 +171,7 @@ class eLayerNorm(eModule):
 
         self.reset_parameters(init_scheme)
 
-    def reset_parameters(self, scheme: Literal["identity", "random"] = "identity") -> None:  # noqa: D102
+    def reset_parameters(self, scheme: AffineInitScheme = "identity") -> None:  # noqa: D102
         if self.equiv_affine:
             self.affine.reset_parameters(scheme)
 

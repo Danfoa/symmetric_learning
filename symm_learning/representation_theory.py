@@ -31,7 +31,7 @@ import functools
 import itertools
 import logging
 from collections import OrderedDict
-from typing import Callable
+from typing import Callable, Literal
 
 import numpy as np
 import torch
@@ -42,6 +42,10 @@ from symm_learning.linalg import IsotypicTensorCache
 from symm_learning.utils import CallableDict
 
 logger = logging.getLogger(__name__)
+
+InitScheme = Literal[
+    "xavier_normal", "xavier_uniform", "kaiming_normal", "kaiming_uniform", "he_normal", "he_uniform", "identity"
+]
 
 # Global cache for basis elements storage.
 _cache_ = {}
@@ -488,13 +492,15 @@ class GroupHomomorphismBasis(torch.nn.Module):
 
     @torch.no_grad()
     def initialize_params(
-        self, scheme: str = "kaiming_uniform", return_dense: bool = False, leading_shape: int | tuple | None = None
+        self,
+        scheme: InitScheme = "kaiming_uniform",
+        return_dense: bool = False,
+        leading_shape: int | tuple | None = None,
     ) -> torch.Tensor:
         r"""Sample valid parameters in :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}},\rho_{\mathcal{Y}})`.
 
         Args:
-            scheme (:class:`str`): Initialization scheme (``"xavier_normal"``, ``"xavier_uniform"``,
-                ``"kaiming_normal"``, or ``"kaiming_uniform"``).
+            scheme (:class:`typing.Literal`): Initialization scheme.
             return_dense: If ``True``, return dense weights in the original basis; otherwise return basis expansion
                 coefficients.
             leading_shape: Optional leading dimensions (e.g., batch size or a tuple of dims). ``None`` yields no leading
@@ -527,6 +533,21 @@ class GroupHomomorphismBasis(torch.nn.Module):
         buffer = next(self.buffers(), None)
         device = buffer.device if buffer is not None else None
         dtype = buffer.dtype if buffer is not None else torch.get_default_dtype()
+
+        if scheme == "identity":
+            if self.in_rep.size != self.out_rep.size:
+                raise ValueError(
+                    f"'identity' init requires in_rep.size == out_rep.size, got {self.in_rep.size} != "
+                    f"{self.out_rep.size}"
+                )
+            # The identity matrix is the same in every basis, so this is the identity in the *original* basis.
+            # projection_coefficients() converts it to the isotypic basis internally to compute the orthogonal
+            # projection onto Hom_G(in_rep, out_rep), then returns coefficients back in the original basis.
+            eye = torch.eye(self.out_rep.size, dtype=dtype, device=device)
+            if leading_shape:
+                eye = eye.expand(*leading_shape, -1, -1)
+            w_dof = self.projection_coefficients(eye)
+            return self(w_dof) if return_dense else w_dof
 
         w_dof = torch.zeros((*leading_shape, self.dim), dtype=dtype, device=device)
 

@@ -9,7 +9,7 @@ from escnn.group import Representation
 from symm_learning.models.emlp import eMLP, iMLP
 from symm_learning.nn import eConv1d, eRMSNorm
 from symm_learning.nn.module import eModule
-from symm_learning.representation_theory import direct_sum
+from symm_learning.representation_theory import InitScheme, direct_sum
 
 
 class _eChannelRMSNorm(eModule):
@@ -73,7 +73,7 @@ class eTimeCNNEncoder(eModule):
         mlp_hidden: list[int] = (128,),
         downsample: str = "stride",
         append_last_frame: bool = False,
-        init_scheme: str | None = "xavier_uniform",
+        init_scheme: InitScheme | None = "xavier_uniform",
     ) -> None:
         r"""Create an equivariant time-series CNN encoder.
 
