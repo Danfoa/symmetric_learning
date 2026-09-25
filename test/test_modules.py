@@ -445,6 +445,41 @@ def test_linear(group: Group, mx: int, my: int, basis_expansion_scheme: str):
         pytest.param(Icosahedral(), id="icosahedral"),
     ],
 )
+def test_elinear_identity_init(group: Group):
+    """The 'identity' init scheme must recover the identity map when in_rep == out_rep."""
+    import torch
+    from symm_learning.nn.linear import eLinear
+
+    G = group
+    rep = direct_sum([G.regular_representation, G.irrep(*G.trivial_representation.id)])
+
+    layer = eLinear(rep, rep, bias=True, init_scheme="identity")
+    x = torch.randn(8, rep.size)
+    assert torch.allclose(layer(x), x, atol=1e-5, rtol=1e-5), "identity init must reproduce the input exactly"
+    assert torch.allclose(layer.bias, torch.zeros_like(layer.bias)), "identity init must leave the bias at zero"
+    check_equivariance(layer, atol=1e-5, rtol=1e-5)
+
+    # A different representation of the same size gets the orthogonal projection of the identity, not an error.
+    permuted_rep = direct_sum([G.irrep(*G.trivial_representation.id), G.regular_representation])
+    layer_proj = eLinear(rep, permuted_rep, bias=False, init_scheme="identity")
+    W_proj = layer_proj.weight
+    W_reprojected = layer_proj.homo_basis.orthogonal_projection(W_proj)
+    assert torch.allclose(W_proj, W_reprojected, atol=1e-5, rtol=1e-5), (
+        "identity init must already lie in Hom_G(in_rep, out_rep)"
+    )
+
+    # Mismatched sizes are not a valid identity map.
+    with pytest.raises(ValueError):
+        eLinear(rep, direct_sum([G.regular_representation]), bias=False, init_scheme="identity")
+
+
+@pytest.mark.parametrize(
+    "group",
+    [
+        pytest.param(CyclicGroup(5), id="cyclic5"),
+        pytest.param(Icosahedral(), id="icosahedral"),
+    ],
+)
 @pytest.mark.parametrize("mx", [3])
 @pytest.mark.parametrize("my", [2])
 @pytest.mark.parametrize("basis_expansion_scheme", ["memory_heavy", "isotypic_expansion"])

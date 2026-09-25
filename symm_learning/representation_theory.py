@@ -494,7 +494,10 @@ class GroupHomomorphismBasis(torch.nn.Module):
 
         Args:
             scheme (:class:`str`): Initialization scheme (``"xavier_normal"``, ``"xavier_uniform"``,
-                ``"kaiming_normal"``, or ``"kaiming_uniform"``).
+                ``"kaiming_normal"``, ``"kaiming_uniform"``, or ``"identity"``). ``"identity"`` requires
+                ``in_rep.size == out_rep.size`` and orthogonally projects the identity matrix (in the original
+                basis) onto :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\mathcal{X}}, \rho_{\mathcal{Y}})`, which
+                recovers the exact identity map whenever it is itself :math:`\mathbb{G}`-equivariant.
             return_dense: If ``True``, return dense weights in the original basis; otherwise return basis expansion
                 coefficients.
             leading_shape: Optional leading dimensions (e.g., batch size or a tuple of dims). ``None`` yields no leading
@@ -527,6 +530,21 @@ class GroupHomomorphismBasis(torch.nn.Module):
         buffer = next(self.buffers(), None)
         device = buffer.device if buffer is not None else None
         dtype = buffer.dtype if buffer is not None else torch.get_default_dtype()
+
+        if scheme == "identity":
+            if self.in_rep.size != self.out_rep.size:
+                raise ValueError(
+                    f"'identity' init requires in_rep.size == out_rep.size, got {self.in_rep.size} != "
+                    f"{self.out_rep.size}"
+                )
+            # The identity matrix is the same in every basis, so this is the identity in the *original* basis.
+            # projection_coefficients() converts it to the isotypic basis internally to compute the orthogonal
+            # projection onto Hom_G(in_rep, out_rep), then returns coefficients back in the original basis.
+            eye = torch.eye(self.out_rep.size, dtype=dtype, device=device)
+            if leading_shape:
+                eye = eye.expand(*leading_shape, -1, -1)
+            w_dof = self.projection_coefficients(eye)
+            return self(w_dof) if return_dense else w_dof
 
         w_dof = torch.zeros((*leading_shape, self.dim), dtype=dtype, device=device)
 

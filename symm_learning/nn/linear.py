@@ -108,8 +108,10 @@ class eLinear(eModule, torch.nn.Linear):
             bias (:class:`bool`, optional): Enables the invariant bias if the trivial irrep is present in ``out_rep``.
                 Default: ``True``.
             init_scheme (:class:`str` | :class:`None`, optional): Initialization method passed to
-                :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`. Use ``None``
-                to skip initialization. Default: ``"xavier_normal"``.
+                :meth:`~symm_learning.representation_theory.GroupHomomorphismBasis.initialize_params`
+                (e.g. ``"xavier_normal"``, ``"kaiming_uniform"``, or ``"identity"`` to initialize the map as the
+                identity, which requires ``in_rep.size == out_rep.size``). Use ``None`` to skip initialization.
+                Default: ``"xavier_normal"``.
             basis_expansion_scheme (:class:`str`, optional): Strategy for materializing the basis
                 (``"isotypic_expansion"`` or ``"memory_heavy"``). Default: ``"isotypic_expansion"``.
 
@@ -297,6 +299,11 @@ class InvariantBias(eModule):
     def reset_parameters(self, scheme="zeros"):
         """Initialize the invariant bias degrees of freedom."""
         if not self.has_bias:
+            return
+        if scheme == "identity":
+            # An identity map has no additive offset.
+            torch.nn.init.zeros_(self.bias_dof)
+            self.invalidate_cache()
             return
         if scheme == "zeros":
             torch.nn.init.zeros_(self.bias_dof)
