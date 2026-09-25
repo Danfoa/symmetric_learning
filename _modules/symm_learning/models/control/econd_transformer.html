@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -7,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.models.control.econd_transformer &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
+    <title>symm_learning.models.control.econd_transformer &#8212; Symmetric Learning v0.8.1 Docs [main]</title>
   
   
   
@@ -26,19 +25,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
-    <script src="../../../../_static/documentation_options.js?v=918ced64"></script>
+    <script src="../../../../_static/documentation_options.js?v=ec16d22d"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/models/control/econd_transformer';</script>
@@ -48,7 +47,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.6" />
+  <meta name="docsearch:version" content="0.8.1" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -96,7 +95,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -122,7 +121,7 @@
     <img src="../../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.6 - main</p>
+    <p class="title logo__title">v0.8.1 - main</p>
   
 </a></div>
     
@@ -167,17 +166,24 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
         <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -190,8 +196,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
       
@@ -262,17 +267,24 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
           <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -285,8 +297,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
         
@@ -370,7 +381,7 @@
     <span class="n">build_input_positions</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">eModule</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">direct_sum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InitScheme</span><span class="p">,</span> <span class="n">direct_sum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">module_memory</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -379,7 +390,7 @@
 <div class="viewcode-block" id="eCondTransformer">
 <a class="viewcode-back" href="../../../../generated/symm_learning.models.eCondTransformer.html#symm_learning.models.eCondTransformer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">eCondTransformer</span><span class="p">(</span><span class="n">eModule</span><span class="p">,</span> <span class="n">GenCondRegressor</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant encoder/decoder Transformer with configurable positional attention.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Equivariant encoder/decoder Transformer with configurable positional attention.</span>
 
 <span class="sd">    Let :math:`A := \texttt{num\_cond\_layers}` and :math:`B := \texttt{num\_layers}`. This module is the</span>
 <span class="sd">    equivariant counterpart of :class:`~symm_learning.models.control.cond_transformer.CondTransformer`: an</span>
@@ -404,23 +415,23 @@
 
 <span class="sd">    Supported positional encodings are:</span>
 
-<span class="sd">    ``&quot;additive_absolute&quot;``</span>
+<span class="sd">    ``"additive_absolute"``</span>
 <span class="sd">        Uses :class:`~symm_learning.nn.activation.eAdditivePosMultiheadAttention`. Learned absolute</span>
 <span class="sd">        positions are added in the equivariant embedding space before self-attention or cross-attention.</span>
 
-<span class="sd">    ``&quot;additive_relative&quot;``</span>
+<span class="sd">    ``"additive_relative"``</span>
 <span class="sd">        Uses :class:`~symm_learning.nn.activation.eAdditiveRelMultiheadAttention`. Learned relative</span>
 <span class="sd">        distance biases are injected into attention logits, preserving the time-translation structure of the</span>
 <span class="sd">        sequence while keeping the feature maps equivariant.</span>
 
-<span class="sd">    ``&quot;none&quot;``</span>
+<span class="sd">    ``"none"``</span>
 <span class="sd">        Uses :class:`~symm_learning.nn.activation.eMultiheadAttention` with no explicit positional encoding.</span>
 
 <span class="sd">    Temporal assumptions:</span>
 
 <span class="sd">    * :math:`Z` must already be ordered in time from past to present.</span>
 <span class="sd">    * :math:`X` must already be ordered from the first predicted action to the last predicted action.</span>
-<span class="sd">    * For ``&quot;additive_relative&quot;``, the last conditioning token :math:`\mathbf{z}_{0}` and the first action</span>
+<span class="sd">    * For ``"additive_relative"``, the last conditioning token :math:`\mathbf{z}_{0}` and the first action</span>
 <span class="sd">      token :math:`\mathbf{x}_{0}` are both placed at time index :math:`0`, so cross-attention is anchored</span>
 <span class="sd">      at the present time.</span>
 <span class="sd">    * The optimisation-step token :math:`k` is prepended to the conditioning memory, but it is not treated as</span>
@@ -435,7 +446,7 @@
 <span class="sd">        \rho_{\mathcal{Z}}(g)\mathbf{Z},\, k)</span>
 <span class="sd">        = \rho_{\mathcal{Y}}(g)\,\mathbf{f}_{\mathbf{\theta}}(\mathbf{X}_k,\mathbf{Z},k),</span>
 <span class="sd">        \qquad \forall g \in \mathbb{G}.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -451,12 +462,12 @@
         <span class="n">p_drop_attn</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
         <span class="n">causal_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">num_cond_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">pos_encoding</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;additive_absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;additive_relative&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;additive_absolute&quot;</span><span class="p">,</span>
+        <span class="n">pos_encoding</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"additive_absolute"</span><span class="p">,</span> <span class="s2">"additive_relative"</span><span class="p">,</span> <span class="s2">"none"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"additive_absolute"</span><span class="p">,</span>
         <span class="n">norm_first</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">norm_module</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;layernorm&quot;</span><span class="p">,</span> <span class="s2">&quot;rmsnorm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;rmsnorm&quot;</span><span class="p">,</span>
-        <span class="n">init_scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;xavier_uniform&quot;</span><span class="p">,</span>
+        <span class="n">norm_module</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"layernorm"</span><span class="p">,</span> <span class="s2">"rmsnorm"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"rmsnorm"</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">=</span> <span class="s2">"xavier_uniform"</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Create an equivariant conditional transformer regressor.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Create an equivariant conditional transformer regressor.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` of the input tokens.</span>
@@ -475,12 +486,12 @@
 <span class="sd">            causal_attn: Whether to mask future tokens (causal masking).</span>
 <span class="sd">            num_cond_layers: Number of transformer encoder layers for processing conditioning tokens.</span>
 <span class="sd">                If 0, an eMLP is used instead.</span>
-<span class="sd">            pos_encoding: Positional attention backend (``&quot;additive_absolute&quot;``,</span>
-<span class="sd">                ``&quot;additive_relative&quot;``, or ``&quot;none&quot;``).</span>
+<span class="sd">            pos_encoding: Positional attention backend (``"additive_absolute"``,</span>
+<span class="sd">                ``"additive_relative"``, or ``"none"``).</span>
 <span class="sd">            norm_first: Whether to apply normalization before each residual branch.</span>
-<span class="sd">            norm_module: Normalization layer type (``&#39;layernorm&#39;`` or ``&#39;rmsnorm&#39;``).</span>
+<span class="sd">            norm_module: Normalization layer type (``'layernorm'`` or ``'rmsnorm'``).</span>
 <span class="sd">            init_scheme: Initialization scheme for equivariant layers.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">out_rep</span> <span class="o">=</span> <span class="n">out_rep</span> <span class="ow">or</span> <span class="n">in_rep</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">cond_rep</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
 
@@ -496,13 +507,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">p_drop_emb</span><span class="p">)</span>
 
         <span class="n">G</span> <span class="o">=</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
-        <span class="k">assert</span> <span class="n">cond_rep</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">G</span> <span class="o">==</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="s2">&quot;All representations must belong to the same group&quot;</span>
+        <span class="k">assert</span> <span class="n">cond_rep</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">G</span> <span class="o">==</span> <span class="n">out_rep</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="s2">"All representations must belong to the same group"</span>
         <span class="k">if</span> <span class="n">embedding_dim</span> <span class="o">%</span> <span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;embedding_dim (</span><span class="si">{</span><span class="n">embedding_dim</span><span class="si">}</span><span class="s2">) must be a multiple of the group order (</span><span class="si">{</span><span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"embedding_dim (</span><span class="si">{</span><span class="n">embedding_dim</span><span class="si">}</span><span class="s2">) must be a multiple of the group order (</span><span class="si">{</span><span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
         <span class="n">regular_copies</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">embedding_dim</span> <span class="o">//</span> <span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="n">regular_copies</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;invariant_projector&quot;</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"invariant_projector"</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_emb</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eLinear</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eLinear</span><span class="p">(</span><span class="n">cond_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
@@ -511,7 +522,7 @@
         <span class="n">max_rel_distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_horizon</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_token_horizon</span> <span class="o">-</span> <span class="mi">2</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_build_attn</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">pos_encoding</span> <span class="o">==</span> <span class="s2">&quot;additive_absolute&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pos_encoding</span> <span class="o">==</span> <span class="s2">"additive_absolute"</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eAdditivePosMultiheadAttention</span><span class="p">(</span>
                     <span class="n">in_rep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span>
                     <span class="n">num_heads</span><span class="o">=</span><span class="n">num_attention_heads</span><span class="p">,</span>
@@ -520,7 +531,7 @@
                     <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pos_encoding</span> <span class="o">==</span> <span class="s2">&quot;additive_relative&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">pos_encoding</span> <span class="o">==</span> <span class="s2">"additive_relative"</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eAdditiveRelMultiheadAttention</span><span class="p">(</span>
                     <span class="n">in_rep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span>
                     <span class="n">num_heads</span><span class="o">=</span><span class="n">num_attention_heads</span><span class="p">,</span>
@@ -529,7 +540,7 @@
                     <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">pos_encoding</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">pos_encoding</span> <span class="o">==</span> <span class="s2">"none"</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eMultiheadAttention</span><span class="p">(</span>
                     <span class="n">in_rep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span>
                     <span class="n">num_heads</span><span class="o">=</span><span class="n">num_attention_heads</span><span class="p">,</span>
@@ -539,8 +550,8 @@
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Unknown pos_encoding=</span><span class="si">{</span><span class="n">pos_encoding</span><span class="si">!r}</span><span class="s2">. Expected &quot;</span>
-                    <span class="s2">&quot;&#39;additive_absolute&#39;, &#39;additive_relative&#39;, or &#39;none&#39;.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Unknown pos_encoding=</span><span class="si">{</span><span class="n">pos_encoding</span><span class="si">!r}</span><span class="s2">. Expected "</span>
+                    <span class="s2">"'additive_absolute', 'additive_relative', or 'none'."</span>
                 <span class="p">)</span>
 
         <span class="c1"># Conditioning encoder</span>
@@ -556,15 +567,15 @@
                 <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Initializing </span><span class="si">{</span><span class="n">num_cond_layers</span><span class="si">}</span><span class="s2"> layers of eTransformerEncoderLayer of &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">encoder_layer</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">M parameters each&quot;</span>
+                <span class="sa">f</span><span class="s2">"Initializing </span><span class="si">{</span><span class="n">num_cond_layers</span><span class="si">}</span><span class="s2"> layers of eTransformerEncoderLayer of "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">encoder_layer</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">M parameters each"</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">(</span>
                 <span class="n">encoder_layer</span><span class="o">=</span><span class="n">encoder_layer</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="n">num_cond_layers</span><span class="p">,</span> <span class="n">enable_nested_tensor</span><span class="o">=</span><span class="kc">False</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">hidden_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initializing eMLP encoder with hidden representation </span><span class="si">{</span><span class="n">hidden_rep</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Initializing eMLP encoder with hidden representation </span><span class="si">{</span><span class="n">hidden_rep</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
                 <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eLinear</span><span class="p">(</span><span class="n">in_rep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="o">=</span><span class="n">hidden_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Mish</span><span class="p">(),</span>
@@ -583,7 +594,7 @@
             <span class="n">norm_module</span><span class="o">=</span><span class="n">norm_module</span><span class="p">,</span>
             <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initializing </span><span class="si">{</span><span class="n">num_layers</span><span class="si">}</span><span class="s2"> layers of eTransformerDecoderLayer&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Initializing </span><span class="si">{</span><span class="n">num_layers</span><span class="si">}</span><span class="s2"> layers of eTransformerDecoderLayer"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerDecoder</span><span class="p">(</span><span class="n">decoder_layer</span><span class="o">=</span><span class="n">decoder_layer</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="n">num_layers</span><span class="p">)</span>
 
         <span class="c1"># Self-Attention and Cross-Attention mask.</span>
@@ -591,32 +602,32 @@
         <span class="c1"># composed of a inference-time optimization step token and the observation conditioning tokens.</span>
         <span class="k">if</span> <span class="n">causal_attn</span><span class="p">:</span>
             <span class="n">self_att_mask</span><span class="p">,</span> <span class="n">cross_att_mask</span> <span class="o">=</span> <span class="n">build_causal_attention_masks</span><span class="p">(</span><span class="n">in_horizon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_token_horizon</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;self_att_mask&quot;</span><span class="p">,</span> <span class="n">self_att_mask</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;cross_att_mask&quot;</span><span class="p">,</span> <span class="n">cross_att_mask</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"self_att_mask"</span><span class="p">,</span> <span class="n">self_att_mask</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"cross_att_mask"</span><span class="p">,</span> <span class="n">cross_att_mask</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">self_att_mask</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cross_att_mask</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># Decoder head</span>
-        <span class="k">if</span> <span class="n">norm_module</span> <span class="o">==</span> <span class="s2">&quot;layernorm&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">norm_module</span> <span class="o">==</span> <span class="s2">"layernorm"</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eLayerNorm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">equiv_affine</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># rmsnorm</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eRMSNorm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">equiv_affine</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eLinear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span>
-        <span class="n">trainable_mem</span><span class="p">,</span> <span class="n">non_trainable_mem</span> <span class="o">=</span> <span class="n">module_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;MiB&quot;</span><span class="p">)</span>
+        <span class="n">trainable_mem</span><span class="p">,</span> <span class="n">non_trainable_mem</span> <span class="o">=</span> <span class="n">module_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">"MiB"</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">]: </span><span class="si">{</span><span class="n">trainable_mem</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> MiB trainable, </span><span class="si">{</span><span class="n">non_trainable_mem</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;MiB non-trainable parameters.&quot;</span>
+            <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">]: </span><span class="si">{</span><span class="n">trainable_mem</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> MiB trainable, </span><span class="si">{</span><span class="n">non_trainable_mem</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"MiB non-trainable parameters."</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="eCondTransformer.reset_parameters">
 <a class="viewcode-back" href="../../../../generated/symm_learning.models.eCondTransformer.html#symm_learning.models.eCondTransformer.reset_parameters">[docs]</a>
     <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;xavier_uniform&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Re-initialize all parameters.&quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resetting parameters of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">=</span> <span class="s2">"xavier_uniform"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Re-initialize all parameters."""</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Resetting parameters of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_emb</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
@@ -626,32 +637,32 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eTransformerEncoderLayer</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unaccounted encoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resetting encoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:[</span><span class="si">{</span><span class="n">layer</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">] with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unaccounted encoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Resetting encoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:[</span><span class="si">{</span><span class="n">layer</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">] with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
                 <span class="n">layer</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">):</span>  <span class="c1"># eMLP.</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eLinear</span><span class="p">):</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resetting encoder module </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:[</span><span class="si">{</span><span class="n">module</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">] with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Resetting encoder module </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:[</span><span class="si">{</span><span class="n">module</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">] with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
                     <span class="n">module</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">parameters</span><span class="p">(</span><span class="n">recurse</span><span class="o">=</span><span class="kc">False</span><span class="p">)):</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unaccounted encoder module </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unaccounted encoder module </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unaccounted encoder module </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unaccounted encoder module </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="c1"># Initialize decoder layers.</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eTransformerDecoderLayer</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unaccounted decoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resetting decoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:[</span><span class="si">{</span><span class="n">layer</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">] with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unaccounted decoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Resetting decoder layer </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:[</span><span class="si">{</span><span class="n">layer</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">] with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="n">layer</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">]: parameters initialized with `</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">` scheme.&quot;</span><span class="p">)</span></div>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">]: parameters initialized with `</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">` scheme."</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="eCondTransformer.get_optim_groups">
 <a class="viewcode-back" href="../../../../generated/symm_learning.models.eCondTransformer.html#symm_learning.models.eCondTransformer.get_optim_groups">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_optim_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weight_decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Todo.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Todo."""</span>
         <span class="n">decay</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="n">no_decay</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="n">whitelist_weight_modules</span> <span class="o">=</span> <span class="p">(</span><span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eLinear</span><span class="p">,</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">eMultiheadAttention</span><span class="p">)</span>
@@ -661,31 +672,31 @@
             <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">:</span>
                     <span class="k">continue</span>
-                <span class="n">fpn</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">module_name</span> <span class="k">else</span> <span class="n">param_name</span>
-                <span class="k">if</span> <span class="n">param_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">param_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">):</span>
+                <span class="n">fpn</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">module_name</span> <span class="k">else</span> <span class="n">param_name</span>
+                <span class="k">if</span> <span class="n">param_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"bias"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">param_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"bias"</span><span class="p">):</span>
                     <span class="n">no_decay</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fpn</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="n">param_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">whitelist_weight_modules</span><span class="p">):</span>
+                <span class="k">elif</span> <span class="n">param_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"weight"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">whitelist_weight_modules</span><span class="p">):</span>
                     <span class="n">decay</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fpn</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="p">(</span>
-                    <span class="n">param_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">)</span>
+                    <span class="n">param_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"weight"</span><span class="p">)</span>
                     <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">blacklist_weight_modules</span><span class="p">)</span>
-                    <span class="ow">or</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;pos_emb&quot;</span><span class="p">,</span> <span class="s2">&quot;rel_bias&quot;</span><span class="p">}</span>
+                    <span class="ow">or</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"pos_emb"</span><span class="p">,</span> <span class="s2">"rel_bias"</span><span class="p">}</span>
                 <span class="p">):</span>
                     <span class="n">no_decay</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fpn</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized parameter </span><span class="si">{</span><span class="n">fpn</span><span class="si">}</span><span class="s2"> in module </span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unrecognized parameter </span><span class="si">{</span><span class="n">fpn</span><span class="si">}</span><span class="s2"> in module </span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="n">param_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">pn</span><span class="p">:</span> <span class="n">p</span> <span class="k">for</span> <span class="n">pn</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">()}</span>
         <span class="n">inter_params</span> <span class="o">=</span> <span class="n">decay</span> <span class="o">&amp;</span> <span class="n">no_decay</span>
         <span class="n">union_params</span> <span class="o">=</span> <span class="n">decay</span> <span class="o">|</span> <span class="n">no_decay</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inter_params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;parameters </span><span class="si">{</span><span class="n">inter_params</span><span class="si">}</span><span class="s2"> in both decay/no_decay&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inter_params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"parameters </span><span class="si">{</span><span class="n">inter_params</span><span class="si">}</span><span class="s2"> in both decay/no_decay"</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">-</span> <span class="n">union_params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;parameters </span><span class="si">{</span><span class="n">param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">union_params</span><span class="si">}</span><span class="s2"> not separated into decay/no_decay&quot;</span>
+            <span class="sa">f</span><span class="s2">"parameters </span><span class="si">{</span><span class="n">param_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">union_params</span><span class="si">}</span><span class="s2"> not separated into decay/no_decay"</span>
         <span class="p">)</span>
 
         <span class="n">optim_groups</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">{</span><span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">param_dict</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">decay</span><span class="p">)],</span> <span class="s2">&quot;weight_decay&quot;</span><span class="p">:</span> <span class="n">weight_decay</span><span class="p">},</span>
-            <span class="p">{</span><span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">param_dict</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">no_decay</span><span class="p">)],</span> <span class="s2">&quot;weight_decay&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"params"</span><span class="p">:</span> <span class="p">[</span><span class="n">param_dict</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">decay</span><span class="p">)],</span> <span class="s2">"weight_decay"</span><span class="p">:</span> <span class="n">weight_decay</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"params"</span><span class="p">:</span> <span class="p">[</span><span class="n">param_dict</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">no_decay</span><span class="p">)],</span> <span class="s2">"weight_decay"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
         <span class="p">]</span>
         <span class="k">return</span> <span class="n">optim_groups</span></div>
 
@@ -704,12 +715,12 @@
         <span class="n">opt_step</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">Z</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Forward pass approximating :math:`V_k = f(X_k, Z, k)`.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Forward pass approximating :math:`V_k = f(X_k, Z, k)`."""</span>
         <span class="k">assert</span> <span class="n">X</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_horizon</span><span class="p">,</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Expected X shape (B, Tx&lt;=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_horizon</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) got </span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Expected X shape (B, Tx&lt;=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_horizon</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) got </span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
         <span class="k">assert</span> <span class="n">Z</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_horizon</span><span class="p">,</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Expected Z shape (B, Tz&lt;=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_horizon</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) got </span><span class="si">{</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Expected Z shape (B, Tz&lt;=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_horizon</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) got </span><span class="si">{</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -718,11 +729,11 @@
             <span class="n">opt_steps</span> <span class="o">=</span> <span class="n">opt_step</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">opt_steps</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">scalar_tensor</span><span class="p">(</span><span class="n">opt_step</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="c1"># broadcast to batch dimension in a way that&#39;s compatible with ONNX/Core ML</span>
+        <span class="c1"># broadcast to batch dimension in a way that's compatible with ONNX/Core ML</span>
         <span class="n">opt_steps</span> <span class="o">=</span> <span class="n">opt_steps</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
         <span class="n">opt_time_emb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_time_emb</span><span class="p">(</span><span class="n">opt_steps</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (B, 1, D)</span>
-        <span class="c1"># Project time embedding onto embedding space&#39;s invariant subspace</span>
-        <span class="n">opt_time_emb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">invariant_projector</span><span class="p">,</span> <span class="n">opt_time_emb</span><span class="p">)</span>
+        <span class="c1"># Project time embedding onto embedding space's invariant subspace</span>
+        <span class="n">opt_time_emb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ij,...j-&gt;...i"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">invariant_projector</span><span class="p">,</span> <span class="n">opt_time_emb</span><span class="p">)</span>
 
         <span class="c1"># 2. Conditioning variable Z embedding/tokenization</span>
         <span class="n">z_cond_emb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
@@ -784,7 +795,7 @@
 
         <span class="k">def</span><span class="w"> </span><span class="nf">act</span><span class="p">(</span><span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">g</span><span class="p">:</span> <span class="n">escnn</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">GroupElement</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
             <span class="n">mat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rep</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ij,...j-&gt;...i"</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
 
         <span class="n">device</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">invariant_projector</span><span class="o">.</span><span class="n">device</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">invariant_projector</span><span class="o">.</span><span class="n">dtype</span>
@@ -804,8 +815,8 @@
             <span class="n">gY_expected</span> <span class="o">=</span> <span class="n">act</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
 
             <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">gY</span><span class="p">,</span> <span class="n">gY_expected</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">),</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Equivariance test failed for group element </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Max absolute difference: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gY</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">gY_expected</span><span class="p">))</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Equivariance test failed for group element </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"Max absolute difference: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gY</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">gY_expected</span><span class="p">))</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">training_mode</span><span class="p">:</span>
@@ -813,17 +824,17 @@
 
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">describe_memory</span>
 
     <span class="c1"># Set logging to debug</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
     <span class="c1"># Set debug message to [name][level][time][message]</span>
-    <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">&quot;[</span><span class="si">%(name)s</span><span class="s2">][</span><span class="si">%(levelname)s</span><span class="s2">][</span><span class="si">%(asctime)s</span><span class="s2">]: </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">"[</span><span class="si">%(name)s</span><span class="s2">][</span><span class="si">%(levelname)s</span><span class="s2">][</span><span class="si">%(asctime)s</span><span class="s2">]: </span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
         <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
 
-    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.group</span><span class="w"> </span><span class="kn">import</span> <span class="n">CyclicGroup</span><span class="p">,</span> <span class="n">Icosahedral</span>
@@ -874,14 +885,14 @@
         <span class="n">embedding_dim</span><span class="o">=</span><span class="n">embedding_dim</span><span class="p">,</span>
         <span class="n">num_cond_layers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="c1"># print(describe_memory(&quot;eCondTransformer&quot;, model))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model initialized in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
+    <span class="c1"># print(describe_memory("eCondTransformer", model))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model initialized in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds"</span><span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
     <span class="n">model</span><span class="o">.</span><span class="n">check_equivariance</span><span class="p">(</span><span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Equivariance test passed!&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Equivariance test passed!"</span><span class="p">)</span>
 </pre></div>
 
                 </article>
@@ -911,8 +922,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -933,7 +944,6 @@
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
-    <br/>
   </p>
 </div>
       
@@ -946,7 +956,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

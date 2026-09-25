@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -7,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.nn.parametrizations &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
+    <title>symm_learning.nn.parametrizations &#8212; Symmetric Learning v0.8.1 Docs [main]</title>
   
   
   
@@ -26,19 +25,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
-    <script src="../../../_static/documentation_options.js?v=918ced64"></script>
+    <script src="../../../_static/documentation_options.js?v=ec16d22d"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/parametrizations';</script>
@@ -48,7 +47,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.6" />
+  <meta name="docsearch:version" content="0.8.1" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -96,7 +95,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -122,7 +121,7 @@
     <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.6 - main</p>
+    <p class="title logo__title">v0.8.1 - main</p>
   
 </a></div>
     
@@ -167,17 +166,24 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
         <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -190,8 +196,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
       
@@ -262,17 +267,24 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
           <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -285,8 +297,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
         
@@ -367,7 +378,7 @@
 <div class="viewcode-block" id="InvariantConstraint">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.InvariantConstraint.html#symm_learning.nn.parametrizations.InvariantConstraint">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">InvariantConstraint</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Orthogonally project vectors onto :math:`\mathrm{Fix}(\rho)`.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Orthogonally project vectors onto :math:`\mathrm{Fix}(\rho)`.</span>
 
 <span class="sd">    For representation :math:`\rho_{\mathcal{X}}`, this parametrization enforces</span>
 
@@ -392,15 +403,15 @@
 <span class="sd">        inv_projector (:class:`~torch.Tensor`): Orthogonal projector of shape</span>
 <span class="sd">            ``(rep.size, rep.size)`` onto the fixed subspace</span>
 <span class="sd">            :math:`\mathrm{Fix}(\rho)`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Precompute the invariant projector for the supplied representation.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Precompute the invariant projector for the supplied representation."""</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">requires_reps</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rep</span> <span class="o">=</span> <span class="n">rep</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;inv_projector&quot;</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;_bias&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"inv_projector"</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">rep</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"_bias"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -409,11 +420,11 @@
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
-        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">&quot;_version&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">"_version"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">version</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_update_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">bias</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">&quot;_version&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s2">"_version"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
             <span class="k">return</span>
@@ -424,7 +435,7 @@
 <div class="viewcode-block" id="InvariantConstraint.forward">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.InvariantConstraint.html#symm_learning.nn.parametrizations.InvariantConstraint.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Project b onto the invariant subspace using the precomputed projector.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Project b onto the invariant subspace using the precomputed projector."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_is_valid</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span>
         <span class="n">bias</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inv_projector</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
@@ -436,14 +447,14 @@
 <div class="viewcode-block" id="InvariantConstraint.right_inverse">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.InvariantConstraint.html#symm_learning.nn.parametrizations.InvariantConstraint.right_inverse">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">right_inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a parameter tensor whose projection equals ``tensor``.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return a parameter tensor whose projection equals ``tensor``."""</span>
         <span class="k">return</span> <span class="n">tensor</span></div>
 
 
 <div class="viewcode-block" id="InvariantConstraint.invalidate_cache">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.InvariantConstraint.html#symm_learning.nn.parametrizations.InvariantConstraint.invalidate_cache">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear cached projection so it is recomputed on next use.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Clear cached projection so it is recomputed on next use."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span> <span class="o">=</span> <span class="kc">None</span></div>
@@ -454,7 +465,7 @@
 <div class="viewcode-block" id="CommutingConstraint">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.CommutingConstraint.html#symm_learning.nn.parametrizations.CommutingConstraint">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CommutingConstraint</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Orthogonal projection onto :math:`\operatorname{Hom}_{\mathbb{G}}(\rho_{\text{in}},\rho_{\text{out}})`.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Orthogonal projection onto :math:`\operatorname{Hom}_{\mathbb{G}}(\rho_{\text{in}},\rho_{\text{out}})`.</span>
 
 <span class="sd">    For a dense weight :math:`\mathbf{W}\in\mathbb{R}^{D_{\text{out}}\times D_{\text{in}}}`, this module returns</span>
 <span class="sd">    :math:`\Pi_{\mathrm{Hom}}(\mathbf{W})`, the Frobenius-orthogonal projection onto</span>
@@ -474,7 +485,7 @@
 <span class="sd">        out_rep (:class:`~escnn.group.Representation`): Output representation :math:`\rho_{\text{out}}` of</span>
 <span class="sd">            size ``out_rep.size``.</span>
 <span class="sd">        basis_expansion (:class:`str`, optional): Strategy used to realize the basis</span>
-<span class="sd">            (``&quot;memory_heavy&quot;`` or ``&quot;isotypic_expansion&quot;``).</span>
+<span class="sd">            (``"memory_heavy"`` or ``"isotypic_expansion"``).</span>
 
 <span class="sd">    Note:</span>
 <span class="sd">        Runtime behavior depends on mode.</span>
@@ -490,14 +501,14 @@
 <span class="sd">            :math:`\operatorname{Hom}_\mathbb{G}(\rho_{\text{in}}, \rho_{\text{out}})`.</span>
 <span class="sd">        in_rep / out_rep (:class:`~escnn.group.Representation`): Cached references to the isotypic</span>
 <span class="sd">            versions of the supplied representations.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">:</span> <span class="n">Representation</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"isotypic_expansion"</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="o">=</span><span class="n">basis_expansion</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">in_rep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">out_rep</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;_weight&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"_weight"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -506,11 +517,11 @@
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">W</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
-        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="s2">&quot;_version&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="s2">"_version"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">version</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_update_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">W</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">W_proj</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="s2">&quot;_version&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="s2">"_version"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
             <span class="k">return</span>
@@ -521,7 +532,7 @@
 <div class="viewcode-block" id="CommutingConstraint.forward">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.CommutingConstraint.html#symm_learning.nn.parametrizations.CommutingConstraint.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">W</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Project :math:`\mathbf{W}` onto the space of equivariant linear maps.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Project :math:`\mathbf{W}` onto the space of equivariant linear maps.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            W (:class:`~torch.Tensor`): Dense matrix</span>
@@ -532,7 +543,7 @@
 <span class="sd">            :math:`\Pi_{\mathrm{Hom}}(\mathbf{W})`, which satisfies</span>
 <span class="sd">            :math:`\rho_{\mathrm{out}}(g)\Pi_{\mathrm{Hom}}(\mathbf{W})=\Pi_{\mathrm{Hom}}(\mathbf{W})\rho_{\mathrm{in}}(g)`</span>
 <span class="sd">            for all :math:`g\in\mathbb{G}`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_is_valid</span><span class="p">(</span><span class="n">W</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weight</span>
         <span class="n">W_proj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">orthogonal_projection</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
@@ -544,14 +555,14 @@
 <div class="viewcode-block" id="CommutingConstraint.right_inverse">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.CommutingConstraint.html#symm_learning.nn.parametrizations.CommutingConstraint.right_inverse">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">right_inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a pre-image for the parametrization (identity for now).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return a pre-image for the parametrization (identity for now)."""</span>
         <span class="k">return</span> <span class="n">tensor</span></div>
 
 
 <div class="viewcode-block" id="CommutingConstraint.invalidate_cache">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.parametrizations.CommutingConstraint.html#symm_learning.nn.parametrizations.CommutingConstraint.invalidate_cache">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear cached projection so it is recomputed on next use.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Clear cached projection so it is recomputed on next use."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_weight</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_id</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cached_input_version</span> <span class="o">=</span> <span class="kc">None</span></div>
@@ -559,7 +570,7 @@
 
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
@@ -570,14 +581,14 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">escnn.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldType</span>
 
     <span class="n">repo_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-    <span class="n">test_dir</span> <span class="o">=</span> <span class="n">repo_root</span> <span class="o">/</span> <span class="s2">&quot;test&quot;</span>
+    <span class="n">test_dir</span> <span class="o">=</span> <span class="n">repo_root</span> <span class="o">/</span> <span class="s2">"test"</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">repo_root</span><span class="p">))</span>
-    <span class="n">test_pkg</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
-    <span class="n">test_paths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">test_pkg</span><span class="p">,</span> <span class="s2">&quot;__path__&quot;</span><span class="p">,</span> <span class="p">[])]</span> <span class="k">if</span> <span class="n">test_pkg</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="n">test_pkg</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"test"</span><span class="p">)</span>
+    <span class="n">test_paths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">test_pkg</span><span class="p">,</span> <span class="s2">"__path__"</span><span class="p">,</span> <span class="p">[])]</span> <span class="k">if</span> <span class="n">test_pkg</span> <span class="k">else</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">test_dir</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">test_paths</span><span class="p">:</span>
-        <span class="n">test_pkg</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+        <span class="n">test_pkg</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">"test"</span><span class="p">)</span>
         <span class="n">test_pkg</span><span class="o">.</span><span class="n">__path__</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">test_dir</span><span class="p">)]</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_pkg</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s2">"test"</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_pkg</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.linear</span><span class="w"> </span><span class="kn">import</span> <span class="n">eAffine</span><span class="p">,</span> <span class="n">eLinear</span><span class="p">,</span> <span class="n">impose_linear_equivariance</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">test.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">benchmark</span><span class="p">,</span> <span class="n">benchmark_eval_forward</span>
@@ -590,11 +601,11 @@
     <span class="n">out_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
     <span class="n">eq_layer_proj_heavy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">out_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span>
     <span class="n">impose_linear_equivariance</span><span class="p">(</span>
-        <span class="n">lin</span><span class="o">=</span><span class="n">eq_layer_proj_heavy</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">=</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="o">=</span><span class="n">out_rep</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">&quot;memory_heavy&quot;</span>
+        <span class="n">lin</span><span class="o">=</span><span class="n">eq_layer_proj_heavy</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">=</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="o">=</span><span class="n">out_rep</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">"memory_heavy"</span>
     <span class="p">)</span>
     <span class="n">eq_layer_proj_iso</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">out_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span>
     <span class="n">impose_linear_equivariance</span><span class="p">(</span>
-        <span class="n">lin</span><span class="o">=</span><span class="n">eq_layer_proj_iso</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">=</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="o">=</span><span class="n">out_rep</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">&quot;isotypic_expansion&quot;</span>
+        <span class="n">lin</span><span class="o">=</span><span class="n">eq_layer_proj_iso</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">=</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="o">=</span><span class="n">out_rep</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">"isotypic_expansion"</span>
     <span class="p">)</span>
 
     <span class="c1"># Check the orthogonal projection to Hom_G(rep, rep) works as expected</span>
@@ -606,9 +617,9 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">check_projection</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>  <span class="c1"># noqa: D103</span>
         <span class="n">layer</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">W</span>
         <span class="n">W_projected</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">weight</span>
-        <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">W_projected</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Max err: </span><span class="si">{</span><span class="p">(</span><span class="n">W</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">W_projected</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">W_projected</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"Max err: </span><span class="si">{</span><span class="p">(</span><span class="n">W</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">W_projected</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">check_equivariance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">=</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="o">=</span><span class="n">out_rep</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> projection equivariance test passed.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> projection equivariance test passed."</span><span class="p">)</span>
 
         <span class="n">W_random</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
         <span class="n">layer</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">W_random</span>
@@ -617,16 +628,16 @@
         <span class="n">W_proj</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">weight</span>
         <span class="n">layer</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">W_proj</span>
         <span class="n">W_proj2</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">weight</span>
-        <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">W_proj</span><span class="p">,</span> <span class="n">W_proj2</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Max err: </span><span class="si">{</span><span class="p">(</span><span class="n">W_proj</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">W_proj2</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> projection idempotence test passed.&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">W_proj</span><span class="p">,</span> <span class="n">W_proj2</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"Max err: </span><span class="si">{</span><span class="p">(</span><span class="n">W_proj</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">W_proj2</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> projection idempotence test passed."</span><span class="p">)</span>
 
-    <span class="n">check_projection</span><span class="p">(</span><span class="n">eq_layer_proj_heavy</span><span class="p">,</span> <span class="s2">&quot;Memory-heavy&quot;</span><span class="p">)</span>
-    <span class="n">check_projection</span><span class="p">(</span><span class="n">eq_layer_proj_iso</span><span class="p">,</span> <span class="s2">&quot;Isotypic-expansion&quot;</span><span class="p">)</span>
+    <span class="n">check_projection</span><span class="p">(</span><span class="n">eq_layer_proj_heavy</span><span class="p">,</span> <span class="s2">"Memory-heavy"</span><span class="p">)</span>
+    <span class="n">check_projection</span><span class="p">(</span><span class="n">eq_layer_proj_iso</span><span class="p">,</span> <span class="s2">"Isotypic-expansion"</span><span class="p">)</span>
 
     <span class="c1"># ____________________________________________________________________________________</span>
     <span class="n">standad_layer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">out_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span>
-    <span class="n">eq_layer_iso</span> <span class="o">=</span> <span class="n">eLinear</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">)</span>
-    <span class="n">eq_layer_heavy</span> <span class="o">=</span> <span class="n">eLinear</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">&quot;memory_heavy&quot;</span><span class="p">)</span>
+    <span class="n">eq_layer_iso</span> <span class="o">=</span> <span class="n">eLinear</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">"isotypic_expansion"</span><span class="p">)</span>
+    <span class="n">eq_layer_heavy</span> <span class="o">=</span> <span class="n">eLinear</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">out_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span> <span class="n">basis_expansion_scheme</span><span class="o">=</span><span class="s2">"memory_heavy"</span><span class="p">)</span>
     <span class="n">e_affine</span> <span class="o">=</span> <span class="n">eAffine</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span>
 
     <span class="n">in_type</span> <span class="o">=</span> <span class="n">FieldType</span><span class="p">(</span><span class="n">no_base_space</span><span class="p">(</span><span class="n">G</span><span class="p">),</span> <span class="p">[</span><span class="n">in_rep</span><span class="p">])</span>
@@ -634,7 +645,7 @@
     <span class="n">escnn_layer</span> <span class="o">=</span> <span class="n">escnn</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_type</span><span class="p">,</span> <span class="n">out_type</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">)</span>
 
     <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">1024</span>
-    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">)</span>
     <span class="n">standad_layer</span> <span class="o">=</span> <span class="n">standad_layer</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">eq_layer_iso</span> <span class="o">=</span> <span class="n">eq_layer_iso</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">eq_layer_heavy</span> <span class="o">=</span> <span class="n">eq_layer_heavy</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
@@ -642,7 +653,7 @@
     <span class="n">eq_layer_proj_iso</span> <span class="o">=</span> <span class="n">eq_layer_proj_iso</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">e_affine</span> <span class="o">=</span> <span class="n">e_affine</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">escnn_layer</span> <span class="o">=</span> <span class="n">escnn_layer</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device: </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Device: </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 
@@ -650,13 +661,13 @@
         <span class="k">return</span> <span class="n">mod</span><span class="p">(</span><span class="n">in_type</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">tensor</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">escnn</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">)</span> <span class="k">else</span> <span class="n">mod</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
     <span class="n">modules_to_benchmark</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="p">(</span><span class="s2">&quot;Standard&quot;</span><span class="p">,</span> <span class="n">standad_layer</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;eLinear (iso)&quot;</span><span class="p">,</span> <span class="n">eq_layer_iso</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;eLinear (heavy)&quot;</span><span class="p">,</span> <span class="n">eq_layer_heavy</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;Linear Proj (iso)&quot;</span><span class="p">,</span> <span class="n">eq_layer_proj_iso</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;Linear Proj (heavy)&quot;</span><span class="p">,</span> <span class="n">eq_layer_proj_heavy</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;eAffine&quot;</span><span class="p">,</span> <span class="n">e_affine</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;escnn&quot;</span><span class="p">,</span> <span class="n">escnn_layer</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"Standard"</span><span class="p">,</span> <span class="n">standad_layer</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"eLinear (iso)"</span><span class="p">,</span> <span class="n">eq_layer_iso</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"eLinear (heavy)"</span><span class="p">,</span> <span class="n">eq_layer_heavy</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"Linear Proj (iso)"</span><span class="p">,</span> <span class="n">eq_layer_proj_iso</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"Linear Proj (heavy)"</span><span class="p">,</span> <span class="n">eq_layer_proj_heavy</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"eAffine"</span><span class="p">,</span> <span class="n">e_affine</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"escnn"</span><span class="p">,</span> <span class="n">escnn_layer</span><span class="p">),</span>
     <span class="p">]</span>
 
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
@@ -671,44 +682,44 @@
         <span class="p">(</span><span class="n">fwd_mean</span><span class="p">,</span> <span class="n">fwd_std</span><span class="p">),</span> <span class="p">(</span><span class="n">bwd_mean</span><span class="p">,</span> <span class="n">bwd_std</span><span class="p">)</span> <span class="o">=</span> <span class="n">benchmark</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">forward_fn</span><span class="p">)</span>
         <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
-                <span class="s2">&quot;fwd_eval_mean&quot;</span><span class="p">:</span> <span class="n">eval_fwd_mean</span><span class="p">,</span>
-                <span class="s2">&quot;fwd_eval_std&quot;</span><span class="p">:</span> <span class="n">eval_fwd_std</span><span class="p">,</span>
-                <span class="s2">&quot;fwd_mean&quot;</span><span class="p">:</span> <span class="n">fwd_mean</span><span class="p">,</span>
-                <span class="s2">&quot;fwd_std&quot;</span><span class="p">:</span> <span class="n">fwd_std</span><span class="p">,</span>
-                <span class="s2">&quot;bwd_mean&quot;</span><span class="p">:</span> <span class="n">bwd_mean</span><span class="p">,</span>
-                <span class="s2">&quot;bwd_std&quot;</span><span class="p">:</span> <span class="n">bwd_std</span><span class="p">,</span>
-                <span class="s2">&quot;total_time&quot;</span><span class="p">:</span> <span class="n">fwd_mean</span> <span class="o">+</span> <span class="n">bwd_mean</span><span class="p">,</span>
-                <span class="s2">&quot;train_mem&quot;</span><span class="p">:</span> <span class="n">train_mem</span><span class="p">,</span>
-                <span class="s2">&quot;non_train_mem&quot;</span><span class="p">:</span> <span class="n">non_train_mem</span><span class="p">,</span>
-                <span class="s2">&quot;gpu_mem&quot;</span><span class="p">:</span> <span class="n">gpu_alloc</span><span class="p">,</span>
-                <span class="s2">&quot;gpu_peak&quot;</span><span class="p">:</span> <span class="n">gpu_peak</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                <span class="s2">"fwd_eval_mean"</span><span class="p">:</span> <span class="n">eval_fwd_mean</span><span class="p">,</span>
+                <span class="s2">"fwd_eval_std"</span><span class="p">:</span> <span class="n">eval_fwd_std</span><span class="p">,</span>
+                <span class="s2">"fwd_mean"</span><span class="p">:</span> <span class="n">fwd_mean</span><span class="p">,</span>
+                <span class="s2">"fwd_std"</span><span class="p">:</span> <span class="n">fwd_std</span><span class="p">,</span>
+                <span class="s2">"bwd_mean"</span><span class="p">:</span> <span class="n">bwd_mean</span><span class="p">,</span>
+                <span class="s2">"bwd_std"</span><span class="p">:</span> <span class="n">bwd_std</span><span class="p">,</span>
+                <span class="s2">"total_time"</span><span class="p">:</span> <span class="n">fwd_mean</span> <span class="o">+</span> <span class="n">bwd_mean</span><span class="p">,</span>
+                <span class="s2">"train_mem"</span><span class="p">:</span> <span class="n">train_mem</span><span class="p">,</span>
+                <span class="s2">"non_train_mem"</span><span class="p">:</span> <span class="n">non_train_mem</span><span class="p">,</span>
+                <span class="s2">"gpu_mem"</span><span class="p">:</span> <span class="n">gpu_alloc</span><span class="p">,</span>
+                <span class="s2">"gpu_peak"</span><span class="p">:</span> <span class="n">gpu_peak</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
     <span class="n">name_width</span> <span class="o">=</span> <span class="mi">20</span>
     <span class="n">header</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Layer&#39;</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">name_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Forward eval (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Forward (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Backward (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Total (ms)&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Trainable MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Non-train MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Total MB&#39;</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;GPU Alloc MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;GPU Peak MB&#39;</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Layer'</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">name_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'Forward eval (ms)'</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'Forward (ms)'</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'Backward (ms)'</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Total (ms)'</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Trainable MB'</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'Non-train MB'</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'Total MB'</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'GPU Alloc MB'</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'GPU Peak MB'</span><span class="si">:</span><span class="s2">&gt;15</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
-    <span class="n">separator</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Benchmark results per </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">-sample batch&quot;</span><span class="p">)</span>
+    <span class="n">separator</span> <span class="o">=</span> <span class="s2">"-"</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Benchmark results per </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">-sample batch"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
-        <span class="n">fwd_eval_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_eval_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_eval_std&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">fwd_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;fwd_std&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">bwd_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;bwd_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;bwd_std&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">total_mb</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;train_mem&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;non_train_mem&quot;</span><span class="p">]</span>
-        <span class="n">gpu_alloc_mb</span> <span class="o">=</span> <span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;gpu_mem&quot;</span><span class="p">])</span>
-        <span class="n">gpu_peak_mb</span> <span class="o">=</span> <span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;gpu_peak&quot;</span><span class="p">])</span>
+        <span class="n">fwd_eval_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'fwd_eval_mean'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'fwd_eval_std'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">fwd_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'fwd_mean'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'fwd_std'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">bwd_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'bwd_mean'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'bwd_std'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">total_mb</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">"train_mem"</span><span class="p">]</span> <span class="o">+</span> <span class="n">res</span><span class="p">[</span><span class="s2">"non_train_mem"</span><span class="p">]</span>
+        <span class="n">gpu_alloc_mb</span> <span class="o">=</span> <span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">"gpu_mem"</span><span class="p">])</span>
+        <span class="n">gpu_peak_mb</span> <span class="o">=</span> <span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">"gpu_peak"</span><span class="p">])</span>
         <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">name_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="n">fwd_eval_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">fwd_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bwd_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;total_time&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;train_mem&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;non_train_mem&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">total_mb</span><span class="p">)</span><span class="si">:</span><span class="s2">&gt;12.3f</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">gpu_alloc_mb</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpu_peak_mb</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">name_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="n">fwd_eval_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">fwd_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bwd_str</span><span class="si">:</span><span class="s2">&gt;18</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">'total_time'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">'train_mem'</span><span class="p">])</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">'non_train_mem'</span><span class="p">])</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bytes_to_mb</span><span class="p">(</span><span class="n">total_mb</span><span class="p">)</span><span class="si">:</span><span class="s2">&gt;12.3f</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">gpu_alloc_mb</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpu_peak_mb</span><span class="si">:</span><span class="s2">&gt;15.3f</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
 </pre></div>
@@ -740,8 +751,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -762,7 +773,6 @@
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
-    <br/>
   </p>
 </div>
       
@@ -775,7 +785,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

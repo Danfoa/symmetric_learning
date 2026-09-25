@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -7,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.nn.running_stats &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
+    <title>symm_learning.nn.running_stats &#8212; Symmetric Learning v0.8.1 Docs [main]</title>
   
   
   
@@ -26,19 +25,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
-    <script src="../../../_static/documentation_options.js?v=918ced64"></script>
+    <script src="../../../_static/documentation_options.js?v=ec16d22d"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/running_stats';</script>
@@ -48,7 +47,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.6" />
+  <meta name="docsearch:version" content="0.8.1" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -96,7 +95,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -122,7 +121,7 @@
     <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.6 - main</p>
+    <p class="title logo__title">v0.8.1 - main</p>
   
 </a></div>
     
@@ -167,17 +166,24 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
         <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -190,8 +196,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
       
@@ -262,17 +267,24 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
           <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -285,8 +297,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
         
@@ -364,7 +375,7 @@
 <div class="viewcode-block" id="EMAStats">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.running_stats.EMAStats.html#symm_learning.nn.running_stats.EMAStats">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">EMAStats</span><span class="p">(</span><span class="n">eModule</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Exponential moving averages of first and second moments.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Exponential moving averages of first and second moments.</span>
 
 <span class="sd">    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` be two random variables.</span>
 <span class="sd">    This module tracks exponential moving averages of their batch means</span>
@@ -414,7 +425,7 @@
 <span class="sd">        are treated as constants with respect to the current optimization step. This truncates the computation graph</span>
 <span class="sd">        across batches, preventing gradients from propagating through historical running state while keeping the</span>
 <span class="sd">        current batch contribution differentiable.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">requires_reps</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -434,21 +445,21 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">center_with_running_mean</span> <span class="o">=</span> <span class="n">center_with_running_mean</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">momentum</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;momentum must be in (0, 1], got </span><span class="si">{</span><span class="n">momentum</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"momentum must be in (0, 1], got </span><span class="si">{</span><span class="n">momentum</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="o">=</span> <span class="n">momentum</span>
 
         <span class="c1"># Initialize running statistics buffers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;num_batches_tracked&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_mean_x&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_mean_y&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_cov_xx&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_cov_yy&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_cov_xy&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"num_batches_tracked"</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"running_mean_x"</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"running_mean_y"</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"running_cov_xx"</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"running_cov_yy"</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"running_cov_xy"</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_compute_batch_stats</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute batch statistics. Can be overridden for equivariant versions.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Compute batch statistics. Can be overridden for equivariant versions.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            x: Input tensor x of shape (N, D_x).</span>
@@ -463,7 +474,7 @@
 <span class="sd">            :math:`\operatorname{detach}(\boldsymbol{\mu}_{x,t-1})` and</span>
 <span class="sd">            :math:`\operatorname{detach}(\boldsymbol{\mu}_{y,t-1})`. This keeps the current batch covariance</span>
 <span class="sd">            differentiable only with respect to the current inputs.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Compute batch means</span>
         <span class="n">mean_x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">mean_y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -495,7 +506,7 @@
 <div class="viewcode-block" id="EMAStats.forward">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.running_stats.EMAStats.html#symm_learning.nn.running_stats.EMAStats.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Update running statistics and return inputs unchanged.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Update running statistics and return inputs unchanged.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            x: Input tensor x of shape (N, num_features_x).</span>
@@ -513,12 +524,12 @@
 <span class="sd">            :math:`\operatorname{detach}(\mathbf{C}_{xy,t-1})` before mixing them with the current batch statistics.</span>
 <span class="sd">            This preserves differentiability with respect to the current batch while preventing the running buffers</span>
 <span class="sd">            from carrying a growing cross-batch autograd graph.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected 2D tensor for x, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D&quot;</span>
-        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected 2D tensor for y, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D&quot;</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected x.shape[1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected y.shape[1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;Batch sizes must match: x=</span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, y=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected 2D tensor for x, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D"</span>
+        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected 2D tensor for y, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D"</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected x.shape[1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected y.shape[1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="sa">f</span><span class="s2">"Batch sizes must match: x=</span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, y=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="c1"># Compute batch statistics</span>
@@ -553,41 +564,41 @@
 <div class="viewcode-block" id="EMAStats.invalidate_cache">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.running_stats.EMAStats.html#symm_learning.nn.running_stats.EMAStats.invalidate_cache">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Standard EMA stats keep no derived cache.&quot;&quot;&quot;</span></div>
+<span class="w">        </span><span class="sd">"""Standard EMA stats keep no derived cache."""</span></div>
 
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">mean_x</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Running mean of input x.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Running mean of input x."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_mean_x</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">mean_y</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Running mean of input y.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Running mean of input y."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_mean_y</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cov_xx</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Running covariance matrix of x.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Running covariance matrix of x."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_cov_xx</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cov_yy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Running covariance matrix of y.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Running covariance matrix of y."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_cov_yy</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cov_xy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Running cross-covariance matrix between x and y.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Running cross-covariance matrix between x and y."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_cov_xy</span>
 
 <div class="viewcode-block" id="EMAStats.extra_repr">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.running_stats.EMAStats.html#symm_learning.nn.running_stats.EMAStats.extra_repr">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;String representation of module parameters.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""String representation of module parameters."""</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;num_features_x=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="si">}</span><span class="s2">, num_features_y=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="si">}</span><span class="s2">, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;momentum=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="si">}</span><span class="s2">, eps=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="si">}</span><span class="s2">, center_with_running_mean=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">center_with_running_mean</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"num_features_x=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="si">}</span><span class="s2">, num_features_y=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="si">}</span><span class="s2">, "</span>
+            <span class="sa">f</span><span class="s2">"momentum=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">momentum</span><span class="si">}</span><span class="s2">, eps=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="si">}</span><span class="s2">, center_with_running_mean=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">center_with_running_mean</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span></div>
 </div>
 
@@ -596,7 +607,7 @@
 <div class="viewcode-block" id="eEMAStats">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.running_stats.eEMAStats.html#symm_learning.nn.running_stats.eEMAStats">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">eEMAStats</span><span class="p">(</span><span class="n">EMAStats</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant EMA statistics on symmetric vector spaces.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Equivariant EMA statistics on symmetric vector spaces.</span>
 
 <span class="sd">    Let :math:`\mathbf{X}:\Omega\to\mathcal{X}` and :math:`\mathbf{Y}:\Omega\to\mathcal{Y}` be two</span>
 <span class="sd">    :math:`\mathbb{G}`-invariant random variables taking values in the symmetric vector spaces</span>
@@ -639,8 +650,8 @@
 <span class="sd">    from the current batch.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        x_rep (:class:`~escnn.group.Representation`): Representation defining input x&#39;s group action.</span>
-<span class="sd">        y_rep (:class:`~escnn.group.Representation`): Representation defining input y&#39;s group action.</span>
+<span class="sd">        x_rep (:class:`~escnn.group.Representation`): Representation defining input x's group action.</span>
+<span class="sd">        y_rep (:class:`~escnn.group.Representation`): Representation defining input y's group action.</span>
 <span class="sd">            If None, uses ``x_rep``.</span>
 <span class="sd">        momentum (float, optional): Momentum factor for exponential moving average. Default: 0.1.</span>
 <span class="sd">        eps (float, optional): Small constant for numerical stability. Default: 1e-6.</span>
@@ -678,7 +689,7 @@
 <span class="sd">        :attr:`cov_yy`, and :attr:`cov_xy` are expanded from the current DoF coefficients on demand. In eval mode,</span>
 <span class="sd">        they are expanded lazily and cached until the module changes mode, device, dtype, or reloads from a</span>
 <span class="sd">        checkpoint.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -689,15 +700,15 @@
         <span class="n">center_with_running_mean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x_rep</span><span class="p">,</span> <span class="n">Representation</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;x_rep must be a Representation, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">x_rep</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"x_rep must be a Representation, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">x_rep</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">y_rep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_rep</span><span class="p">,</span> <span class="n">Representation</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;y_rep must be a Representation, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">y_rep</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"y_rep must be a Representation, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">y_rep</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="c1"># Store representations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span> <span class="o">=</span> <span class="n">x_rep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">y_rep</span> <span class="o">=</span> <span class="n">y_rep</span> <span class="k">if</span> <span class="n">y_rep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x_rep</span>
 
         <span class="c1"># Ensure groups match</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_rep</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="s2">&quot;x_rep and y_rep must share the same group&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_rep</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="s2">"x_rep and y_rep must share the same group"</span>
 
         <span class="c1"># Store representations for stats computation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span>
@@ -711,29 +722,29 @@
             <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span>
             <span class="n">center_with_running_mean</span><span class="o">=</span><span class="n">center_with_running_mean</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;running_cov_xx&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;running_cov_yy&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;running_cov_xy&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"running_cov_xx"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"running_cov_yy"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"running_cov_xy"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cov_xx</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cov_yy</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cov_xy</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cov_cache_dirty</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="o">=</span><span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="o">=</span><span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="o">=</span><span class="s2">&quot;isotypic_expansion&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="o">=</span><span class="s2">"isotypic_expansion"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="o">=</span><span class="s2">"isotypic_expansion"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_basis</span> <span class="o">=</span> <span class="n">GroupHomomorphismBasis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="n">basis_expansion</span><span class="o">=</span><span class="s2">"isotypic_expansion"</span><span class="p">)</span>
 
         <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_mean_x</span><span class="o">.</span><span class="n">dtype</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
-            <span class="s2">&quot;running_cov_xx_dof&quot;</span><span class="p">,</span>
+            <span class="s2">"running_cov_xx_dof"</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_basis</span><span class="o">.</span><span class="n">projection_coefficients</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)),</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
-            <span class="s2">&quot;running_cov_yy_dof&quot;</span><span class="p">,</span>
+            <span class="s2">"running_cov_yy_dof"</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_basis</span><span class="o">.</span><span class="n">projection_coefficients</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)),</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
-            <span class="s2">&quot;running_cov_xy_dof&quot;</span><span class="p">,</span>
+            <span class="s2">"running_cov_xy_dof"</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_basis</span><span class="o">.</span><span class="n">projection_coefficients</span><span class="p">(</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features_y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
             <span class="p">),</span>
@@ -742,7 +753,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_compute_batch_stats</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute invariant batch means and equivariant covariance coefficients.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Compute invariant batch means and equivariant covariance coefficients.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            x: Samples of :math:`\mathbf{X}` with shape :math:`(N, D_x)`.</span>
@@ -777,7 +788,7 @@
 <span class="sd">            :math:`\operatorname{detach}(\boldsymbol{\mu}_{x,t-1})` and</span>
 <span class="sd">            :math:`\operatorname{detach}(\boldsymbol{\mu}_{y,t-1})` so the current covariance coefficients remain</span>
 <span class="sd">            differentiable only with respect to the current batch.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># For means, always compute fresh batch means using group-aware method</span>
         <span class="n">mean_x</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">)</span>
         <span class="n">mean_y</span> <span class="o">=</span> <span class="n">symm_learning</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">rep_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">)</span>
@@ -794,7 +805,7 @@
             <span class="n">center_x</span> <span class="o">=</span> <span class="n">mean_x</span>
             <span class="n">center_y</span> <span class="o">=</span> <span class="n">mean_y</span>
 
-        <span class="c1"># Center the data manually since we can&#39;t pass custom means to cov function</span>
+        <span class="c1"># Center the data manually since we can't pass custom means to cov function</span>
         <span class="n">x_centered</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">center_x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">y_centered</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">center_y</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
@@ -810,7 +821,7 @@
 <div class="viewcode-block" id="eEMAStats.forward">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.running_stats.eEMAStats.html#symm_learning.nn.running_stats.eEMAStats.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Update equivariant running statistics and return the inputs unchanged.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Update equivariant running statistics and return the inputs unchanged.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            x: Samples in :math:`\mathcal{X}` transforming according to :math:`\rho_{\mathcal{X}}`.</span>
@@ -825,12 +836,12 @@
 <span class="sd">            - **y**: :math:`(N, D_y)`.</span>
 <span class="sd">            - **Output**: ``((N, D_x), (N, D_y))``.</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected x.shape[-1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected y.shape[-1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">y_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected 2D tensor for x, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D&quot;</span>
-        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected 2D tensor for y, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D&quot;</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;Batch sizes must match: x=</span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, y=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected x.shape[-1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">x_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected y.shape[-1]=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">y_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected 2D tensor for x, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D"</span>
+        <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Expected 2D tensor for y, got </span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">D"</span>
+        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="sa">f</span><span class="s2">"Batch sizes must match: x=</span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, y=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="n">batch_mean_x</span><span class="p">,</span> <span class="n">batch_mean_y</span><span class="p">,</span> <span class="n">batch_cov_xx_dof</span><span class="p">,</span> <span class="n">batch_cov_yy_dof</span><span class="p">,</span> <span class="n">batch_cov_xy_dof</span> <span class="o">=</span> <span class="p">(</span>
@@ -872,7 +883,7 @@
 <div class="viewcode-block" id="eEMAStats.invalidate_cache">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.running_stats.eEMAStats.html#symm_learning.nn.running_stats.eEMAStats.invalidate_cache">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear cached dense covariance expansions.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Clear cached dense covariance expansions."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cov_xx</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cov_yy</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cov_xy</span> <span class="o">=</span> <span class="kc">None</span>
@@ -885,31 +896,31 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">mean_x</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Running invariant mean in :math:`\mathcal{X}^{\text{inv}}`.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Running invariant mean in :math:`\mathcal{X}^{\text{inv}}`.</span>
 
 <span class="sd">        This vector satisfies</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            \rho_{\mathcal{X}}(g)\boldsymbol{\mu}_x = \boldsymbol{\mu}_x,</span>
 <span class="sd">            \qquad \forall g\in\mathbb{G}.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_mean_x</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">mean_y</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Running invariant mean in :math:`\mathcal{Y}^{\text{inv}}`.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Running invariant mean in :math:`\mathcal{Y}^{\text{inv}}`.</span>
 
 <span class="sd">        This vector satisfies</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            \rho_{\mathcal{Y}}(g)\boldsymbol{\mu}_y = \boldsymbol{\mu}_y,</span>
 <span class="sd">            \qquad \forall g\in\mathbb{G}.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">running_mean_y</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cov_xx</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Running covariance operator in :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{X}})`.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Running covariance operator in :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{X}}, \rho_{\mathcal{X}})`.</span>
 
 <span class="sd">        Equivalently, the returned matrix :math:`\mathbf{C}_{xx}` satisfies</span>
 
@@ -919,7 +930,7 @@
 
 <span class="sd">        Shape:</span>
 <span class="sd">            :math:`(D_x, D_x)`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_basis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running_cov_xx_dof</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cov_cache</span><span class="p">()</span>
@@ -927,7 +938,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cov_yy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Running covariance operator in :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{Y}})`.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Running covariance operator in :math:`\mathrm{Hom}_{\mathbb{G}}(\rho_{\mathcal{Y}}, \rho_{\mathcal{Y}})`.</span>
 
 <span class="sd">        Equivalently, the returned matrix :math:`\mathbf{C}_{yy}` satisfies</span>
 
@@ -937,7 +948,7 @@
 
 <span class="sd">        Shape:</span>
 <span class="sd">            :math:`(D_y, D_y)`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_basis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running_cov_yy_dof</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cov_cache</span><span class="p">()</span>
@@ -945,7 +956,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cov_xy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Running cross-covariance operator.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Running cross-covariance operator.</span>
 
 <span class="sd">        The returned matrix :math:`\mathbf{C}_{xy}` maps coordinates in :math:`\mathcal{Y}` to coordinates in</span>
 <span class="sd">        :math:`\mathcal{X}`. It belongs to</span>
@@ -958,7 +969,7 @@
 
 <span class="sd">        Shape:</span>
 <span class="sd">            :math:`(D_x, D_y)`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_basis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running_cov_xy_dof</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_cov_cache</span><span class="p">()</span>
@@ -968,13 +979,13 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">local_metadata</span><span class="p">,</span> <span class="n">strict</span><span class="p">,</span> <span class="n">missing_keys</span><span class="p">,</span> <span class="n">unexpected_keys</span><span class="p">,</span> <span class="n">error_msgs</span>
     <span class="p">):</span>
         <span class="n">legacy_cov_keys</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;running_cov_xx&quot;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">),</span>
-            <span class="s2">&quot;running_cov_yy&quot;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">),</span>
-            <span class="s2">&quot;running_cov_xy&quot;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">),</span>
+            <span class="s2">"running_cov_xx"</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">),</span>
+            <span class="s2">"running_cov_yy"</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">),</span>
+            <span class="s2">"running_cov_xy"</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rep_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rep_x</span><span class="p">),</span>
         <span class="p">}</span>
         <span class="k">for</span> <span class="n">legacy_key</span><span class="p">,</span> <span class="p">(</span><span class="n">rep_in</span><span class="p">,</span> <span class="n">rep_out</span><span class="p">)</span> <span class="ow">in</span> <span class="n">legacy_cov_keys</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">legacy_full_key</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">legacy_key</span>
-            <span class="n">dof_full_key</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">legacy_key</span><span class="si">}</span><span class="s2">_dof&quot;</span>
+            <span class="n">dof_full_key</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">legacy_key</span><span class="si">}</span><span class="s2">_dof"</span>
             <span class="n">legacy_value</span> <span class="o">=</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">legacy_full_key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">legacy_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dof_full_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="p">:</span>
                 <span class="n">state_dict</span><span class="p">[</span><span class="n">dof_full_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">equiv_orthogonal_projection_coefficients</span><span class="p">(</span>
@@ -988,7 +999,7 @@
 
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">escnn</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">direct_sum</span>
@@ -997,11 +1008,11 @@
     <span class="n">SEED</span> <span class="o">=</span> <span class="mi">123</span>
     <span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">1024</span>
     <span class="n">REGULAR_COPIES</span> <span class="o">=</span> <span class="mi">2</span>
-    <span class="n">MODE</span> <span class="o">=</span> <span class="s2">&quot;train&quot;</span>  <span class="c1"># options: eval, train, both</span>
+    <span class="n">MODE</span> <span class="o">=</span> <span class="s2">"train"</span>  <span class="c1"># options: eval, train, both</span>
 
     <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
-    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">device</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;cuda&quot;</span><span class="p">:</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">device</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">"cuda"</span><span class="p">:</span>
         <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">manual_seed_all</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
 
     <span class="n">G</span> <span class="o">=</span> <span class="n">escnn</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">Icosahedral</span><span class="p">()</span>
@@ -1014,9 +1025,9 @@
     <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 
     <span class="n">run_module_pair_profile</span><span class="p">(</span>
-        <span class="n">lhs_name</span><span class="o">=</span><span class="s2">&quot;eEMAStats&quot;</span><span class="p">,</span>
+        <span class="n">lhs_name</span><span class="o">=</span><span class="s2">"eEMAStats"</span><span class="p">,</span>
         <span class="n">lhs</span><span class="o">=</span><span class="n">estats</span><span class="p">,</span>
-        <span class="n">rhs_name</span><span class="o">=</span><span class="s2">&quot;EMAStats&quot;</span><span class="p">,</span>
+        <span class="n">rhs_name</span><span class="o">=</span><span class="s2">"EMAStats"</span><span class="p">,</span>
         <span class="n">rhs</span><span class="o">=</span><span class="n">stats</span><span class="p">,</span>
         <span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span>
         <span class="n">group_name</span><span class="o">=</span><span class="n">G</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -1053,8 +1064,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1075,7 +1086,6 @@
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
-    <br/>
   </p>
 </div>
       
@@ -1088,7 +1098,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>

@@ -58,7 +58,7 @@ admits a block-diagonal decomposition analog to the one of the representations, 
 where :math:`n_{\text{iso}}` denotes the number of unique irreducible representations present in :math:`\rho_{\mathcal{Y}}`, and the blocks :math:`\mathbf{W}^{(k)}` are non-zero only if the irrep type :math:`k` is also present in :math:`\rho_{\mathcal{X}}`. These blocks are constrained to commute with the group representations on each isotypic subspace, such that :math:`\mathbf{W}^{(k)} \in \mathrm{Hom}_{\mathbb{G}}(\bigoplus_{i\in[1,m_k^{\mathcal{X}}]} \hat{\rho}_k, \bigoplus_{i\in[1,m_k^{\mathcal{Y}}]} \hat{\rho}_k)`. Consequently, they can be furthere decomposed into a sum of Kronecker products between the free degrees of freedom of the homomorphism space, :math:`\mathbf{\Theta}^{(k)}_s \in \mathbb{R}^{m_k^{\mathcal{Y}} \times m_k^{\mathcal{X}}}`, and the elements of the basis of endomorphisms of the irreducible representation :math:`\hat{\rho}_k`, i.e., :math:`\mathrm{End}_{\mathbb{G}}(\hat{\rho}_k)`, denoted above by the set of matrices :math:`\{\mathbf{\Psi}^{(k)}_s\}_{s \in [1, \mathrm{dim}(\mathrm{End}_{\mathbb{G}}(\hat{\rho}_k))]}`. 
 
 How to leverage linear equivariance in code?
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The `symm_learning.linalg` module exposes a set of standalone utility functions to leverage these structural constraints directly from the representations :math:`\rho_{\mathcal{X}}` and :math:`\rho_{\mathcal{Y}}`. In practice, the most useful ones are:
 

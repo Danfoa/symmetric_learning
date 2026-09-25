@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -7,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>symm_learning.nn.activation &#8212; Symmetric Learning v0.7.6 Docs [main]</title>
+    <title>symm_learning.nn.activation &#8212; Symmetric Learning v0.8.1 Docs [main]</title>
   
   
   
@@ -26,19 +25,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=cf6ff117" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
-    <script src="../../../_static/documentation_options.js?v=918ced64"></script>
+    <script src="../../../_static/documentation_options.js?v=ec16d22d"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/symm_learning/nn/activation';</script>
@@ -48,7 +47,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.7.6" />
+  <meta name="docsearch:version" content="0.8.1" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -96,7 +95,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -122,7 +121,7 @@
     <img src="../../../_static/logo_v1_without_text_dark_background.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
-    <p class="title logo__title">v0.7.6 - main</p>
+    <p class="title logo__title">v0.8.1 - main</p>
   
 </a></div>
     
@@ -167,17 +166,24 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
         <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -190,8 +196,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
       
@@ -262,17 +267,24 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button></div>
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
           <div class="navbar-item"><ul class="navbar-icon-links"
     aria-label="Icon Links">
@@ -285,8 +297,7 @@
           
           
           
-          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
+          <a href="https://github.com/Danfoa/symmetric_learning" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
         </li>
 </ul></div>
         
@@ -364,7 +375,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.linear</span><span class="w"> </span><span class="kn">import</span> <span class="n">eLinear</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">eModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.nn.parametrizations</span><span class="w"> </span><span class="kn">import</span> <span class="n">CommutingConstraint</span><span class="p">,</span> <span class="n">InvariantConstraint</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">direct_sum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">symm_learning.representation_theory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InitScheme</span><span class="p">,</span> <span class="n">direct_sum</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -372,7 +383,7 @@
 <div class="viewcode-block" id="eMultiheadAttention">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.eMultiheadAttention.html#symm_learning.nn.activation.eMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">eMultiheadAttention</span><span class="p">(</span><span class="n">eModule</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MultiheadAttention</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Drop-in replacement for :class:`torch.nn.MultiheadAttention` that preserves G-equivariance.</span>
+<span class="w">    </span><span class="sd">"""Drop-in replacement for :class:`torch.nn.MultiheadAttention` that preserves G-equivariance.</span>
 
 <span class="sd">    This module keeps the runtime logic of PyTorch’s implementation untouched: we still rely on</span>
 <span class="sd">    the packed ``in_proj_weight`` / ``in_proj_bias`` for computing queries, keys, and values,</span>
@@ -392,7 +403,7 @@
 
 <span class="sd">    Additionally, we restrict ``num_heads`` to divide the number of regular-representation copies</span>
 <span class="sd">    present in the input feature space to avoid splitting irreducible subspaces across heads.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -404,9 +415,9 @@
         <span class="n">add_zero_attn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">init_scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;xavier_normal&quot;</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"xavier_normal"</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize the equivariant multihead attention.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Initialize the equivariant multihead attention.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            in_rep (:class:`~escnn.group.Representation`): Representation :math:`\rho_{\text{in}}` of the input/output</span>
@@ -419,22 +430,22 @@
 <span class="sd">            device (:class:`torch.device`, optional): Parameter factory options.</span>
 <span class="sd">            dtype (:class:`torch.dtype`, optional): Parameter factory options.</span>
 <span class="sd">            init_scheme (:class:`str` | :class:`None`, optional): Initialization scheme for the equivariant linear</span>
-<span class="sd">                layers. Default: ``&quot;xavier_normal&quot;``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">                layers. Default: ``"xavier_normal"``.</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">num_heads</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;num_heads must be positive, got </span><span class="si">{</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"num_heads must be positive, got </span><span class="si">{</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">add_bias_kv</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Equivariant attention does not support add_bias_kv.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Equivariant attention does not support add_bias_kv."</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">add_zero_attn</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Equivariant attention does not support add_zero_attn.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Equivariant attention does not support add_zero_attn."</span><span class="p">)</span>
 
         <span class="n">G</span> <span class="o">=</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">group</span>
         <span class="k">if</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">size</span> <span class="o">%</span> <span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input rep dim (</span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) must be divisible of the group order (</span><span class="si">{</span><span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Input rep dim (</span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">) must be divisible of the group order (</span><span class="si">{</span><span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
 
         <span class="n">regular_copies</span> <span class="o">=</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">size</span> <span class="o">//</span> <span class="n">G</span><span class="o">.</span><span class="n">order</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">regular_copies</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;For input dim </span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> `num_heads` must divide </span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">/|G|=</span><span class="si">{</span><span class="n">regular_copies</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"For input dim </span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> `num_heads` must divide </span><span class="si">{</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">/|G|=</span><span class="si">{</span><span class="n">regular_copies</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">embed_dim</span><span class="o">=</span><span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
@@ -450,12 +461,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">in_rep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_regular_stack_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="n">regular_copies</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qkv_same_embed_dim</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;eMultiheadAttention requires kdim == vdim == embed_dim.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"eMultiheadAttention requires kdim == vdim == embed_dim."</span><span class="p">)</span>
 
         <span class="n">stacked_qkv_rep</span> <span class="o">=</span> <span class="n">direct_sum</span><span class="p">([</span><span class="n">G</span><span class="o">.</span><span class="n">regular_representation</span><span class="p">]</span> <span class="o">*</span> <span class="n">regular_copies</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span>
-        <span class="n">parametrize</span><span class="o">.</span><span class="n">register_parametrization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;in_proj_weight&quot;</span><span class="p">,</span> <span class="n">CommutingConstraint</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">stacked_qkv_rep</span><span class="p">))</span>
+        <span class="n">parametrize</span><span class="o">.</span><span class="n">register_parametrization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"in_proj_weight"</span><span class="p">,</span> <span class="n">CommutingConstraint</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">stacked_qkv_rep</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">bias</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_proj_bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">parametrize</span><span class="o">.</span><span class="n">register_parametrization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;in_proj_bias&quot;</span><span class="p">,</span> <span class="n">InvariantConstraint</span><span class="p">(</span><span class="n">stacked_qkv_rep</span><span class="p">))</span>
+            <span class="n">parametrize</span><span class="o">.</span><span class="n">register_parametrization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"in_proj_bias"</span><span class="p">,</span> <span class="n">InvariantConstraint</span><span class="p">(</span><span class="n">stacked_qkv_rep</span><span class="p">))</span>
 
         <span class="c1"># Replace output projection linear layer.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span> <span class="o">=</span> <span class="n">eLinear</span><span class="p">(</span><span class="n">in_rep</span><span class="p">,</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span> <span class="n">init_scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
@@ -466,11 +477,11 @@
 <div class="viewcode-block" id="eMultiheadAttention.reset_parameters">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.eMultiheadAttention.html#symm_learning.nn.activation.eMultiheadAttention.reset_parameters">[docs]</a>
     <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;xavier_uniform&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Overload parent method to take into account equivariance constraints.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;parametrizations&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">=</span> <span class="s2">"xavier_uniform"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Overload parent method to take into account equivariance constraints."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"parametrizations"</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_reset_parameters</span><span class="p">()</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resetting parameters of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Resetting parameters of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> with scheme: </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="c1"># Reset equivariant linear layers (symm_learning.nn.eLinear)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
 
@@ -480,11 +491,11 @@
                 <span class="n">commuting_constraint</span><span class="p">:</span> <span class="n">CommutingConstraint</span> <span class="o">=</span> <span class="n">constaint_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="n">W</span> <span class="o">=</span> <span class="n">commuting_constraint</span><span class="o">.</span><span class="n">homo_basis</span><span class="o">.</span><span class="n">initialize_params</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">,</span> <span class="n">return_dense</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">param</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initialized </span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2"> with scheme </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Initialized </span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2"> with scheme </span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">param</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="c1"># invariant_constraint: InvariantConstraint = constaint_list[0]</span>
                 <span class="n">param</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initialized </span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2"> with zeros&quot;</span><span class="p">)</span></div>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Initialized </span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2"> with zeros"</span><span class="p">)</span></div>
 </div>
 
 
@@ -492,7 +503,7 @@
 <div class="viewcode-block" id="PositionalAttentionBase">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.PositionalAttentionBase.html#symm_learning.nn.activation.PositionalAttentionBase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PositionalAttentionBase</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Abstract interface for attention blocks with explicit positional branches.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Abstract interface for attention blocks with explicit positional branches.</span>
 
 <span class="sd">    The convention in this module is that positional information is provided as a</span>
 <span class="sd">    function, defined by a submodule, acting on the query and key streams only.</span>
@@ -528,11 +539,11 @@
 <span class="sd">        optional attention weights.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">    ----------</span>
+<span class="sd">    -----------</span>
 <span class="sd">    This base class does not define any storage beyond the standard</span>
 <span class="sd">    :class:`torch.nn.Module` state. Concrete subclasses define their own</span>
 <span class="sd">    positional encoder and attention parameters.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="PositionalAttentionBase.forward">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.PositionalAttentionBase.html#symm_learning.nn.activation.PositionalAttentionBase.forward">[docs]</a>
@@ -552,7 +563,7 @@
         <span class="n">need_weights</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">is_causal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply attention with optional explicit position metadata.</span>
+<span class="w">        </span><span class="sd">"""Apply attention with optional explicit position metadata.</span>
 
 <span class="sd">        Shape</span>
 <span class="sd">        -----</span>
@@ -561,47 +572,47 @@
 <span class="sd">            key tokens. They may differ in cross-attention.</span>
 <span class="sd">        - Returns: ``(output, attn_weights)`` where ``attn_weights`` is ``None``</span>
 <span class="sd">            unless ``need_weights=True``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
 <div class="viewcode-block" id="PositionalAttentionBase.reset_parameters">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.PositionalAttentionBase.html#symm_learning.nn.activation.PositionalAttentionBase.reset_parameters">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize parameters to match torch.nn.MultiheadAttention.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;attn&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MultiheadAttention</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Initialize parameters to match torch.nn.MultiheadAttention."""</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"attn"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MultiheadAttention</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">_reset_parameters</span><span class="p">()</span>
             <span class="k">return</span>
 
-        <span class="n">weight_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;in_proj_weight&quot;</span><span class="p">,</span> <span class="s2">&quot;q_proj_weight&quot;</span><span class="p">,</span> <span class="s2">&quot;k_proj_weight&quot;</span><span class="p">,</span> <span class="s2">&quot;v_proj_weight&quot;</span><span class="p">]</span>
+        <span class="n">weight_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"in_proj_weight"</span><span class="p">,</span> <span class="s2">"q_proj_weight"</span><span class="p">,</span> <span class="s2">"k_proj_weight"</span><span class="p">,</span> <span class="s2">"v_proj_weight"</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">weight_names</span><span class="p">:</span>
             <span class="n">weight</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_uniform_</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_weight&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_weight&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_weight"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_weight"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span>
             <span class="p">):</span>
-                <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_uniform_</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_weight&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_uniform_</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_weight"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
 
-        <span class="n">bias_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;in_proj_bias&quot;</span><span class="p">,</span> <span class="s2">&quot;bias_k&quot;</span><span class="p">,</span> <span class="s2">&quot;bias_v&quot;</span><span class="p">]</span>
+        <span class="n">bias_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"in_proj_bias"</span><span class="p">,</span> <span class="s2">"bias_k"</span><span class="p">,</span> <span class="s2">"bias_v"</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">bias_names</span><span class="p">:</span>
             <span class="n">bias</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">bias</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
             <span class="k">elif</span> <span class="p">(</span>
-                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_bias&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;bias_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_proj&quot;</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_bias&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;bias_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_proj&quot;</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_bias&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;bias_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_proj&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_bias"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"bias_"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"_proj"</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_bias"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"bias_"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"_proj"</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_bias"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"bias_"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"_proj"</span><span class="p">)</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="p">):</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span>
-                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_bias&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;bias_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_proj&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="mf">0.0</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_bias"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"bias_"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"_proj"</span><span class="p">)</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="mf">0.0</span>
                 <span class="p">)</span>
 
-        <span class="n">out_proj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;out_proj&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">out_proj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"out_proj"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">out_proj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">out_proj</span><span class="p">,</span> <span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">out_proj</span><span class="p">,</span> <span class="s2">"weight"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_uniform_</span><span class="p">(</span><span class="n">out_proj</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">out_proj</span><span class="p">,</span> <span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">out_proj</span><span class="p">,</span> <span class="s2">"bias"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">constant_</span><span class="p">(</span><span class="n">out_proj</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div>
 
 
@@ -612,7 +623,7 @@
         <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Use explicit positions when provided, otherwise default to ``0, \ldots, P-1``.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Use explicit positions when provided, otherwise default to ``0, \ldots, P-1``."""</span>
         <span class="k">if</span> <span class="n">positions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">seq_len</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">positions</span>
@@ -625,23 +636,23 @@
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Normalize position tensors and validate their layout.</span>
+<span class="w">        </span><span class="sd">"""Normalize position tensors and validate their layout.</span>
 
 <span class="sd">        The helper accepts positions with shape ``(P,)`` or ``(B, P)`` and checks</span>
 <span class="sd">        that the sequence length matches ``seq_len`` and the batch dimension is</span>
 <span class="sd">        either ``1`` or ``batch_size``. If a mask is provided, it must have the</span>
 <span class="sd">        same rank and shape as ``positions`` before any singleton batch expansion.</span>
 <span class="sd">        The returned mask is expanded together with ``positions`` when needed.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">positions</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">positions</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected positions tensor with shape (P,) or (B, P), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected positions tensor with shape (P,) or (B, P), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">seq_len</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Position length </span><span class="si">{</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> does not match sequence length </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Position length </span><span class="si">{</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> does not match sequence length </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Position batch size </span><span class="si">{</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> must be 1 or match batch size </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Position batch size </span><span class="si">{</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> must be 1 or match batch size </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">batch_size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
@@ -651,12 +662,12 @@
         <span class="k">if</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">position_mask</span> <span class="o">=</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected position_mask with shape (P,) or (B, P), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected position_mask with shape (P,) or (B, P), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">seq_len</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Position mask length </span><span class="si">{</span><span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> does not match sequence length </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Position mask length </span><span class="si">{</span><span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> does not match sequence length </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Position mask batch size </span><span class="si">{</span><span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> must be 1 or match batch size </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Position mask batch size </span><span class="si">{</span><span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> must be 1 or match batch size </span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">batch_size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">position_mask</span> <span class="o">=</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -668,18 +679,18 @@
 <div class="viewcode-block" id="AdditivePosMultiheadAttention">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.AdditivePosMultiheadAttention.html#symm_learning.nn.activation.AdditivePosMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AdditivePosMultiheadAttention</span><span class="p">(</span><span class="n">PositionalAttentionBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Wrap :class:`torch.nn.MultiheadAttention` and add positional features to Q/K only.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Wrap :class:`torch.nn.MultiheadAttention` and add positional features to Q/K only.</span>
 
 <span class="sd">    A learned table maps coordinates to an additive update of the query and key</span>
 <span class="sd">    streams,</span>
 
 <span class="sd">    .. math::</span>
 
-<span class="sd">            \mathbf{q}&#39; = \mathbf{q} + E_\theta(\mathbf{P}_Q),</span>
+<span class="sd">            \mathbf{q}' = \mathbf{q} + E_\theta(\mathbf{P}_Q),</span>
 <span class="sd">            \qquad</span>
-<span class="sd">            \mathbf{k}&#39; = \mathbf{k} + E_\theta(\mathbf{P}_K),</span>
+<span class="sd">            \mathbf{k}' = \mathbf{k} + E_\theta(\mathbf{P}_K),</span>
 <span class="sd">            \qquad</span>
-<span class="sd">            \mathbf{v}&#39; = \mathbf{v}.</span>
+<span class="sd">            \mathbf{v}' = \mathbf{v}.</span>
 
 <span class="sd">    The values are never position-modulated. When ``E_\theta`` is the identity/</span>
 <span class="sd">    no-op branch, this is exactly ordinary multi-head attention.</span>
@@ -693,7 +704,7 @@
 <span class="sd">    - Returns: the attention output and, optionally, attention weights.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">    ----------</span>
+<span class="sd">    -----------</span>
 <span class="sd">    pos_emb:</span>
 <span class="sd">        Learnable table with shape ``(max_len, D)`` storing the absolute</span>
 <span class="sd">        positional embeddings.</span>
@@ -703,7 +714,7 @@
 <span class="sd">        Model width ``D``.</span>
 <span class="sd">    num_heads:</span>
 <span class="sd">        Number of attention heads.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -716,7 +727,7 @@
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize additive positional attention with a wrapped multi-head backend.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Initialize additive positional attention with a wrapped multi-head backend.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            embed_dim (:class:`int`): Model width ``D``.</span>
@@ -726,10 +737,10 @@
 <span class="sd">            bias (:class:`bool`): If ``True``, adds learnable input and output projection biases. Default: ``True``.</span>
 <span class="sd">            device (:class:`torch.device`, optional): Parameter factory options.</span>
 <span class="sd">            dtype (:class:`torch.dtype`, optional): Parameter factory options.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">max_len</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max_len must be positive, got </span><span class="si">{</span><span class="n">max_len</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"max_len must be positive, got </span><span class="si">{</span><span class="n">max_len</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MultiheadAttention</span><span class="p">(</span>
             <span class="n">embed_dim</span><span class="p">,</span>
             <span class="n">num_heads</span><span class="p">,</span>
@@ -761,7 +772,7 @@
         <span class="n">need_weights</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">is_causal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add the positional update to query and key before attention.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Add the positional update to query and key before attention.</span>
 
 <span class="sd">        The values are passed through unchanged.</span>
 
@@ -770,7 +781,7 @@
 <span class="sd">        - ``query``, ``key``, ``value``: see :class:`PositionalAttentionBase`.</span>
 <span class="sd">        - Returns: ``(output, attn_weights)`` from the wrapped</span>
 <span class="sd">          :class:`torch.nn.MultiheadAttention`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">query</span> <span class="o">=</span> <span class="n">query</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_update</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">q_positions</span><span class="p">,</span> <span class="n">q_position_mask</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="n">key</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_update</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">k_positions</span><span class="p">,</span> <span class="n">k_position_mask</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span>
@@ -805,14 +816,14 @@
         <span class="k">if</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">expected_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="n">pos_emb</span> <span class="o">=</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">batch_size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">pos_emb</span> <span class="o">=</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">expected_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">position_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">pos_emb</span> <span class="o">=</span> <span class="n">pos_emb</span> <span class="o">*</span> <span class="n">position_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -824,7 +835,7 @@
 <div class="viewcode-block" id="eAdditivePosMultiheadAttention">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.eAdditivePosMultiheadAttention.html#symm_learning.nn.activation.eAdditivePosMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">eAdditivePosMultiheadAttention</span><span class="p">(</span><span class="n">eModule</span><span class="p">,</span> <span class="n">PositionalAttentionBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant additive positional attention with invariant query/key updates.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Equivariant additive positional attention with invariant query/key updates."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -836,11 +847,11 @@
         <span class="n">bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">init_scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;xavier_normal&quot;</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"xavier_normal"</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">max_len</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max_len must be a positive integer, got </span><span class="si">{</span><span class="n">max_len</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"max_len must be a positive integer, got </span><span class="si">{</span><span class="n">max_len</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">in_rep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span> <span class="o">=</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">size</span>
@@ -855,7 +866,7 @@
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">init_scheme</span><span class="o">=</span><span class="n">init_scheme</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;invariant_projector&quot;</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">in_rep</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"invariant_projector"</span><span class="p">,</span> <span class="n">invariant_orthogonal_projector</span><span class="p">(</span><span class="n">in_rep</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>  <span class="c1"># noqa: D102</span>
@@ -906,17 +917,17 @@
         <span class="k">if</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">expected_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="n">pos_emb</span> <span class="o">=</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">batch_size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">pos_emb</span> <span class="o">=</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">expected_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected positional embedding shape </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="n">pos_emb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
-            <span class="s2">&quot;ij,...j-&gt;...i&quot;</span><span class="p">,</span>
+            <span class="s2">"ij,...j-&gt;...i"</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">invariant_projector</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
             <span class="n">pos_emb</span><span class="p">,</span>
         <span class="p">)</span>
@@ -926,12 +937,12 @@
         <span class="k">return</span> <span class="n">pos_emb</span>
 
     <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;xavier_uniform&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">=</span> <span class="s2">"xavier_uniform"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span>
             <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
-                <span class="s2">&quot;ij,pj-&gt;pi&quot;</span><span class="p">,</span>
+                <span class="s2">"ij,pj-&gt;pi"</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">invariant_projector</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">pos_emb</span><span class="p">,</span>
             <span class="p">)</span>
@@ -945,7 +956,7 @@
 <div class="viewcode-block" id="AdditiveRelMultiheadAttention">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.AdditiveRelMultiheadAttention.html#symm_learning.nn.activation.AdditiveRelMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AdditiveRelMultiheadAttention</span><span class="p">(</span><span class="n">PositionalAttentionBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Wrap :class:`torch.nn.MultiheadAttention` and subtract a relative-position bias from the logits.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Wrap :class:`torch.nn.MultiheadAttention` and subtract a relative-position bias from the logits.</span>
 
 <span class="sd">    A learned table maps pairwise relative distances to an additive correction</span>
 <span class="sd">    of the attention scores,</span>
@@ -968,7 +979,7 @@
 <span class="sd">    - Returns: the attention output and, optionally, attention weights.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">    ----------</span>
+<span class="sd">    -----------</span>
 <span class="sd">    rel_bias:</span>
 <span class="sd">        Learnable table with shape ``(2 * max_distance + 1,)`` storing the</span>
 <span class="sd">        scalar bias for each clipped relative offset.</span>
@@ -979,7 +990,7 @@
 <span class="sd">    num_heads:</span>
 <span class="sd">        Number of attention heads.</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -992,7 +1003,7 @@
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize relative-bias attention with a wrapped multi-head backend.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Initialize relative-bias attention with a wrapped multi-head backend.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            embed_dim (:class:`int`): Model width ``D``.</span>
@@ -1004,10 +1015,10 @@
 <span class="sd">            device (:class:`torch.device`, optional): Parameter factory options.</span>
 <span class="sd">            dtype (:class:`torch.dtype`, optional): Parameter factory options.</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">max_distance</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max_distance must be non-negative, got </span><span class="si">{</span><span class="n">max_distance</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"max_distance must be non-negative, got </span><span class="si">{</span><span class="n">max_distance</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MultiheadAttention</span><span class="p">(</span>
             <span class="n">embed_dim</span><span class="p">,</span>
             <span class="n">num_heads</span><span class="p">,</span>
@@ -1039,14 +1050,14 @@
         <span class="n">need_weights</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">is_causal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Subtract the relative-position bias from the attention logits.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Subtract the relative-position bias from the attention logits.</span>
 
 <span class="sd">        Shape</span>
 <span class="sd">        -----</span>
 <span class="sd">        - ``query``, ``key``, ``value``: see :class:`PositionalAttentionBase`.</span>
 <span class="sd">        - Returns: ``(output, attn_weights)`` from the wrapped</span>
 <span class="sd">          :class:`torch.nn.MultiheadAttention`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">tgt_len</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">src_len</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -1065,9 +1076,9 @@
         <span class="p">)</span>
         <span class="n">attn_mask</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">_canonical_mask</span><span class="p">(</span>
             <span class="n">mask</span><span class="o">=</span><span class="n">attn_mask</span><span class="p">,</span>
-            <span class="n">mask_name</span><span class="o">=</span><span class="s2">&quot;attn_mask&quot;</span><span class="p">,</span>
+            <span class="n">mask_name</span><span class="o">=</span><span class="s2">"attn_mask"</span><span class="p">,</span>
             <span class="n">other_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">other_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">other_name</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
             <span class="n">target_type</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">check_other</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
@@ -1185,7 +1196,7 @@
 <div class="viewcode-block" id="eAdditiveRelMultiheadAttention">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.eAdditiveRelMultiheadAttention.html#symm_learning.nn.activation.eAdditiveRelMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">eAdditiveRelMultiheadAttention</span><span class="p">(</span><span class="n">eModule</span><span class="p">,</span> <span class="n">PositionalAttentionBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Equivariant relative-bias attention with an equivariant attention backend.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Equivariant relative-bias attention with an equivariant attention backend."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1197,11 +1208,11 @@
         <span class="n">bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">init_scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;xavier_normal&quot;</span><span class="p">,</span>
+        <span class="n">init_scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"xavier_normal"</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_distance</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">max_distance</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max_distance must be a positive integer, got </span><span class="si">{</span><span class="n">max_distance</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"max_distance must be a positive integer, got </span><span class="si">{</span><span class="n">max_distance</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">in_rep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_rep</span> <span class="o">=</span> <span class="n">in_rep</span><span class="p">,</span> <span class="n">in_rep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span> <span class="o">=</span> <span class="n">in_rep</span><span class="o">.</span><span class="n">size</span>
@@ -1251,9 +1262,9 @@
         <span class="p">)</span>
         <span class="n">attn_mask</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">_canonical_mask</span><span class="p">(</span>
             <span class="n">mask</span><span class="o">=</span><span class="n">attn_mask</span><span class="p">,</span>
-            <span class="n">mask_name</span><span class="o">=</span><span class="s2">&quot;attn_mask&quot;</span><span class="p">,</span>
+            <span class="n">mask_name</span><span class="o">=</span><span class="s2">"attn_mask"</span><span class="p">,</span>
             <span class="n">other_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">other_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">other_name</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
             <span class="n">target_type</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">check_other</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
@@ -1366,7 +1377,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_bias</span><span class="p">[</span><span class="n">clipped_positions</span><span class="p">]</span>
 
     <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;xavier_uniform&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">InitScheme</span> <span class="o">=</span> <span class="s2">"xavier_uniform"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: D102</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">scheme</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rel_bias</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
 
@@ -1378,7 +1389,7 @@
 <div class="viewcode-block" id="RoPEMultiheadAttention">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RoPEMultiheadAttention.html#symm_learning.nn.activation.RoPEMultiheadAttention">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RoPEMultiheadAttention</span><span class="p">(</span><span class="n">PositionalAttentionBase</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Multi-head attention with rotary position embeddings applied to Q and K.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Multi-head attention with rotary position embeddings applied to Q and K.</span>
 
 <span class="sd">    Query, key, and value tensors are first projected into per-head features. The</span>
 <span class="sd">    entire head embedding is then rotated in position space, block by block in 2D</span>
@@ -1386,11 +1397,11 @@
 
 <span class="sd">    .. math::</span>
 
-<span class="sd">            \mathbf{q}_r&#39; = R(\mathbf{P}_Q)\,\mathbf{q}_r,</span>
+<span class="sd">            \mathbf{q}_r' = R(\mathbf{P}_Q)\,\mathbf{q}_r,</span>
 <span class="sd">            \qquad</span>
-<span class="sd">            \mathbf{k}_r&#39; = R(\mathbf{P}_K)\,\mathbf{k}_r,</span>
+<span class="sd">            \mathbf{k}_r' = R(\mathbf{P}_K)\,\mathbf{k}_r,</span>
 <span class="sd">            \qquad</span>
-<span class="sd">            \mathbf{v}&#39; = \mathbf{v},</span>
+<span class="sd">            \mathbf{v}' = \mathbf{v},</span>
 
 <span class="sd">    where ``R`` is the block-wise 2D rotation induced by the sine/cosine tables.</span>
 <span class="sd">    The attention scores are then</span>
@@ -1398,9 +1409,9 @@
 <span class="sd">    .. math::</span>
 
 <span class="sd">            \mathbf{A} = \operatorname{softmax}\left(</span>
-<span class="sd">            \frac{\mathbf{q}&#39;\mathbf{k}&#39;^\top}{\sqrt{d_h}} + \mathbf{M}\right),</span>
+<span class="sd">            \frac{\mathbf{q}'\mathbf{k}'^\top}{\sqrt{d_h}} + \mathbf{M}\right),</span>
 <span class="sd">            \qquad</span>
-<span class="sd">            \mathbf{O} = \mathbf{A}\mathbf{v}&#39;.</span>
+<span class="sd">            \mathbf{O} = \mathbf{A}\mathbf{v}'.</span>
 
 <span class="sd">    Shape</span>
 <span class="sd">    -----</span>
@@ -1412,7 +1423,7 @@
 <span class="sd">        layout as the input and ``attn_weights`` is ``(B, T_q, T_k)`` when requested.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">    ----------</span>
+<span class="sd">    -----------</span>
 <span class="sd">    embed_dim:</span>
 <span class="sd">        Total feature width ``D``.</span>
 <span class="sd">    num_heads:</span>
@@ -1426,7 +1437,7 @@
 <span class="sd">        final output.</span>
 <span class="sd">    rotary_emb:</span>
 <span class="sd">        Helper module that builds the sine and cosine tables used by RoPE.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1438,7 +1449,7 @@
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize the rotary-position attention block.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Initialize the rotary-position attention block.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            embed_dim (:class:`int`): Model width ``D``.</span>
@@ -1448,24 +1459,24 @@
 <span class="sd">            rope_base (:class:`float`): Frequency base used to build the rotary spectrum. Default: ``10000.0``.</span>
 <span class="sd">            device (:class:`torch.device`, optional): Parameter factory options.</span>
 <span class="sd">            dtype (:class:`torch.dtype`, optional): Parameter factory options.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+<span class="sd">        """</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">"dtype"</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">embed_dim</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;embed_dim must be positive, got </span><span class="si">{</span><span class="n">embed_dim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"embed_dim must be positive, got </span><span class="si">{</span><span class="n">embed_dim</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">num_heads</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;num_heads must be positive, got </span><span class="si">{</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"num_heads must be positive, got </span><span class="si">{</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">embed_dim</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;embed_dim=</span><span class="si">{embed_dim}</span><span class="s2"> must be divisible by num_heads=</span><span class="si">{num_heads}</span><span class="s2"> &quot;</span>
-                <span class="s2">&quot;so each head has an integer dimension&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">embed_dim</span><span class="o">=</span><span class="n">embed_dim</span><span class="p">,</span> <span class="n">num_heads</span><span class="o">=</span><span class="n">num_heads</span><span class="p">)</span>
+                <span class="s2">"embed_dim=</span><span class="si">{embed_dim}</span><span class="s2"> must be divisible by num_heads=</span><span class="si">{num_heads}</span><span class="s2"> "</span>
+                <span class="s2">"so each head has an integer dimension"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">embed_dim</span><span class="o">=</span><span class="n">embed_dim</span><span class="p">,</span> <span class="n">num_heads</span><span class="o">=</span><span class="n">num_heads</span><span class="p">)</span>
             <span class="p">)</span>
 
         <span class="n">head_dim</span> <span class="o">=</span> <span class="n">embed_dim</span> <span class="o">//</span> <span class="n">num_heads</span>
         <span class="k">if</span> <span class="n">head_dim</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;head_dim=</span><span class="si">{</span><span class="n">head_dim</span><span class="si">}</span><span class="s2"> must be even because RoPE rotates the entire head embedding in 2D pairs. &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Choose embed_dim and num_heads so embed_dim / num_heads is even.&quot;</span>
+                <span class="sa">f</span><span class="s2">"head_dim=</span><span class="si">{</span><span class="n">head_dim</span><span class="si">}</span><span class="s2"> must be even because RoPE rotates the entire head embedding in 2D pairs. "</span>
+                <span class="sa">f</span><span class="s2">"Choose embed_dim and num_heads so embed_dim / num_heads is even."</span>
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span> <span class="o">=</span> <span class="n">embed_dim</span>
@@ -1495,14 +1506,14 @@
         <span class="n">need_weights</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">is_causal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Project inputs, apply RoPE to each head, then compute attention.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Project inputs, apply RoPE to each head, then compute attention.</span>
 
 <span class="sd">        Shape</span>
 <span class="sd">        -----</span>
 <span class="sd">        - ``query``, ``key``, ``value``: see :class:`PositionalAttentionBase`.</span>
 <span class="sd">        - Returns: ``(output, attn_weights)`` with the same leading layout as the</span>
 <span class="sd">          input and optional attention weights when requested.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">q_positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_positions_or_arange</span><span class="p">(</span><span class="n">q_positions</span><span class="p">,</span> <span class="n">seq_len</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="n">k_positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_positions_or_arange</span><span class="p">(</span><span class="n">k_positions</span><span class="p">,</span> <span class="n">seq_len</span><span class="o">=</span><span class="n">key</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">key</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_heads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span><span class="p">(</span><span class="n">query</span><span class="p">))</span>
@@ -1514,16 +1525,16 @@
 
         <span class="n">key_padding_mask</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">_canonical_mask</span><span class="p">(</span>
             <span class="n">mask</span><span class="o">=</span><span class="n">key_padding_mask</span><span class="p">,</span>
-            <span class="n">mask_name</span><span class="o">=</span><span class="s2">&quot;key_padding_mask&quot;</span><span class="p">,</span>
+            <span class="n">mask_name</span><span class="o">=</span><span class="s2">"key_padding_mask"</span><span class="p">,</span>
             <span class="n">other_type</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">_none_or_dtype</span><span class="p">(</span><span class="n">attn_mask</span><span class="p">),</span>
-            <span class="n">other_name</span><span class="o">=</span><span class="s2">&quot;attn_mask&quot;</span><span class="p">,</span>
+            <span class="n">other_name</span><span class="o">=</span><span class="s2">"attn_mask"</span><span class="p">,</span>
             <span class="n">target_type</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">attn_mask</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">_canonical_mask</span><span class="p">(</span>
             <span class="n">mask</span><span class="o">=</span><span class="n">attn_mask</span><span class="p">,</span>
-            <span class="n">mask_name</span><span class="o">=</span><span class="s2">&quot;attn_mask&quot;</span><span class="p">,</span>
+            <span class="n">mask_name</span><span class="o">=</span><span class="s2">"attn_mask"</span><span class="p">,</span>
             <span class="n">other_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">other_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">other_name</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
             <span class="n">target_type</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">check_other</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
@@ -1571,7 +1582,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">merged_mask</span> <span class="o">=</span> <span class="n">merged_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">merged_mask</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported attn_mask shape </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">merged_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported attn_mask shape </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">merged_mask</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">key_padding_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">padding_mask</span> <span class="o">=</span> <span class="n">key_padding_mask</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
@@ -1593,7 +1604,7 @@
         <span class="k">if</span> <span class="n">is_causal</span><span class="p">:</span>
             <span class="n">tgt_len</span><span class="p">,</span> <span class="n">src_len</span> <span class="o">=</span> <span class="n">attn_scores</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
             <span class="n">causal_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">tgt_len</span><span class="p">,</span> <span class="n">src_len</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">attn_scores</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">attn_scores</span> <span class="o">=</span> <span class="n">attn_scores</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="n">causal_mask</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">))</span>
+            <span class="n">attn_scores</span> <span class="o">=</span> <span class="n">attn_scores</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="n">causal_mask</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">attn_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">attn_scores</span> <span class="o">=</span> <span class="n">attn_scores</span> <span class="o">+</span> <span class="n">attn_mask</span>
@@ -1608,7 +1619,7 @@
 <div class="viewcode-block" id="RotaryEmbedding">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RotaryEmbedding.html#symm_learning.nn.activation.RotaryEmbedding">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RotaryEmbedding</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Precompute the cosine and sine tables used by rotary embeddings.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Precompute the cosine and sine tables used by rotary embeddings.</span>
 
 <span class="sd">    Shape</span>
 <span class="sd">    -----</span>
@@ -1616,14 +1627,14 @@
 <span class="sd">    - Returns: ``(cos, sin)`` with shape ``(P, dim / 2)`` or ``(B, P, dim / 2)``.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">    ----------</span>
+<span class="sd">    -----------</span>
 <span class="sd">    dim:</span>
 <span class="sd">        Number of channels rotated by RoPE.</span>
 <span class="sd">    base:</span>
 <span class="sd">        Frequency base used to build the inverse frequency spectrum.</span>
 <span class="sd">    inv_freq:</span>
 <span class="sd">        Buffer containing the inverse frequencies used to generate the tables.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1632,28 +1643,28 @@
         <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Initialize the RoPE table builder.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Initialize the RoPE table builder.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dim (:class:`int`): Number of channels rotated by RoPE.</span>
 <span class="sd">            base (:class:`float`): Frequency base used to build the inverse frequency spectrum.</span>
 <span class="sd">            device (:class:`torch.device`, optional): Buffer factory options.</span>
 <span class="sd">            dtype (:class:`torch.dtype`, optional): Buffer factory options.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">dim</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rotary dim must be a positive even integer, got </span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rotary dim must be a positive even integer, got </span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">"dtype"</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
         <span class="n">inv_freq</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">base</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span> <span class="o">/</span> <span class="n">dim</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;inv_freq&quot;</span><span class="p">,</span> <span class="n">inv_freq</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"inv_freq"</span><span class="p">,</span> <span class="n">inv_freq</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <div class="viewcode-block" id="RotaryEmbedding.forward">
 <a class="viewcode-back" href="../../../generated/symm_learning.nn.activation.RotaryEmbedding.html#symm_learning.nn.activation.RotaryEmbedding.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">positions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the RoPE cosine and sine tables for the provided positions.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return the RoPE cosine and sine tables for the provided positions."""</span>
         <span class="n">angles</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_freq</span>
         <span class="k">return</span> <span class="n">angles</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">angles</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span></div>
 
@@ -1666,7 +1677,7 @@
         <span class="n">positions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
         <span class="n">position_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Apply rotary position embeddings to the entire head embedding of ``x``.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Apply rotary position embeddings to the entire head embedding of ``x``.</span>
 
 <span class="sd">        Shape</span>
 <span class="sd">        -----</span>
@@ -1675,9 +1686,9 @@
 <span class="sd">        - ``position_mask``: optional boolean mask with the same layout as</span>
 <span class="sd">          ``positions``.</span>
 <span class="sd">        - Returns: ``x`` with every head channel rotated in place.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected x with shape (B, H, T, D), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected x with shape (B, H, T, D), got </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="n">batch_size</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">head_dim</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
         <span class="n">positions</span><span class="p">,</span> <span class="n">position_mask</span> <span class="o">=</span> <span class="n">PositionalAttentionBase</span><span class="o">.</span><span class="n">_normalize_positions</span><span class="p">(</span>
@@ -1690,7 +1701,7 @@
             <span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="o">~</span><span class="n">position_mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">!=</span> <span class="n">head_dim</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RotaryEmbedding.dim=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="si">}</span><span class="s2"> must match the head dimension </span><span class="si">{</span><span class="n">head_dim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"RotaryEmbedding.dim=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="si">}</span><span class="s2"> must match the head dimension </span><span class="si">{</span><span class="n">head_dim</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="n">cos</span><span class="p">,</span> <span class="n">sin</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
         <span class="n">cos</span> <span class="o">=</span> <span class="n">cos</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
@@ -1740,8 +1751,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1762,7 +1773,6 @@
 
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
-    <br/>
   </p>
 </div>
       
@@ -1775,7 +1785,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
 </p></div>
       
     </div>
